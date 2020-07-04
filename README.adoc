@@ -1,0 +1,9 @@
+= saddle-contract
+
+The smart contracts behind https://saddle.finance[saddle.finance] 🤠
+
+== Usage
+
+The contracts are compiled with https://buidler.dev[Buidler], and tested using
+https://buidler.dev/guides/waffle-testing.html[Waffle] and
+https://buidler.dev/guides/typescript.html[TypeScript].
