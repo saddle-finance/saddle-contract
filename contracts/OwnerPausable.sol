@@ -1,14 +1,14 @@
-pragma solidity 0.6.4;
+pragma solidity ^0.6.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title OwnerPausable
  * @notice An ownable contract allows the owner to pause and unpause the
- * contract without a delay.
+ *         contract without a delay.
  * @dev Only methods using the provided modifiers will be paused.
  */
-contract OwnerPausable is Ownable {
+contract OwnerPausable is Ownable() {
 
     event Paused();
     event Unpaused();
