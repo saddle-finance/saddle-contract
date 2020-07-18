@@ -9,9 +9,11 @@
     "@openzeppelin/contracts": "^3.0.0-rc.0"
   },
   "devDependencies": {
-    "@nomiclabs/buidler": "^1.3.4",
-    "@nomiclabs/buidler-ethers": "^1.3.4",
-    "@nomiclabs/buidler-waffle": "^1.3.4",
+    "@nomiclabs/buidler": "^1.3.8",
+    "@nomiclabs/buidler-ethers": "^2.0.0",
+    "@nomiclabs/buidler-waffle": "^2.0.0",
+    "@typechain/ethers-v4": "^1.0.0",
+    "@typechain/ethers-v5": "0.0.3",
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
     "@typescript-eslint/eslint-plugin": "^2.24.0",
@@ -21,15 +23,15 @@
     "eslint-config-keep": "git+https://github.com/keep-network/eslint-config-keep.git#0.2.0",
     "eslint-config-prettier": "^6.10.0",
     "eslint-plugin-prettier": "^3.1.2",
-    "ethereum-waffle": "^2.5.1",
-    "ethers": "^4.0.47",
+    "ethereum-waffle": "^3.0.2",
+    "ethers": "^5.0.5",
     "ethlint": "^1.2.5",
     "precommit": "^1.2.2",
     "prettier": "^1.19.1",
-    "ts-node": "^8.10.1",
-    "typechain": "^1.0.5",
-    "typechain-target-ethers": "^1.0.3",
-    "typescript": "^3.9.2"
+    "ts-generator": "0.0.8",
+    "ts-node": "^8.10.2",
+    "typechain": "^2.0.0",
+    "typescript": "^3.9.7"
   },
   "scripts": {
     "lint": "npm run lint:ts && npm run lint:sol",
@@ -38,7 +40,7 @@
     "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/*.ts",
     "lint:sol": "solium -d contracts/",
     "lint:fix:sol": "solium -d contracts/ --fix",
-    "build": "buidler compile && typechain --target ethers --outDir typechain 'artifacts/*.json'",
+    "build": "buidler compile && typechain --target ethers-v5 --outDir typechain 'artifacts/*.json'",
     "test": "buidler test"
   },
   "precommit": "npm run lint",

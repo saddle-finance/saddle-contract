@@ -7,7 +7,7 @@ import StakeableTokenWrapperArtifact from "../artifacts/StakeableTokenWrapper.js
 import { StakeableTokenWrapper } from "../typechain/StakeableTokenWrapper"
 
 import MockBasicTokenArtifact from "../artifacts/MockBasicToken.json"
-import { IERC20 } from "../typechain/IERC20"
+import { Ierc20 } from "../typechain/Ierc20"
 
 chai.use(solidity)
 const { expect } = chai
@@ -20,11 +20,11 @@ describe("StakeableTokenWrapper", () => {
     staker2,
   ] = provider.getWallets()
 
-  let basicToken: IERC20
+  let basicToken: Ierc20
   let tokenWrapper: StakeableTokenWrapper
 
   async function deployWrapper(
-    token: IERC20,
+    token: Ierc20,
   ) {
     const contract = (await deployContract(
       deployer,
@@ -52,7 +52,7 @@ describe("StakeableTokenWrapper", () => {
       deployer,
       MockBasicTokenArtifact,
       [10 ** 10],
-    )) as IERC20
+    )) as Ierc20
 
     await basicToken.transfer(staker1.address, 1000)
     await basicToken.transfer(staker2.address, 10000)
