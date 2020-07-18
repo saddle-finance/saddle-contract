@@ -45,7 +45,7 @@ contract Swap is OwnerPausable(), ReentrancyGuard {
         uint256[] fees, uint256 invariant, uint256 lpTokenSupply
     );
     event RemoveLiquidity(address indexed provider, uint256[] tokenAmounts,
-        uint256[] fees, uint256 lpTokenSupply
+        uint256 lpTokenSupply
     );
     event RemoveLiquidityOne(address indexed provider, uint256 lpTokenAmount,
         uint256 lpTokenSupply, uint256 boughtId, uint256 tokensBought
@@ -117,7 +117,7 @@ contract Swap is OwnerPausable(), ReentrancyGuard {
      */
     function removeLiquidityOneToken(
         uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount
-    ) public nonReentrant onlyUnpaused {
+    ) public virtual nonReentrant onlyUnpaused {
         // TODO up-front balance checks?
         uint256 totalSupply = lpToken.totalSupply();
         uint256 numTokens = pooledTokens.length;
@@ -330,8 +330,8 @@ contract Swap is OwnerPausable(), ReentrancyGuard {
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      *        should mint, otherwise revert. Handy for front-running mitigation
      */
-    function addLiquidity(uint256[] calldata amounts, uint256 minToMint)
-        external nonReentrant onlyUnpaused {
+    function addLiquidity(uint256[] memory amounts, uint256 minToMint)
+        public virtual nonReentrant onlyUnpaused {
         require(
             amounts.length == pooledTokens.length,
             "Amounts must map to pooled tokens"
@@ -498,7 +498,7 @@ contract Swap is OwnerPausable(), ReentrancyGuard {
      */
     function swap(
         uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy
-    ) external nonReentrant {
+    ) public virtual nonReentrant {
         uint256 dy = _swap(tokenIndexFrom, tokenIndexTo, dx);
         require(dy >= minDy, "Swap didn't result in min tokens");
 
@@ -510,42 +510,65 @@ contract Swap is OwnerPausable(), ReentrancyGuard {
     }
 
     /**
+     * @notice TODO
+     * @param amount the amount of LP tokens that would to be burned on
+     *        withdrawal
+     */
+    function calculateRemoveLiquidity(uint256 amount)
+        internal view returns (uint256[] memory) {
+        uint256 totalSupply = lpToken.totalSupply();
+        uint256[] memory amounts = new uint256[](pooledTokens.length);
+
+        for (uint i = 0; i < pooledTokens.length; i++) {
+            amounts[i] =  balances[i].mul(amount).div(totalSupply);
+        }
+        return amounts;
+    }
+
+    function calculateRebalanceAmounts(uint256 amount)
+        internal view returns(uint256[] memory) {
+        uint256 tokenSupply = lpToken.totalSupply();
+        uint256[] memory amounts = new uint256[](pooledTokens.length);
+
+        for (uint i = 0; i < pooledTokens.length; i++) {
+            amounts[i] = balances[i].mul(amount).div(tokenSupply);
+        }
+
+        return amounts;
+    }
+
+    /**
      * @notice Burn LP tokens to remove liquidity from the pool.
      * @dev Liquidity can always be removed, even when the pool is paused.
      * @param amount the amount of LP tokens to burn
      * @param minAmounts the minimum amounts of each token in the pool
      *        acceptable for this burn. Useful as a front-running mitigation
      */
-    function removeLiquidity(uint256 amount, uint256[] calldata minAmounts)
-        external nonReentrant {
-        uint256 numTokens = pooledTokens.length;
+    function removeLiquidity(uint256 amount, uint256[] memory minAmounts)
+        public virtual nonReentrant {
         require(
-            minAmounts.length == numTokens,
+            minAmounts.length == pooledTokens.length,
             "Min amounts should correspond to pooled tokens"
         );
 
-        uint256 totalSupply = lpToken.totalSupply();
-        uint256[] memory amounts = minAmounts;
-        uint256[] memory fees = minAmounts;
+        uint256[] memory amounts = calculateRebalanceAmounts(amount);
 
-        for (uint i = 0; i < numTokens; i++) {
-            uint256 value = balances[i].mul(amount).div(totalSupply);
+        for (uint i = 0; i < amounts.length; i++) {
             require(
-                value >= minAmounts[i],
+                amounts[i] >= minAmounts[i],
                 "Resulted in fewer tokens than expected"
             );
-            balances[i] = balances[i].sub(value);
-            amounts[i] = value;
+            balances[i] = balances[i].sub(amounts[i]);
         }
 
         lpToken.burnFrom(msg.sender, amount);
 
-        for (uint i = 0; i < numTokens; i++) {
+        for (uint i = 0; i < pooledTokens.length; i++) {
             pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
         }
 
         emit RemoveLiquidity(
-            msg.sender, amounts, fees, totalSupply.sub(amount)
+            msg.sender, amounts, lpToken.totalSupply()
         );
     }
 
@@ -556,8 +579,9 @@ contract Swap is OwnerPausable(), ReentrancyGuard {
      * @param maxBurnAmount the max LP token provider is willing to pay to
      *        remove liquidity. Useful as a front-running mitigation.
      */
-    function removeLiquidityImbalance(uint256[] calldata amounts, uint256 maxBurnAmount)
-        external nonReentrant onlyUnpaused {
+    function removeLiquidityImbalance(
+        uint256[] memory amounts, uint256 maxBurnAmount
+    ) public virtual nonReentrant onlyUnpaused {
         require(
             amounts.length == pooledTokens.length,
             "Amounts should correspond to pooled tokens"
@@ -609,7 +633,7 @@ contract Swap is OwnerPausable(), ReentrancyGuard {
 
     /**
      * @notice A simple method to calculate prices from deposits or
-     *         withdrawals, excluding fees but including slippasge. This is
+     *         withdrawals, excluding fees but including slippage. This is
      *         helpful as an input into the various "min" parameters on calls
      *         to fight front-running
      * @dev This shouldn't be used outside frontends for user estimates.
