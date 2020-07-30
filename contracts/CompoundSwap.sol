@@ -4,15 +4,7 @@ import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./Swap.sol";
-
-interface CERC20 {
-    function mint(uint256) external returns (uint256);
-    function exchangeRateCurrent() external returns (uint256);
-    function supplyRatePerBlock() external returns (uint256);
-    function redeem(uint) external returns (uint);
-    function redeemUnderlying(uint) external returns (uint);
-    function balanceOfUnderlying(address account) external view returns (uint);
-}
+import "./CERC20.sol";
 
 // TODO fee model - make earnings from Compound fee-free, but liquidity rewards have a % taken for admins
 // TODO make sure it's compatible with withdrawAdminFees
@@ -85,7 +77,7 @@ contract CompoundSwap is Swap {
         // pull interest into pool and increase balances
         uint256[] memory updatedBalances = totalAssets();
         for (uint i = 0; i < balances.length; i++) {
-            if (updatedBalances[i] > balances[i]) {
+            if (updatedBalances[i] >= balances[i]) {
                 underlyingBalances[i] = underlyingBalances[i].add(
                     updatedBalances[i].sub(balances[i]));
                 balances[i] = updatedBalances[i];
@@ -155,7 +147,7 @@ contract CompoundSwap is Swap {
      *         amounts to redeem.
      */
     function calculateRebalanceAmounts()
-        internal returns (uint256[] memory, uint256[] memory) {
+        internal view returns (uint256[] memory, uint256[] memory) {
         uint256[] memory toSupply = new uint256[](pooledTokens.length);
         uint256[] memory toRedeem = new uint256[](pooledTokens.length);
 
@@ -178,10 +170,10 @@ contract CompoundSwap is Swap {
     }
 
     /**
-     * @notice Return the reserves for a particular token.
+     * @notice Return the unwrapped balance for a particular token.
      * @return a uint at the same precision as the pooled token (not cToken)
      */
-    function amountReserved(uint256 tokenIndex) public view returns (uint256) {
+    function amountAvailable(uint256 tokenIndex) public view returns (uint256) {
         require(tokenIndex < pooledTokens.length, "Token isn't in pool!");
         return balances[tokenIndex].sub(underlyingBalances[tokenIndex]);
     }
@@ -196,7 +188,7 @@ contract CompoundSwap is Swap {
      */
     function ensureAmountsAvailable(uint256[] memory amounts) internal {
         for (uint i = 0; i < amounts.length.min(pooledTokens.length); i++) {
-            uint256 avail = amountReserved(i);
+            uint256 avail = amountAvailable(i);
             if (avail < amounts[i] && address(cTokens[i]) != address(0)) {
                 uint256 code = cTokens[i].redeemUnderlying(
                     amounts[i].sub(avail));
@@ -215,13 +207,31 @@ contract CompoundSwap is Swap {
      */
     function ensureAmountsSupplied(uint256 [] memory amounts) internal {
         for (uint i = 0; i < amounts.length.min(pooledTokens.length); i++) {
-            uint256 supplied = balances[i].sub(amountReserved(i));
+            uint256 supplied = balances[i].sub(amountAvailable(i));
             if (supplied < amounts[i] && address(cTokens[i]) != address(0)) {
                 uint256 toSupply = amounts[i].sub(supplied);
                 // Approve transfer on the ERC20 contract
                 pooledTokens[i].approve(address(cTokens[i]), toSupply);
                 uint256 code = cTokens[i].redeemUnderlying(toSupply);
                 require(code == 0, "Something went wrong minting cTokens");
+            }
+        }
+    }
+
+    /**
+     * @notice Update balances and underlyingBalances to account for earnings
+     *         from Compound.
+     */
+    function updateUnderlyingBalances() internal {
+        for (uint i = 0; i < balances.length; i++) {
+            if (address(cTokens[i]) != address(0)) {
+                uint256 oldUnderlying = underlyingBalances[i];
+                underlyingBalances[i] = cTokens[i].balanceOfUnderlying(
+                    address(this));
+                // NB if this number has gone down, the Compound invariant
+                // has failed
+                balances[i] = balances[i].sub(oldUnderlying).add(
+                    underlyingBalances[i]);
             }
         }
     }
