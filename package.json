@@ -9,11 +9,10 @@
     "@openzeppelin/contracts": "^3.0.0-rc.0"
   },
   "devDependencies": {
-    "@nomiclabs/buidler": "^1.3.8",
+    "@nomiclabs/buidler": "^1.4.3",
     "@nomiclabs/buidler-ethers": "^2.0.0",
     "@nomiclabs/buidler-waffle": "^2.0.0",
-    "@typechain/ethers-v4": "^1.0.0",
-    "@typechain/ethers-v5": "0.0.3",
+    "@typechain/ethers-v5": "^1.0.0",
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
     "@typescript-eslint/eslint-plugin": "^2.24.0",
