@@ -7,6 +7,7 @@ import StakeableTokenWrapperArtifact from "../artifacts/StakeableTokenWrapper.js
 import { StakeableTokenWrapper } from "../typechain/StakeableTokenWrapper"
 
 import LPTokenArtifact from "../artifacts/LPToken.json"
+import { LpToken } from "../typechain/LpToken"
 import { IERC20 } from "../typechain/IERC20"
 
 chai.use(solidity)
@@ -20,7 +21,7 @@ describe("StakeableTokenWrapper", () => {
     staker2,
   ] = provider.getWallets()
 
-  let basicToken: IERC20
+  let basicToken: LpToken
   let tokenWrapper: StakeableTokenWrapper
 
   async function deployWrapper(
@@ -51,8 +52,10 @@ describe("StakeableTokenWrapper", () => {
     basicToken = (await deployContract(
       deployer,
       LPTokenArtifact,
-      [10 ** 10],
-    )) as IERC20
+      ['Basic Token', 'BASIC'],
+    )) as LpToken
+
+    await basicToken.mint(deployer.address, 10 ** 10)
 
     await basicToken.transfer(staker1.address, 1000)
     await basicToken.transfer(staker2.address, 10000)
