@@ -8,7 +8,7 @@ import { StakeableTokenWrapper } from "../typechain/StakeableTokenWrapper"
 
 import LPTokenArtifact from "../artifacts/LPToken.json"
 import { LpToken } from "../typechain/LpToken"
-import { IERC20 } from "../typechain/IERC20"
+import { Ierc20 as IERC20 } from "../typechain/Ierc20"
 
 chai.use(solidity)
 const { expect } = chai
