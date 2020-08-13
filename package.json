@@ -25,6 +25,7 @@
     "ethereum-waffle": "^3.0.2",
     "ethers": "^5.0.5",
     "ethlint": "^1.2.5",
+    "husky": "^4.2.5",
     "precommit": "^1.2.2",
     "prettier": "^1.19.1",
     "ts-generator": "0.0.8",
