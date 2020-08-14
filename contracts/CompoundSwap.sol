@@ -76,12 +76,12 @@ contract CompoundSwap is Swap {
     function rebalance() public nonReentrant onlyUnpaused {
         // pull interest into pool and increase balances
         uint256[] memory updatedBalances = totalAssets();
-        for (uint i = 0; i < balances.length; i++) {
-            if (updatedBalances[i] >= balances[i]) {
+        for (uint i = 0; i < swapStorage.balances.length; i++) {
+            if (updatedBalances[i] >= swapStorage.balances[i]) {
                 underlyingBalances[i] = underlyingBalances[i].add(
-                    updatedBalances[i].sub(balances[i]));
-                balances[i] = updatedBalances[i];
-            } else if (updatedBalances[i] < balances[i]) {
+                    updatedBalances[i].sub(swapStorage.balances[i]));
+                swapStorage.balances[i] = updatedBalances[i];
+            } else if (updatedBalances[i] < swapStorage.balances[i]) {
                 // TODO if this invariant doesn't hold, there's a bug in one
                 // of the cToken contracts or contract assets have been seized
             }
@@ -91,7 +91,7 @@ contract CompoundSwap is Swap {
             uint256[] memory toRedeem
         ) = calculateRebalanceAmounts();
 
-        for (uint i = 0; i < balances.length; i++) {
+        for (uint i = 0; i < swapStorage.balances.length; i++) {
             if (toRedeem[i] > 0) {
                 uint success = cTokens[i].redeemUnderlying(toRedeem[i]);
                 require(
@@ -99,7 +99,10 @@ contract CompoundSwap is Swap {
                     "Something went wrong redeeming a cToken"
                 );
             } else if (toSupply[i] > 0) {
-                pooledTokens[i].approve(address(cTokens[i]), toSupply[i]);
+                swapStorage.pooledTokens[i].approve(
+                    address(cTokens[i]),
+                    toSupply[i]
+                );
                 cTokens[i].mint(toSupply[i]);
             }
         }
@@ -113,12 +116,13 @@ contract CompoundSwap is Swap {
      *         have assets at risk.
      */
     function riskedAssets() public view returns (uint256[] memory) {
-        uint256[] memory assets = new uint256[](pooledTokens.length);
-        for (uint i = 0; i < pooledTokens.length; i++) {
+        uint256[] memory assets = new uint256[](
+            swapStorage.pooledTokens.length);
+        for (uint i = 0; i < swapStorage.pooledTokens.length; i++) {
             if (address(cTokens[i]) != address(0)) {
                 uint256 cBalance = cTokens[i].balanceOfUnderlying(
                     address(this));
-                assets[i] = balances[i].sub(
+                assets[i] = swapStorage.balances[i].sub(
                     underlyingBalances[i]).add(cBalance);
             }
         }
@@ -133,8 +137,8 @@ contract CompoundSwap is Swap {
      */
     function totalAssets() public view returns (uint256[] memory) {
         uint256[] memory assets = riskedAssets();
-        for (uint i = 0; i < balances.length; i++) {
-            assets[i] = balances[i].add(assets[i]);
+        for (uint i = 0; i < swapStorage.balances.length; i++) {
+            assets[i] = swapStorage.balances[i].add(assets[i]);
         }
         return assets;
     }
@@ -148,16 +152,20 @@ contract CompoundSwap is Swap {
      */
     function calculateRebalanceAmounts()
         internal view returns (uint256[] memory, uint256[] memory) {
-        uint256[] memory toSupply = new uint256[](pooledTokens.length);
-        uint256[] memory toRedeem = new uint256[](pooledTokens.length);
+        uint256[] memory toSupply = new uint256[](
+            swapStorage.pooledTokens.length
+        );
+        uint256[] memory toRedeem = new uint256[](
+            swapStorage.pooledTokens.length
+        );
 
-        for (uint i = 0; i < pooledTokens.length; i++) {
+        for (uint i = 0; i < swapStorage.pooledTokens.length; i++) {
             if (address(0) == address(cTokens[i])) {
                 continue;
             }
-            uint256 reserveTarget = balances[i].mul(reserveRatio).div(
-                RESERVE_RATIO_DENOMINATOR);
-            uint256 reserveRecorded = balances[i].sub(
+            uint256 reserveTarget = swapStorage.balances[i].mul(
+                reserveRatio).div(RESERVE_RATIO_DENOMINATOR);
+            uint256 reserveRecorded = swapStorage.balances[i].sub(
                 underlyingBalances[i]);
             if (reserveTarget > reserveRecorded) {
                 toRedeem[i] = reserveTarget.sub(reserveRecorded);
@@ -174,8 +182,11 @@ contract CompoundSwap is Swap {
      * @return a uint at the same precision as the pooled token (not cToken)
      */
     function amountAvailable(uint256 tokenIndex) public view returns (uint256) {
-        require(tokenIndex < pooledTokens.length, "Token isn't in pool!");
-        return balances[tokenIndex].sub(underlyingBalances[tokenIndex]);
+        require(
+            tokenIndex < swapStorage.pooledTokens.length,
+            "Token isn't in pool!"
+        );
+        return swapStorage.balances[tokenIndex].sub(underlyingBalances[tokenIndex]);
     }
 
     /**
@@ -187,7 +198,8 @@ contract CompoundSwap is Swap {
      *        supported will have the extra amounts at the end ignored.
      */
     function ensureAmountsAvailable(uint256[] memory amounts) internal {
-        for (uint i = 0; i < amounts.length.min(pooledTokens.length); i++) {
+        uint minLength = amounts.length.min(swapStorage.pooledTokens.length);
+        for (uint i = 0; i < minLength; i++) {
             uint256 avail = amountAvailable(i);
             if (avail < amounts[i] && address(cTokens[i]) != address(0)) {
                 uint256 code = cTokens[i].redeemUnderlying(
@@ -206,12 +218,16 @@ contract CompoundSwap is Swap {
      *        supported will have the extra amounts at the end ignored.
      */
     function ensureAmountsSupplied(uint256 [] memory amounts) internal {
-        for (uint i = 0; i < amounts.length.min(pooledTokens.length); i++) {
-            uint256 supplied = balances[i].sub(amountAvailable(i));
+        uint minLength = amounts.length.min(swapStorage.pooledTokens.length);
+        for (uint i = 0; i < minLength; i++) {
+            uint256 supplied = swapStorage.balances[i].sub(amountAvailable(i));
             if (supplied < amounts[i] && address(cTokens[i]) != address(0)) {
                 uint256 toSupply = amounts[i].sub(supplied);
                 // Approve transfer on the ERC20 contract
-                pooledTokens[i].approve(address(cTokens[i]), toSupply);
+                swapStorage.pooledTokens[i].approve(
+                    address(cTokens[i]),
+                    toSupply
+                );
                 uint256 code = cTokens[i].redeemUnderlying(toSupply);
                 require(code == 0, "Something went wrong minting cTokens");
             }
@@ -223,15 +239,15 @@ contract CompoundSwap is Swap {
      *         from Compound.
      */
     function updateUnderlyingBalances() internal {
-        for (uint i = 0; i < balances.length; i++) {
+        for (uint i = 0; i < swapStorage.balances.length; i++) {
             if (address(cTokens[i]) != address(0)) {
                 uint256 oldUnderlying = underlyingBalances[i];
                 underlyingBalances[i] = cTokens[i].balanceOfUnderlying(
                     address(this));
                 // NB if this number has gone down, the Compound invariant
                 // has failed
-                balances[i] = balances[i].sub(oldUnderlying).add(
-                    underlyingBalances[i]);
+                swapStorage.balances[i] = swapStorage.balances[i].sub(
+                    oldUnderlying).add(underlyingBalances[i]);
             }
         }
     }
@@ -245,9 +261,9 @@ contract CompoundSwap is Swap {
     function removeLiquidity(uint256 amount, uint256[] memory minAmounts)
         public override nonReentrant onlyUnpaused {
 
-        uint256[] memory amountsToRemove = calculateRemoveLiquidity(amount);
+        uint256[] memory toRemove = swapStorage.calculateRemoveLiquidity(amount);
 
-        ensureAmountsAvailable(amountsToRemove);
+        ensureAmountsAvailable(toRemove);
 
         super.removeLiquidity(amount, minAmounts);
     }
@@ -278,10 +294,17 @@ contract CompoundSwap is Swap {
     function removeLiquidityOneToken(
         uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount
     ) public override nonReentrant onlyUnpaused {
-        require(tokenIndex < pooledTokens.length, "Token isn't in pool!");
-        require(tokenAmount <= balances[tokenIndex], "Not enough liquidity!");
+        require(
+            tokenIndex < swapStorage.pooledTokens.length,
+            "Token isn't in pool!"
+        );
+        require(
+            tokenAmount <= swapStorage.balances[tokenIndex],
+            "Not enough liquidity!"
+        );
 
-        uint256[] memory amounts = new uint256[](pooledTokens.length);
+        uint256[] memory amounts = new uint256[](
+            swapStorage.pooledTokens.length);
         amounts[tokenIndex] = tokenAmount;
 
         ensureAmountsAvailable(amounts);
@@ -306,9 +329,9 @@ contract CompoundSwap is Swap {
     ) public override nonReentrant onlyUnpaused {
         // if there's not enough in our reserves, unwrap enough to settle
         // this swap's min + get us back to the right reserve
-        uint256[] memory amounts = new uint256[](balances.length);
-        amounts[tokenIndexTo] = balances[tokenIndexTo].mul(reserveRatio).div(
-            RESERVE_RATIO_DENOMINATOR).add(minDy);
+        uint256[] memory amounts = new uint256[](swapStorage.balances.length);
+        amounts[tokenIndexTo] = swapStorage.balances[tokenIndexTo].mul(
+            reserveRatio).div(RESERVE_RATIO_DENOMINATOR).add(minDy);
         ensureAmountsAvailable(amounts);
         super.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
