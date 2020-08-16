@@ -28,6 +28,7 @@
     "husky": "^4.2.5",
     "precommit": "^1.2.2",
     "prettier": "^1.19.1",
+    "solidity-coverage": "^0.7.9",
     "ts-generator": "0.0.8",
     "ts-node": "^8.10.2",
     "typechain": "^2.0.0",
@@ -41,7 +42,8 @@
     "lint:sol": "solium -d contracts/",
     "lint:fix:sol": "solium -d contracts/ --fix",
     "build": "buidler compile && typechain --target ethers-v5 --outDir typechain 'artifacts/*.json'",
-    "test": "buidler test"
+    "test": "buidler test",
+    "coverage": "buidler coverage --network coverage --temp artifacts"
   },
   "precommit": "npm run lint",
   "config": {
@@ -49,7 +51,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mhluongo/saddle-contract.git"
+    "url": "git+https://github.com/thesis/saddle-contract.git"
   },
   "keywords": [
     "cryptocurrency",

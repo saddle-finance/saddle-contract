@@ -1,4 +1,5 @@
-import { waffle } from "@nomiclabs/buidler"
+import { waffle, ethers } from "@nomiclabs/buidler"
+import { Wallet, Signer } from "ethers";
 import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
 import { utils } from "ethers"
@@ -15,11 +16,7 @@ const { expect } = chai
 
 describe("StakeableTokenWrapper", () => {
   const provider = waffle.provider
-  const [
-    deployer,
-    staker1,
-    staker2,
-  ] = provider.getWallets()
+  let signers: Array<Signer>
 
   let basicToken: LpToken
   let tokenWrapper: StakeableTokenWrapper
@@ -28,7 +25,7 @@ describe("StakeableTokenWrapper", () => {
     token: IERC20,
   ) {
     const contract = (await deployContract(
-      deployer,
+      <Wallet>signers[0],
       StakeableTokenWrapperArtifact,
       [token.address],
     )) as StakeableTokenWrapper
@@ -49,16 +46,17 @@ describe("StakeableTokenWrapper", () => {
   }
 
   beforeEach(async () => {
+    signers = await ethers.getSigners()
     basicToken = (await deployContract(
-      deployer,
+      <Wallet>signers[0],
       LPTokenArtifact,
       ['Basic Token', 'BASIC'],
     )) as LpToken
 
-    await basicToken.mint(deployer.address, 10 ** 10)
+    await basicToken.mint(await signers[0].getAddress(), 10 ** 10)
 
-    await basicToken.transfer(staker1.address, 1000)
-    await basicToken.transfer(staker2.address, 10000)
+    await basicToken.transfer(await signers[1].getAddress(), 1000)
+    await basicToken.transfer(await signers[2].getAddress(), 10000)
 
     tokenWrapper = (await deployWrapper(
       basicToken,
@@ -66,8 +64,8 @@ describe("StakeableTokenWrapper", () => {
   })
 
   it("Emits an event on staking", async () => {
-    let wrapperAsStaker1 = tokenWrapper.connect(staker1)
-    let tokenAsStaker1 = basicToken.connect(staker1)
+    let wrapperAsStaker1 = tokenWrapper.connect(<Wallet>signers[1])
+    let tokenAsStaker1 = basicToken.connect(<Wallet>signers[1])
 
     await tokenAsStaker1.approve(wrapperAsStaker1.address, 1000)
     await expect(
@@ -76,7 +74,7 @@ describe("StakeableTokenWrapper", () => {
   })
 
   it("Emits an event on withdrawing", async () => {
-    const [ wrapperContract, tokenContract ] = await approveAndStake(staker1, 1000)
+    const [ wrapperContract, tokenContract ] = await approveAndStake(<Wallet>signers[1], 1000)
 
     await expect(
       wrapperContract.withdraw(1000),
@@ -84,7 +82,7 @@ describe("StakeableTokenWrapper", () => {
   })
 
   it("Only allows staked funds to be withdrawn", async () => {
-    const [ wrapperContract, tokenContract ] = await approveAndStake(staker1, 1000)
+    const [ wrapperContract, tokenContract ] = await approveAndStake(<Wallet>signers[1], 1000)
 
     await expect(
       wrapperContract.withdraw(1001),
@@ -92,11 +90,11 @@ describe("StakeableTokenWrapper", () => {
   })
 
   it("Returns correct staked balances", async () => {
-    await approveAndStake(staker1, 1000)
-    await approveAndStake(staker2, 10000)
+    await approveAndStake(<Wallet>signers[1], 1000)
+    await approveAndStake(<Wallet>signers[2], 10000)
 
-    const balance1 = await tokenWrapper.balanceOf(staker1.address)
-    const balance2 = await tokenWrapper.balanceOf(staker2.address)
+    const balance1 = await tokenWrapper.balanceOf(await signers[1].getAddress())
+    const balance2 = await tokenWrapper.balanceOf(await signers[2].getAddress())
 
     expect(balance1).to.eq(1000)
     expect(balance2).to.eq(10000)
