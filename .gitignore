@@ -1,4 +1,6 @@
 artifacts/*
 cache/*
+coverage.json
+coverage/*
 node_modules/*
 typechain/*

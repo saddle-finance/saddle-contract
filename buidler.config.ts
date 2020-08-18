@@ -3,8 +3,15 @@ import { BuidlerConfig } from "@nomiclabs/buidler/config"
 
 usePlugin("@nomiclabs/buidler-ethers")
 usePlugin("@nomiclabs/buidler-waffle")
+usePlugin("solidity-coverage")
 
 const config: BuidlerConfig = {
+    defaultNetwork: "buidlerevm",
+    networks: {
+      coverage: {
+        url: "http://127.0.0.1:8555"
+      }
+    },
     solc: {
         version: "0.6.4"
     }
