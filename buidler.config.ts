@@ -12,6 +12,10 @@ const config: BuidlerConfig = {
         url: "http://127.0.0.1:8555"
       }
     },
+    paths: {
+      artifacts: "./build/artifacts",
+      cache: "./build/cache",
+    },
     solc: {
         version: "0.6.4"
     }

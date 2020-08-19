@@ -41,9 +41,9 @@
     "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/*.ts",
     "lint:sol": "solium -d contracts/",
     "lint:fix:sol": "solium -d contracts/ --fix",
-    "build": "buidler compile && typechain --target ethers-v5 --outDir typechain 'artifacts/*.json'",
+    "build": "buidler compile && typechain --target ethers-v5 --outDir ./build/typechain './build/artifacts/*.json'",
     "test": "buidler test",
-    "coverage": "buidler coverage --network coverage --temp artifacts"
+    "coverage": "buidler coverage --network coverage --temp ./build/artifacts"
   },
   "precommit": "npm run lint",
   "config": {
