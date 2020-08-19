@@ -4,12 +4,12 @@ import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
 import { utils } from "ethers"
 
-import StakeableTokenWrapperArtifact from "../artifacts/StakeableTokenWrapper.json"
-import { StakeableTokenWrapper } from "../typechain/StakeableTokenWrapper"
+import StakeableTokenWrapperArtifact from "../build/artifacts/StakeableTokenWrapper.json"
+import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
 
-import LPTokenArtifact from "../artifacts/LPToken.json"
-import { LpToken } from "../typechain/LpToken"
-import { Ierc20 as IERC20 } from "../typechain/Ierc20"
+import LPTokenArtifact from "../build/artifacts/LPToken.json"
+import { LpToken } from "../build/typechain/LpToken"
+import { Ierc20 as IERC20 } from "../build/typechain/Ierc20"
 
 chai.use(solidity)
 const { expect } = chai

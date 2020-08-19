@@ -2,9 +2,9 @@ const shell = require('shelljs'); // This module is already a solidity-coverage 
 
 module.exports = {
   onCompileComplete: async function(config){
-    shell.exec("typechain --target ethers-v5 --outDir typechain 'artifacts/*.json'");
+    shell.exec("typechain --target ethers-v5 --outDir typechain './build/artifacts/*.json'");
   },
   onIstanbulComplete: async function(config){
-    shell.rm('-rf', './typechain'); // Clean up at the end
+    shell.rm('-rf', './build/typechain'); // Clean up at the end
   }
 }
