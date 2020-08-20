@@ -2,8 +2,32 @@
 
 The smart contracts behind https://saddle.finance[saddle.finance] 🤠
 
-== Usage
-
 The contracts are compiled with https://buidler.dev[Buidler], and tested using
 https://buidler.dev/guides/waffle-testing.html[Waffle] and
 https://buidler.dev/guides/typescript.html[TypeScript].
+
+== Installation
+
+```lang=bash
+$ npm i
+```
+
+== Usage
+
+=== Build
+
+```lang=bash
+$ npm run build
+```
+
+=== Test
+
+```lang=bash
+$ npm test
+```
+
+=== Coverage
+
+```lang=bash
+$ npm run coverage
+```

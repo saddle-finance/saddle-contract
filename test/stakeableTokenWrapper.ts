@@ -98,7 +98,6 @@ describe("StakeableTokenWrapper", () => {
 
     expect(balance1).to.eq(1000)
     expect(balance2).to.eq(10000)
-
   })
 
   it("Returns correct total supply", async () => {
