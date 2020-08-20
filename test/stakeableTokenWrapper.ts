@@ -98,5 +98,11 @@ describe("StakeableTokenWrapper", () => {
 
     expect(balance1).to.eq(1000)
     expect(balance2).to.eq(10000)
+
+  })
+
+  it("Returns correct total supply", async () => {
+    await approveAndStake(<Wallet>signers[1], 1000)
+    expect(await tokenWrapper.totalSupply()).to.eq(1000)
   })
 })
