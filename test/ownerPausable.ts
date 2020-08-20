@@ -37,6 +37,12 @@ describe("OwnerPausable", () => {
     ).to.be.reverted
   })
 
+  it("Reverts when a non-owner tries to pause", async () => {
+    await expect(
+      ownerPausable.connect(<Wallet>signers[1]).pause(),
+    ).to.be.reverted
+  })
+
   it("Emits an event on unpausing", async () => {
     await ownerPausable.pause()
     await expect(
@@ -47,6 +53,12 @@ describe("OwnerPausable", () => {
   it("Reverts when unpausing if already unpaused", async () => {
     await expect(
       ownerPausable.unpause(),
+    ).to.be.reverted
+  })
+
+  it("Reverts when a non-owner tries to unpause", async () => {
+    await expect(
+      ownerPausable.connect(<Wallet>signers[1]).unpause(),
     ).to.be.reverted
   })
 })
