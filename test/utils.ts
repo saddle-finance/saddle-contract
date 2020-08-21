@@ -1,5 +1,5 @@
 import { waffle, ethers } from "@nomiclabs/buidler"
-import { Wallet, Signer } from "ethers";
+import { Wallet, Signer, constants } from "ethers";
 import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
 import { utils } from "ethers"
@@ -40,6 +40,12 @@ describe("MathUtils", () => {
     it("Returns false when a <= b and b - a > 1", async () => {
         expect(await mathUtils.within1(1, 3)).to.eq(false)
     })
+
+    it("Reverts during an integer overflow", async () => {
+        await expect(
+          mathUtils.within1(constants.MaxUint256, -1)
+        ).to.be.reverted
+    })
   })
 
   describe("difference", () => {
@@ -49,6 +55,12 @@ describe("MathUtils", () => {
 
     it("Returns correct difference when a <= b", async () => {
         expect(await mathUtils.difference(1, 3)).to.eq(2)
+    })
+
+    it("Reverts during an integer overflow", async () => {
+        await expect(
+          mathUtils.difference(-1, constants.MaxUint256)
+        ).to.be.reverted
     })
   })
 })
