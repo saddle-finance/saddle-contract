@@ -33,3 +33,7 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     - run: npm test
+    - run: npm run coverage
+    - uses: codecov/codecov-action@v1
+      with:
+        token: "3b7adf3a-9056-42a8-a508-2b43d60a4402"

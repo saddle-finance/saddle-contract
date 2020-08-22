@@ -1,5 +1,7 @@
 = saddle-contract
 
+https://codecov.io/gh/thesis/saddle-contract[image:https://codecov.io/gh/thesis/saddle-contract/branch/master/graph/badge.svg?token=CI26SD9SGE[codecov]]
+
 The smart contracts behind https://saddle.finance[saddle.finance] 🤠
 
 The contracts are compiled with https://buidler.dev[Buidler], and tested using
