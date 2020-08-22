@@ -22,9 +22,9 @@ import "./CERC20.sol";
  */
 contract CompoundSwap is Swap {
 
-	using SafeERC20 for IERC20;
-	using SafeMath for uint256;
-	using Math for uint256;
+    using SafeERC20 for IERC20;
+    using SafeMath for uint256;
+    using Math for uint256;
 
     uint256 public reserveRatio;
     uint256 public rebalanceThreshold;
@@ -77,13 +77,12 @@ contract CompoundSwap is Swap {
         // pull interest into pool and increase balances
         uint256[] memory updatedBalances = totalAssets();
         for (uint i = 0; i < swapStorage.balances.length; i++) {
+            // TODO if this invariant doesn't hold, there's a bug in one
+            // of the cToken contracts or contract assets have been seized
             if (updatedBalances[i] >= swapStorage.balances[i]) {
                 underlyingBalances[i] = underlyingBalances[i].add(
                     updatedBalances[i].sub(swapStorage.balances[i]));
                 swapStorage.balances[i] = updatedBalances[i];
-            } else if (updatedBalances[i] < swapStorage.balances[i]) {
-                // TODO if this invariant doesn't hold, there's a bug in one
-                // of the cToken contracts or contract assets have been seized
             }
         }
         (
@@ -217,7 +216,7 @@ contract CompoundSwap is Swap {
      *        reasons. Arrays longer than the number of token contracts
      *        supported will have the extra amounts at the end ignored.
      */
-    function ensureAmountsSupplied(uint256 [] memory amounts) internal {
+    function ensureAmountsSupplied(uint256[] memory amounts) internal {
         uint minLength = amounts.length.min(swapStorage.pooledTokens.length);
         for (uint i = 0; i < minLength; i++) {
             uint256 supplied = swapStorage.balances[i].sub(amountAvailable(i));
