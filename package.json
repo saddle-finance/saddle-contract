@@ -1,5 +1,5 @@
 {
-  "name": "saddle-contract",
+  "name": "@thesis/saddle-contract",
   "version": "0.0.1",
   "description": "The smart contracts behind saddle.finance 🤠",
   "files": ["dist/**/*"],
