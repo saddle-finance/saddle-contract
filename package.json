@@ -6,7 +6,7 @@
     "test": "test"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^3.0.0-rc.0"
+    "@openzeppelin/contracts": "^3.1.0"
   },
   "devDependencies": {
     "@nomiclabs/buidler": "^1.4.3",
@@ -23,12 +23,12 @@
     "eslint-config-prettier": "^6.10.0",
     "eslint-plugin-prettier": "^3.1.2",
     "ethereum-waffle": "^3.0.2",
-    "ethers": "^5.0.5",
+    "ethers": "^5.0.8",
     "ethlint": "^1.2.5",
     "husky": "^4.2.5",
     "precommit": "^1.2.2",
     "prettier": "^1.19.1",
-    "solidity-coverage": "^0.7.9",
+    "solidity-coverage": "^0.7.10",
     "ts-generator": "0.0.8",
     "ts-node": "^8.10.2",
     "typechain": "^2.0.0",

@@ -1,6 +1,6 @@
 // Generalized and adapted from https://github.com/k06a/Unipool 🙇
 
-pragma solidity 0.6.4;
+pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
