@@ -1,13 +1,13 @@
-pragma solidity ^0.6.4;
+pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./OwnerPausable.sol";
 import "./SwapUtils.sol";
-import "./Utils.sol";
+import "./MathUtils.sol";
 
-contract Swap is OwnerPausable(), ReentrancyGuard {
+contract Swap is OwnerPausable, ReentrancyGuard {
 
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -49,7 +49,7 @@ contract Swap is OwnerPausable(), ReentrancyGuard {
         IERC20[] memory _pooledTokens, uint256[] memory precisions,
         string memory lpTokenName, string memory lpTokenSymbol, uint256 _A,
         uint256 _fee
-    ) public {
+    ) public OwnerPausable() {
         require(
             _pooledTokens.length <= 32,
             "Pools with over 32 tokens aren't supported"

@@ -1,9 +1,9 @@
-pragma solidity ^0.6.4;
+pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./LPToken.sol";
-import "./Utils.sol";
+import "./MathUtils.sol";
 
 library SwapUtils {
     using SafeERC20 for IERC20;

@@ -17,7 +17,7 @@ const config: BuidlerConfig = {
       cache: "./build/cache",
     },
     solc: {
-        version: "0.6.4"
+        version: "0.6.12"
     }
 }
 
