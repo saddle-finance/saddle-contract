@@ -1,8 +1,7 @@
-import { waffle, ethers } from "@nomiclabs/buidler"
-import { Wallet, Signer } from "ethers";
+import { ethers } from "@nomiclabs/buidler"
+import { Wallet, Signer } from "ethers"
 import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
-import { utils } from "ethers"
 
 import StakeableTokenWrapperArtifact from "../build/artifacts/StakeableTokenWrapper.json"
 import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
@@ -15,83 +14,71 @@ chai.use(solidity)
 const { expect } = chai
 
 describe("StakeableTokenWrapper", () => {
-  const provider = waffle.provider
   let signers: Array<Signer>
 
   let basicToken: LpToken
   let tokenWrapper: StakeableTokenWrapper
 
-  async function deployWrapper(
-    token: IERC20,
-  ) {
+  async function deployWrapper(token: IERC20) {
     const contract = (await deployContract(
-      <Wallet>signers[0],
+      signers[0] as Wallet,
       StakeableTokenWrapperArtifact,
       [token.address],
     )) as StakeableTokenWrapper
     return contract
   }
 
-  async function approveAndStake(
-    wallet: any,
-    amount: number
-  ) {
+  async function approveAndStake(wallet: Wallet, amount: number) {
     const wrapperAsStaker = tokenWrapper.connect(wallet)
     const tokenAsStaker = basicToken.connect(wallet)
 
     await tokenAsStaker.approve(wrapperAsStaker.address, amount)
     await wrapperAsStaker.stake(amount)
 
-    return [ wrapperAsStaker, tokenAsStaker ]
+    return [wrapperAsStaker, tokenAsStaker]
   }
 
   beforeEach(async () => {
     signers = await ethers.getSigners()
-    basicToken = (await deployContract(
-      <Wallet>signers[0],
-      LPTokenArtifact,
-      ['Basic Token', 'BASIC'],
-    )) as LpToken
+    basicToken = (await deployContract(signers[0] as Wallet, LPTokenArtifact, [
+      "Basic Token",
+      "BASIC",
+    ])) as LpToken
 
     await basicToken.mint(await signers[0].getAddress(), 10 ** 10)
 
     await basicToken.transfer(await signers[1].getAddress(), 1000)
     await basicToken.transfer(await signers[2].getAddress(), 10000)
 
-    tokenWrapper = (await deployWrapper(
-      basicToken,
-    )) as StakeableTokenWrapper
+    tokenWrapper = (await deployWrapper(basicToken)) as StakeableTokenWrapper
   })
 
   it("Emits an event on staking", async () => {
-    let wrapperAsStaker1 = tokenWrapper.connect(<Wallet>signers[1])
-    let tokenAsStaker1 = basicToken.connect(<Wallet>signers[1])
+    const wrapperAsStaker1 = tokenWrapper.connect(signers[1] as Wallet)
+    const tokenAsStaker1 = basicToken.connect(signers[1] as Wallet)
 
     await tokenAsStaker1.approve(wrapperAsStaker1.address, 1000)
-    await expect(
-      wrapperAsStaker1.stake(1000),
-    ).to.emit(tokenWrapper, 'Staked')
+    await expect(wrapperAsStaker1.stake(1000)).to.emit(tokenWrapper, "Staked")
   })
 
   it("Emits an event on withdrawing", async () => {
-    const [ wrapperContract, tokenContract ] = await approveAndStake(<Wallet>signers[1], 1000)
+    const [wrapperContract] = await approveAndStake(signers[1] as Wallet, 1000)
 
-    await expect(
-      wrapperContract.withdraw(1000),
-    ).to.emit(tokenWrapper, 'Withdrawn')
+    await expect(wrapperContract.withdraw(1000)).to.emit(
+      tokenWrapper,
+      "Withdrawn",
+    )
   })
 
   it("Only allows staked funds to be withdrawn", async () => {
-    const [ wrapperContract, tokenContract ] = await approveAndStake(<Wallet>signers[1], 1000)
+    const [wrapperContract] = await approveAndStake(signers[1] as Wallet, 1000)
 
-    await expect(
-      wrapperContract.withdraw(1001),
-    ).to.be.reverted
+    await expect(wrapperContract.withdraw(1001)).to.be.reverted
   })
 
   it("Returns correct staked balances", async () => {
-    await approveAndStake(<Wallet>signers[1], 1000)
-    await approveAndStake(<Wallet>signers[2], 10000)
+    await approveAndStake(signers[1] as Wallet, 1000)
+    await approveAndStake(signers[2] as Wallet, 10000)
 
     const balance1 = await tokenWrapper.balanceOf(await signers[1].getAddress())
     const balance2 = await tokenWrapper.balanceOf(await signers[2].getAddress())
@@ -101,7 +88,7 @@ describe("StakeableTokenWrapper", () => {
   })
 
   it("Returns correct total supply", async () => {
-    await approveAndStake(<Wallet>signers[1], 1000)
+    await approveAndStake(signers[1] as Wallet, 1000)
     expect(await tokenWrapper.totalSupply()).to.eq(1000)
   })
 })
