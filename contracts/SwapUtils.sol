@@ -525,7 +525,7 @@ library SwapUtils {
         uint256[] memory amounts = new uint256[](self.pooledTokens.length);
 
         for (uint i = 0; i < self.pooledTokens.length; i++) {
-            amounts[i] =  self.balances[i].mul(amount).div(totalSupply);
+            amounts[i] = self.balances[i].mul(amount).div(totalSupply);
         }
         return amounts;
     }
