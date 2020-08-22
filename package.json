@@ -2,6 +2,7 @@
   "name": "saddle-contract",
   "version": "0.0.1",
   "description": "The smart contracts behind saddle.finance 🤠",
+  "files": ["dist/**/*"],
   "directories": {
     "test": "test"
   },
@@ -43,7 +44,8 @@
     "lint:fix:sol": "solium -d contracts/ --fix",
     "build": "buidler compile && buidler typechain",
     "test": "buidler test",
-    "coverage": "buidler coverage --network coverage --temp ./build/artifacts"
+    "coverage": "buidler coverage --network coverage --temp ./build/artifacts",
+    "prepare": "npm run build"
   },
   "precommit": "npm run lint",
   "config": {
