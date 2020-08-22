@@ -2,7 +2,9 @@
   "name": "@thesis/saddle-contract",
   "version": "0.0.1",
   "description": "The smart contracts behind saddle.finance 🤠",
-  "files": ["dist/**/*"],
+  "files": [
+    "dist/**/*"
+  ],
   "directories": {
     "test": "test"
   },
@@ -42,7 +44,7 @@
     "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/*.ts",
     "lint:sol": "solium -d contracts/",
     "lint:fix:sol": "solium -d contracts/ --fix",
-    "build": "buidler compile && buidler typechain",
+    "build": "buidler compile && buidler typechain && tsc",
     "test": "buidler test",
     "coverage": "buidler coverage --network coverage --temp ./build/artifacts",
     "prepare": "npm run build"
