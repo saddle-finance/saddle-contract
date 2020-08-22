@@ -49,7 +49,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         IERC20[] memory _pooledTokens, uint256[] memory precisions,
         string memory lpTokenName, string memory lpTokenSymbol, uint256 _A,
         uint256 _fee
-    ) public OwnerPausable() {
+    ) public OwnerPausable() ReentrancyGuard() {
         require(
             _pooledTokens.length <= 32,
             "Pools with over 32 tokens aren't supported"
