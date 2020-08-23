@@ -19,7 +19,7 @@ describe("StakeableTokenWrapper", () => {
   let basicToken: LpToken
   let tokenWrapper: StakeableTokenWrapper
 
-  async function deployWrapper(token: IERC20) {
+  async function deployWrapper(token: IERC20): Promise<StakeableTokenWrapper> {
     const contract = (await deployContract(
       signers[0] as Wallet,
       StakeableTokenWrapperArtifact,
@@ -28,7 +28,10 @@ describe("StakeableTokenWrapper", () => {
     return contract
   }
 
-  async function approveAndStake(wallet: Wallet, amount: number) {
+  async function approveAndStake(
+    wallet: Wallet,
+    amount: number,
+  ): Promise<Array<StakeableTokenWrapper | LpToken>> {
     const wrapperAsStaker = tokenWrapper.connect(wallet)
     const tokenAsStaker = basicToken.connect(wallet)
 
