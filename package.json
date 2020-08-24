@@ -22,7 +22,7 @@
     "@typescript-eslint/parser": "^2.24.0",
     "chai": "^4.2.0",
     "eslint": "^6.8.0",
-    "eslint-config-keep": "git+https://github.com/keep-network/eslint-config-keep.git#0.2.0",
+    "eslint-config-keep": "git+https://github.com/keep-network/eslint-config-keep.git#0.3.0",
     "eslint-config-prettier": "^6.10.0",
     "eslint-plugin-prettier": "^3.1.2",
     "ethereum-waffle": "^3.0.2",
