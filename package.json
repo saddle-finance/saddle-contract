@@ -34,7 +34,7 @@
     "ts-generator": "0.0.8",
     "ts-node": "^8.10.2",
     "typechain": "^2.0.0",
-    "typescript": "^3.9.7"
+    "typescript": "^4.0.2"
   },
   "scripts": {
     "lint": "npm run lint:ts && npm run lint:sol",
