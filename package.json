@@ -26,7 +26,7 @@
     "eslint-config-prettier": "^6.10.0",
     "eslint-plugin-prettier": "^3.1.2",
     "ethereum-waffle": "^3.0.2",
-    "ethers": "^5.0.8",
+    "ethers": "^5.0.9",
     "ethlint": "^1.2.5",
     "husky": "^4.2.5",
     "prettier": "^2.1.0",
