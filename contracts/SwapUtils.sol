@@ -233,13 +233,12 @@ library SwapUtils {
 
         for (uint i = 0; i < 256; i++) {
             uint256 dP = D;
-            for (uint j = 0; j < numTokens; i++) {
-                // TODO look into this div by 0
-                dP = dP.mul(D).div(xp[i].mul(numTokens));
+            for (uint j = 0; j < numTokens; j++) {
+                dP = dP.mul(D).div(xp[j].mul(numTokens).add(1));
             }
             prevD = D;
             D = nA.mul(s).add(dP.mul(numTokens)).mul(D).div(
-                nA.sub(1).mul(D).add(numTokens).add(1).mul(dP));
+                nA.sub(1).mul(D).add(numTokens.add(1).mul(dP)));
             if (D.within1(prevD)) {
                 break;
             }
@@ -365,7 +364,7 @@ library SwapUtils {
         if (self.lpToken.totalSupply() == 0) {
             toMint = D1;
         } else {
-            toMint = D2.sub(D0).div(D0).mul(self.lpToken.totalSupply());
+            toMint = D2.sub(D0).mul(self.lpToken.totalSupply()).div(D0);
         }
 
         require(toMint >= minToMint, "Couldn't mint min requested LP tokens");
@@ -632,7 +631,7 @@ library SwapUtils {
      *         helpful as an input into the various "min" parameters on calls
      *         to fight front-running
      * @dev This shouldn't be used outside frontends for user estimates.
-     * @param amounts an array of token amounts to deposit or withdrawl,
+     * @param amounts an array of token amounts to deposit or withdrawal,
      *        corresponding to pooledTokens. The amount should be in each
      *        pooled token's native precision
      * @param deposit whether this is a deposit or a withdrawal
