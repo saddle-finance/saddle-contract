@@ -172,7 +172,7 @@ describe("Swap", () => {
   })
 
   describe("getTokenBalance", () => {
-    it("Returns correct addresses of pooled tokens", async () => {
+    it("Returns correct balances of pooled tokens", async () => {
       expect(await swap.getTokenBalance(0)).to.eq(BigNumber.from(String(1e18)))
       expect(await swap.getTokenBalance(1)).to.eq(BigNumber.from(String(1e18)))
     })
