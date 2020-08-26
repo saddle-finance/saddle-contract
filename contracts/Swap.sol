@@ -166,7 +166,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *         helpful as an input into the various "min" parameters on calls
      *         to fight front-running
      * @dev This shouldn't be used outside frontends for user estimates.
-     * @param amounts an array of token amounts to deposit or withdrawl,
+     * @param amounts an array of token amounts to deposit or withdrawal,
      *        corresponding to pooledTokens. The amount should be in each
      *        pooled token's native precision
      * @param deposit whether this is a deposit or a withdrawal
