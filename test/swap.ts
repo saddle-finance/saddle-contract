@@ -1,5 +1,5 @@
 import { ethers } from "@nomiclabs/buidler"
-import { Wallet, Signer } from "ethers"
+import { Wallet, Signer, BigNumber } from "ethers"
 import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -131,23 +131,58 @@ describe("Swap", () => {
         .reverted
     })
 
-    it("Succeeds with 0.1% slippage on minToMint", async () => {
-      const calculatedLPTokenAmount = await swapAsUser1.calculateTokenAmount(
+    it("Succeeds with expected output amount of pool tokens", async () => {
+      const calculatedPoolTokenAmount = await swapAsUser1.calculateTokenAmount(
         [String(1e18), String(3e18)],
         true,
       )
 
-      const calculatedLPTokenAmountWithSlippage = calculatedLPTokenAmount
+      const calculatedPoolTokenAmountWithSlippage = calculatedPoolTokenAmount
         .mul(999)
         .div(1000)
 
       await swapAsUser1.addLiquidity(
         [String(1e18), String(3e18)],
-        calculatedLPTokenAmountWithSlippage,
+        calculatedPoolTokenAmountWithSlippage,
       )
 
-      expect(await swapToken.balanceOf(await user1.getAddress())).to.gte(
-        calculatedLPTokenAmountWithSlippage,
+      const actualPoolTokenAmount = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
+
+      // The actual pool token amount is less than 4e18 due to the imbalance of the underlying tokens
+      expect(actualPoolTokenAmount).to.eq(BigNumber.from("3991672211258372957"))
+    })
+
+    it("Succeeds with actual pool token amount being within ±0.1% range of calculated pool token", async () => {
+      const calculatedPoolTokenAmount = await swapAsUser1.calculateTokenAmount(
+        [String(1e18), String(3e18)],
+        true,
+      )
+
+      const calculatedPoolTokenAmountWithNegativeSlippage = calculatedPoolTokenAmount
+        .mul(999)
+        .div(1000)
+
+      const calculatedPoolTokenAmountWithPositiveSlippage = calculatedPoolTokenAmount
+        .mul(1001)
+        .div(1000)
+
+      await swapAsUser1.addLiquidity(
+        [String(1e18), String(3e18)],
+        calculatedPoolTokenAmountWithNegativeSlippage,
+      )
+
+      const actualPoolTokenAmount = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
+
+      expect(actualPoolTokenAmount).to.gte(
+        calculatedPoolTokenAmountWithNegativeSlippage,
+      )
+
+      expect(actualPoolTokenAmount).to.lte(
+        calculatedPoolTokenAmountWithPositiveSlippage,
       )
     })
 
