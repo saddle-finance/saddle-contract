@@ -91,6 +91,22 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
+     * @notice Return address of the pooled token at given index
+     * @param index the index of the token
+     */
+    function getToken(uint8 index) public view returns (IERC20) {
+        return swapStorage.pooledTokens[index];
+    }
+
+    /**
+     * @notice Return current balance of the pooled token at given index
+     * @param index the index of the token
+     */
+    function getTokenBalance(uint8 index) public view returns (uint256) {
+        return swapStorage.balances[index];
+    }
+
+    /**
      * @notice Remove liquidity from the pool all in one token.
      * @param tokenAmount the amount of the token you want to receive
      * @param tokenIndex the index of the token you want to receive
