@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  *         contract without a delay.
  * @dev Only methods using the provided modifiers will be paused.
  */
-contract OwnerPausable is Ownable() {
+contract OwnerPausable is Ownable {
 
     event Paused();
     event Unpaused();
