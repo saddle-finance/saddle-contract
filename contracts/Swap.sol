@@ -203,4 +203,28 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         external view returns(uint256) {
         return swapStorage.calculateTokenAmount(amounts, deposit);
     }
+
+    /**
+     * @notice A simple method to calculate amount of each underlying
+     *         tokens that is returned upon burning given amount of
+     *         LP tokens
+     * @param amount the amount of LP tokens that would be burned on
+     *        withdrawal
+     */
+    function calculateRemoveLiquidity(uint256 amount) external view returns(uint256[] memory){
+        return swapStorage.calculateRemoveLiquidity(amount);
+    }
+
+    /**
+    * @notice calculate the amount of underlying token available to withdraw
+    *         when withdrawing via only single token
+    * @param tokenAmount the amount of LP token to burn
+    * @param tokenIndex index of which token will be withdrawn
+    * @return availableTokenAmount calculated amount of underlying token
+    *         available to withdraw
+    */
+    function calculateRemoveLiquidityOneToken(uint256 tokenAmount, uint8 tokenIndex
+    ) external view returns(uint256 availableTokenAmount) {
+        (availableTokenAmount, ) = swapStorage.calculateWithdrawOneToken(tokenAmount, tokenIndex);
+    }
 }

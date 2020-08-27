@@ -110,7 +110,7 @@ library SwapUtils {
      */
     function calculateWithdrawOneToken(
         Swap storage self, uint256 tokenAmount, uint8 tokenIndex
-    ) internal view returns(uint256, uint256) {
+    ) public view returns(uint256, uint256) {
 
         uint256 dy;
         uint256 newY;
@@ -524,12 +524,14 @@ library SwapUtils {
     }
 
     /**
-     * @notice TODO
+     * @notice A simple method to calculate amount of each underlying
+     *         tokens that is returned upon burning given amount of
+     *         LP tokens
      * @param amount the amount of LP tokens that would to be burned on
      *        withdrawal
      */
     function calculateRemoveLiquidity(Swap storage self, uint256 amount)
-        internal view returns (uint256[] memory) {
+        external view returns (uint256[] memory) {
         uint256 totalSupply = self.lpToken.totalSupply();
         uint256[] memory amounts = new uint256[](self.pooledTokens.length);
 
@@ -621,7 +623,7 @@ library SwapUtils {
 
         uint256 tokenAmount = D0.sub(D2).mul(tokenSupply).div(D0).add(1);
         require(
-            tokenAmount >= maxBurnAmount,
+            tokenAmount <= maxBurnAmount,
             "More expensive than the max burn amount"
         );
 
