@@ -67,3 +67,13 @@ export async function getTokenBalances(
 
   return balanceArray
 }
+
+export async function getTokenBalance(
+  address: string | Signer,
+  token: ERC20,
+): Promise<BigNumber> {
+  if (address instanceof Signer) {
+    address = await address.getAddress()
+  }
+  return token.balanceOf(address)
+}

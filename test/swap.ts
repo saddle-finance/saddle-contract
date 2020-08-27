@@ -426,7 +426,7 @@ describe("Swap", () => {
   })
 
   describe("removeLiquidityImbalance", () => {
-    it("Reverts when contract is paused.", async () => {
+    it("Reverts when contract is paused", async () => {
       // User 1 adds liquidity
       await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
       const currentUser1Balance = await swapToken.balanceOf(
@@ -684,6 +684,174 @@ describe("Swap", () => {
       await expect(
         swap.connect(user1).removeLiquidityOneToken(currentUser1Balance, 0, 0),
       ).to.emit(swap.connect(user1), "RemoveLiquidityOne")
+    })
+  })
+
+  describe("swap", () => {
+    it("Reverts when contract is paused", async () => {
+      // Owner pauses the contract
+      await swap.pause()
+
+      // User 1 try to initiate swap
+      await expect(swap.connect(user1).swap(0, 1, String(1e16), 0)).to.be
+        .reverted
+    })
+
+    it("Succeeds with expected swap amounts", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await swap.calculateSwap(0, 1, String(1e17))
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99702611562565289"))
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getTokenBalances(user1, firstToken, secondToken)
+
+      // User 1 successfully initiates swap
+      await swap.connect(user1).swap(0, 1, String(1e17), calculatedSwapReturn)
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getTokenBalances(user1, firstToken, secondToken)
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e17)),
+      )
+      expect(tokenToBalanceAfter.sub(tokenToBalanceBefore)).to.eq(
+        calculatedSwapReturn,
+      )
+    })
+
+    it("Reverts when minDy (minimum amount token to receive) is not reached due to front running", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await swap.calculateSwap(0, 1, String(1e17))
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99702611562565289"))
+
+      // User 2 swaps before User 1 does
+      await swap.connect(user2).swap(0, 1, String(1e17), 0)
+
+      // User 1 initiates swap
+      await expect(
+        swap.connect(user1).swap(0, 1, String(1e17), calculatedSwapReturn),
+      ).to.be.reverted
+    })
+
+    it("Succeeds when using lower minDy even when transaction is front-ran", async () => {
+      // User 1 calculates how much token to receive with 1% slippage
+      const calculatedSwapReturn = await swap.calculateSwap(0, 1, String(1e17))
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99702611562565289"))
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getTokenBalances(user1, firstToken, secondToken)
+
+      const calculatedSwapReturnWithNegativeSlippage = calculatedSwapReturn
+        .mul(99)
+        .div(100)
+
+      // User 2 swaps before User 1 does
+      await swap.connect(user2).swap(0, 1, String(1e17), 0)
+
+      // User 1 successfully initiates swap with 1% slippage from initial calculated amount
+      await swap
+        .connect(user1)
+        .swap(0, 1, String(1e17), calculatedSwapReturnWithNegativeSlippage)
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getTokenBalances(user1, firstToken, secondToken)
+
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e17)),
+      )
+
+      const actualReceivedAmount = tokenToBalanceAfter.sub(tokenToBalanceBefore)
+
+      expect(actualReceivedAmount).to.eq(BigNumber.from("99286252365528551"))
+      expect(actualReceivedAmount).to.gt(
+        calculatedSwapReturnWithNegativeSlippage,
+      )
+      expect(actualReceivedAmount).to.lt(calculatedSwapReturn)
+    })
+
+    it("Emits TokenSwap event", async () => {
+      // User 1 initiates swap
+      await expect(swap.connect(user1).swap(0, 1, String(1e17), 0)).to.emit(
+        swap,
+        "TokenSwap",
+      )
+    })
+  })
+
+  describe("getVirtualPrice", () => {
+    it("Returns expected value after initial deposit", async () => {
+      expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
+    })
+
+    it("Returns expected values after swaps", async () => {
+      // With each swap, virtual price will increase due to the fees
+      await swap.connect(user1).swap(0, 1, String(1e17), 0)
+      expect(await swap.getVirtualPrice()).to.eq(
+        BigNumber.from("1000050005862349911"),
+      )
+
+      await swap.connect(user1).swap(1, 0, String(1e17), 0)
+      expect(await swap.getVirtualPrice()).to.eq(
+        BigNumber.from("1000100104768517937"),
+      )
+    })
+
+    it("Returns expected values after imbalanced withdrawal", async () => {
+      await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      await swap.connect(user2).addLiquidity([String(1e18), String(1e18)], 0)
+      expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
+
+      await swapToken.connect(user1).approve(swap.address, String(2e18))
+      await swap
+        .connect(user1)
+        .removeLiquidityImbalance([String(1e18), 0], String(2e18))
+
+      expect(await swap.getVirtualPrice()).to.eq(
+        BigNumber.from("1000100094088440633"),
+      )
+
+      await swapToken.connect(user2).approve(swap.address, String(2e18))
+      await swap
+        .connect(user2)
+        .removeLiquidityImbalance([0, String(1e18)], String(2e18))
+
+      expect(await swap.getVirtualPrice()).to.eq(
+        BigNumber.from("1000200154928939884"),
+      )
+    })
+
+    it("Value is unchanged after balanced deposits", async () => {
+      // pool is 1:1 ratio
+      expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
+      await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
+
+      // pool changes to 2:1 ratio, thus changing the virtual price
+      await swap.connect(user2).addLiquidity([String(2e18), String(0)], 0)
+      expect(await swap.getVirtualPrice()).to.eq(
+        BigNumber.from("1000167146429977312"),
+      )
+      // User 2 makes balanced deposit, keeping the ratio 2:1
+      await swap.connect(user2).addLiquidity([String(2e18), String(1e18)], 0)
+      expect(await swap.getVirtualPrice()).to.eq(
+        BigNumber.from("1000167146429977312"),
+      )
+    })
+
+    it("Value is unchanged after balanced withdrawals", async () => {
+      await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      await swapToken.connect(user1).approve(swap.address, String(1e18))
+      await swap.connect(user1).removeLiquidity(String(1e18), ["0", "0"])
+      expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
     })
   })
 })
