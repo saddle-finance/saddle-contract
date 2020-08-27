@@ -152,6 +152,18 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
+     * @notice calculate amount of tokens you receive on swap
+     * @param tokenIndexFrom the token the user wants to sell
+     * @param tokenIndexTo the token the user wants to buy
+     * @param dx the amount of tokens the user wants to sell
+     * @return amount of tokens the user will receive
+     */
+    function calculateSwap(uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
+    ) external view returns(uint256) {
+        return swapStorage.calculateSwap(tokenIndexFrom, tokenIndexTo, dx);
+    }
+
+    /**
      * @notice Burn LP tokens to remove liquidity from the pool.
      * @dev Liquidity can always be removed, even when the pool is paused.
      * @param amount the amount of LP tokens to burn
