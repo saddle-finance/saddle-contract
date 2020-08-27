@@ -462,34 +462,39 @@ library SwapUtils {
         return dy - _fee;
     }
 
-
     /**
-     * @notice Internally execute a swap between two tokens.
+     * @notice Internally calculates a swap between two tokens.
      * @dev The caller is expected to transfer the actual amounts (dx and dy)
      *      using the token contracts.
-     * @param tokenIndex1 the token to sell
-     * @param tokenIndex2 the token to buy
+     * @param tokenIndexFrom the token to sell
+     * @param tokenIndexTo the token to buy
      * @param dx the number of tokens to sell
+     * @return dy the number of tokens the user will get
+     * @return dyFee the associated fee
      */
-    function _swap(
-        Swap storage self, uint8 tokenIndex1, uint8 tokenIndex2, uint256 dx
-    ) internal returns(uint256) {
+    function _calculateSwap(
+        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
+    ) internal view returns(uint256 dy, uint256 dyFee) {
         uint256[] memory xp = _xp(self);
+        uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]).add(
+            xp[tokenIndexFrom]);
+        uint256 y = getY(self, tokenIndexFrom, tokenIndexTo, x, xp);
+        dy = xp[tokenIndexTo].sub(y).sub(1);
+        dyFee = dy.mul(self.fee).div(FEE_DENOMINATOR);
+        dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
+    }
 
-        uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndex1]).add(
-            xp[tokenIndex1]);
-        uint256 y = getY(self, tokenIndex1, tokenIndex2, x, xp);
-        uint256 dy = xp[tokenIndex2].sub(y).sub(1);
-        uint256 dyFee = dy.mul(self.fee).div(FEE_DENOMINATOR);
-        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR);
-
-        dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndex2]);
-        dyAdminFee = dyAdminFee.div(self.tokenPrecisionMultipliers[tokenIndex2]);
-
-        self.balances[tokenIndex1] = self.balances[tokenIndex1].add(dx);
-        self.balances[tokenIndex2] = self.balances[tokenIndex2].sub(dy).sub(dyAdminFee);
-
-        return dy;
+    /**
+     * @notice Externally calculates a swap between two tokens.
+     * @param tokenIndexFrom the token to sell
+     * @param tokenIndexTo the token to buy
+     * @param dx the number of tokens to sell
+     * @return dy the number of tokens the user will get
+     */
+    function calculateSwap(
+        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
+    ) external view returns(uint256 dy) {
+        (dy, ) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
     }
 
     /**
@@ -503,8 +508,13 @@ library SwapUtils {
         Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx,
         uint256 minDy
     ) public virtual {
-        uint256 dy = _swap(self, tokenIndexFrom, tokenIndexTo, dx);
+        (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
         require(dy >= minDy, "Swap didn't result in min tokens");
+
+        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
+
+        self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(dx);
+        self.balances[tokenIndexTo] = self.balances[tokenIndexTo].sub(dy).sub(dyAdminFee);
 
         self.pooledTokens[tokenIndexFrom].safeTransferFrom(
             msg.sender, address(this), dx);
