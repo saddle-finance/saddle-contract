@@ -33,10 +33,22 @@ describe("Swap", () => {
   let swapToken: LpToken
   let owner: Signer
   let user1: Signer
+  let swapStorage: {
+    lpToken: string
+    A: BigNumber
+    fee: BigNumber
+    adminFee: BigNumber
+    "0": string
+    "1": BigNumber
+    "2": BigNumber
+    "3": BigNumber
+  }
 
   // Test Values
   const INITIAL_A_VALUE = 50
   const SWAP_FEE = 1e7
+  const LP_TOKEN_NAME = "Test LP Token Name"
+  const LP_TOKEN_SYMBOL = "TESTLP"
 
   beforeEach(async () => {
     signers = await ethers.getSigners()
@@ -85,17 +97,19 @@ describe("Swap", () => {
     swap = (await swapFactory.deploy(
       [firstToken.address, secondToken.address],
       [String(1e18), String(1e18)],
-      "LP Token Name",
-      "LP",
+      LP_TOKEN_NAME,
+      LP_TOKEN_SYMBOL,
       INITIAL_A_VALUE,
       SWAP_FEE,
     )) as Swap
 
     await swap.deployed()
 
+    swapStorage = await swap.swapStorage()
+
     swapToken = (await ethers.getContractAt(
       LPTokenArtifact.abi,
-      (await swap.swapStorage()).lpToken,
+      swapStorage.lpToken,
     )) as LpToken
 
     // Populate the pool with initial liquidity
@@ -115,6 +129,57 @@ describe("Swap", () => {
       swapAsUser1.address,
       ethers.constants.MaxUint256,
     )
+  })
+
+  describe("swapStorage", async () => {
+    describe("lpToken", async () => {
+      it("Returns correct lpTokeName", async () => {
+        expect(await swapToken.name()).to.eq(LP_TOKEN_NAME)
+      })
+      it("Returns correct lpTokenSymbol", async () => {
+        expect(await swapToken.symbol()).to.eq(LP_TOKEN_SYMBOL)
+      })
+    })
+
+    describe("A", async () => {
+      it("Returns correct A value", async () => {
+        expect(swapStorage.A).to.eq(INITIAL_A_VALUE)
+      })
+    })
+
+    describe("fee", async () => {
+      it("Returns correct fee value", async () => {
+        expect(swapStorage.fee).to.eq(SWAP_FEE)
+      })
+    })
+
+    describe("adminFee", async () => {
+      it("Returns correct adminFee value", async () => {
+        expect(swapStorage.adminFee).to.eq(0)
+      })
+    })
+  })
+
+  describe("getToken", () => {
+    it("Returns correct addresses of pooled tokens", async () => {
+      expect(await swap.getToken(0)).to.eq(firstToken.address)
+      expect(await swap.getToken(1)).to.eq(secondToken.address)
+    })
+
+    it("Reverts when index is out of range", async () => {
+      expect(swap.getToken(2)).to.be.reverted
+    })
+  })
+
+  describe("getTokenBalance", () => {
+    it("Returns correct balances of pooled tokens", async () => {
+      expect(await swap.getTokenBalance(0)).to.eq(BigNumber.from(String(1e18)))
+      expect(await swap.getTokenBalance(1)).to.eq(BigNumber.from(String(1e18)))
+    })
+
+    it("Reverts when index is out of range", async () => {
+      expect(swap.getTokenBalance(2)).to.be.reverted
+    })
   })
 
   describe("getA", () => {
@@ -184,6 +249,14 @@ describe("Swap", () => {
       expect(actualPoolTokenAmount).to.lte(
         calculatedPoolTokenAmountWithPositiveSlippage,
       )
+    })
+
+    it("Succeeds with correctly updated tokenBalance after imbalanced deposit", async () => {
+      await swapAsUser1.addLiquidity([String(1e18), String(3e18)], 0)
+
+      // Check updated token balance
+      expect(await swap.getTokenBalance(0)).to.eq(BigNumber.from(String(2e18)))
+      expect(await swap.getTokenBalance(1)).to.eq(BigNumber.from(String(4e18)))
     })
 
     it("Reverts when minToMint is not reached due to front running", async () => {
