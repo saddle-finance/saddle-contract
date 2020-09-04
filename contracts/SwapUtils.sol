@@ -449,19 +449,6 @@ library SwapUtils {
         return y;
     }
 
-    function getDY(
-        Swap storage self, uint8 tokenIndex1, uint8 tokenIndex2, uint256 dx
-    ) internal view returns(uint256) {
-        uint256[] memory xp = _xp(self);
-        uint256 x = xp[tokenIndex1].add(dx).mul(
-            self.tokenPrecisionMultipliers[tokenIndex1]);
-        uint256 y = getY(self, tokenIndex1, tokenIndex2, x, xp);
-        uint256 dy = xp[tokenIndex2].sub(y).sub(1).div(
-            self.tokenPrecisionMultipliers[tokenIndex2]);
-        uint256 _fee = self.fee.mul(dy).div(FEE_DENOMINATOR);
-        return dy - _fee;
-    }
-
     /**
      * @notice Internally calculates a swap between two tokens.
      * @dev The caller is expected to transfer the actual amounts (dx and dy)
