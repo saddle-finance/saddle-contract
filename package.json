@@ -28,7 +28,7 @@
     "ethereum-waffle": "^3.1.0",
     "ethers": "^5.0.8",
     "ethlint": "^1.2.5",
-    "husky": "^4.2.5",
+    "husky": "^4.3.0",
     "prettier": "^2.1.1",
     "solidity-coverage": "^0.7.10",
     "ts-generator": "0.0.8",
