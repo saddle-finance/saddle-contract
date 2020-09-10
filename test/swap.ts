@@ -58,11 +58,13 @@ describe("Swap", () => {
     firstToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
       "First Token",
       "FIRST",
+      "18",
     ])) as LpToken
 
     secondToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
       "Second Token",
       "SECOND",
+      "18",
     ])) as LpToken
 
     // Mint dummy tokens

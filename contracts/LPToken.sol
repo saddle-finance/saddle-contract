@@ -1,11 +1,12 @@
-pragma solidity ^0.6.12;
+pragma solidity ^0.5.11;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 
-contract LPToken is ERC20Burnable, Ownable {
-    constructor (string memory name, string memory symbol) ERC20(name, symbol) public {} // eslint-disable-line
+contract LPToken is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
+    constructor (string memory name, string memory symbol, uint8 decimals) ERC20Detailed(name, symbol, decimals) public {} // eslint-disable-line
 
     function mint(address recipient, uint256 amount) public onlyOwner {
         _mint(recipient, amount);
