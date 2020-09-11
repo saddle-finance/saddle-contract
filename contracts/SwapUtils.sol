@@ -55,7 +55,6 @@ library SwapUtils {
     }
 
     // the precision all pools tokens will be converted to
-    // TODO paramaterize and make immutable
     uint8 constant POOL_PRECISION_DECIMALS = 18;
 
     // the denominator used to calculate admin and LP fees. For example, an
@@ -70,6 +69,10 @@ library SwapUtils {
         return self.A;
     }
 
+    /**
+     * @notice Return POOL_PRECISION_DECIMALS, precision decimals of all pool tokens
+     *         to be converted to
+     */
     function getPoolPrecisionDecimals() public pure returns (uint8) {
         return POOL_PRECISION_DECIMALS;
     }
@@ -250,7 +253,10 @@ library SwapUtils {
         return D;
     }
 
-
+    /**
+     * @notice Get D, the StableSwap invariant, based on self Swap struct
+     * @return The invariant, at the precision of the pool
+     */
     function getD(Swap storage self)
         internal view returns (uint256) {
         return getD(_xp(self), getA(self));
@@ -394,6 +400,12 @@ library SwapUtils {
             self.pooledTokens.length.sub(1).mul(4));
     }
 
+    /**
+     * @notice Calculate the balances of the tokens to send to the user
+     *         after given amount of pool token is burned.
+     * @param amount Amount of pool token to burn
+     * @return balances of the tokens to send to the user
+     */
     function calculateRebalanceAmounts(Swap storage self, uint256 amount)
         internal view returns(uint256[] memory) {
         uint256 tokenSupply = self.lpToken.totalSupply();
@@ -406,7 +418,17 @@ library SwapUtils {
         return amounts;
     }
 
-    /// TODO NatSpec
+    /**
+     * @notice Calculate the new balances of the tokens given the indexes of the token
+     *         that is swapped from (FROM) and the token that is swapped to (TO).
+     *         This function is used as a helper function to calculate how much TO token
+     *         the user should receive on swap.
+     * @param tokenIndex1 index of FROM token
+     * @param tokenIndex2 index of TO token
+     * @param x the new total amount of FROM token
+     * @param xp balances of the tokens in the pool
+     * @return the amount of TO token that should remain in the pool
+     */
     function getY(
         Swap storage self, uint8 tokenIndex1, uint8 tokenIndex2, uint256 x,
         uint256[] memory xp
@@ -589,8 +611,7 @@ library SwapUtils {
             tokenSupply > 0 && tokenSupply > maxBurnAmount,
             "Can't remove liquidity from an empty pool"
         );
-        uint256 _fee = self.fee.mul(self.pooledTokens.length).div(
-            self.pooledTokens.length.sub(1).mul(4));
+        uint256 _fee = feePerToken(self);
 
         uint256[] memory balances1 = self.balances;
 
