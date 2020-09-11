@@ -1,4 +1,4 @@
-pragma solidity ^0.6.12;
+pragma solidity ^0.5.11;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -65,14 +65,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
                 "The 0 address isn't an ERC-20"
             );
             require(
-                precisions[i] <= SwapUtils.POOL_PRECISION,
+                precisions[i] <= 10 ** uint256(SwapUtils.getPoolPrecisionDecimals()),
                 "Token precision can't be higher than the pool precision"
             );
-            precisions[i] = SwapUtils.POOL_PRECISION.div(precisions[i]);
+            precisions[i] = (10 ** uint256(SwapUtils.getPoolPrecisionDecimals())).div(precisions[i]);
         }
 
         swapStorage = SwapUtils.Swap({
-            lpToken: new LPToken(lpTokenName, lpTokenSymbol),
+            lpToken: new LPToken(lpTokenName, lpTokenSymbol, SwapUtils.getPoolPrecisionDecimals()),
             pooledTokens: _pooledTokens,
             tokenPrecisionMultipliers: precisions,
             balances: new uint256[](_pooledTokens.length),
@@ -114,7 +114,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function removeLiquidityOneToken(
         uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount
-    ) public virtual nonReentrant onlyUnpaused {
+    ) public nonReentrant onlyUnpaused {
         return swapStorage.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
     }
 
@@ -134,7 +134,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *        should mint, otherwise revert. Handy for front-running mitigation
      */
     function addLiquidity(uint256[] memory amounts, uint256 minToMint)
-        public virtual nonReentrant onlyUnpaused {
+        public nonReentrant onlyUnpaused {
         swapStorage.addLiquidity(amounts, minToMint);
     }
 
@@ -147,7 +147,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function swap(
         uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy
-    ) public virtual nonReentrant onlyUnpaused {
+    ) public nonReentrant onlyUnpaused {
         return swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
 
@@ -171,7 +171,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *        acceptable for this burn. Useful as a front-running mitigation
      */
     function removeLiquidity(uint256 amount, uint256[] memory minAmounts)
-        public virtual nonReentrant {
+        public nonReentrant {
         return swapStorage.removeLiquidity(amount, minAmounts);
     }
 
@@ -184,7 +184,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function removeLiquidityImbalance(
         uint256[] memory amounts, uint256 maxBurnAmount
-    ) public virtual nonReentrant onlyUnpaused {
+    ) public nonReentrant onlyUnpaused {
         return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
 

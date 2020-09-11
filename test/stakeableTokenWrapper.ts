@@ -46,6 +46,7 @@ describe("StakeableTokenWrapper", () => {
     basicToken = (await deployContract(signers[0] as Wallet, LPTokenArtifact, [
       "Basic Token",
       "BASIC",
+      "18",
     ])) as LpToken
 
     await basicToken.mint(await signers[0].getAddress(), 10 ** 10)

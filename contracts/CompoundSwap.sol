@@ -1,4 +1,4 @@
-pragma solidity ^0.6.12;
+pragma solidity ^0.5.11;
 
 import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -258,7 +258,7 @@ contract CompoundSwap is Swap {
      * @param minAmounts see `Swap`
      */
     function removeLiquidity(uint256 amount, uint256[] memory minAmounts)
-        public override nonReentrant onlyUnpaused {
+        public nonReentrant onlyUnpaused {
 
         uint256[] memory toRemove = swapStorage.calculateRemoveLiquidity(amount);
 
@@ -276,7 +276,7 @@ contract CompoundSwap is Swap {
      */
     function removeLiquidityImbalance(
         uint256[] memory amounts, uint256 maxBurnAmount
-    ) public override nonReentrant onlyUnpaused {
+    ) public nonReentrant onlyUnpaused {
 
         ensureAmountsAvailable(amounts);
 
@@ -292,7 +292,7 @@ contract CompoundSwap is Swap {
      */
     function removeLiquidityOneToken(
         uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount
-    ) public override nonReentrant onlyUnpaused {
+    ) public nonReentrant onlyUnpaused {
         require(
             tokenIndex < swapStorage.pooledTokens.length,
             "Token isn't in pool!"
@@ -317,7 +317,7 @@ contract CompoundSwap is Swap {
      * @param minToMint see `Swap`
      */
     function addLiquidity(uint256[] memory amounts, uint256 minToMint
-    ) public override nonReentrant onlyUnpaused {
+    ) public nonReentrant onlyUnpaused {
         super.addLiquidity(amounts, minToMint);
         rebalance();
     }
@@ -325,7 +325,7 @@ contract CompoundSwap is Swap {
 
     function swap(
         uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy
-    ) public override nonReentrant onlyUnpaused {
+    ) public nonReentrant onlyUnpaused {
         // if there's not enough in our reserves, unwrap enough to settle
         // this swap's min + get us back to the right reserve
         uint256[] memory amounts = new uint256[](swapStorage.balances.length);

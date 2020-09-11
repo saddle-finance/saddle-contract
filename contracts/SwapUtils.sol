@@ -1,4 +1,4 @@
-pragma solidity ^0.6.12;
+pragma solidity ^0.5.11;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -55,8 +55,7 @@ library SwapUtils {
     }
 
     // the precision all pools tokens will be converted to
-    // TODO paramaterize and make immutable
-    uint256 constant POOL_PRECISION = 10 ** 18;
+    uint8 constant POOL_PRECISION_DECIMALS = 18;
 
     // the denominator used to calculate admin and LP fees. For example, an
     // LP fee might be something like tradeAmount.mul(fee).div(FEE_DENOMINATOR)
@@ -71,6 +70,14 @@ library SwapUtils {
     }
 
     /**
+     * @notice Return POOL_PRECISION_DECIMALS, precision decimals of all pool tokens
+     *         to be converted to
+     */
+    function getPoolPrecisionDecimals() public pure returns (uint8) {
+        return POOL_PRECISION_DECIMALS;
+    }
+
+    /**
      * @notice Remove liquidity from the pool all in one token.
      * @param tokenAmount the amount of the token you want to receive
      * @param tokenIndex the index of the token you want to receive
@@ -80,9 +87,9 @@ library SwapUtils {
         Swap storage self, uint256 tokenAmount, uint8 tokenIndex,
         uint256 minAmount
     ) external {
-        // TODO up-front balance checks?
         uint256 totalSupply = self.lpToken.totalSupply();
         uint256 numTokens = self.pooledTokens.length;
+        require(tokenAmount <= self.lpToken.balanceOf(msg.sender), "<balanceOf");
         require(tokenIndex < numTokens, "Token not found");
 
         uint256 dyFee = 0;
@@ -246,7 +253,10 @@ library SwapUtils {
         return D;
     }
 
-
+    /**
+     * @notice Get D, the StableSwap invariant, based on self Swap struct
+     * @return The invariant, at the precision of the pool
+     */
     function getD(Swap storage self)
         internal view returns (uint256) {
         return getD(_xp(self), getA(self));
@@ -305,7 +315,7 @@ library SwapUtils {
     function getVirtualPrice(Swap storage self) public view returns (uint256) {
         uint256 D = getD(_xp(self), getA(self));
         uint256 supply = self.lpToken.totalSupply();
-        return D.mul(POOL_PRECISION).div(supply);
+        return D.mul(10 ** uint256(getPoolPrecisionDecimals())).div(supply);
     }
 
     /**
@@ -390,6 +400,12 @@ library SwapUtils {
             self.pooledTokens.length.sub(1).mul(4));
     }
 
+    /**
+     * @notice Calculate the balances of the tokens to send to the user
+     *         after given amount of pool token is burned.
+     * @param amount Amount of pool token to burn
+     * @return balances of the tokens to send to the user
+     */
     function calculateRebalanceAmounts(Swap storage self, uint256 amount)
         internal view returns(uint256[] memory) {
         uint256 tokenSupply = self.lpToken.totalSupply();
@@ -402,7 +418,17 @@ library SwapUtils {
         return amounts;
     }
 
-    /// TODO NatSpec
+    /**
+     * @notice Calculate the new balances of the tokens given the indexes of the token
+     *         that is swapped from (FROM) and the token that is swapped to (TO).
+     *         This function is used as a helper function to calculate how much TO token
+     *         the user should receive on swap.
+     * @param tokenIndex1 index of FROM token
+     * @param tokenIndex2 index of TO token
+     * @param x the new total amount of FROM token
+     * @param xp balances of the tokens in the pool
+     * @return the amount of TO token that should remain in the pool
+     */
     function getY(
         Swap storage self, uint8 tokenIndex1, uint8 tokenIndex2, uint256 x,
         uint256[] memory xp
@@ -494,7 +520,7 @@ library SwapUtils {
     function swap(
         Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx,
         uint256 minDy
-    ) public virtual {
+    ) public {
         (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
         require(dy >= minDy, "Swap didn't result in min tokens");
 
@@ -585,8 +611,7 @@ library SwapUtils {
             tokenSupply > 0 && tokenSupply > maxBurnAmount,
             "Can't remove liquidity from an empty pool"
         );
-        uint256 _fee = self.fee.mul(self.pooledTokens.length).div(
-            self.pooledTokens.length.sub(1).mul(4));
+        uint256 _fee = feePerToken(self);
 
         uint256[] memory balances1 = self.balances;
 
