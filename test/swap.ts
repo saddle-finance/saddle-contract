@@ -38,7 +38,7 @@ describe("Swap", () => {
   let swapStorage: {
     lpToken: string
     A: BigNumber
-    fee: BigNumber
+    swapFee: BigNumber
     adminFee: BigNumber
     "0": string
     "1": BigNumber
@@ -149,7 +149,7 @@ describe("Swap", () => {
 
     describe("fee", async () => {
       it("Returns correct fee value", async () => {
-        expect(swapStorage.fee).to.eq(SWAP_FEE)
+        expect(swapStorage.swapFee).to.eq(SWAP_FEE)
       })
     })
 
@@ -900,18 +900,30 @@ describe("Swap", () => {
     })
   })
 
-  describe("setFee", () => {
+  describe("setSwapFee", () => {
+    it("Reverts when called by non-owners", async () => {
+      await expect(swap.connect(user1).setSwapFee(0)).to.be.reverted
+      await expect(swap.connect(user2).setSwapFee(BigNumber.from(1e8))).to.be
+        .reverted
+    })
+
     it("Reverts when fee is higher than the limit", async () => {
-      await expect(swap.setFee(BigNumber.from(1e8).add(1))).to.be.reverted
+      await expect(swap.setSwapFee(BigNumber.from(1e8).add(1))).to.be.reverted
     })
 
     it("Succeeds when fee is within the limit", async () => {
-      await swap.setFee(BigNumber.from(1e8))
-      expect((await swap.swapStorage()).fee).to.eq(BigNumber.from(1e8))
+      await swap.setSwapFee(BigNumber.from(1e8))
+      expect((await swap.swapStorage()).swapFee).to.eq(BigNumber.from(1e8))
     })
   })
 
   describe("setAdminFee", () => {
+    it("Reverts when called by non-owners", async () => {
+      await expect(swap.connect(user1).setSwapFee(0)).to.be.reverted
+      await expect(swap.connect(user2).setSwapFee(BigNumber.from(1e10))).to.be
+        .reverted
+    })
+
     it("Reverts when adminFee is higher than the limit", async () => {
       await expect(swap.setAdminFee(BigNumber.from(1e10).add(1))).to.be.reverted
     })

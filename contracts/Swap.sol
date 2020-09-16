@@ -77,7 +77,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             tokenPrecisionMultipliers: precisions,
             balances: new uint256[](_pooledTokens.length),
             A: _A,
-            fee: _fee,
+            swapFee: _fee,
             adminFee: 0
         });
     }
@@ -254,9 +254,9 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice update the swap fee
-     * @param newFee new swap fee to be applied on future transactions
+     * @param newSwapFee new swap fee to be applied on future transactions
      */
-    function setFee(uint256 newFee) external onlyOwner {
-        swapStorage.setFee(newFee);
+    function setSwapFee(uint256 newSwapFee) external onlyOwner {
+        swapStorage.setSwapFee(newSwapFee);
     }
 }

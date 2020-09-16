@@ -10,7 +10,6 @@ library SwapUtils {
     using SafeMath for uint256;
     using MathUtils for uint256;
 
-
     // events
     event TokenSwap(address indexed buyer, uint256 tokensSold,
         uint256 tokensBought, uint128 soldId, uint128 boughtId
@@ -50,7 +49,7 @@ library SwapUtils {
         uint256 A;
 
         // fee calculation
-        uint256 fee;
+        uint256 swapFee;
         uint256 adminFee;
     }
 
@@ -60,7 +59,14 @@ library SwapUtils {
     // the denominator used to calculate admin and LP fees. For example, an
     // LP fee might be something like tradeAmount.mul(fee).div(FEE_DENOMINATOR)
     uint256 constant FEE_DENOMINATOR = 10 ** 10;
+
+    // Max swap fee is 1% or 100bps of each swap
     uint256 constant MAX_SWAP_FEE = 10 ** 8;
+
+    // Max adminFee is 100% of the swapFee
+    // adminFee does not add additional fee on top of swapFee
+    // Instead it takes a certain % of the swapFee. Therefore it has no impact on the
+    // users but only on the earnings of LPs
     uint256 constant MAX_ADMIN_FEE = 10 ** 10;
 
     /**
@@ -398,7 +404,7 @@ library SwapUtils {
 
     function feePerToken(Swap storage self)
         internal view returns(uint256) {
-        return self.fee.mul(self.pooledTokens.length).div(
+        return self.swapFee.mul(self.pooledTokens.length).div(
             self.pooledTokens.length.sub(1).mul(4));
     }
 
@@ -495,7 +501,7 @@ library SwapUtils {
             xp[tokenIndexFrom]);
         uint256 y = getY(self, tokenIndexFrom, tokenIndexTo, x, xp);
         dy = xp[tokenIndexTo].sub(y).sub(1);
-        dyFee = dy.mul(self.fee).div(FEE_DENOMINATOR);
+        dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
         dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
     }
 
@@ -571,7 +577,6 @@ library SwapUtils {
             minAmounts.length == self.pooledTokens.length,
             "Min amounts should correspond to pooled tokens"
         );
-
 
         uint256[] memory amounts = calculateRebalanceAmounts(self, amount);
 
@@ -719,10 +724,10 @@ library SwapUtils {
     /**
      * @notice update the swap fee
      * @dev fee cannot be higher than 1% of each swap
-     * @param newFee new swap fee to be applied on future transactions
+     * @param newSwapFee new swap fee to be applied on future transactions
      */
-    function setFee(Swap storage self, uint256 newFee) external {
-        require(newFee <= MAX_SWAP_FEE, "Fee is too high");
-        self.fee = newFee;
+    function setSwapFee(Swap storage self, uint256 newSwapFee) external {
+        require(newSwapFee <= MAX_SWAP_FEE, "Fee is too high");
+        self.swapFee = newSwapFee;
     }
 }
