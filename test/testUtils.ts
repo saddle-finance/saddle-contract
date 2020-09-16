@@ -5,6 +5,8 @@ import { ethers } from "@nomiclabs/buidler"
 
 import { Erc20 as ERC20 } from "../build/typechain/Erc20"
 
+export const MAX_UINT256 = ethers.constants.MaxUint256
+
 // Workaround for linking libraries not yet working in buidler-waffle plugin
 // https://github.com/nomiclabs/buidler/issues/611
 export function linkBytecode(

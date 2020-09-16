@@ -60,6 +60,8 @@ library SwapUtils {
     // the denominator used to calculate admin and LP fees. For example, an
     // LP fee might be something like tradeAmount.mul(fee).div(FEE_DENOMINATOR)
     uint256 constant FEE_DENOMINATOR = 10 ** 10;
+    uint256 constant MAX_SWAP_FEE = 10 ** 8;
+    uint256 constant MAX_ADMIN_FEE = 10 ** 10;
 
     /**
      * @notice Return A, the the amplification coefficient * n * (n - 1)
@@ -554,7 +556,6 @@ library SwapUtils {
         return amounts;
     }
 
-
     /**
      * @notice Burn LP tokens to remove liquidity from the pool.
      * @dev Liquidity can always be removed, even when the pool is paused.
@@ -707,21 +708,21 @@ library SwapUtils {
 
     /**
      * @notice update the admin fee
-     * @dev adminFee cannot be higher than 1%
+     * @dev adminFee cannot be higher than 100% of the swap fee
      * @param newAdminFee new admin fee to be applied on future transactions
      */
     function setAdminFee(Swap storage self, uint256 newAdminFee) external {
-        require(newAdminFee <= FEE_DENOMINATOR.div(100), "Fee is too high");
+        require(newAdminFee <= MAX_ADMIN_FEE, "Fee is too high");
         self.adminFee = newAdminFee;
     }
 
     /**
      * @notice update the swap fee
-     * @dev fee cannot be higher than 1%
+     * @dev fee cannot be higher than 1% of each swap
      * @param newFee new swap fee to be applied on future transactions
      */
     function setFee(Swap storage self, uint256 newFee) external {
-        require(newFee <= FEE_DENOMINATOR.div(100), "Fee is too high");
+        require(newFee <= MAX_SWAP_FEE, "Fee is too high");
         self.fee = newFee;
     }
 }

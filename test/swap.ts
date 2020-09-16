@@ -15,12 +15,14 @@ import { LpToken } from "../build/typechain/LpToken"
 import MathUtilsArtifact from "../build/artifacts/MathUtils.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 
-import { deployContractWithLibraries, getTokenBalances } from "./testUtils"
+import {
+  deployContractWithLibraries,
+  getTokenBalances,
+  MAX_UINT256,
+} from "./testUtils"
 
 chai.use(solidity)
 const { expect } = chai
-
-const MAX_UINT256 = ethers.constants.MaxUint256
 
 describe("Swap", () => {
   let signers: Array<Signer>
@@ -897,5 +899,131 @@ describe("Swap", () => {
       expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
     })
   })
-  // TODO add tests for swap contracts with admin fees
+
+  describe("setFee", () => {
+    it("Reverts when fee is higher than the limit", async () => {
+      await expect(swap.setFee(BigNumber.from(1e8).add(1))).to.be.reverted
+    })
+
+    it("Succeeds when fee is within the limit", async () => {
+      await swap.setFee(BigNumber.from(1e8))
+      expect((await swap.swapStorage()).fee).to.eq(BigNumber.from(1e8))
+    })
+  })
+
+  describe("setAdminFee", () => {
+    it("Reverts when adminFee is higher than the limit", async () => {
+      await expect(swap.setAdminFee(BigNumber.from(1e10).add(1))).to.be.reverted
+    })
+
+    it("Succeeds when adminFee is within the limit", async () => {
+      await swap.setAdminFee(BigNumber.from(1e10))
+      expect((await swap.swapStorage()).adminFee).to.eq(BigNumber.from(1e10))
+    })
+  })
+
+  describe("getAdminBalance", () => {
+    it("Is always 0 when adminFee is set to 0", async () => {
+      expect(await swap.getAdminBalance(0)).to.eq(0)
+      expect(await swap.getAdminBalance(1)).to.eq(0)
+
+      await swap.connect(user1).swap(0, 1, String(1e17), 0)
+
+      expect(await swap.getAdminBalance(0)).to.eq(0)
+      expect(await swap.getAdminBalance(1)).to.eq(0)
+    })
+
+    it("Returns expected amounts after swaps when adminFee is higher than 0", async () => {
+      // Sets adminFee to 1% of the swap fees
+      await swap.setAdminFee(BigNumber.from(10 ** 8))
+      await swap.connect(user1).swap(0, 1, String(1e17), 0)
+
+      expect(await swap.getAdminBalance(0)).to.eq(0)
+      expect(await swap.getAdminBalance(1)).to.eq(String(998024139765))
+
+      // After the first swap, the pool becomes imbalanced; there are more 0th token than 1st token in the pool.
+      // Therefore swapping from 1st -> 0th will result in more 0th token returned
+      // Also results in higher fees collected on the second swap.
+
+      await swap.connect(user1).swap(1, 0, String(1e17), 0)
+
+      expect(await swap.getAdminBalance(0)).to.eq(String(1001973776101))
+      expect(await swap.getAdminBalance(1)).to.eq(String(998024139765))
+    })
+  })
+
+  describe("withdrawAdminFees", () => {
+    it("Reverts when called by non-owners", async () => {
+      await expect(swap.connect(user1).withdrawAdminFees()).to.be.reverted
+      await expect(swap.connect(user2).withdrawAdminFees()).to.be.reverted
+    })
+
+    it("Succeeds with expected amount of fees withdrawn", async () => {
+      // Sets adminFee to 1% of the swap fees
+      await swap.setAdminFee(BigNumber.from(10 ** 8))
+      await swap.connect(user1).swap(0, 1, String(1e17), 0)
+      await swap.connect(user1).swap(1, 0, String(1e17), 0)
+
+      expect(await swap.getAdminBalance(0)).to.eq(String(1001973776101))
+      expect(await swap.getAdminBalance(1)).to.eq(String(998024139765))
+
+      const [firstTokenBefore, secondTokenBefore] = await getTokenBalances(
+        owner,
+        firstToken,
+        secondToken,
+      )
+
+      await swap.withdrawAdminFees()
+
+      const [firstTokenAfter, secondTokenAfter] = await getTokenBalances(
+        owner,
+        firstToken,
+        secondToken,
+      )
+
+      expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(String(1001973776101))
+      expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(
+        String(998024139765),
+      )
+    })
+
+    it("Withdrawing admin fees has no impact on users' withdrawal", async () => {
+      // Sets adminFee to 1% of the swap fees
+      await swap.setAdminFee(BigNumber.from(10 ** 8))
+      await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+
+      for (let i = 0; i < 10; i++) {
+        await swap.connect(user2).swap(0, 1, String(1e17), 0)
+        await swap.connect(user2).swap(1, 0, String(1e17), 0)
+      }
+
+      await swap.withdrawAdminFees()
+
+      const [firstTokenBefore, secondTokenBefore] = await getTokenBalances(
+        user1,
+        firstToken,
+        secondToken,
+      )
+
+      const user1LPTokenBalance = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
+      await swapToken.connect(user1).approve(swap.address, user1LPTokenBalance)
+      await swap.connect(user1).removeLiquidity(user1LPTokenBalance, [0, 0])
+
+      const [firstTokenAfter, secondTokenAfter] = await getTokenBalances(
+        user1,
+        firstToken,
+        secondToken,
+      )
+
+      expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(
+        BigNumber.from("1000009516257264879"),
+      )
+
+      expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(
+        BigNumber.from("1000980987206499309"),
+      )
+    })
+  })
 })
