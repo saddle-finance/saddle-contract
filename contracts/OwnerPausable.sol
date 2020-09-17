@@ -13,13 +13,25 @@ contract OwnerPausable is Ownable {
     event Paused();
     event Unpaused();
 
-    bool paused = false;
+    bool private _paused;
+
+    constructor() public {
+        _paused = false;
+    }
+
+    /**
+     * @notice Returns whether the contract is paused or not
+     * @return boolean value of true only when this contract is paused
+     */
+    function isPaused() public view returns (bool) {
+        return _paused;
+    }
 
     /**
      * @notice Pause the contract. Revert if already paused.
      */
     function pause() external onlyOwner onlyUnpaused {
-        paused = true;
+        _paused = true;
         emit Paused();
     }
 
@@ -27,7 +39,7 @@ contract OwnerPausable is Ownable {
      * @notice Unpause the contract. Revert if already unpaused.
      */
     function unpause() external onlyOwner onlyPaused {
-        paused = false;
+        _paused = false;
         emit Unpaused();
     }
 
@@ -35,7 +47,7 @@ contract OwnerPausable is Ownable {
      * @notice Revert if the contract is paused.
      */
     modifier onlyUnpaused() {
-        require(!paused, "Method can only be called when unpaused");
+        require(!_paused, "Method can only be called when unpaused");
         _;
     }
 
@@ -43,7 +55,7 @@ contract OwnerPausable is Ownable {
      * @notice Revert if the contract is unpaused.
      */
     modifier onlyPaused() {
-        require(paused, "Method can only be called when paused");
+        require(_paused, "Method can only be called when paused");
         _;
     }
 }

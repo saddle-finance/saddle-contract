@@ -26,6 +26,14 @@ describe("OwnerPausable", () => {
     await expect(ownerPausable.pause()).to.emit(ownerPausable, "Paused")
   })
 
+  it("isPaused() returns correct value", async () => {
+    expect(await ownerPausable.isPaused()).to.eq(false)
+    await ownerPausable.pause()
+    expect(await ownerPausable.isPaused()).to.eq(true)
+    await ownerPausable.unpause()
+    expect(await ownerPausable.isPaused()).to.eq(false)
+  })
+
   it("Reverts when pausing if already paused", async () => {
     await ownerPausable.pause()
     await expect(ownerPausable.pause()).to.be.reverted
