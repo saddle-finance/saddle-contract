@@ -77,7 +77,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             tokenPrecisionMultipliers: precisions,
             balances: new uint256[](_pooledTokens.length),
             A: _A,
-            fee: _fee,
+            swapFee: _fee,
             adminFee: 0
         });
     }
@@ -86,7 +86,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @notice Return A, the the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
      */
-    function getA() public view returns (uint256) {
+    function getA() external view returns (uint256) {
         return swapStorage.getA();
     }
 
@@ -94,7 +94,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @notice Return address of the pooled token at given index
      * @param index the index of the token
      */
-    function getToken(uint8 index) public view returns (IERC20) {
+    function getToken(uint8 index) external view returns (IERC20) {
         return swapStorage.pooledTokens[index];
     }
 
@@ -102,7 +102,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @notice Return current balance of the pooled token at given index
      * @param index the index of the token
      */
-    function getTokenBalance(uint8 index) public view returns (uint256) {
+    function getTokenBalance(uint8 index) external view returns (uint256) {
         return swapStorage.balances[index];
     }
 
@@ -122,7 +122,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @notice Get the virtual price, to help calculate profit
      * @return the virtual price, scaled to the POOL_PRECISION
      */
-    function getVirtualPrice() public view returns (uint256) {
+    function getVirtualPrice() external view returns (uint256) {
         return swapStorage.getVirtualPrice();
     }
 
@@ -211,20 +211,52 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param amount the amount of LP tokens that would be burned on
      *        withdrawal
      */
-    function calculateRemoveLiquidity(uint256 amount) external view returns(uint256[] memory){
+    function calculateRemoveLiquidity(uint256 amount) external view returns (uint256[] memory) {
         return swapStorage.calculateRemoveLiquidity(amount);
     }
 
     /**
-    * @notice calculate the amount of underlying token available to withdraw
-    *         when withdrawing via only single token
-    * @param tokenAmount the amount of LP token to burn
-    * @param tokenIndex index of which token will be withdrawn
-    * @return availableTokenAmount calculated amount of underlying token
-    *         available to withdraw
-    */
+     * @notice calculate the amount of underlying token available to withdraw
+     *         when withdrawing via only single token
+     * @param tokenAmount the amount of LP token to burn
+     * @param tokenIndex index of which token will be withdrawn
+     * @return availableTokenAmount calculated amount of underlying token
+     *         available to withdraw
+     */
     function calculateRemoveLiquidityOneToken(uint256 tokenAmount, uint8 tokenIndex
-    ) external view returns(uint256 availableTokenAmount) {
+    ) external view returns (uint256 availableTokenAmount) {
         (availableTokenAmount, ) = swapStorage.calculateWithdrawOneToken(tokenAmount, tokenIndex);
+    }
+
+    /**
+     * @notice return accumulated amount of admin fees of the token with given index
+     * @param index Index of the pooled token
+     * @return admin's token balance in the token's precision
+     */
+    function getAdminBalance(uint256 index) external view returns (uint256) {
+        return swapStorage.getAdminBalance(index);
+    }
+
+    /**
+     * @notice withdraw all admin fees to the contract owner
+     */
+    function withdrawAdminFees() external onlyOwner {
+        swapStorage.withdrawAdminFees(owner());
+    }
+
+    /**
+     * @notice update the admin fee
+     * @param newAdminFee new admin fee to be applied on future transactions
+     */
+    function setAdminFee(uint256 newAdminFee) external onlyOwner {
+        swapStorage.setAdminFee(newAdminFee);
+    }
+
+    /**
+     * @notice update the swap fee
+     * @param newSwapFee new swap fee to be applied on future transactions
+     */
+    function setSwapFee(uint256 newSwapFee) external onlyOwner {
+        swapStorage.setSwapFee(newSwapFee);
     }
 }
