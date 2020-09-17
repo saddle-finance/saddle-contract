@@ -10,7 +10,6 @@ library SwapUtils {
     using SafeMath for uint256;
     using MathUtils for uint256;
 
-
     // events
     event TokenSwap(address indexed buyer, uint256 tokensSold,
         uint256 tokensBought, uint128 soldId, uint128 boughtId
@@ -50,7 +49,7 @@ library SwapUtils {
         uint256 A;
 
         // fee calculation
-        uint256 fee;
+        uint256 swapFee;
         uint256 adminFee;
     }
 
@@ -60,6 +59,15 @@ library SwapUtils {
     // the denominator used to calculate admin and LP fees. For example, an
     // LP fee might be something like tradeAmount.mul(fee).div(FEE_DENOMINATOR)
     uint256 constant FEE_DENOMINATOR = 10 ** 10;
+
+    // Max swap fee is 1% or 100bps of each swap
+    uint256 constant MAX_SWAP_FEE = 10 ** 8;
+
+    // Max adminFee is 100% of the swapFee
+    // adminFee does not add additional fee on top of swapFee
+    // Instead it takes a certain % of the swapFee. Therefore it has no impact on the
+    // users but only on the earnings of LPs
+    uint256 constant MAX_ADMIN_FEE = 10 ** 10;
 
     /**
      * @notice Return A, the the amplification coefficient * n * (n - 1)
@@ -89,7 +97,7 @@ library SwapUtils {
     ) external {
         uint256 totalSupply = self.lpToken.totalSupply();
         uint256 numTokens = self.pooledTokens.length;
-        require(tokenAmount <= self.lpToken.balanceOf(msg.sender), "<balanceOf");
+        require(tokenAmount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
         require(tokenIndex < numTokens, "Token not found");
 
         uint256 dyFee = 0;
@@ -396,7 +404,7 @@ library SwapUtils {
 
     function feePerToken(Swap storage self)
         internal view returns(uint256) {
-        return self.fee.mul(self.pooledTokens.length).div(
+        return self.swapFee.mul(self.pooledTokens.length).div(
             self.pooledTokens.length.sub(1).mul(4));
     }
 
@@ -493,7 +501,7 @@ library SwapUtils {
             xp[tokenIndexFrom]);
         uint256 y = getY(self, tokenIndexFrom, tokenIndexTo, x, xp);
         dy = xp[tokenIndexTo].sub(y).sub(1);
-        dyFee = dy.mul(self.fee).div(FEE_DENOMINATOR);
+        dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
         dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
     }
 
@@ -554,7 +562,6 @@ library SwapUtils {
         return amounts;
     }
 
-
     /**
      * @notice Burn LP tokens to remove liquidity from the pool.
      * @dev Liquidity can always be removed, even when the pool is paused.
@@ -565,6 +572,7 @@ library SwapUtils {
     function removeLiquidity(
         Swap storage self, uint256 amount, uint256[] calldata minAmounts
     ) external {
+        require(amount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
         require(
             minAmounts.length == self.pooledTokens.length,
             "Min amounts should correspond to pooled tokens"
@@ -605,6 +613,7 @@ library SwapUtils {
             amounts.length == self.pooledTokens.length,
             "Amounts should correspond to pooled tokens"
         );
+        require(maxBurnAmount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
 
         uint256 tokenSupply = self.lpToken.totalSupply();
         require(
@@ -677,5 +686,48 @@ library SwapUtils {
         uint256 D1 = getD(_xp(self, balances1), _A);
         uint256 totalSupply = self.lpToken.totalSupply();
         return (deposit ? D1.sub(D0) : D0.sub(D1)).mul(totalSupply).div(D0);
+    }
+
+    /**
+     * @notice return accumulated amount of admin fees of the token with given index
+     * @param index Index of the pooled token
+     * @return admin balance in the token's precision
+     */
+    function getAdminBalance(Swap storage self, uint256 index) external view returns (uint256) {
+        return self.pooledTokens[index].balanceOf(address(this)) - self.balances[index];
+    }
+
+    /**
+     * @notice withdraw all admin fees to a given address
+     * @param to Address to send the fees to
+     */
+    function withdrawAdminFees(Swap storage self, address to) external {
+        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
+            IERC20 token = self.pooledTokens[i];
+            uint256 balance = token.balanceOf(address(this)) - self.balances[i];
+            if (balance > 0) {
+                token.safeTransfer(to, balance);
+            }
+        }
+    }
+
+    /**
+     * @notice update the admin fee
+     * @dev adminFee cannot be higher than 100% of the swap fee
+     * @param newAdminFee new admin fee to be applied on future transactions
+     */
+    function setAdminFee(Swap storage self, uint256 newAdminFee) external {
+        require(newAdminFee <= MAX_ADMIN_FEE, "Fee is too high");
+        self.adminFee = newAdminFee;
+    }
+
+    /**
+     * @notice update the swap fee
+     * @dev fee cannot be higher than 1% of each swap
+     * @param newSwapFee new swap fee to be applied on future transactions
+     */
+    function setSwapFee(Swap storage self, uint256 newSwapFee) external {
+        require(newSwapFee <= MAX_SWAP_FEE, "Fee is too high");
+        self.swapFee = newSwapFee;
     }
 }
