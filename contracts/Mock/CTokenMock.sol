@@ -11,7 +11,7 @@ contract CTokenMock is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
 
     uint256 private initialExchangeRate;
     uint256 private _supplyRatePerBlock;
-    mapping(address => uint256) _balances;
+    mapping(address => uint256) _underlyingBalances;
 
     ERC20Detailed public underlying;
 
@@ -31,7 +31,7 @@ contract CTokenMock is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
         uint256 cTokenAmount = amount.mul(1e18).div(exchangeRateCurrent());
 
         underlying.transferFrom(msg.sender, address(this), amount);
-        _balances[msg.sender] = _balances[msg.sender].add(amount);
+        _underlyingBalances[msg.sender] = _underlyingBalances[msg.sender].add(amount);
         _mint(msg.sender, cTokenAmount);
         return 0;
     }
@@ -57,7 +57,7 @@ contract CTokenMock is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
 
         _burn(msg.sender, cTokenAmount);
         underlying.transfer(msg.sender, underlyingTokenAmount);
-        _balances[msg.sender] = _balances[msg.sender].sub(underlyingTokenAmount);
+        _underlyingBalances[msg.sender] = _underlyingBalances[msg.sender].sub(underlyingTokenAmount);
         return 0;
     }
 
@@ -68,12 +68,12 @@ contract CTokenMock is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
 
         _burn(msg.sender, cTokenAmount);
         underlying.transfer(msg.sender, underlyingTokenAmount);
-        _balances[msg.sender] = _balances[msg.sender].sub(underlyingTokenAmount);
+        _underlyingBalances[msg.sender] = _underlyingBalances[msg.sender].sub(underlyingTokenAmount);
         return 0;
     }
 
     function balanceOfUnderlying(address account) external view returns (uint) {
-        return _balances[account];
+        return _underlyingBalances[account];
     }
 
     // Setter for testing purposes

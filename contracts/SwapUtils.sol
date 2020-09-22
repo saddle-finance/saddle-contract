@@ -39,7 +39,7 @@ library SwapUtils {
         // has 8, so the multiplier should be 10 ** 18 / 10 ** 8 => 10 ** 10
         uint256[] tokenPrecisionMultipliers;
 
-        // the pool balance of each token, in the token's precision
+        // array of balances of each token, in pool's precision
         // the contract's actual token balance might differ
         uint256[] balances;
 

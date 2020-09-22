@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./Swap.sol";
 import "./CERC20.sol";
+import "@nomiclabs/buidler/console.sol";
 
 // TODO fee model - make earnings from Compound fee-free, but liquidity rewards have a % taken for admins
 // TODO make sure it's compatible with withdrawAdminFees
@@ -79,21 +80,16 @@ contract CompoundSwap is Swap {
      * @notice Rebalance the assets in reserve versus at risk by minting and
      *         redeeming cTokens, targeting `reserveRatio`.
      */
-    function rebalance() public nonReentrant onlyUnpaused {
+    function rebalance() external nonReentrant onlyUnpaused {
+        _rebalance();
+    }
+
+    function _rebalance() internal {
         // pull interest into pool and increase balances
-        uint256[] memory updatedBalances = totalAssets();
-        for (uint i = 0; i < swapStorage.balances.length; i++) {
-            // TODO if this invariant doesn't hold, there's a bug in one
-            // of the cToken contracts or contract assets have been seized
-            if (updatedBalances[i] >= swapStorage.balances[i]) {
-                underlyingBalances[i] = underlyingBalances[i].add(
-                    updatedBalances[i].sub(swapStorage.balances[i]));
-                swapStorage.balances[i] = updatedBalances[i];
-            }
-        }
+        _updateUnderlyingBalances();
         (
-            uint256[] memory toSupply,
-            uint256[] memory toRedeem
+        uint256[] memory toSupply,
+        uint256[] memory toRedeem
         ) = calculateRebalanceAmounts();
 
         for (uint i = 0; i < swapStorage.balances.length; i++) {
@@ -127,20 +123,6 @@ contract CompoundSwap is Swap {
     }
 
     /**
-     * @notice Calculate the pool's total assets, including cToken underlying
-     *         balances.
-     * @return an array of amounts correspondng to each token's liquid reserve
-     *         plus their balance at risk on Compound.
-     */
-    function totalAssets() public view returns (uint256[] memory) {
-        uint256[] memory assets = riskedAssets();
-        for (uint i = 0; i < swapStorage.balances.length; i++) {
-            assets[i] = swapStorage.balances[i].add(assets[i]);
-        }
-        return assets;
-    }
-
-    /**
      * @notice Calculate the cToken supply and redemption necessary to bring all
      *         assets back to the `reserveRatio`.
      * @return two arrays corresponding to pooled tokens. The first are amounts
@@ -160,10 +142,12 @@ contract CompoundSwap is Swap {
             if (address(0) == address(cTokens[i])) {
                 continue;
             }
+
             uint256 reserveTarget = swapStorage.balances[i].mul(
                 reserveRatio).div(RESERVE_RATIO_DENOMINATOR);
             uint256 reserveRecorded = swapStorage.balances[i].sub(
                 underlyingBalances[i]);
+
             if (reserveTarget > reserveRecorded) {
                 toRedeem[i] = reserveTarget.sub(reserveRecorded);
             } else {
@@ -226,7 +210,7 @@ contract CompoundSwap is Swap {
      * @notice Update balances and underlyingBalances to account for earnings
      *         from Compound.
      */
-    function updateUnderlyingBalances() internal {
+    function _updateUnderlyingBalances() internal {
         for (uint i = 0; i < swapStorage.balances.length; i++) {
             if (address(cTokens[i]) != address(0)) {
                 uint256 oldUnderlying = underlyingBalances[i];
@@ -303,10 +287,10 @@ contract CompoundSwap is Swap {
      * @param amounts see `Swap`
      * @param minToMint see `Swap`
      */
-    function addLiquidity(uint256[] memory amounts, uint256 minToMint
-    ) public nonReentrant onlyUnpaused {
-        super.addLiquidity(amounts, minToMint);
-        rebalance();
+    function addLiquidity(uint256[] calldata amounts, uint256 minToMint
+    ) external nonReentrant onlyUnpaused {
+        swapStorage.addLiquidity(amounts, minToMint);
+        _rebalance();
     }
 
     function swap(
@@ -323,7 +307,7 @@ contract CompoundSwap is Swap {
 
     function _redeemUnderlying(uint256 i, uint256 amount) internal {
         uint256 balanceBefore = cTokens[i].balanceOf(address(this));
-        uint256 err = cTokens[i].redeemUnderlying(amount);
+        uint256 err = cTokens[i].redeemUnderlying(amount.div(swapStorage.tokenPrecisionMultipliers[i]));
 
         require(
             err == 0,
@@ -337,7 +321,7 @@ contract CompoundSwap is Swap {
     function _mintCToken(uint256 i, uint256 amount) internal {
         swapStorage.pooledTokens[i].approve(address(cTokens[i]), amount);
         uint256 balanceBefore = cTokens[i].balanceOf(address(this));
-        uint256 err = cTokens[i].mint(amount);
+        uint256 err = cTokens[i].mint(amount.div(swapStorage.tokenPrecisionMultipliers[i]));
 
         require(
             err == 0,

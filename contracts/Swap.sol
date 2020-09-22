@@ -65,14 +65,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
                 "The 0 address isn't an ERC-20"
             );
             require(
-                precisions[i] <= 10 ** uint256(SwapUtils.getPoolPrecisionDecimals()),
+                precisions[i] <= 10 ** uint256(getPoolPrecisionDecimals()),
                 "Token precision can't be higher than the pool precision"
             );
-            precisions[i] = (10 ** uint256(SwapUtils.getPoolPrecisionDecimals())).div(precisions[i]);
+            precisions[i] = (10 ** uint256(getPoolPrecisionDecimals())).div(precisions[i]);
         }
 
         swapStorage = SwapUtils.Swap({
-            lpToken: new LPToken(lpTokenName, lpTokenSymbol, SwapUtils.getPoolPrecisionDecimals()),
+            lpToken: new LPToken(lpTokenName, lpTokenSymbol, getPoolPrecisionDecimals()),
             pooledTokens: _pooledTokens,
             tokenPrecisionMultipliers: precisions,
             balances: new uint256[](_pooledTokens.length),
@@ -107,6 +107,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
+     * @notice Return the precision all pools tokens get converted to
+     */
+    function getPoolPrecisionDecimals() public pure returns (uint8) {
+        return SwapUtils.getPoolPrecisionDecimals();
+    }
+
+    /**
      * @notice Remove liquidity from the pool all in one token.
      * @param tokenAmount the amount of the token you want to receive
      * @param tokenIndex the index of the token you want to receive
@@ -133,8 +140,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      *        should mint, otherwise revert. Handy for front-running mitigation
      */
-    function addLiquidity(uint256[] memory amounts, uint256 minToMint)
-        public nonReentrant onlyUnpaused {
+    function addLiquidity(uint256[] calldata amounts, uint256 minToMint)
+        external nonReentrant onlyUnpaused {
         swapStorage.addLiquidity(amounts, minToMint);
     }
 

@@ -20,7 +20,7 @@ import { LpToken } from "../build/typechain/LpToken"
 import MathUtilsArtifact from "../build/artifacts/MathUtils.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 
-import { deployContractWithLibraries } from "./testUtils"
+import { deployContractWithLibraries, MAX_UINT256 } from "./testUtils"
 
 chai.use(solidity)
 const { expect } = chai
@@ -62,9 +62,10 @@ describe("CompoundSwap", () => {
   let tokens: LpToken[]
   let cTokens: CTokenMock[]
   let compoundSwap: CompoundSwap
+  let swapToken: LpToken
 
   // Test Values
-  const RESERVE_RATIO = 10 ** 4
+  const RESERVE_RATIO = 10 ** 3 // keep 10% as reserve
   const INITIAL_A_VALUE = 50
   const SWAP_FEE = 1e7
   const LP_TOKEN_NAME = "Test LP Token Name"
@@ -81,6 +82,10 @@ describe("CompoundSwap", () => {
     tokens = []
     cTokens = []
 
+    const underlyingTokenPrecisions = UNDERLYING_TOKEN_DECIMALS.map((d) =>
+      BigNumber.from(10).pow(d),
+    )
+
     // Create ERC20 tokens and cToken for each of them.
     for (let i = 0; i < 4; i++) {
       const decimals = UNDERLYING_TOKEN_DECIMALS[i]
@@ -88,17 +93,17 @@ describe("CompoundSwap", () => {
 
       await token.mint(
         await owner.getAddress(),
-        BigNumber.from(10).pow(decimals).mul(1000),
+        underlyingTokenPrecisions[i].mul(10000),
       )
 
       await token.mint(
         await user1.getAddress(),
-        BigNumber.from(10).pow(decimals).mul(1000),
+        underlyingTokenPrecisions[i].mul(10000),
       )
 
       await token.mint(
         await user2.getAddress(),
-        BigNumber.from(10).pow(decimals).mul(1000),
+        underlyingTokenPrecisions[i].mul(10000),
       )
 
       tokens.push(token)
@@ -141,7 +146,7 @@ describe("CompoundSwap", () => {
       { SwapUtils: swapUtils.address },
       [
         underlyingAddresses,
-        UNDERLYING_TOKEN_DECIMALS,
+        underlyingTokenPrecisions,
         cTokenAddresses,
         RESERVE_RATIO,
         LP_TOKEN_NAME,
@@ -151,6 +156,54 @@ describe("CompoundSwap", () => {
       ],
     )) as CompoundSwap
     await compoundSwap.deployed()
+
+    const swapStorage = await compoundSwap.swapStorage()
+    swapToken = (await ethers.getContractAt(
+      LPTokenArtifact.abi,
+      swapStorage.lpToken,
+    )) as LpToken
+
+    const poolPrecisionDecimals = await compoundSwap.getPoolPrecisionDecimals()
+
+    // Populate the pool with initial liquidity
+    await tokens[0].connect(user1).approve(compoundSwap.address, MAX_UINT256)
+    await tokens[1].connect(user1).approve(compoundSwap.address, MAX_UINT256)
+    await tokens[2].connect(user1).approve(compoundSwap.address, MAX_UINT256)
+    await tokens[3].connect(user1).approve(compoundSwap.address, MAX_UINT256)
+
+    await compoundSwap
+      .connect(user1)
+      .addLiquidity(
+        [
+          underlyingTokenPrecisions[0].mul(1000),
+          underlyingTokenPrecisions[1].mul(1000),
+          underlyingTokenPrecisions[2].mul(1000),
+          underlyingTokenPrecisions[3].mul(1000),
+        ],
+        0,
+      )
+
+    for (let i = 0; i < 4; i++) {
+      // balance of each underlying token should equal to the reserve amount (10% of all deposit)
+      expect(await tokens[i].balanceOf(compoundSwap.address)).to.eq(
+        underlyingTokenPrecisions[i].mul(100),
+      )
+
+      // rest of the balance is deposited to Compound (90% of all deposit)
+      expect(await cTokens[i].balanceOfUnderlying(compoundSwap.address)).to.eq(
+        underlyingTokenPrecisions[i].mul(900),
+      )
+
+      // getTokenBalance returns sum of reserve and risked assets in pool's precision
+      expect(await compoundSwap.getTokenBalance(i)).to.eq(
+        BigNumber.from(10).pow(poolPrecisionDecimals).mul(1000),
+      )
+    }
+
+    // user1 should have 4000 pool tokens
+    expect(await swapToken.balanceOf(await user1.getAddress())).to.eq(
+      BigNumber.from(10).pow(poolPrecisionDecimals).mul(4000),
+    )
   })
 
   describe("getToken()", () => {

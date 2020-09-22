@@ -188,6 +188,12 @@ describe("Swap", () => {
     })
   })
 
+  describe("getPoolPrecisionDecimals", () => {
+    it("Returns correct decimals", async () => {
+      expect(await swap.getPoolPrecisionDecimals()).to.eq(18)
+    })
+  })
+
   describe("addLiquidity", () => {
     it("Reverts when contract is paused", async () => {
       await swap.pause()
