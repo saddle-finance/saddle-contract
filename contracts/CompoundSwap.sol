@@ -10,7 +10,6 @@ import "./CERC20.sol";
 // TODO make sure it's compatible with withdrawAdminFees
 // TODO mint CWBY and lock until the "switch is flipped"
 // TODO governance - _A, reblanceThreshold, reserveRatio
-// TODO withdrawAdminFees
 // TODO calculate profits? getVirtualPrice doesn't cover liquidity rewards
 // TODO note that interest in Compound isn't used to calculate the invariant
 // as this would open up (even more) attacks
@@ -24,17 +23,24 @@ contract CompoundSwap is Swap {
 
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
+    using CERC20Utils for CERC20[];
     using Math for uint256;
 
     uint256 public reserveRatio;
     uint256 public rebalanceThreshold;
-    uint256 constant RESERVE_RATIO_DENOMINATOR = 10000;
+    uint256 constant RESERVE_RATIO_DENOMINATOR = 10 ** 4;
 
     CERC20[] public cTokens;
     uint256[] public underlyingBalances;
 
-    // TODO redeem and mint events with token index
+    // events
     // TODO consider events for rebalancing
+    event CTokenMint(uint256 indexed tokenIndex, uint256 cTokenAmount,
+        uint256 underlyingAmount
+    );
+    event CTokenRedeem(uint256 indexed tokenIndex, uint256 cTokenAmount,
+        uint256 underlyingAmount
+    );
 
     /**
      * @dev Construct a new Swap that stores some of the backing tokens in
@@ -92,17 +98,9 @@ contract CompoundSwap is Swap {
 
         for (uint i = 0; i < swapStorage.balances.length; i++) {
             if (toRedeem[i] > 0) {
-                uint success = cTokens[i].redeemUnderlying(toRedeem[i]);
-                require(
-                    success == 0,
-                    "Something went wrong redeeming a cToken"
-                );
+                _redeemUnderlying(i, toRedeem[i]);
             } else if (toSupply[i] > 0) {
-                swapStorage.pooledTokens[i].approve(
-                    address(cTokens[i]),
-                    toSupply[i]
-                );
-                cTokens[i].mint(toSupply[i]);
+                _mintCToken(i, toSupply[i]);
             }
         }
     }
@@ -201,9 +199,7 @@ contract CompoundSwap is Swap {
         for (uint i = 0; i < minLength; i++) {
             uint256 avail = amountAvailable(i);
             if (avail < amounts[i] && address(cTokens[i]) != address(0)) {
-                uint256 code = cTokens[i].redeemUnderlying(
-                    amounts[i].sub(avail));
-                require(code == 0, "Something went wrong redeeming a cToken");
+                _redeemUnderlying(i, amounts[i].sub(avail));
             }
         }
     }
@@ -221,14 +217,7 @@ contract CompoundSwap is Swap {
         for (uint i = 0; i < minLength; i++) {
             uint256 supplied = swapStorage.balances[i].sub(amountAvailable(i));
             if (supplied < amounts[i] && address(cTokens[i]) != address(0)) {
-                uint256 toSupply = amounts[i].sub(supplied);
-                // Approve transfer on the ERC20 contract
-                swapStorage.pooledTokens[i].approve(
-                    address(cTokens[i]),
-                    toSupply
-                );
-                uint256 code = cTokens[i].redeemUnderlying(toSupply);
-                require(code == 0, "Something went wrong minting cTokens");
+                _mintCToken(i, amounts[i].sub(supplied));
             }
         }
     }
@@ -279,7 +268,6 @@ contract CompoundSwap is Swap {
     ) public nonReentrant onlyUnpaused {
 
         ensureAmountsAvailable(amounts);
-
         super.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
 
@@ -307,7 +295,6 @@ contract CompoundSwap is Swap {
         amounts[tokenIndex] = tokenAmount;
 
         ensureAmountsAvailable(amounts);
-
         super.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
     }
 
@@ -322,7 +309,6 @@ contract CompoundSwap is Swap {
         rebalance();
     }
 
-
     function swap(
         uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy
     ) public nonReentrant onlyUnpaused {
@@ -333,6 +319,33 @@ contract CompoundSwap is Swap {
             reserveRatio).div(RESERVE_RATIO_DENOMINATOR).add(minDy);
         ensureAmountsAvailable(amounts);
         super.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
+    }
+
+    function _redeemUnderlying(uint256 i, uint256 amount) internal {
+        uint256 balanceBefore = cTokens[i].balanceOf(address(this));
+        uint256 err = cTokens[i].redeemUnderlying(amount);
+
+        require(
+            err == 0,
+            "Something went wrong redeeming a cToken"
+        );
+
+        uint256 balanceAfter = cTokens[i].balanceOf(address(this));
+        emit CTokenRedeem(i, balanceBefore.sub(balanceAfter), amount);
+    }
+
+    function _mintCToken(uint256 i, uint256 amount) internal {
+        swapStorage.pooledTokens[i].approve(address(cTokens[i]), amount);
+        uint256 balanceBefore = cTokens[i].balanceOf(address(this));
+        uint256 err = cTokens[i].mint(amount);
+
+        require(
+            err == 0,
+            "Something went wrong minting a cToken"
+        );
+
+        uint256 balanceAfter = cTokens[i].balanceOf(address(this));
+        emit CTokenMint(i, balanceAfter.sub(balanceBefore), amount);
     }
 
 }

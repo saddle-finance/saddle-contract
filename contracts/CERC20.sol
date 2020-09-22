@@ -1,12 +1,13 @@
 pragma solidity ^0.5.11;
 
 interface CERC20 {
+    function balanceOf(address) external view returns (uint256);
     function mint(uint256) external returns (uint256);
     function exchangeRateCurrent() external returns (uint256);
-    function supplyRatePerBlock() external returns (uint256);
-    function redeem(uint) external returns (uint);
-    function redeemUnderlying(uint) external returns (uint);
-    function balanceOfUnderlying(address account) external view returns (uint);
+    function supplyRatePerBlock() external view returns (uint256);
+    function redeem(uint256) external returns (uint256);
+    function redeemUnderlying(uint256) external returns (uint256);
+    function balanceOfUnderlying(address) external view returns (uint256);
 }
 
 library CERC20Utils {
