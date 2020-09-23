@@ -23,6 +23,7 @@ import "./CERC20.sol";
 contract CompoundSwap is Swap {
 
     using SafeERC20 for IERC20;
+    using CERC20Utils for CERC20[];
     using SafeMath for uint256;
     using Math for uint256;
 
@@ -73,7 +74,11 @@ contract CompoundSwap is Swap {
      * @notice Rebalance the assets in reserve versus at risk by minting and
      *         redeeming cTokens, targeting `reserveRatio`.
      */
-    function rebalance() public nonReentrant onlyUnpaused {
+    function rebalance() external nonReentrant onlyUnpaused {
+        _rebalance();
+    }
+
+    function _rebalance() internal {
         // pull interest into pool and increase balances
         uint256[] memory updatedBalances = totalAssets();
         for (uint i = 0; i < swapStorage.balances.length; i++) {
@@ -86,8 +91,8 @@ contract CompoundSwap is Swap {
             }
         }
         (
-            uint256[] memory toSupply,
-            uint256[] memory toRedeem
+        uint256[] memory toSupply,
+        uint256[] memory toRedeem
         ) = calculateRebalanceAmounts();
 
         for (uint i = 0; i < swapStorage.balances.length; i++) {
@@ -257,14 +262,14 @@ contract CompoundSwap is Swap {
      * @param amount see `Swap`
      * @param minAmounts see `Swap`
      */
-    function removeLiquidity(uint256 amount, uint256[] memory minAmounts)
-        public nonReentrant onlyUnpaused {
+    function removeLiquidity(uint256 amount, uint256[] calldata minAmounts)
+        external nonReentrant onlyUnpaused {
 
         uint256[] memory toRemove = swapStorage.calculateRemoveLiquidity(amount);
 
         ensureAmountsAvailable(toRemove);
 
-        super.removeLiquidity(amount, minAmounts);
+        swapStorage.removeLiquidity(amount, minAmounts);
     }
 
 
@@ -275,12 +280,12 @@ contract CompoundSwap is Swap {
      * @param maxBurnAmount see `Swap`
      */
     function removeLiquidityImbalance(
-        uint256[] memory amounts, uint256 maxBurnAmount
-    ) public nonReentrant onlyUnpaused {
+        uint256[] calldata amounts, uint256 maxBurnAmount
+    ) external nonReentrant onlyUnpaused {
 
         ensureAmountsAvailable(amounts);
 
-        super.removeLiquidityImbalance(amounts, maxBurnAmount);
+        swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
 
 
@@ -292,7 +297,7 @@ contract CompoundSwap is Swap {
      */
     function removeLiquidityOneToken(
         uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount
-    ) public nonReentrant onlyUnpaused {
+    ) external nonReentrant onlyUnpaused {
         require(
             tokenIndex < swapStorage.pooledTokens.length,
             "Token isn't in pool!"
@@ -308,7 +313,7 @@ contract CompoundSwap is Swap {
 
         ensureAmountsAvailable(amounts);
 
-        super.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
+        swapStorage.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
     }
 
     /**
@@ -316,23 +321,23 @@ contract CompoundSwap is Swap {
      * @param amounts see `Swap`
      * @param minToMint see `Swap`
      */
-    function addLiquidity(uint256[] memory amounts, uint256 minToMint
-    ) public nonReentrant onlyUnpaused {
-        super.addLiquidity(amounts, minToMint);
-        rebalance();
+    function addLiquidity(uint256[] calldata amounts, uint256 minToMint
+    ) external nonReentrant onlyUnpaused {
+        swapStorage.addLiquidity(amounts, minToMint);
+        _rebalance();
     }
 
 
     function swap(
         uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy
-    ) public nonReentrant onlyUnpaused {
+    ) external nonReentrant onlyUnpaused {
         // if there's not enough in our reserves, unwrap enough to settle
         // this swap's min + get us back to the right reserve
         uint256[] memory amounts = new uint256[](swapStorage.balances.length);
         amounts[tokenIndexTo] = swapStorage.balances[tokenIndexTo].mul(
             reserveRatio).div(RESERVE_RATIO_DENOMINATOR).add(minDy);
         ensureAmountsAvailable(amounts);
-        super.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
+        swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
 
 }

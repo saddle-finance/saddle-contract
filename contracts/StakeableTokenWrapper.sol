@@ -27,22 +27,22 @@ contract StakeableTokenWrapper {
         stakedToken = _stakedToken;
     }
 
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() external view returns (uint256) {
         return _totalSupply;
     }
 
-    function balanceOf(address account) public view returns (uint256) {
+    function balanceOf(address account) external view returns (uint256) {
         return _balances[account];
     }
 
-    function stake(uint256 amount) public {
+    function stake(uint256 amount) external {
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
         stakedToken.safeTransferFrom(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount) public {
+    function withdraw(uint256 amount) external {
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
         stakedToken.safeTransfer(msg.sender, amount);
