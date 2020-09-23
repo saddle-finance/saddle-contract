@@ -33,3 +33,12 @@ $ npm test
 ```lang=bash
 $ npm run coverage
 ```
+
+=== Deploying contracts to localhost Buidler EVM
+
+```lang=bash
+$ npx buidler node
+$ npm run --network localhost deployment/swap.ts
+```
+
+You can connect to this RPC server via `localhost:8545`
