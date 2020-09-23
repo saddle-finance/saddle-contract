@@ -18,7 +18,7 @@ contract OwnerPausable is Ownable {
     /**
      * @notice Pause the contract. Revert if already paused.
      */
-    function pause() public onlyOwner onlyUnpaused {
+    function pause() external onlyOwner onlyUnpaused {
         paused = true;
         emit Paused();
     }
@@ -26,10 +26,11 @@ contract OwnerPausable is Ownable {
     /**
      * @notice Unpause the contract. Revert if already unpaused.
      */
-    function unpause() public onlyOwner onlyPaused {
+    function unpause() external onlyOwner onlyPaused {
         paused = false;
         emit Unpaused();
     }
+
 
     /**
      * @notice Revert if the contract is paused.

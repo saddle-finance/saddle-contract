@@ -320,7 +320,7 @@ library SwapUtils {
      * @notice Get the virtual price, to help calculate profit
      * @return the virtual price, scaled to the POOL_PRECISION
      */
-    function getVirtualPrice(Swap storage self) public view returns (uint256) {
+    function getVirtualPrice(Swap storage self) external view returns (uint256) {
         uint256 D = getD(_xp(self), getA(self));
         uint256 supply = self.lpToken.totalSupply();
         return D.mul(10 ** uint256(getPoolPrecisionDecimals())).div(supply);
@@ -333,8 +333,8 @@ library SwapUtils {
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      *        should mint, otherwise revert. Handy for front-running mitigation
      */
-    function addLiquidity(Swap storage self, uint256[] memory amounts, uint256 minToMint)
-        public {
+    function addLiquidity(Swap storage self, uint256[] calldata amounts, uint256 minToMint)
+        external {
         require(
             amounts.length == self.pooledTokens.length,
             "Amounts must map to pooled tokens"
@@ -398,7 +398,7 @@ library SwapUtils {
         self.lpToken.mint(msg.sender, toMint);
 
         emit AddLiquidity(
-            msg.sender, amounts, fees, D1, self.lpToken.totalSupply().add(toMint)
+            msg.sender, amounts, fees, D1, self.lpToken.totalSupply()
         );
     }
 
@@ -528,7 +528,7 @@ library SwapUtils {
     function swap(
         Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx,
         uint256 minDy
-    ) public {
+    ) external {
         (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
         require(dy >= minDy, "Swap didn't result in min tokens");
 
