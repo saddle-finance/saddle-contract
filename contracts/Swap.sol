@@ -114,7 +114,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function removeLiquidityOneToken(
         uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount
-    ) public nonReentrant onlyUnpaused {
+    ) external nonReentrant onlyUnpaused {
         return swapStorage.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
     }
 
@@ -133,8 +133,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      *        should mint, otherwise revert. Handy for front-running mitigation
      */
-    function addLiquidity(uint256[] memory amounts, uint256 minToMint)
-        public nonReentrant onlyUnpaused {
+    function addLiquidity(uint256[] calldata amounts, uint256 minToMint)
+        external nonReentrant onlyUnpaused {
         swapStorage.addLiquidity(amounts, minToMint);
     }
 
@@ -147,7 +147,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function swap(
         uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy
-    ) public nonReentrant onlyUnpaused {
+    ) external nonReentrant onlyUnpaused {
         return swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
 
@@ -170,8 +170,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param minAmounts the minimum amounts of each token in the pool
      *        acceptable for this burn. Useful as a front-running mitigation
      */
-    function removeLiquidity(uint256 amount, uint256[] memory minAmounts)
-        public nonReentrant {
+    function removeLiquidity(uint256 amount, uint256[] calldata minAmounts)
+        external nonReentrant {
         return swapStorage.removeLiquidity(amount, minAmounts);
     }
 
@@ -183,8 +183,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *        remove liquidity. Useful as a front-running mitigation.
      */
     function removeLiquidityImbalance(
-        uint256[] memory amounts, uint256 maxBurnAmount
-    ) public nonReentrant onlyUnpaused {
+        uint256[] calldata amounts, uint256 maxBurnAmount
+    ) external nonReentrant onlyUnpaused {
         return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
 
