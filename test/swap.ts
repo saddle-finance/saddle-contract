@@ -1030,7 +1030,7 @@ describe("Swap", () => {
       )
 
       expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(
-        BigNumber.from("1000009516257264879"),
+        BigNumber.from("1000009516257264880"),
       )
 
       expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(
