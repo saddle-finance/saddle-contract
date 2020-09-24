@@ -198,16 +198,18 @@ library SwapUtils {
         uint256 c = D;
         uint256 s = 0;
         uint256 nA = _A.mul(numTokens);
+        uint256 cDivider = 1;
 
         for (uint i = 0; i < numTokens; i++) {
             if (i != tokenIndex) {
                 s = s.add(xp[i]);
-                c = c.mul(D).div(xp[i].mul(numTokens));
+                c = c.mul(D);
+                cDivider = cDivider.mul(xp[i]).mul(numTokens);
             } else {
                 continue;
             }
         }
-        c = c.mul(D).div(nA.mul(numTokens));
+        c = c.mul(D).div(nA.mul(numTokens).mul(cDivider));
 
         uint256 b = s.add(D.div(nA));
         uint256 yPrev = 0;
@@ -431,20 +433,20 @@ library SwapUtils {
      *         that is swapped from (FROM) and the token that is swapped to (TO).
      *         This function is used as a helper function to calculate how much TO token
      *         the user should receive on swap.
-     * @param tokenIndex1 index of FROM token
-     * @param tokenIndex2 index of TO token
+     * @param tokenIndexFrom index of FROM token
+     * @param tokenIndexTo index of TO token
      * @param x the new total amount of FROM token
      * @param xp balances of the tokens in the pool
      * @return the amount of TO token that should remain in the pool
      */
     function getY(
-        Swap storage self, uint8 tokenIndex1, uint8 tokenIndex2, uint256 x,
+        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 x,
         uint256[] memory xp
     ) internal view returns (uint256) {
         uint256 numTokens = self.pooledTokens.length;
-        require(tokenIndex1 != tokenIndex2, "Can't compare token to itself");
+        require(tokenIndexFrom != tokenIndexTo, "Can't compare token to itself");
         require(
-            tokenIndex1 < numTokens && tokenIndex2 < numTokens,
+            tokenIndexFrom < numTokens && tokenIndexTo < numTokens,
             "Tokens must be in pool"
         );
 
@@ -453,21 +455,23 @@ library SwapUtils {
         uint256 c = D;
         uint256 s = 0;
         uint256 nA = numTokens.mul(_A);
+        uint256 cDivider = 1;
 
         uint256 _x = 0;
         for (uint i = 0; i < numTokens; i++) {
-            if (i == tokenIndex1) {
+            if (i == tokenIndexFrom) {
                 _x = x;
-            } else if (i != tokenIndex2) {
+            } else if (i != tokenIndexTo) {
                 _x = xp[i];
             }
             else {
                 continue;
             }
             s = s.add(_x);
-            c = c.mul(D).div(_x.mul(numTokens));
+            c = c.mul(D);
+            cDivider = cDivider.mul(_x).mul(numTokens);
         }
-        c = c.mul(D).div(nA.mul(numTokens));
+        c = c.mul(D).div(nA.mul(numTokens).mul(cDivider));
         uint256 b = s.add(D.div(nA));
         uint256 yPrev = 0;
         uint256 y = D;

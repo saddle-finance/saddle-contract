@@ -103,11 +103,11 @@ contract CompoundSwap is Swap {
                     "Something went wrong redeeming a cToken"
                 );
             } else if (toSupply[i] > 0) {
-                swapStorage.pooledTokens[i].approve(
+                swapStorage.pooledTokens[i].safeApprove(
                     address(cTokens[i]),
                     toSupply[i]
                 );
-                cTokens[i].mint(toSupply[i]);
+                require(cTokens[i].mint(toSupply[i]) == 0, "cToken mint failed");
             }
         }
     }
@@ -228,7 +228,7 @@ contract CompoundSwap is Swap {
             if (supplied < amounts[i] && address(cTokens[i]) != address(0)) {
                 uint256 toSupply = amounts[i].sub(supplied);
                 // Approve transfer on the ERC20 contract
-                swapStorage.pooledTokens[i].approve(
+                swapStorage.pooledTokens[i].safeApprove(
                     address(cTokens[i]),
                     toSupply
                 );
