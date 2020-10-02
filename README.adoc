@@ -38,7 +38,7 @@ $ npm run coverage
 
 ```lang=bash
 $ npx buidler node
-$ npm run --network localhost deployment/swap.ts
+$ npx buidler run --network localhost deployment/swap.ts
 ```
 
 You can connect to this RPC server via `localhost:8545`
