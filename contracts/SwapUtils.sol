@@ -51,6 +51,10 @@ library SwapUtils {
         // fee calculation
         uint256 swapFee;
         uint256 adminFee;
+        uint256 defaultWithdrawFee;
+
+        mapping(address => uint256) depositTimestamp;
+        mapping(address => uint256) withdrawFee;
     }
 
     // the precision all pools tokens will be converted to
@@ -68,6 +72,11 @@ library SwapUtils {
     // Instead it takes a certain % of the swapFee. Therefore it has no impact on the
     // users but only on the earnings of LPs
     uint256 constant MAX_ADMIN_FEE = 10 ** 10;
+
+    // Max withdrawFee is 1% of the value withdrawn
+    // Fee will be redistributed to the LPs in the pool, rewarding
+    // long term providers.
+    uint256 constant MAX_WITHDRAW_FEE = 10 ** 8;
 
     /**
      * @notice Return A, the the amplification coefficient * n * (n - 1)
@@ -104,6 +113,10 @@ library SwapUtils {
         uint256 dy = 0;
 
         (dy, dyFee) = calculateWithdrawOneToken(self, tokenAmount, tokenIndex);
+        dy = dy
+            .mul(FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender)))
+            .div(FEE_DENOMINATOR);
+
         require(dy >= minAmount, "The min amount of tokens wasn't met");
 
         self.balances[tokenIndex] = self.balances[tokenIndex].sub(
@@ -396,12 +409,32 @@ library SwapUtils {
             }
         }
 
+        updateUserWithdrawFee(self, msg.sender, toMint);
         // mint the user's LP tokens
         self.lpToken.mint(msg.sender, toMint);
 
         emit AddLiquidity(
             msg.sender, amounts, fees, D1, self.lpToken.totalSupply()
         );
+    }
+
+    /**
+     * @notice Calculate base withdraw fee for the user. If the user is currently
+     *         not participating in the pool, sets to default value. If not, recalculate
+     *         the starting withdraw fee based on the last deposit's time & amount relative
+     *         to the new deposit.
+     * @param user address of the user depositing tokens
+     * @param toMint amount of pool tokens to be minted
+     */
+    function updateUserWithdrawFee(Swap storage self, address user, uint256 toMint) internal {
+        uint256 currentFee = calculateCurrentWithdrawFee(self, user);
+        uint256 currentBalance = self.lpToken.balanceOf(user);
+
+        self.withdrawFee[user] = currentBalance.mul(currentFee)
+            .add(toMint.mul(self.defaultWithdrawFee))
+            .div(toMint.add(currentBalance));
+
+        self.depositTimestamp[user] = block.timestamp;
     }
 
     function feePerToken(Swap storage self)
@@ -582,7 +615,11 @@ library SwapUtils {
             "Min amounts should correspond to pooled tokens"
         );
 
-        uint256[] memory amounts = calculateRebalanceAmounts(self, amount);
+        uint256 adjustedAmount = amount
+            .mul(FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender)))
+            .div(FEE_DENOMINATOR);
+
+        uint256[] memory amounts = calculateRebalanceAmounts(self, adjustedAmount);
 
         for (uint i = 0; i < amounts.length; i++) {
             require(
@@ -617,13 +654,9 @@ library SwapUtils {
             amounts.length == self.pooledTokens.length,
             "Amounts should correspond to pooled tokens"
         );
-        require(maxBurnAmount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
+        require(maxBurnAmount <= self.lpToken.balanceOf(msg.sender) && maxBurnAmount != 0, ">LP.balanceOf");
 
         uint256 tokenSupply = self.lpToken.totalSupply();
-        require(
-            tokenSupply > 0 && tokenSupply > maxBurnAmount,
-            "Can't remove liquidity from an empty pool"
-        );
         uint256 _fee = feePerToken(self);
 
         uint256[] memory balances1 = self.balances;
@@ -647,6 +680,10 @@ library SwapUtils {
         uint256 D2 = getD(_xp(self, balances1), getA(self));
 
         uint256 tokenAmount = D0.sub(D2).mul(tokenSupply).div(D0).add(1);
+        tokenAmount = tokenAmount
+            .mul(FEE_DENOMINATOR)
+            .div(FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender)));
+
         require(
             tokenAmount <= maxBurnAmount,
             "More expensive than the max burn amount"
@@ -660,6 +697,17 @@ library SwapUtils {
 
         emit RemoveLiquidityImbalance(
             msg.sender, amounts, fees, D1, tokenSupply.sub(tokenAmount));
+    }
+
+    function calculateCurrentWithdrawFee(Swap storage self, address user) public view returns (uint256) {
+        uint256 endTime = self.depositTimestamp[user].add(52 weeks);
+
+        if (endTime > block.timestamp) {
+            uint256 timeLeftover = endTime - block.timestamp;
+            return self.withdrawFee[user].mul(timeLeftover).div(52 weeks);
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -733,5 +781,10 @@ library SwapUtils {
     function setSwapFee(Swap storage self, uint256 newSwapFee) external {
         require(newSwapFee <= MAX_SWAP_FEE, "Fee is too high");
         self.swapFee = newSwapFee;
+    }
+
+    function setDefaultWithdrawFee(Swap storage self, uint256 newWithdrawFee) external {
+        require(newWithdrawFee <= MAX_WITHDRAW_FEE, "Fee is too high");
+        self.defaultWithdrawFee = newWithdrawFee;
     }
 }
