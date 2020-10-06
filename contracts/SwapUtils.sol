@@ -54,7 +54,7 @@ library SwapUtils {
         uint256 defaultWithdrawFee;
 
         mapping(address => uint256) depositTimestamp;
-        mapping(address => uint256) withdrawFee;
+        mapping(address => uint256) withdrawFeeMultiplier;
     }
 
     // the precision all pools tokens will be converted to
@@ -430,9 +430,11 @@ library SwapUtils {
         uint256 currentFee = calculateCurrentWithdrawFee(self, user);
         uint256 currentBalance = self.lpToken.balanceOf(user);
 
-        self.withdrawFee[user] = currentBalance.mul(currentFee)
-            .add(toMint.mul(self.defaultWithdrawFee))
-            .div(toMint.add(currentBalance));
+        self.withdrawFeeMultiplier[user] = currentBalance.mul(currentFee)
+            .add(toMint.mul(self.defaultWithdrawFee.add(1)))
+            .mul(FEE_DENOMINATOR)
+            .div(toMint.add(currentBalance))
+            .div(self.defaultWithdrawFee.add(1));
 
         self.depositTimestamp[user] = block.timestamp;
     }
@@ -699,12 +701,21 @@ library SwapUtils {
             msg.sender, amounts, fees, D1, tokenSupply.sub(tokenAmount));
     }
 
+    /**
+     * @notice calculate the fee that is applied when the given user withdraws
+     * @param user address you want to calculate withdraw fee of
+     * @return current withdraw fee of the user
+     */
     function calculateCurrentWithdrawFee(Swap storage self, address user) public view returns (uint256) {
         uint256 endTime = self.depositTimestamp[user].add(52 weeks);
 
         if (endTime > block.timestamp) {
             uint256 timeLeftover = endTime - block.timestamp;
-            return self.withdrawFee[user].mul(timeLeftover).div(52 weeks);
+            return self.defaultWithdrawFee
+                .mul(self.withdrawFeeMultiplier[user])
+                .mul(timeLeftover)
+                .div(52 weeks)
+                .div(FEE_DENOMINATOR);
         } else {
             return 0;
         }
@@ -783,6 +794,10 @@ library SwapUtils {
         self.swapFee = newSwapFee;
     }
 
+    /**
+     * @notice update the default withdraw fee. This also affects depsoits made in the past as well.
+     * @param newWithdrawFee new withdraw fee to be applied
+     */
     function setDefaultWithdrawFee(Swap storage self, uint256 newWithdrawFee) external {
         require(newWithdrawFee <= MAX_WITHDRAW_FEE, "Fee is too high");
         self.defaultWithdrawFee = newWithdrawFee;

@@ -1276,7 +1276,7 @@ describe("Swap", () => {
   describe("Test withdrawal fees on removeLiquidity", () => {
     beforeEach(async () => {
       expect(await swapToken.balanceOf(await user1.getAddress())).to.eq(0)
-      await swap.setWithdrawFee(String(5e7))
+      await swap.setDefaultWithdrawFee(String(5e7))
     })
 
     it("Removing liquidity immediately after deposit", async () => {
@@ -1409,7 +1409,7 @@ describe("Swap", () => {
         [0, 0],
       )
       expect(await swapToken.totalSupply()).to.eq(0)
-      await swap.setWithdrawFee(String(5e7))
+      await swap.setDefaultWithdrawFee(String(5e7))
 
       // reset the pool
       await swap.addLiquidity([String(1e19), String(1e19)], 0)
@@ -1511,7 +1511,7 @@ describe("Swap", () => {
         [0, 0],
       )
       expect(await swapToken.totalSupply()).to.eq(0)
-      await swap.setWithdrawFee(String(5e7))
+      await swap.setDefaultWithdrawFee(String(5e7))
 
       // reset the pool
       await swap.addLiquidity([String(1e19), String(1e19)], 0)
@@ -1621,7 +1621,7 @@ describe("Swap", () => {
 
   describe("updateUserWithdrawFee", async () => {
     it("Test adding liquidity, and once again at 26 weeks mark then removing all deposits at 52 weeks mark", async () => {
-      await swap.setWithdrawFee(String(5e7))
+      await swap.setDefaultWithdrawFee(String(5e7))
       await provider.send("evm_setNextBlockTimestamp", [12000000000])
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
 
@@ -1676,6 +1676,27 @@ describe("Swap", () => {
       expect(secondBalanceAfter.sub(secondBalanceBefore)).to.eq(
         "2993750000100000000",
       )
+    })
+  })
+
+  describe("setDefaultWithdrawFee", () => {
+    it("Setting the withdraw fee affects past deposits as well", async () => {
+      await swap.setDefaultWithdrawFee(String(5e7))
+      await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+
+      expect(
+        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
+      ).to.eq(BigNumber.from(5e7))
+
+      await swap.setDefaultWithdrawFee(String(0))
+
+      expect(
+        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
+      ).to.eq(BigNumber.from(0))
+    })
+
+    it("Reverts when fee is too high", async () => {
+      await expect(swap.setDefaultWithdrawFee(String(15e8))).to.be.reverted
     })
   })
 })
