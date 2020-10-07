@@ -116,6 +116,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
+     * @notice Return timestamp of last deposit of given address
+     */
+    function getDepositTimestamp(address user) external view returns (uint256) {
+        return swapStorage.getDepositTimestamp(user);
+    }
+
+    /**
      * @notice Return current balance of the pooled token at given index
      * @param index the index of the token
      */

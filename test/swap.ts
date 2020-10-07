@@ -1277,11 +1277,15 @@ describe("Swap", () => {
     beforeEach(async () => {
       expect(await swapToken.balanceOf(await user1.getAddress())).to.eq(0)
       await swap.setDefaultWithdrawFee(String(5e7))
+      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
     })
 
     it("Removing liquidity immediately after deposit", async () => {
-      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
@@ -1294,13 +1298,11 @@ describe("Swap", () => {
       )
 
       // Manually set the timestamp between addLiquidity and removeLiquidity to 1 second
-      await provider.send("evm_increaseTime", [1])
-      await swap
-        .connect(user1)
-        .removeLiquidity(await swapToken.balanceOf(await user1.getAddress()), [
-          0,
-          0,
-        ])
+      const currentPoolTokenBalance = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
+      await provider.send("evm_mine", [depositTimestamp + 1])
+      await swap.connect(user1).removeLiquidity(currentPoolTokenBalance, [0, 0])
 
       const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
         user1,
@@ -1318,8 +1320,11 @@ describe("Swap", () => {
     })
 
     it("Removing liquidity 26 weeks after deposit", async () => {
-      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
@@ -1330,14 +1335,12 @@ describe("Swap", () => {
         firstToken,
         secondToken,
       )
+      const currentPoolTokenBalance = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
       // 26 weeks = 15724800 seconds
-      await provider.send("evm_increaseTime", [15724800])
-      await swap
-        .connect(user1)
-        .removeLiquidity(await swapToken.balanceOf(await user1.getAddress()), [
-          0,
-          0,
-        ])
+      await provider.send("evm_mine", [depositTimestamp + 15724800])
+      await swap.connect(user1).removeLiquidity(currentPoolTokenBalance, [0, 0])
 
       const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
         user1,
@@ -1355,8 +1358,11 @@ describe("Swap", () => {
     })
 
     it("Removing liquidity 52 weeks after deposit", async () => {
-      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
@@ -1369,13 +1375,11 @@ describe("Swap", () => {
       )
 
       // 52 weeks = 31449600 seconds
-      await provider.send("evm_increaseTime", [31449600])
-      await swap
-        .connect(user1)
-        .removeLiquidity(await swapToken.balanceOf(await user1.getAddress()), [
-          0,
-          0,
-        ])
+      const currentPoolTokenBalance = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
+      await provider.send("evm_mine", [depositTimestamp + 31449600])
+      await swap.connect(user1).removeLiquidity(currentPoolTokenBalance, [0, 0])
 
       const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
         user1,
@@ -1393,7 +1397,7 @@ describe("Swap", () => {
     })
   })
 
-  describe("Test withdrawl fees on removeLiquidityOne", async () => {
+  describe("Test withdrawal fees on removeLiquidityOne", async () => {
     beforeEach(async () => {
       await swapToken.approve(swap.address, MAX_UINT256)
       await swap.removeLiquidity(
@@ -1405,11 +1409,14 @@ describe("Swap", () => {
 
       // reset the pool
       await swap.addLiquidity([String(1e19), String(1e19)], 0)
+      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
     })
 
     it("Removing liquidity immediately after deposit", async () => {
-      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
@@ -1424,7 +1431,7 @@ describe("Swap", () => {
       )
       expect(expectedFirstTokenAmount).to.eq("1997027120160681835")
 
-      await provider.send("evm_increaseTime", [1])
+      await provider.send("evm_mine", [depositTimestamp + 1])
       await swap.connect(user1).removeLiquidityOneToken(swapTokenBalance, 0, 0)
 
       const [firstBalanceAfter] = await getTokenBalances(user1, firstToken)
@@ -1436,8 +1443,10 @@ describe("Swap", () => {
     })
 
     it("Removing liquidity 26 weeks after deposit", async () => {
-      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
@@ -1452,7 +1461,7 @@ describe("Swap", () => {
       )
       expect(expectedFirstTokenAmount).to.eq("1997027120160681835")
 
-      await provider.send("evm_increaseTime", [15724800])
+      await provider.send("evm_mine", [depositTimestamp + 15724800])
       await swap.connect(user1).removeLiquidityOneToken(swapTokenBalance, 0, 0)
 
       const [firstBalanceAfter] = await getTokenBalances(user1, firstToken)
@@ -1464,8 +1473,10 @@ describe("Swap", () => {
     })
 
     it("Removing liquidity 52 weeks after deposit", async () => {
-      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
@@ -1480,7 +1491,7 @@ describe("Swap", () => {
       )
       expect(expectedFirstTokenAmount).to.eq("1997027120160681835")
 
-      await provider.send("evm_increaseTime", [31449600])
+      await provider.send("evm_mine", [depositTimestamp + 31449600])
       await swap.connect(user1).removeLiquidityOneToken(swapTokenBalance, 0, 0)
 
       const [firstBalanceAfter] = await getTokenBalances(user1, firstToken)
@@ -1504,11 +1515,14 @@ describe("Swap", () => {
 
       // reset the pool
       await swap.addLiquidity([String(1e19), String(1e19)], 0)
+      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
     })
 
     it("Removing liquidity immediately after deposit", async () => {
-      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
@@ -1520,7 +1534,7 @@ describe("Swap", () => {
         swapTokenBefore,
       ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
 
-      await provider.send("evm_increaseTime", [1])
+      await provider.send("evm_mine", [depositTimestamp + 1])
       await swap
         .connect(user1)
         .removeLiquidityImbalance([String(1e18), String(1e17)], swapTokenBefore)
@@ -1541,8 +1555,10 @@ describe("Swap", () => {
     })
 
     it("Removing liquidity 26 weeks after deposit", async () => {
-      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
@@ -1554,7 +1570,7 @@ describe("Swap", () => {
         swapTokenBefore,
       ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
 
-      await provider.send("evm_increaseTime", [15724800])
+      await provider.send("evm_mine", [depositTimestamp + 15724800])
       await swap
         .connect(user1)
         .removeLiquidityImbalance([String(1e18), String(1e17)], swapTokenBefore)
@@ -1573,8 +1589,10 @@ describe("Swap", () => {
     })
 
     it("Removing liquidity 52 weeks after deposit", async () => {
-      await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
@@ -1586,7 +1604,7 @@ describe("Swap", () => {
         swapTokenBefore,
       ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
 
-      await provider.send("evm_increaseTime", [31449600])
+      await provider.send("evm_mine", [depositTimestamp + 31449600])
       await swap
         .connect(user1)
         .removeLiquidityImbalance([String(1e18), String(1e17)], swapTokenBefore)
@@ -1609,13 +1627,16 @@ describe("Swap", () => {
     it("Test adding liquidity, and once again at 26 weeks mark then removing all deposits at 52 weeks mark", async () => {
       await swap.setDefaultWithdrawFee(String(5e7))
       await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(await user1.getAddress())
+      ).toNumber()
 
       expect(
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
       ).to.eq(BigNumber.from(5e7))
 
       // 26 weeks after
-      await provider.send("evm_increaseTime", [15724800])
+      await provider.send("evm_mine", [depositTimestamp + 15724800])
       await swap.connect(user1).addLiquidity([String(2e18), String(2e18)], 0)
 
       // At 26 weeks mark, half of first deposit's withdrawal fee is discounted, 0.25%.
@@ -1626,7 +1647,6 @@ describe("Swap", () => {
         await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
       ).to.eq(BigNumber.from("41666666"))
 
-      await provider.send("evm_increaseTime", [1])
       await swapToken
         .connect(user1)
         .approve(
@@ -1634,19 +1654,18 @@ describe("Swap", () => {
           await swapToken.balanceOf(await user1.getAddress()),
         )
 
-      // 52 weeks after initial deposit
-      await provider.send("evm_increaseTime", [15724799])
       const [firstBalanceBefore, secondBalanceBefore] = await getTokenBalances(
         user1,
         firstToken,
         secondToken,
       )
-      await swap
-        .connect(user1)
-        .removeLiquidity(await swapToken.balanceOf(await user1.getAddress()), [
-          0,
-          0,
-        ])
+      const currentPoolTokenBalance = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
+
+      // 52 weeks after initial deposit
+      await provider.send("evm_mine", [depositTimestamp + 31449600])
+      await swap.connect(user1).removeLiquidity(currentPoolTokenBalance, [0, 0])
 
       const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
         user1,
