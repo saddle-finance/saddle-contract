@@ -1301,7 +1301,8 @@ describe("Swap", () => {
       const currentPoolTokenBalance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
-      await provider.send("evm_mine", [depositTimestamp + 1])
+
+      await setNextTimestamp(depositTimestamp + 1)
       await swap.connect(user1).removeLiquidity(currentPoolTokenBalance, [0, 0])
 
       const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
@@ -1339,7 +1340,7 @@ describe("Swap", () => {
         await user1.getAddress(),
       )
       // 26 weeks = 15724800 seconds
-      await provider.send("evm_mine", [depositTimestamp + 15724800])
+      await setNextTimestamp(depositTimestamp + 15724800)
       await swap.connect(user1).removeLiquidity(currentPoolTokenBalance, [0, 0])
 
       const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
@@ -1378,7 +1379,7 @@ describe("Swap", () => {
       const currentPoolTokenBalance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
-      await provider.send("evm_mine", [depositTimestamp + 31449600])
+      await setNextTimestamp(depositTimestamp + 31449600)
       await swap.connect(user1).removeLiquidity(currentPoolTokenBalance, [0, 0])
 
       const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
@@ -1431,7 +1432,7 @@ describe("Swap", () => {
       )
       expect(expectedFirstTokenAmount).to.eq("1997027120160681835")
 
-      await provider.send("evm_mine", [depositTimestamp + 1])
+      await setNextTimestamp(depositTimestamp + 1)
       await swap.connect(user1).removeLiquidityOneToken(swapTokenBalance, 0, 0)
 
       const [firstBalanceAfter] = await getTokenBalances(user1, firstToken)
@@ -1461,7 +1462,7 @@ describe("Swap", () => {
       )
       expect(expectedFirstTokenAmount).to.eq("1997027120160681835")
 
-      await provider.send("evm_mine", [depositTimestamp + 15724800])
+      await setNextTimestamp(depositTimestamp + 15724800)
       await swap.connect(user1).removeLiquidityOneToken(swapTokenBalance, 0, 0)
 
       const [firstBalanceAfter] = await getTokenBalances(user1, firstToken)
@@ -1491,7 +1492,7 @@ describe("Swap", () => {
       )
       expect(expectedFirstTokenAmount).to.eq("1997027120160681835")
 
-      await provider.send("evm_mine", [depositTimestamp + 31449600])
+      await setNextTimestamp(depositTimestamp + 31449600)
       await swap.connect(user1).removeLiquidityOneToken(swapTokenBalance, 0, 0)
 
       const [firstBalanceAfter] = await getTokenBalances(user1, firstToken)
@@ -1534,7 +1535,7 @@ describe("Swap", () => {
         swapTokenBefore,
       ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
 
-      await provider.send("evm_mine", [depositTimestamp + 1])
+      await setNextTimestamp(depositTimestamp + 1)
       await swap
         .connect(user1)
         .removeLiquidityImbalance([String(1e18), String(1e17)], swapTokenBefore)
@@ -1570,7 +1571,7 @@ describe("Swap", () => {
         swapTokenBefore,
       ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
 
-      await provider.send("evm_mine", [depositTimestamp + 15724800])
+      await setNextTimestamp(depositTimestamp + 15724800)
       await swap
         .connect(user1)
         .removeLiquidityImbalance([String(1e18), String(1e17)], swapTokenBefore)
@@ -1604,7 +1605,7 @@ describe("Swap", () => {
         swapTokenBefore,
       ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
 
-      await provider.send("evm_mine", [depositTimestamp + 31449600])
+      await setNextTimestamp(depositTimestamp + 31449600)
       await swap
         .connect(user1)
         .removeLiquidityImbalance([String(1e18), String(1e17)], swapTokenBefore)
@@ -1636,7 +1637,7 @@ describe("Swap", () => {
       ).to.eq(BigNumber.from(5e7))
 
       // 26 weeks after
-      await provider.send("evm_mine", [depositTimestamp + 15724800])
+      await setNextTimestamp(depositTimestamp + 15724800)
       await swap.connect(user1).addLiquidity([String(2e18), String(2e18)], 0)
 
       // At 26 weeks mark, half of first deposit's withdrawal fee is discounted, 0.25%.
@@ -1664,7 +1665,7 @@ describe("Swap", () => {
       )
 
       // 52 weeks after initial deposit
-      await provider.send("evm_mine", [depositTimestamp + 31449600])
+      await setNextTimestamp(depositTimestamp + 31449600)
       await swap.connect(user1).removeLiquidity(currentPoolTokenBalance, [0, 0])
 
       const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
