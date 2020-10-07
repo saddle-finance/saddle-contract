@@ -6,7 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 contract LPToken is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
-    constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20Detailed(name_, symbol_, decimals_) public {}
+    constructor (string memory name_, string memory symbol_, uint8 decimals_
+    ) public ERC20Detailed(name_, symbol_, decimals_) {}
 
     function mint(address recipient, uint256 amount) external onlyOwner {
         _mint(recipient, amount);
