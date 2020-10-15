@@ -308,8 +308,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice update the swap fee
-     * @param newWithdrawFee new swap fee to be applied on future deposits
+     * @notice update the withdraw fee
+     * @param newWithdrawFee new withdraw fee to be applied on future deposits
      */
     function setDefaultWithdrawFee(uint256 newWithdrawFee) external onlyOwner {
         swapStorage.setDefaultWithdrawFee(newWithdrawFee);
