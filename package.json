@@ -28,7 +28,6 @@
     "ethereum-waffle": "^3.1.1",
     "ethers": "^5.0.14",
     "ethlint": "^1.2.5",
-    "ganache-core": "^2.12.1",
     "husky": "^4.3.0",
     "lint-staged": "^10.4.0",
     "prettier": "^2.1.2",
