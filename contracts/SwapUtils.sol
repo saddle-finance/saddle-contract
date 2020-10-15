@@ -802,7 +802,7 @@ library SwapUtils {
     }
 
     /**
-     * @notice update the default withdraw fee. This also affects depsoits made in the past as well.
+     * @notice update the default withdraw fee. This also affects deposits made in the past as well.
      * @param newWithdrawFee new withdraw fee to be applied
      */
     function setDefaultWithdrawFee(Swap storage self, uint256 newWithdrawFee) external {
