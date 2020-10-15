@@ -15,6 +15,9 @@ import { LpToken } from "../build/typechain/LpToken"
 import MathUtilsArtifact from "../build/artifacts/MathUtils.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 
+import AllowlistArtifact from "../build/artifacts/Allowlist.json"
+import { Allowlist } from "../build/typechain/Allowlist"
+
 import {
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
@@ -29,6 +32,7 @@ const { expect } = chai
 describe("Swap", () => {
   let signers: Array<Signer>
   let swap: Swap
+  let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
   let firstToken: LpToken
@@ -37,6 +41,9 @@ describe("Swap", () => {
   let owner: Signer
   let user1: Signer
   let user2: Signer
+  let ownerAddress: string
+  let user1Address: string
+  let user2Address: string
   let swapStorage: {
     lpToken: string
     A: BigNumber
@@ -59,6 +66,9 @@ describe("Swap", () => {
     owner = signers[0]
     user1 = signers[1]
     user2 = signers[2]
+    ownerAddress = await owner.getAddress()
+    user1Address = await user1.getAddress()
+    user2Address = await user2.getAddress()
 
     // Deploy dummy tokens
     firstToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
@@ -74,14 +84,20 @@ describe("Swap", () => {
     ])) as LpToken
 
     // Mint dummy tokens
-    await firstToken.mint(await owner.getAddress(), String(1e20))
-    await secondToken.mint(await owner.getAddress(), String(1e20))
+    await firstToken.mint(ownerAddress, String(1e20))
+    await secondToken.mint(ownerAddress, String(1e20))
 
-    await firstToken.mint(await user1.getAddress(), String(1e20))
-    await secondToken.mint(await user1.getAddress(), String(1e20))
+    await firstToken.mint(user1Address, String(1e20))
+    await secondToken.mint(user1Address, String(1e20))
 
-    await firstToken.mint(await user2.getAddress(), String(1e20))
-    await secondToken.mint(await user2.getAddress(), String(1e20))
+    await firstToken.mint(user2Address, String(1e20))
+    await secondToken.mint(user2Address, String(1e20))
+
+    // Deploy Allowlist
+    allowlist = (await deployContract(
+      signers[0] as Wallet,
+      AllowlistArtifact,
+    )) as Allowlist
 
     // Deploy MathUtils
     mathUtils = (await deployContract(
@@ -107,6 +123,8 @@ describe("Swap", () => {
         LP_TOKEN_SYMBOL,
         INITIAL_A_VALUE,
         SWAP_FEE,
+        0,
+        allowlist.address,
       ],
     )) as Swap
     await swap.deployed()
@@ -117,6 +135,14 @@ describe("Swap", () => {
       LPTokenArtifact.abi,
       swapStorage.lpToken,
     )) as LpToken
+
+    // Set deposit limits
+    allowlist.setPoolCap(swap.address, String(6e20))
+    allowlist.setPoolAccountLimit(swap.address, String(2e20))
+    allowlist.setMultipliers(
+      [ownerAddress, user1Address, user2Address],
+      [1000, 1000, 1000],
+    )
 
     // Populate the pool with initial liquidity
     await firstToken.approve(swap.address, MAX_UINT256)
@@ -218,9 +244,7 @@ describe("Swap", () => {
           MAX_UINT256,
         )
 
-      const actualPoolTokenAmount = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const actualPoolTokenAmount = await swapToken.balanceOf(user1Address)
 
       // The actual pool token amount is less than 4e18 due to the imbalance of the underlying tokens
       expect(actualPoolTokenAmount).to.eq(BigNumber.from("3991672211258372957"))
@@ -247,9 +271,7 @@ describe("Swap", () => {
           MAX_UINT256,
         )
 
-      const actualPoolTokenAmount = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const actualPoolTokenAmount = await swapToken.balanceOf(user1Address)
 
       expect(actualPoolTokenAmount).to.gte(
         calculatedPoolTokenAmountWithNegativeSlippage,
@@ -335,9 +357,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       // Owner pauses the contract
@@ -414,9 +434,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       await expect(
@@ -435,9 +453,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       const [
@@ -500,9 +516,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
 
       // User 1 tries removes liquidity
       await swapToken.connect(user1).approve(swap.address, currentUser1Balance)
@@ -520,9 +534,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       // Owner pauses the contract
@@ -556,9 +568,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       // User 1 calculates amount of pool token to be burned
@@ -626,9 +636,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       await expect(
@@ -647,9 +655,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       // User 1 calculates amount of pool token to be burned
@@ -713,9 +719,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
 
       // User 1 removes liquidity
       await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
@@ -738,9 +742,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       // Owner pauses the contract
@@ -764,9 +766,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       // User 1 calculates the amount of underlying token to receive.
@@ -779,7 +779,7 @@ describe("Swap", () => {
       )
 
       // User 1 initiates one token withdrawal
-      const before = await firstToken.balanceOf(await user1.getAddress())
+      const before = await firstToken.balanceOf(user1Address)
       swapToken.connect(user1).approve(swap.address, currentUser1Balance)
       await swap
         .connect(user1)
@@ -789,7 +789,7 @@ describe("Swap", () => {
           calculatedFirstTokenAmount,
           MAX_UINT256,
         )
-      const after = await firstToken.balanceOf(await user1.getAddress())
+      const after = await firstToken.balanceOf(user1Address)
 
       expect(after.sub(before)).to.eq(BigNumber.from("2008990034631583696"))
     })
@@ -799,9 +799,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       await expect(
@@ -821,9 +819,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       // User 1 calculates the amount of underlying token to receive.
@@ -885,9 +881,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
 
       await swapToken.connect(user1).approve(swap.address, currentUser1Balance)
       await expect(
@@ -1220,9 +1214,7 @@ describe("Swap", () => {
         secondToken,
       )
 
-      const user1LPTokenBalance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const user1LPTokenBalance = await swapToken.balanceOf(user1Address)
       await swapToken.connect(user1).approve(swap.address, user1LPTokenBalance)
       await swap
         .connect(user1)
@@ -1241,6 +1233,42 @@ describe("Swap", () => {
       expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(
         BigNumber.from("1000980987206499309"),
       )
+    })
+  })
+
+  describe("Guarded launch", () => {
+    it("Only owner can remove the guard", async () => {
+      expect(await swap.isGuarded()).to.eq(true)
+      await expect(swap.connect(user1).setIsGuarded(false)).to.be.reverted
+      await swap.connect(owner).setIsGuarded(false)
+      expect(await swap.isGuarded()).to.eq(false)
+    })
+
+    it("Reverts when depositing over individual limit", async () => {
+      const tokenAmount = BigNumber.from(10).pow(22)
+
+      await firstToken.mint(user1Address, tokenAmount)
+      await secondToken.mint(user1Address, tokenAmount)
+
+      await expect(
+        swap
+          .connect(user1)
+          .addLiquidity([tokenAmount, tokenAmount], 0, MAX_UINT256),
+      ).to.be.revertedWith("Deposit limit reached")
+    })
+
+    it("Reverts when depositing over pool cap", async () => {
+      await allowlist.setPoolCap(swap.address, String(1e17))
+
+      expect(
+        await allowlist.getAllowedAmount(swap.address, user1Address),
+      ).to.eq(String(2e20))
+
+      await expect(
+        swap
+          .connect(user1)
+          .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256),
+      ).to.be.revertedWith("Pool TVL cap reached")
     })
   })
 })

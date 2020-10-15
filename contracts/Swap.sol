@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./OwnerPausable.sol";
 import "./SwapUtils.sol";
 import "./MathUtils.sol";
+import "./Allowlist.sol";
 
 contract Swap is OwnerPausable, ReentrancyGuard {
 
@@ -15,6 +16,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     using SwapUtils for SwapUtils.Swap;
 
     SwapUtils.Swap public swapStorage;
+    IAllowlist public allowlist;
+    bool public isGuarded = true;
 
     // events replicated fromm SwapUtils to make the ABI easier for dumb
     // clients
@@ -48,7 +51,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     constructor(
         IERC20[] memory _pooledTokens, uint256[] memory precisions,
         string memory lpTokenName, string memory lpTokenSymbol, uint256 _A,
-        uint256 _fee
+        uint256 _fee, uint256 _adminFee, IAllowlist _allowlist
     ) public OwnerPausable() ReentrancyGuard() {
         require(
             _pooledTokens.length <= 32,
@@ -78,8 +81,12 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             balances: new uint256[](_pooledTokens.length),
             A: _A,
             swapFee: _fee,
-            adminFee: 0
+            adminFee: _adminFee
         });
+
+        allowlist = _allowlist;
+        allowlist.getAllowedAmount(address(this), address(0)); // crude check of the allowlist contract address
+        isGuarded = true;
     }
 
     /**
@@ -145,6 +152,19 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline)
         external nonReentrant onlyUnpaused deadlineCheck(deadline) {
         swapStorage.addLiquidity(amounts, minToMint);
+
+        if (isGuarded) {
+            // Check per user deposit limit
+            require(
+                allowlist.getAllowedAmount(address(this), msg.sender) >= swapStorage.lpToken.balanceOf(msg.sender),
+                "Deposit limit reached"
+            );
+            // Check pool's TVL cap limit via totalSupply of the pool token
+            require(
+                allowlist.getPoolCap(address(this)) >= swapStorage.lpToken.totalSupply(),
+                "Pool TVL cap reached"
+            );
+        }
     }
 
     /**
@@ -267,5 +287,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function setSwapFee(uint256 newSwapFee) external onlyOwner {
         swapStorage.setSwapFee(newSwapFee);
+    }
+
+    /**
+     * @notice update the guarded status of the pool deposits
+     * @param isGuarded_ boolean value indicating whether the deposits should be guarded
+     */
+    function setIsGuarded(bool isGuarded_) external onlyOwner {
+        isGuarded = isGuarded_;
     }
 }
