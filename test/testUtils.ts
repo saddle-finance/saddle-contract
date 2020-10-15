@@ -1,4 +1,4 @@
-import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
+import { BigNumber, Bytes, ContractFactory, Signer } from "ethers"
 import { Contract } from "@ethersproject/contracts"
 import { Artifact } from "@nomiclabs/buidler/types"
 import { ethers } from "@nomiclabs/buidler"
