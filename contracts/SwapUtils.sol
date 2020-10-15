@@ -714,14 +714,14 @@ library SwapUtils {
      * @return current withdraw fee of the user
      */
     function calculateCurrentWithdrawFee(Swap storage self, address user) public view returns (uint256) {
-        uint256 endTime = self.depositTimestamp[user].add(52 weeks);
+        uint256 endTime = self.depositTimestamp[user].add(4 weeks);
 
         if (endTime > block.timestamp) {
             uint256 timeLeftover = endTime - block.timestamp;
             return self.defaultWithdrawFee
                 .mul(self.withdrawFeeMultiplier[user])
                 .mul(timeLeftover)
-                .div(52 weeks)
+                .div(4 weeks)
                 .div(FEE_DENOMINATOR);
         } else {
             return 0;
