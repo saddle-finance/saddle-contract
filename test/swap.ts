@@ -17,8 +17,10 @@ import { MathUtils } from "../build/typechain/MathUtils"
 
 import {
   deployContractWithLibraries,
+  getCurrentBlockTimestamp,
   getTokenBalances,
   MAX_UINT256,
+  setNextTimestamp,
 } from "./testUtils"
 
 chai.use(solidity)
@@ -119,7 +121,7 @@ describe("Swap", () => {
     // Populate the pool with initial liquidity
     await firstToken.approve(swap.address, MAX_UINT256)
     await secondToken.approve(swap.address, MAX_UINT256)
-    await swap.addLiquidity([String(1e18), String(1e18)], 0)
+    await swap.addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
 
     expect(await firstToken.balanceOf(swap.address)).to.eq(String(1e18))
     expect(await secondToken.balanceOf(swap.address)).to.eq(String(1e18))
@@ -192,8 +194,11 @@ describe("Swap", () => {
     it("Reverts when contract is paused", async () => {
       await swap.pause()
 
-      expect(swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0))
-        .to.be.reverted
+      expect(
+        swap
+          .connect(user1)
+          .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256),
+      ).to.be.reverted
     })
 
     it("Succeeds with expected output amount of pool tokens", async () => {
@@ -210,6 +215,7 @@ describe("Swap", () => {
         .addLiquidity(
           [String(1e18), String(3e18)],
           calculatedPoolTokenAmountWithSlippage,
+          MAX_UINT256,
         )
 
       const actualPoolTokenAmount = await swapToken.balanceOf(
@@ -238,6 +244,7 @@ describe("Swap", () => {
         .addLiquidity(
           [String(1e18), String(3e18)],
           calculatedPoolTokenAmountWithNegativeSlippage,
+          MAX_UINT256,
         )
 
       const actualPoolTokenAmount = await swapToken.balanceOf(
@@ -254,7 +261,9 @@ describe("Swap", () => {
     })
 
     it("Succeeds with correctly updated tokenBalance after imbalanced deposit", async () => {
-      await swap.connect(user1).addLiquidity([String(1e18), String(3e18)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(1e18), String(3e18)], 0, MAX_UINT256)
 
       // Check updated token balance
       expect(await swap.getTokenBalance(0)).to.eq(BigNumber.from(String(2e18)))
@@ -271,7 +280,7 @@ describe("Swap", () => {
         .div(1000)
 
       // Someone else deposits thus front running user 1's deposit
-      await swap.addLiquidity([String(1e18), String(3e18)], 0)
+      await swap.addLiquidity([String(1e18), String(3e18)], 0, MAX_UINT256)
 
       expect(
         swap
@@ -279,8 +288,24 @@ describe("Swap", () => {
           .addLiquidity(
             [String(1e18), String(3e18)],
             calculatedLPTokenAmountWithSlippage,
+            MAX_UINT256,
           ),
       ).to.be.reverted
+    })
+
+    it("Reverts when block is mined after deadline", async () => {
+      const currentTimestamp = await getCurrentBlockTimestamp()
+      await setNextTimestamp(currentTimestamp + 60 * 10)
+
+      await expect(
+        swap
+          .connect(user1)
+          .addLiquidity(
+            [String(2e18), String(1e16)],
+            0,
+            currentTimestamp + 60 * 5,
+          ),
+      ).to.be.revertedWith("Deadline not met")
     })
 
     it("Emits addLiquidity event", async () => {
@@ -298,6 +323,7 @@ describe("Swap", () => {
           .addLiquidity(
             [String(2e18), String(1e16)],
             calculatedLPTokenAmountWithSlippage,
+            MAX_UINT256,
           ),
       ).to.emit(swap.connect(user1), "AddLiquidity")
     })
@@ -306,7 +332,9 @@ describe("Swap", () => {
   describe("removeLiquidity", () => {
     it("Succeeds even when contract is paused", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -319,15 +347,19 @@ describe("Swap", () => {
       swapToken.approve(swap.address, String(2e18))
       swapToken.connect(user1).approve(swap.address, currentUser1Balance)
 
-      await swap.removeLiquidity(String(2e18), [0, 0])
-      await swap.connect(user1).removeLiquidity(currentUser1Balance, [0, 0])
+      await swap.removeLiquidity(String(2e18), [0, 0], MAX_UINT256)
+      await swap
+        .connect(user1)
+        .removeLiquidity(currentUser1Balance, [0, 0], MAX_UINT256)
       expect(await firstToken.balanceOf(swap.address)).to.eq(0)
       expect(await secondToken.balanceOf(swap.address)).to.eq(0)
     })
 
     it("Succeeds with expected return amounts of underlying tokens", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
 
       const [
         firstTokenBalanceBefore,
@@ -357,10 +389,11 @@ describe("Swap", () => {
         .approve(swap.address, poolTokenBalanceBefore)
       await swap
         .connect(user1)
-        .removeLiquidity(poolTokenBalanceBefore, [
-          expectedFirstTokenAmount,
-          expectedSecondTokenAmount,
-        ])
+        .removeLiquidity(
+          poolTokenBalanceBefore,
+          [expectedFirstTokenAmount, expectedSecondTokenAmount],
+          MAX_UINT256,
+        )
 
       const [
         firstTokenBalanceAfter,
@@ -378,7 +411,9 @@ describe("Swap", () => {
 
     it("Reverts when user tries to burn more LP tokens than they own", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -387,16 +422,19 @@ describe("Swap", () => {
       await expect(
         swap
           .connect(user1)
-          .removeLiquidity(currentUser1Balance.add(1), [
+          .removeLiquidity(
+            currentUser1Balance.add(1),
+            [MAX_UINT256, MAX_UINT256],
             MAX_UINT256,
-            MAX_UINT256,
-          ]),
+          ),
       ).to.be.reverted
     })
 
     it("Reverts when minAmounts of underlying tokens are not reached due to front running", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -415,31 +453,63 @@ describe("Swap", () => {
       )
 
       // User 2 adds liquidity, which leads to change in balance of underlying tokens
-      await swap.connect(user2).addLiquidity([String(1e16), String(2e18)], 0)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e16), String(2e18)], 0, MAX_UINT256)
 
       // User 1 tries to remove liquidity which get reverted due to front running
       await swapToken.connect(user1).approve(swap.address, currentUser1Balance)
       expect(
         swap
           .connect(user1)
-          .removeLiquidity(currentUser1Balance, [
-            expectedFirstTokenAmount,
-            expectedSecondTokenAmount,
-          ]),
+          .removeLiquidity(
+            currentUser1Balance,
+            [expectedFirstTokenAmount, expectedSecondTokenAmount],
+            MAX_UINT256,
+          ),
       ).to.be.reverted
     })
 
-    it("Emits removeLiquidity event", async () => {
+    it("Reverts when block is mined after deadline", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
 
-      // User 1 removes liquidity
+      const currentTimestamp = await getCurrentBlockTimestamp()
+      await setNextTimestamp(currentTimestamp + 60 * 10)
+
+      // User 1 tries removing liquidity with deadline of +5 minutes
       await swapToken.connect(user1).approve(swap.address, currentUser1Balance)
       await expect(
-        swap.connect(user1).removeLiquidity(currentUser1Balance, [0, 0]),
+        swap
+          .connect(user1)
+          .removeLiquidity(
+            currentUser1Balance,
+            [0, 0],
+            currentTimestamp + 60 * 5,
+          ),
+      ).to.be.revertedWith("Deadline not met")
+    })
+
+    it("Emits removeLiquidity event", async () => {
+      // User 1 adds liquidity
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
+      const currentUser1Balance = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
+
+      // User 1 tries removes liquidity
+      await swapToken.connect(user1).approve(swap.address, currentUser1Balance)
+      await expect(
+        swap
+          .connect(user1)
+          .removeLiquidity(currentUser1Balance, [0, 0], MAX_UINT256),
       ).to.emit(swap.connect(user1), "RemoveLiquidity")
     })
   })
@@ -447,7 +517,9 @@ describe("Swap", () => {
   describe("removeLiquidityImbalance", () => {
     it("Reverts when contract is paused", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -464,19 +536,26 @@ describe("Swap", () => {
         swap.removeLiquidityImbalance(
           [String(1e18), String(1e16)],
           MAX_UINT256,
+          MAX_UINT256,
         ),
       ).to.be.reverted
 
       await expect(
         swap
           .connect(user1)
-          .removeLiquidityImbalance([String(1e18), String(1e16)], MAX_UINT256),
+          .removeLiquidityImbalance(
+            [String(1e18), String(1e16)],
+            MAX_UINT256,
+            MAX_UINT256,
+          ),
       ).to.be.reverted
     })
 
     it("Succeeds with calculated max amount of pool token to be burned (±0.1%)", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -511,6 +590,7 @@ describe("Swap", () => {
         .removeLiquidityImbalance(
           [String(1e18), String(1e16)],
           maxPoolTokenAmountToBeBurnedNegativeSlippage,
+          MAX_UINT256,
         )
 
       const [
@@ -543,7 +623,9 @@ describe("Swap", () => {
 
     it("Reverts when user tries to burn more LP tokens than they own", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -555,13 +637,16 @@ describe("Swap", () => {
           .removeLiquidityImbalance(
             [String(1e18), String(1e16)],
             currentUser1Balance.add(1),
+            MAX_UINT256,
           ),
       ).to.be.reverted
     })
 
     it("Reverts when minAmounts of underlying tokens are not reached due to front running", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -579,7 +664,9 @@ describe("Swap", () => {
         .div(1000)
 
       // User 2 adds liquidity, which leads to change in balance of underlying tokens
-      await swap.connect(user2).addLiquidity([String(1e16), String(1e20)], 0)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e16), String(1e20)], 0, MAX_UINT256)
 
       // User 1 tries to remove liquidity which get reverted due to front running
       await swapToken
@@ -591,13 +678,41 @@ describe("Swap", () => {
           .removeLiquidityImbalance(
             [String(1e18), String(1e16)],
             maxPoolTokenAmountToBeBurnedNegativeSlippage,
+            MAX_UINT256,
           ),
       ).to.be.reverted
     })
 
+    it("Reverts when block is mined after deadline", async () => {
+      // User 1 adds liquidity
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
+      const currentUser1Balance = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
+
+      const currentTimestamp = await getCurrentBlockTimestamp()
+      await setNextTimestamp(currentTimestamp + 60 * 10)
+
+      // User 1 tries removing liquidity with deadline of +5 minutes
+      await swapToken.connect(user1).approve(swap.address, currentUser1Balance)
+      await expect(
+        swap
+          .connect(user1)
+          .removeLiquidityImbalance(
+            [String(1e18), String(1e16)],
+            currentUser1Balance,
+            currentTimestamp + 60 * 5,
+          ),
+      ).to.be.revertedWith("Deadline not met")
+    })
+
     it("Emits RemoveLiquidityImbalance event", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -611,6 +726,7 @@ describe("Swap", () => {
           .removeLiquidityImbalance(
             [String(1e18), String(1e16)],
             currentUser1Balance,
+            MAX_UINT256,
           ),
       ).to.emit(swap.connect(user1), "RemoveLiquidityImbalance")
     })
@@ -619,7 +735,9 @@ describe("Swap", () => {
   describe("removeLiquidityOneToken", () => {
     it("Reverts when contract is paused.", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -632,15 +750,20 @@ describe("Swap", () => {
       swapToken.approve(swap.address, String(2e18))
       swapToken.connect(user1).approve(swap.address, currentUser1Balance)
 
-      expect(swap.removeLiquidityOneToken(String(2e18), 0, 0)).to.be.reverted
+      expect(swap.removeLiquidityOneToken(String(2e18), 0, 0, MAX_UINT256)).to
+        .be.reverted
       expect(
-        swap.connect(user1).removeLiquidityOneToken(currentUser1Balance, 0, 0),
+        swap
+          .connect(user1)
+          .removeLiquidityOneToken(currentUser1Balance, 0, 0, MAX_UINT256),
       ).to.be.reverted
     })
 
     it("Succeeds with calculated token amount as minAmount", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -664,6 +787,7 @@ describe("Swap", () => {
           currentUser1Balance,
           0,
           calculatedFirstTokenAmount,
+          MAX_UINT256,
         )
       const after = await firstToken.balanceOf(await user1.getAddress())
 
@@ -672,7 +796,9 @@ describe("Swap", () => {
 
     it("Reverts when user tries to burn more LP tokens than they own", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -681,13 +807,20 @@ describe("Swap", () => {
       await expect(
         swap
           .connect(user1)
-          .removeLiquidityOneToken(currentUser1Balance.add(1), 0, 0),
+          .removeLiquidityOneToken(
+            currentUser1Balance.add(1),
+            0,
+            0,
+            MAX_UINT256,
+          ),
       ).to.be.reverted
     })
 
     it("Reverts when minAmount of underlying token is not reached due to front running", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
@@ -703,7 +836,9 @@ describe("Swap", () => {
       )
 
       // User 2 adds liquidity before User 1 initiates withdrawal
-      await swap.connect(user2).addLiquidity([String(1e16), String(1e20)], 0)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e16), String(1e20)], 0, MAX_UINT256)
 
       // User 1 initiates one token withdrawal
       swapToken.connect(user1).approve(swap.address, currentUser1Balance)
@@ -714,20 +849,51 @@ describe("Swap", () => {
             currentUser1Balance,
             0,
             calculatedFirstTokenAmount,
+            MAX_UINT256,
           ),
       ).to.be.reverted
     })
 
+    it("Reverts when block is mined after deadline", async () => {
+      // User 1 adds liquidity
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
+      const currentUser1Balance = await swapToken.balanceOf(
+        await user1.getAddress(),
+      )
+
+      const currentTimestamp = await getCurrentBlockTimestamp()
+      await setNextTimestamp(currentTimestamp + 60 * 10)
+
+      // User 1 tries removing liquidity with deadline of +5 minutes
+      await swapToken.connect(user1).approve(swap.address, currentUser1Balance)
+      await expect(
+        swap
+          .connect(user1)
+          .removeLiquidityOneToken(
+            currentUser1Balance,
+            0,
+            0,
+            currentTimestamp + 60 * 5,
+          ),
+      ).to.be.revertedWith("Deadline not met")
+    })
+
     it("Emits RemoveLiquidityOne event", async () => {
       // User 1 adds liquidity
-      await swap.connect(user1).addLiquidity([String(2e18), String(1e16)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
       const currentUser1Balance = await swapToken.balanceOf(
         await user1.getAddress(),
       )
 
       await swapToken.connect(user1).approve(swap.address, currentUser1Balance)
       await expect(
-        swap.connect(user1).removeLiquidityOneToken(currentUser1Balance, 0, 0),
+        swap
+          .connect(user1)
+          .removeLiquidityOneToken(currentUser1Balance, 0, 0, MAX_UINT256),
       ).to.emit(swap.connect(user1), "RemoveLiquidityOne")
     })
   })
@@ -738,8 +904,8 @@ describe("Swap", () => {
       await swap.pause()
 
       // User 1 try to initiate swap
-      await expect(swap.connect(user1).swap(0, 1, String(1e16), 0)).to.be
-        .reverted
+      await expect(swap.connect(user1).swap(0, 1, String(1e16), 0, MAX_UINT256))
+        .to.be.reverted
     })
 
     it("Succeeds with expected swap amounts", async () => {
@@ -753,7 +919,9 @@ describe("Swap", () => {
       ] = await getTokenBalances(user1, firstToken, secondToken)
 
       // User 1 successfully initiates swap
-      await swap.connect(user1).swap(0, 1, String(1e17), calculatedSwapReturn)
+      await swap
+        .connect(user1)
+        .swap(0, 1, String(1e17), calculatedSwapReturn, MAX_UINT256)
 
       // Check the sent and received amounts are as expected
       const [
@@ -774,11 +942,13 @@ describe("Swap", () => {
       expect(calculatedSwapReturn).to.eq(BigNumber.from("99702611562565289"))
 
       // User 2 swaps before User 1 does
-      await swap.connect(user2).swap(0, 1, String(1e17), 0)
+      await swap.connect(user2).swap(0, 1, String(1e17), 0, MAX_UINT256)
 
       // User 1 initiates swap
       await expect(
-        swap.connect(user1).swap(0, 1, String(1e17), calculatedSwapReturn),
+        swap
+          .connect(user1)
+          .swap(0, 1, String(1e17), calculatedSwapReturn, MAX_UINT256),
       ).to.be.reverted
     })
 
@@ -797,12 +967,18 @@ describe("Swap", () => {
         .div(100)
 
       // User 2 swaps before User 1 does
-      await swap.connect(user2).swap(0, 1, String(1e17), 0)
+      await swap.connect(user2).swap(0, 1, String(1e17), 0, MAX_UINT256)
 
       // User 1 successfully initiates swap with 1% slippage from initial calculated amount
       await swap
         .connect(user1)
-        .swap(0, 1, String(1e17), calculatedSwapReturnWithNegativeSlippage)
+        .swap(
+          0,
+          1,
+          String(1e17),
+          calculatedSwapReturnWithNegativeSlippage,
+          MAX_UINT256,
+        )
 
       // Check the sent and received amounts are as expected
       const [
@@ -823,12 +999,23 @@ describe("Swap", () => {
       expect(actualReceivedAmount).to.lt(calculatedSwapReturn)
     })
 
+    it("Reverts when block is mined after deadline", async () => {
+      const currentTimestamp = await getCurrentBlockTimestamp()
+      await setNextTimestamp(currentTimestamp + 60 * 10)
+
+      // User 1 tries swapping with deadline of +5 minutes
+      await expect(
+        swap
+          .connect(user1)
+          .swap(0, 1, String(1e17), 0, currentTimestamp + 60 * 5),
+      ).to.be.revertedWith("Deadline not met")
+    })
+
     it("Emits TokenSwap event", async () => {
       // User 1 initiates swap
-      await expect(swap.connect(user1).swap(0, 1, String(1e17), 0)).to.emit(
-        swap,
-        "TokenSwap",
-      )
+      await expect(
+        swap.connect(user1).swap(0, 1, String(1e17), 0, MAX_UINT256),
+      ).to.emit(swap, "TokenSwap")
     })
   })
 
@@ -839,26 +1026,30 @@ describe("Swap", () => {
 
     it("Returns expected values after swaps", async () => {
       // With each swap, virtual price will increase due to the fees
-      await swap.connect(user1).swap(0, 1, String(1e17), 0)
+      await swap.connect(user1).swap(0, 1, String(1e17), 0, MAX_UINT256)
       expect(await swap.getVirtualPrice()).to.eq(
         BigNumber.from("1000050005862349911"),
       )
 
-      await swap.connect(user1).swap(1, 0, String(1e17), 0)
+      await swap.connect(user1).swap(1, 0, String(1e17), 0, MAX_UINT256)
       expect(await swap.getVirtualPrice()).to.eq(
         BigNumber.from("1000100104768517937"),
       )
     })
 
     it("Returns expected values after imbalanced withdrawal", async () => {
-      await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
-      await swap.connect(user2).addLiquidity([String(1e18), String(1e18)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
 
       await swapToken.connect(user1).approve(swap.address, String(2e18))
       await swap
         .connect(user1)
-        .removeLiquidityImbalance([String(1e18), 0], String(2e18))
+        .removeLiquidityImbalance([String(1e18), 0], String(2e18), MAX_UINT256)
 
       expect(await swap.getVirtualPrice()).to.eq(
         BigNumber.from("1000100094088440633"),
@@ -867,7 +1058,7 @@ describe("Swap", () => {
       await swapToken.connect(user2).approve(swap.address, String(2e18))
       await swap
         .connect(user2)
-        .removeLiquidityImbalance([0, String(1e18)], String(2e18))
+        .removeLiquidityImbalance([0, String(1e18)], String(2e18), MAX_UINT256)
 
       expect(await swap.getVirtualPrice()).to.eq(
         BigNumber.from("1000200154928939884"),
@@ -877,25 +1068,35 @@ describe("Swap", () => {
     it("Value is unchanged after balanced deposits", async () => {
       // pool is 1:1 ratio
       expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
-      await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
 
       // pool changes to 2:1 ratio, thus changing the virtual price
-      await swap.connect(user2).addLiquidity([String(2e18), String(0)], 0)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(2e18), String(0)], 0, MAX_UINT256)
       expect(await swap.getVirtualPrice()).to.eq(
         BigNumber.from("1000167146429977312"),
       )
       // User 2 makes balanced deposit, keeping the ratio 2:1
-      await swap.connect(user2).addLiquidity([String(2e18), String(1e18)], 0)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(2e18), String(1e18)], 0, MAX_UINT256)
       expect(await swap.getVirtualPrice()).to.eq(
         BigNumber.from("1000167146429977312"),
       )
     })
 
     it("Value is unchanged after balanced withdrawals", async () => {
-      await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       await swapToken.connect(user1).approve(swap.address, String(1e18))
-      await swap.connect(user1).removeLiquidity(String(1e18), ["0", "0"])
+      await swap
+        .connect(user1)
+        .removeLiquidity(String(1e18), ["0", "0"], MAX_UINT256)
       expect(await swap.getVirtualPrice()).to.eq(BigNumber.from(String(1e18)))
     })
   })
@@ -939,7 +1140,7 @@ describe("Swap", () => {
       expect(await swap.getAdminBalance(0)).to.eq(0)
       expect(await swap.getAdminBalance(1)).to.eq(0)
 
-      await swap.connect(user1).swap(0, 1, String(1e17), 0)
+      await swap.connect(user1).swap(0, 1, String(1e17), 0, MAX_UINT256)
 
       expect(await swap.getAdminBalance(0)).to.eq(0)
       expect(await swap.getAdminBalance(1)).to.eq(0)
@@ -948,7 +1149,7 @@ describe("Swap", () => {
     it("Returns expected amounts after swaps when adminFee is higher than 0", async () => {
       // Sets adminFee to 1% of the swap fees
       await swap.setAdminFee(BigNumber.from(10 ** 8))
-      await swap.connect(user1).swap(0, 1, String(1e17), 0)
+      await swap.connect(user1).swap(0, 1, String(1e17), 0, MAX_UINT256)
 
       expect(await swap.getAdminBalance(0)).to.eq(0)
       expect(await swap.getAdminBalance(1)).to.eq(String(998024139765))
@@ -957,7 +1158,7 @@ describe("Swap", () => {
       // Therefore swapping from 1st -> 0th will result in more 0th token returned
       // Also results in higher fees collected on the second swap.
 
-      await swap.connect(user1).swap(1, 0, String(1e17), 0)
+      await swap.connect(user1).swap(1, 0, String(1e17), 0, MAX_UINT256)
 
       expect(await swap.getAdminBalance(0)).to.eq(String(1001973776101))
       expect(await swap.getAdminBalance(1)).to.eq(String(998024139765))
@@ -973,8 +1174,8 @@ describe("Swap", () => {
     it("Succeeds with expected amount of fees withdrawn", async () => {
       // Sets adminFee to 1% of the swap fees
       await swap.setAdminFee(BigNumber.from(10 ** 8))
-      await swap.connect(user1).swap(0, 1, String(1e17), 0)
-      await swap.connect(user1).swap(1, 0, String(1e17), 0)
+      await swap.connect(user1).swap(0, 1, String(1e17), 0, MAX_UINT256)
+      await swap.connect(user1).swap(1, 0, String(1e17), 0, MAX_UINT256)
 
       expect(await swap.getAdminBalance(0)).to.eq(String(1001973776101))
       expect(await swap.getAdminBalance(1)).to.eq(String(998024139765))
@@ -1002,11 +1203,13 @@ describe("Swap", () => {
     it("Withdrawing admin fees has no impact on users' withdrawal", async () => {
       // Sets adminFee to 1% of the swap fees
       await swap.setAdminFee(BigNumber.from(10 ** 8))
-      await swap.connect(user1).addLiquidity([String(1e18), String(1e18)], 0)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
 
       for (let i = 0; i < 10; i++) {
-        await swap.connect(user2).swap(0, 1, String(1e17), 0)
-        await swap.connect(user2).swap(1, 0, String(1e17), 0)
+        await swap.connect(user2).swap(0, 1, String(1e17), 0, MAX_UINT256)
+        await swap.connect(user2).swap(1, 0, String(1e17), 0, MAX_UINT256)
       }
 
       await swap.withdrawAdminFees()
@@ -1021,7 +1224,9 @@ describe("Swap", () => {
         await user1.getAddress(),
       )
       await swapToken.connect(user1).approve(swap.address, user1LPTokenBalance)
-      await swap.connect(user1).removeLiquidity(user1LPTokenBalance, [0, 0])
+      await swap
+        .connect(user1)
+        .removeLiquidity(user1LPTokenBalance, [0, 0], MAX_UINT256)
 
       const [firstTokenAfter, secondTokenAfter] = await getTokenBalances(
         user1,

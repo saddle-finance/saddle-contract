@@ -83,6 +83,15 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
+     * @notice Modifier to check deadline against current timestamp
+     * @param deadline latest timestamp to accept this transaction
+     */
+    modifier deadlineCheck(uint256 deadline) {
+        require(block.timestamp <= deadline, "Deadline not met");
+        _;
+    }
+
+    /**
      * @notice Return A, the the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
      */
@@ -113,8 +122,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param minAmount the minimum amount to withdraw, otherwise revert
      */
     function removeLiquidityOneToken(
-        uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount
-    ) external nonReentrant onlyUnpaused {
+        uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount, uint256 deadline
+    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
         return swapStorage.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
     }
 
@@ -133,8 +142,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      *        should mint, otherwise revert. Handy for front-running mitigation
      */
-    function addLiquidity(uint256[] calldata amounts, uint256 minToMint)
-        external nonReentrant onlyUnpaused {
+    function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline)
+        external nonReentrant onlyUnpaused deadlineCheck(deadline) {
         swapStorage.addLiquidity(amounts, minToMint);
     }
 
@@ -146,8 +155,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param minDy the min amount the user would like to receive, or revert.
      */
     function swap(
-        uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy
-    ) external nonReentrant onlyUnpaused {
+        uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy, uint256 deadline
+    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
         return swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
 
@@ -170,8 +179,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param minAmounts the minimum amounts of each token in the pool
      *        acceptable for this burn. Useful as a front-running mitigation
      */
-    function removeLiquidity(uint256 amount, uint256[] calldata minAmounts)
-        external nonReentrant {
+    function removeLiquidity(uint256 amount, uint256[] calldata minAmounts, uint256 deadline)
+        external nonReentrant deadlineCheck(deadline) {
         return swapStorage.removeLiquidity(amount, minAmounts);
     }
 
@@ -183,8 +192,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *        remove liquidity. Useful as a front-running mitigation.
      */
     function removeLiquidityImbalance(
-        uint256[] calldata amounts, uint256 maxBurnAmount
-    ) external nonReentrant onlyUnpaused {
+        uint256[] calldata amounts, uint256 maxBurnAmount, uint256 deadline
+    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
         return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
 

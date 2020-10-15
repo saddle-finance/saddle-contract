@@ -13,5 +13,8 @@
   "env": {
     "es6": true,
     "mocha": true
+  },
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "off"
   }
 }

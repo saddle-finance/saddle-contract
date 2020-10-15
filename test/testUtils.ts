@@ -79,3 +79,21 @@ export async function getTokenBalance(
   }
   return token.balanceOf(address)
 }
+
+export async function setNextTimestamp(timestamp: number): Promise<any> {
+  const chainId = (await ethers.provider.getNetwork()).chainId
+
+  switch (chainId) {
+    case 31337: // buidler evm
+      return ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
+    case 1337: // ganache
+    default:
+      return ethers.provider.send("evm_mine", [timestamp])
+  }
+}
+
+export async function getCurrentBlockTimestamp(): Promise<number> {
+  return (
+    await ethers.provider.getBlock(await ethers.provider.getBlockNumber())
+  ).timestamp
+}
