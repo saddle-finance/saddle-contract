@@ -51,7 +51,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     constructor(
         IERC20[] memory _pooledTokens, uint256[] memory precisions,
         string memory lpTokenName, string memory lpTokenSymbol, uint256 _A,
-        uint256 _fee, uint256 _adminFee, IAllowlist _allowlist
+        uint256 _fee, uint256 _adminFee, uint256 _withdrawFee, IAllowlist _allowlist
     ) public OwnerPausable() ReentrancyGuard() {
         require(
             _pooledTokens.length <= 32,
@@ -81,7 +81,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             balances: new uint256[](_pooledTokens.length),
             A: _A,
             swapFee: _fee,
-            adminFee: _adminFee
+            adminFee: _adminFee,
+            defaultWithdrawFee: _withdrawFee
         });
 
         allowlist = _allowlist;
@@ -112,6 +113,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function getToken(uint8 index) external view returns (IERC20) {
         return swapStorage.pooledTokens[index];
+    }
+
+    /**
+     * @notice Return timestamp of last deposit of given address
+     */
+    function getDepositTimestamp(address user) external view returns (uint256) {
+        return swapStorage.getDepositTimestamp(user);
     }
 
     /**
@@ -258,6 +266,16 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
+     * @notice calculate the fee that is applied when the given user withdraws
+     * @dev returned value should be divided by FEE_DENOMINATOR to convert to correct decimals
+     * @param user address you want to calculate withdraw fee of
+     * @return current withdraw fee of the user
+     */
+    function calculateCurrentWithdrawFee(address user) external view returns (uint256) {
+        return swapStorage.calculateCurrentWithdrawFee(user);
+    }
+
+    /**
      * @notice return accumulated amount of admin fees of the token with given index
      * @param index Index of the pooled token
      * @return admin's token balance in the token's precision
@@ -287,6 +305,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function setSwapFee(uint256 newSwapFee) external onlyOwner {
         swapStorage.setSwapFee(newSwapFee);
+    }
+
+    /**
+     * @notice update the withdraw fee
+     * @param newWithdrawFee new withdraw fee to be applied on future deposits
+     */
+    function setDefaultWithdrawFee(uint256 newWithdrawFee) external onlyOwner {
+        swapStorage.setDefaultWithdrawFee(newWithdrawFee);
     }
 
     /**

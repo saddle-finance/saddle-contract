@@ -9,7 +9,6 @@
     "test": "test"
   },
   "dependencies": {
-    "@ethersproject/bignumber": "^5.0.8",
     "@openzeppelin/contracts": "^2.5.1"
   },
   "devDependencies": {
