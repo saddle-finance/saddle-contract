@@ -19,6 +19,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     IAllowlist public allowlist;
     bool public isGuarded = true;
 
+    /*** EVENTS ***/
+
     // events replicated fromm SwapUtils to make the ABI easier for dumb
     // clients
     event TokenSwap(address indexed buyer, uint256 tokensSold,
@@ -46,7 +48,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param lpTokenSymbol, the short symbol for the token to be deployed
      * @param _A the the amplification coefficient * n * (n - 1). See the
      *        StableSwap paper for details
-     * @param _fee TODO TODO
+     * @param _fee default swap fee to be initialized with
+     * @param _adminFee default adminFee to be initialized with
+     * @param _withdrawFee default withdrawFee to be initliazed with
+     * @param _allowlist address of allowlist contract for guarded launch
      */
     constructor(
         IERC20[] memory _pooledTokens, uint256[] memory precisions,
@@ -90,6 +95,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         isGuarded = true;
     }
 
+    /*** MODIFIERS ***/
+
     /**
      * @notice Modifier to check deadline against current timestamp
      * @param deadline latest timestamp to accept this transaction
@@ -98,6 +105,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         require(block.timestamp <= deadline, "Deadline not met");
         _;
     }
+
+    /*** VIEW FUNCTIONS ***/
 
     /**
      * @notice Return A, the the amplification coefficient * n * (n - 1)
@@ -131,61 +140,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Remove liquidity from the pool all in one token.
-     * @param tokenAmount the amount of the token you want to receive
-     * @param tokenIndex the index of the token you want to receive
-     * @param minAmount the minimum amount to withdraw, otherwise revert
-     */
-    function removeLiquidityOneToken(
-        uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount, uint256 deadline
-    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
-        return swapStorage.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
-    }
-
-    /**
      * @notice Get the virtual price, to help calculate profit
      * @return the virtual price, scaled to the POOL_PRECISION
      */
     function getVirtualPrice() external view returns (uint256) {
         return swapStorage.getVirtualPrice();
-    }
-
-    /**
-     * @notice Add liquidity to the pool
-     * @param amounts the amounts of each token to add, in their native
-     *        precision
-     * @param minToMint the minimum LP tokens adding this amount of liquidity
-     *        should mint, otherwise revert. Handy for front-running mitigation
-     */
-    function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline)
-        external nonReentrant onlyUnpaused deadlineCheck(deadline) {
-        swapStorage.addLiquidity(amounts, minToMint);
-
-        if (isGuarded) {
-            // Check per user deposit limit
-            require(
-                allowlist.getAllowedAmount(address(this), msg.sender) >= swapStorage.lpToken.balanceOf(msg.sender),
-                "Deposit limit reached"
-            );
-            // Check pool's TVL cap limit via totalSupply of the pool token
-            require(
-                allowlist.getPoolCap(address(this)) >= swapStorage.lpToken.totalSupply(),
-                "Pool TVL cap reached"
-            );
-        }
-    }
-
-    /**
-     * @notice swap two tokens in the pool
-     * @param tokenIndexFrom the token the user wants to sell
-     * @param tokenIndexTo the token the user wants to buy
-     * @param dx the amount of tokens the user wants to sell
-     * @param minDy the min amount the user would like to receive, or revert.
-     */
-    function swap(
-        uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy, uint256 deadline
-    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
-        return swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
 
     /**
@@ -201,31 +160,6 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Burn LP tokens to remove liquidity from the pool.
-     * @dev Liquidity can always be removed, even when the pool is paused.
-     * @param amount the amount of LP tokens to burn
-     * @param minAmounts the minimum amounts of each token in the pool
-     *        acceptable for this burn. Useful as a front-running mitigation
-     */
-    function removeLiquidity(uint256 amount, uint256[] calldata minAmounts, uint256 deadline)
-        external nonReentrant deadlineCheck(deadline) {
-        return swapStorage.removeLiquidity(amount, minAmounts);
-    }
-
-    /**
-     * @notice Remove liquidity from the pool, weighted differently than the
-     *         pool's current balances.
-     * @param amounts how much of each token to withdraw
-     * @param maxBurnAmount the max LP token provider is willing to pay to
-     *        remove liquidity. Useful as a front-running mitigation.
-     */
-    function removeLiquidityImbalance(
-        uint256[] calldata amounts, uint256 maxBurnAmount, uint256 deadline
-    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
-        return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
-    }
-
-    /**
      * @notice A simple method to calculate prices from deposits or
      *         withdrawals, excluding fees but including slippage. This is
      *         helpful as an input into the various "min" parameters on calls
@@ -237,7 +171,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param deposit whether this is a deposit or a withdrawal
      */
     function calculateTokenAmount(uint256[] calldata amounts, bool deposit)
-        external view returns(uint256) {
+    external view returns(uint256) {
         return swapStorage.calculateTokenAmount(amounts, deposit);
     }
 
@@ -283,6 +217,85 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     function getAdminBalance(uint256 index) external view returns (uint256) {
         return swapStorage.getAdminBalance(index);
     }
+
+    /*** STATE MODIFYING FUNCTIONS ***/
+
+    /**
+     * @notice swap two tokens in the pool
+     * @param tokenIndexFrom the token the user wants to sell
+     * @param tokenIndexTo the token the user wants to buy
+     * @param dx the amount of tokens the user wants to sell
+     * @param minDy the min amount the user would like to receive, or revert.
+     */
+    function swap(
+        uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy, uint256 deadline
+    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+        return swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
+    }
+
+    /**
+     * @notice Add liquidity to the pool
+     * @param amounts the amounts of each token to add, in their native
+     *        precision
+     * @param minToMint the minimum LP tokens adding this amount of liquidity
+     *        should mint, otherwise revert. Handy for front-running mitigation
+     */
+    function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline)
+        external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+        swapStorage.addLiquidity(amounts, minToMint);
+
+        if (isGuarded) {
+            // Check per user deposit limit
+            require(
+                allowlist.getAllowedAmount(address(this), msg.sender) >= swapStorage.lpToken.balanceOf(msg.sender),
+                "Deposit limit reached"
+            );
+            // Check pool's TVL cap limit via totalSupply of the pool token
+            require(
+                allowlist.getPoolCap(address(this)) >= swapStorage.lpToken.totalSupply(),
+                "Pool TVL cap reached"
+            );
+        }
+    }
+
+    /**
+     * @notice Burn LP tokens to remove liquidity from the pool.
+     * @dev Liquidity can always be removed, even when the pool is paused.
+     * @param amount the amount of LP tokens to burn
+     * @param minAmounts the minimum amounts of each token in the pool
+     *        acceptable for this burn. Useful as a front-running mitigation
+     */
+    function removeLiquidity(uint256 amount, uint256[] calldata minAmounts, uint256 deadline)
+        external nonReentrant deadlineCheck(deadline) {
+        return swapStorage.removeLiquidity(amount, minAmounts);
+    }
+
+    /**
+     * @notice Remove liquidity from the pool all in one token.
+     * @param tokenAmount the amount of the token you want to receive
+     * @param tokenIndex the index of the token you want to receive
+     * @param minAmount the minimum amount to withdraw, otherwise revert
+     */
+    function removeLiquidityOneToken(
+        uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount, uint256 deadline
+    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+        return swapStorage.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
+    }
+
+    /**
+     * @notice Remove liquidity from the pool, weighted differently than the
+     *         pool's current balances.
+     * @param amounts how much of each token to withdraw
+     * @param maxBurnAmount the max LP token provider is willing to pay to
+     *        remove liquidity. Useful as a front-running mitigation.
+     */
+    function removeLiquidityImbalance(
+        uint256[] calldata amounts, uint256 maxBurnAmount, uint256 deadline
+    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+        return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
+    }
+
+    /*** ADMIN FUNCTIONS ***/
 
     /**
      * @notice withdraw all admin fees to the contract owner

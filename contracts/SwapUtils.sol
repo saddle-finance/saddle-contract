@@ -10,7 +10,8 @@ library SwapUtils {
     using SafeMath for uint256;
     using MathUtils for uint256;
 
-    // events
+    /*** EVENTS ***/
+
     event TokenSwap(address indexed buyer, uint256 tokensSold,
         uint256 tokensBought, uint128 soldId, uint128 boughtId
     );
@@ -78,6 +79,8 @@ library SwapUtils {
     // long term providers.
     uint256 constant MAX_WITHDRAW_FEE = 10 ** 8;
 
+    /*** VIEW & PURE FUNCTIONS ***/
+
     /**
      * @notice Return A, the the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
@@ -99,42 +102,6 @@ library SwapUtils {
      */
     function getDepositTimestamp(Swap storage self, address user) public view returns (uint256) {
         return self.depositTimestamp[user];
-    }
-
-    /**
-     * @notice Remove liquidity from the pool all in one token.
-     * @param tokenAmount the amount of the token you want to receive
-     * @param tokenIndex the index of the token you want to receive
-     * @param minAmount the minimum amount to withdraw, otherwise revert
-     */
-    function removeLiquidityOneToken(
-        Swap storage self, uint256 tokenAmount, uint8 tokenIndex,
-        uint256 minAmount
-    ) external {
-        uint256 totalSupply = self.lpToken.totalSupply();
-        uint256 numTokens = self.pooledTokens.length;
-        require(tokenAmount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
-        require(tokenIndex < numTokens, "Token not found");
-
-        uint256 dyFee = 0;
-        uint256 dy = 0;
-
-        (dy, dyFee) = calculateWithdrawOneToken(self, tokenAmount, tokenIndex);
-        dy = dy
-            .mul(FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender)))
-            .div(FEE_DENOMINATOR);
-
-        require(dy >= minAmount, "The min amount of tokens wasn't met");
-
-        self.balances[tokenIndex] = self.balances[tokenIndex].sub(
-            dy.add(dyFee.mul(self.adminFee).div(FEE_DENOMINATOR))
-        );
-        self.lpToken.burnFrom(msg.sender, tokenAmount);
-        self.pooledTokens[tokenIndex].safeTransfer(msg.sender, dy);
-
-        emit RemoveLiquidityOne(
-            msg.sender, tokenAmount, totalSupply, tokenIndex, dy
-        );
     }
 
     /**
@@ -349,6 +316,233 @@ library SwapUtils {
     }
 
     /**
+     * @notice Calculate the balances of the tokens to send to the user
+     *         after given amount of pool token is burned.
+     * @param amount Amount of pool token to burn
+     * @return balances of the tokens to send to the user
+     */
+    function calculateRebalanceAmounts(Swap storage self, uint256 amount)
+    internal view returns(uint256[] memory) {
+        uint256 tokenSupply = self.lpToken.totalSupply();
+        uint256[] memory amounts = new uint256[](self.pooledTokens.length);
+
+        for (uint i = 0; i < self.pooledTokens.length; i++) {
+            amounts[i] = self.balances[i].mul(amount).div(tokenSupply);
+        }
+
+        return amounts;
+    }
+
+    /**
+     * @notice Calculate the new balances of the tokens given the indexes of the token
+     *         that is swapped from (FROM) and the token that is swapped to (TO).
+     *         This function is used as a helper function to calculate how much TO token
+     *         the user should receive on swap.
+     * @param tokenIndexFrom index of FROM token
+     * @param tokenIndexTo index of TO token
+     * @param x the new total amount of FROM token
+     * @param xp balances of the tokens in the pool
+     * @return the amount of TO token that should remain in the pool
+     */
+    function getY(
+        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 x,
+        uint256[] memory xp
+    ) internal view returns (uint256) {
+        uint256 numTokens = self.pooledTokens.length;
+        require(tokenIndexFrom != tokenIndexTo, "Can't compare token to itself");
+        require(
+            tokenIndexFrom < numTokens && tokenIndexTo < numTokens,
+            "Tokens must be in pool"
+        );
+
+        uint256 _A = getA(self);
+        uint256 D = getD(xp, _A);
+        uint256 c = D;
+        uint256 s = 0;
+        uint256 nA = numTokens.mul(_A);
+        uint256 cDivider = 1;
+
+        uint256 _x = 0;
+        for (uint i = 0; i < numTokens; i++) {
+            if (i == tokenIndexFrom) {
+                _x = x;
+            } else if (i != tokenIndexTo) {
+                _x = xp[i];
+            }
+            else {
+                continue;
+            }
+            s = s.add(_x);
+            c = c.mul(D);
+            cDivider = cDivider.mul(_x).mul(numTokens);
+        }
+        c = c.mul(D).div(nA.mul(numTokens).mul(cDivider));
+        uint256 b = s.add(D.div(nA));
+        uint256 yPrev = 0;
+        uint256 y = D;
+
+        // iterative approximation
+        for (uint i = 0; i < 256; i++) {
+            yPrev = y;
+            y = y.mul(y).add(c).div(y.mul(2).add(b).sub(D));
+            if (y.within1(yPrev)) {
+                break;
+            }
+        }
+        return y;
+    }
+
+    /**
+     * @notice Externally calculates a swap between two tokens.
+     * @param tokenIndexFrom the token to sell
+     * @param tokenIndexTo the token to buy
+     * @param dx the number of tokens to sell
+     * @return dy the number of tokens the user will get
+     */
+    function calculateSwap(
+        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
+    ) external view returns(uint256 dy) {
+        (dy, ) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
+    }
+
+    /**
+     * @notice Internally calculates a swap between two tokens.
+     * @dev The caller is expected to transfer the actual amounts (dx and dy)
+     *      using the token contracts.
+     * @param tokenIndexFrom the token to sell
+     * @param tokenIndexTo the token to buy
+     * @param dx the number of tokens to sell
+     * @return dy the number of tokens the user will get
+     * @return dyFee the associated fee
+     */
+    function _calculateSwap(
+        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
+    ) internal view returns(uint256 dy, uint256 dyFee) {
+        uint256[] memory xp = _xp(self);
+        uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]).add(
+            xp[tokenIndexFrom]);
+        uint256 y = getY(self, tokenIndexFrom, tokenIndexTo, x, xp);
+        dy = xp[tokenIndexTo].sub(y).sub(1);
+        dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
+        dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
+    }
+
+    /**
+     * @notice A simple method to calculate amount of each underlying
+     *         tokens that is returned upon burning given amount of
+     *         LP tokens
+     * @param amount the amount of LP tokens that would to be burned on
+     *        withdrawal
+     */
+    function calculateRemoveLiquidity(Swap storage self, uint256 amount)
+    external view returns (uint256[] memory) {
+        uint256 totalSupply = self.lpToken.totalSupply();
+        uint256[] memory amounts = new uint256[](self.pooledTokens.length);
+
+        for (uint i = 0; i < self.pooledTokens.length; i++) {
+            amounts[i] = self.balances[i].mul(amount).div(totalSupply);
+        }
+        return amounts;
+    }
+
+    /**
+     * @notice calculate the fee that is applied when the given user withdraws
+     * @param user address you want to calculate withdraw fee of
+     * @return current withdraw fee of the user
+     */
+    function calculateCurrentWithdrawFee(Swap storage self, address user) public view returns (uint256) {
+        uint256 endTime = self.depositTimestamp[user].add(4 weeks);
+
+        if (endTime > block.timestamp) {
+            uint256 timeLeftover = endTime - block.timestamp;
+            return self.defaultWithdrawFee
+            .mul(self.withdrawFeeMultiplier[user])
+            .mul(timeLeftover)
+            .div(4 weeks)
+            .div(FEE_DENOMINATOR);
+        } else {
+            return 0;
+        }
+    }
+
+    /**
+     * @notice A simple method to calculate prices from deposits or
+     *         withdrawals, excluding fees but including slippage. This is
+     *         helpful as an input into the various "min" parameters on calls
+     *         to fight front-running
+     * @dev This shouldn't be used outside frontends for user estimates.
+     * @param amounts an array of token amounts to deposit or withdrawal,
+     *        corresponding to pooledTokens. The amount should be in each
+     *        pooled token's native precision
+     * @param deposit whether this is a deposit or a withdrawal
+     */
+    function calculateTokenAmount(
+        Swap storage self, uint256[] calldata amounts, bool deposit
+    ) external view returns(uint256) {
+        uint256 numTokens = self.pooledTokens.length;
+        uint256 _A = getA(self);
+        uint256 D0 = getD(_xp(self, self.balances), _A);
+        uint256[] memory balances1 = self.balances;
+        for (uint i = 0; i < numTokens; i++) {
+            if (deposit) {
+                balances1[i] = balances1[i].add(amounts[i]);
+            } else {
+                balances1[i] = balances1[i].sub(amounts[i]);
+            }
+        }
+        uint256 D1 = getD(_xp(self, balances1), _A);
+        uint256 totalSupply = self.lpToken.totalSupply();
+        return (deposit ? D1.sub(D0) : D0.sub(D1)).mul(totalSupply).div(D0);
+    }
+
+    /**
+     * @notice return accumulated amount of admin fees of the token with given index
+     * @param index Index of the pooled token
+     * @return admin balance in the token's precision
+     */
+    function getAdminBalance(Swap storage self, uint256 index) external view returns (uint256) {
+        return self.pooledTokens[index].balanceOf(address(this)) - self.balances[index];
+    }
+
+    /**
+     * @notice internal helper function to calculate fee per token multiplier used in
+     *         swap fee calculations
+     */
+    function feePerToken(Swap storage self)
+    internal view returns(uint256) {
+        return self.swapFee.mul(self.pooledTokens.length).div(
+            self.pooledTokens.length.sub(1).mul(4));
+    }
+
+    /*** STATE MODIFYING FUNCTIONS ***/
+
+    /**
+     * @notice swap two tokens in the pool
+     * @param tokenIndexFrom the token the user wants to sell
+     * @param tokenIndexTo the token the user wants to buy
+     * @param dx the amount of tokens the user wants to sell
+     * @param minDy the min amount the user would like to receive, or revert.
+     */
+    function swap(
+        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx,
+        uint256 minDy
+    ) external {
+        (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
+        require(dy >= minDy, "Swap didn't result in min tokens");
+
+        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
+
+        self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(dx);
+        self.balances[tokenIndexTo] = self.balances[tokenIndexTo].sub(dy).sub(dyAdminFee);
+
+        self.pooledTokens[tokenIndexFrom].safeTransferFrom(
+            msg.sender, address(this), dx);
+        self.pooledTokens[tokenIndexTo].safeTransfer(msg.sender, dy);
+
+        emit TokenSwap(msg.sender, dx, dy, tokenIndexFrom, tokenIndexTo);
+    }
+
+    /**
      * @notice Add liquidity to the pool
      * @param amounts the amounts of each token to add, in their native
      *        precision
@@ -446,168 +640,6 @@ library SwapUtils {
         self.depositTimestamp[user] = block.timestamp;
     }
 
-    function feePerToken(Swap storage self)
-        internal view returns(uint256) {
-        return self.swapFee.mul(self.pooledTokens.length).div(
-            self.pooledTokens.length.sub(1).mul(4));
-    }
-
-    /**
-     * @notice Calculate the balances of the tokens to send to the user
-     *         after given amount of pool token is burned.
-     * @param amount Amount of pool token to burn
-     * @return balances of the tokens to send to the user
-     */
-    function calculateRebalanceAmounts(Swap storage self, uint256 amount)
-        internal view returns(uint256[] memory) {
-        uint256 tokenSupply = self.lpToken.totalSupply();
-        uint256[] memory amounts = new uint256[](self.pooledTokens.length);
-
-        for (uint i = 0; i < self.pooledTokens.length; i++) {
-            amounts[i] = self.balances[i].mul(amount).div(tokenSupply);
-        }
-
-        return amounts;
-    }
-
-    /**
-     * @notice Calculate the new balances of the tokens given the indexes of the token
-     *         that is swapped from (FROM) and the token that is swapped to (TO).
-     *         This function is used as a helper function to calculate how much TO token
-     *         the user should receive on swap.
-     * @param tokenIndexFrom index of FROM token
-     * @param tokenIndexTo index of TO token
-     * @param x the new total amount of FROM token
-     * @param xp balances of the tokens in the pool
-     * @return the amount of TO token that should remain in the pool
-     */
-    function getY(
-        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 x,
-        uint256[] memory xp
-    ) internal view returns (uint256) {
-        uint256 numTokens = self.pooledTokens.length;
-        require(tokenIndexFrom != tokenIndexTo, "Can't compare token to itself");
-        require(
-            tokenIndexFrom < numTokens && tokenIndexTo < numTokens,
-            "Tokens must be in pool"
-        );
-
-        uint256 _A = getA(self);
-        uint256 D = getD(xp, _A);
-        uint256 c = D;
-        uint256 s = 0;
-        uint256 nA = numTokens.mul(_A);
-        uint256 cDivider = 1;
-
-        uint256 _x = 0;
-        for (uint i = 0; i < numTokens; i++) {
-            if (i == tokenIndexFrom) {
-                _x = x;
-            } else if (i != tokenIndexTo) {
-                _x = xp[i];
-            }
-            else {
-                continue;
-            }
-            s = s.add(_x);
-            c = c.mul(D);
-            cDivider = cDivider.mul(_x).mul(numTokens);
-        }
-        c = c.mul(D).div(nA.mul(numTokens).mul(cDivider));
-        uint256 b = s.add(D.div(nA));
-        uint256 yPrev = 0;
-        uint256 y = D;
-
-        // iterative approximation
-        for (uint i = 0; i < 256; i++) {
-            yPrev = y;
-            y = y.mul(y).add(c).div(y.mul(2).add(b).sub(D));
-            if (y.within1(yPrev)) {
-                break;
-            }
-        }
-        return y;
-    }
-
-    /**
-     * @notice Internally calculates a swap between two tokens.
-     * @dev The caller is expected to transfer the actual amounts (dx and dy)
-     *      using the token contracts.
-     * @param tokenIndexFrom the token to sell
-     * @param tokenIndexTo the token to buy
-     * @param dx the number of tokens to sell
-     * @return dy the number of tokens the user will get
-     * @return dyFee the associated fee
-     */
-    function _calculateSwap(
-        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
-    ) internal view returns(uint256 dy, uint256 dyFee) {
-        uint256[] memory xp = _xp(self);
-        uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]).add(
-            xp[tokenIndexFrom]);
-        uint256 y = getY(self, tokenIndexFrom, tokenIndexTo, x, xp);
-        dy = xp[tokenIndexTo].sub(y).sub(1);
-        dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
-        dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
-    }
-
-    /**
-     * @notice Externally calculates a swap between two tokens.
-     * @param tokenIndexFrom the token to sell
-     * @param tokenIndexTo the token to buy
-     * @param dx the number of tokens to sell
-     * @return dy the number of tokens the user will get
-     */
-    function calculateSwap(
-        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
-    ) external view returns(uint256 dy) {
-        (dy, ) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
-    }
-
-    /**
-     * @notice swap two tokens in the pool
-     * @param tokenIndexFrom the token the user wants to sell
-     * @param tokenIndexTo the token the user wants to buy
-     * @param dx the amount of tokens the user wants to sell
-     * @param minDy the min amount the user would like to receive, or revert.
-     */
-    function swap(
-        Swap storage self, uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx,
-        uint256 minDy
-    ) external {
-        (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
-        require(dy >= minDy, "Swap didn't result in min tokens");
-
-        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
-
-        self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(dx);
-        self.balances[tokenIndexTo] = self.balances[tokenIndexTo].sub(dy).sub(dyAdminFee);
-
-        self.pooledTokens[tokenIndexFrom].safeTransferFrom(
-            msg.sender, address(this), dx);
-        self.pooledTokens[tokenIndexTo].safeTransfer(msg.sender, dy);
-
-        emit TokenSwap(msg.sender, dx, dy, tokenIndexFrom, tokenIndexTo);
-    }
-
-    /**
-     * @notice A simple method to calculate amount of each underlying
-     *         tokens that is returned upon burning given amount of
-     *         LP tokens
-     * @param amount the amount of LP tokens that would to be burned on
-     *        withdrawal
-     */
-    function calculateRemoveLiquidity(Swap storage self, uint256 amount)
-        external view returns (uint256[] memory) {
-        uint256 totalSupply = self.lpToken.totalSupply();
-        uint256[] memory amounts = new uint256[](self.pooledTokens.length);
-
-        for (uint i = 0; i < self.pooledTokens.length; i++) {
-            amounts[i] = self.balances[i].mul(amount).div(totalSupply);
-        }
-        return amounts;
-    }
-
     /**
      * @notice Burn LP tokens to remove liquidity from the pool.
      * @dev Liquidity can always be removed, even when the pool is paused.
@@ -646,6 +678,42 @@ library SwapUtils {
 
         emit RemoveLiquidity(
             msg.sender, amounts, self.lpToken.totalSupply()
+        );
+    }
+
+    /**
+     * @notice Remove liquidity from the pool all in one token.
+     * @param tokenAmount the amount of the token you want to receive
+     * @param tokenIndex the index of the token you want to receive
+     * @param minAmount the minimum amount to withdraw, otherwise revert
+     */
+    function removeLiquidityOneToken(
+        Swap storage self, uint256 tokenAmount, uint8 tokenIndex,
+        uint256 minAmount
+    ) external {
+        uint256 totalSupply = self.lpToken.totalSupply();
+        uint256 numTokens = self.pooledTokens.length;
+        require(tokenAmount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
+        require(tokenIndex < numTokens, "Token not found");
+
+        uint256 dyFee = 0;
+        uint256 dy = 0;
+
+        (dy, dyFee) = calculateWithdrawOneToken(self, tokenAmount, tokenIndex);
+        dy = dy
+        .mul(FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender)))
+        .div(FEE_DENOMINATOR);
+
+        require(dy >= minAmount, "The min amount of tokens wasn't met");
+
+        self.balances[tokenIndex] = self.balances[tokenIndex].sub(
+            dy.add(dyFee.mul(self.adminFee).div(FEE_DENOMINATOR))
+        );
+        self.lpToken.burnFrom(msg.sender, tokenAmount);
+        self.pooledTokens[tokenIndex].safeTransfer(msg.sender, dy);
+
+        emit RemoveLiquidityOne(
+            msg.sender, tokenAmount, totalSupply, tokenIndex, dy
         );
     }
 
@@ -706,65 +774,6 @@ library SwapUtils {
 
         emit RemoveLiquidityImbalance(
             msg.sender, amounts, fees, D1, tokenSupply.sub(tokenAmount));
-    }
-
-    /**
-     * @notice calculate the fee that is applied when the given user withdraws
-     * @param user address you want to calculate withdraw fee of
-     * @return current withdraw fee of the user
-     */
-    function calculateCurrentWithdrawFee(Swap storage self, address user) public view returns (uint256) {
-        uint256 endTime = self.depositTimestamp[user].add(4 weeks);
-
-        if (endTime > block.timestamp) {
-            uint256 timeLeftover = endTime - block.timestamp;
-            return self.defaultWithdrawFee
-                .mul(self.withdrawFeeMultiplier[user])
-                .mul(timeLeftover)
-                .div(4 weeks)
-                .div(FEE_DENOMINATOR);
-        } else {
-            return 0;
-        }
-    }
-
-    /**
-     * @notice A simple method to calculate prices from deposits or
-     *         withdrawals, excluding fees but including slippage. This is
-     *         helpful as an input into the various "min" parameters on calls
-     *         to fight front-running
-     * @dev This shouldn't be used outside frontends for user estimates.
-     * @param amounts an array of token amounts to deposit or withdrawal,
-     *        corresponding to pooledTokens. The amount should be in each
-     *        pooled token's native precision
-     * @param deposit whether this is a deposit or a withdrawal
-     */
-    function calculateTokenAmount(
-        Swap storage self, uint256[] calldata amounts, bool deposit
-    ) external view returns(uint256) {
-        uint256 numTokens = self.pooledTokens.length;
-        uint256 _A = getA(self);
-        uint256 D0 = getD(_xp(self, self.balances), _A);
-        uint256[] memory balances1 = self.balances;
-        for (uint i = 0; i < numTokens; i++) {
-            if (deposit) {
-                balances1[i] = balances1[i].add(amounts[i]);
-            } else {
-                balances1[i] = balances1[i].sub(amounts[i]);
-            }
-        }
-        uint256 D1 = getD(_xp(self, balances1), _A);
-        uint256 totalSupply = self.lpToken.totalSupply();
-        return (deposit ? D1.sub(D0) : D0.sub(D1)).mul(totalSupply).div(D0);
-    }
-
-    /**
-     * @notice return accumulated amount of admin fees of the token with given index
-     * @param index Index of the pooled token
-     * @return admin balance in the token's precision
-     */
-    function getAdminBalance(Swap storage self, uint256 index) external view returns (uint256) {
-        return self.pooledTokens[index].balanceOf(address(this)) - self.balances[index];
     }
 
     /**
