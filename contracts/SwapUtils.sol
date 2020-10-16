@@ -100,7 +100,7 @@ library SwapUtils {
     /**
      * @notice Return timestamp of last deposit of given address
      */
-    function getDepositTimestamp(Swap storage self, address user) public view returns (uint256) {
+    function getDepositTimestamp(Swap storage self, address user) external view returns (uint256) {
         return self.depositTimestamp[user];
     }
 
