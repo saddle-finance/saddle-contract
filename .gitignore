@@ -4,5 +4,5 @@ cache/*
 /coverage
 node_modules/*
 /dist
-
 .idea/*
+.eslintcache
