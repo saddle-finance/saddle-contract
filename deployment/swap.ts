@@ -4,6 +4,8 @@ import LPTokenArtifact from "../build/artifacts/LPToken.json"
 import { LpToken } from "../build/typechain/LpToken"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/MathUtils.json"
+import { Multicall } from "../build/typechain/Multicall"
+import MulticallArtifact from "../build/artifacts/Multicall.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
@@ -174,6 +176,13 @@ async function deploySwap(): Promise<void> {
   await stablecoinSwap.deployed()
   await btcSwap.deployed()
 
+  // Deploy Multicall
+  const multicall = (await deployContract(
+    signers[0] as Wallet,
+    MulticallArtifact,
+  )) as Multicall
+
+  console.log(`Multicall address: ${multicall.address}`)
   console.log(`Stablecoin swap address: ${stablecoinSwap.address}`)
   console.log(`Tokenized BTC swap address: ${btcSwap.address}`)
 }
