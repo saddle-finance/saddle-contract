@@ -1,4 +1,4 @@
-pragma solidity ^0.5.11;
+pragma solidity 0.5.17;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -30,6 +30,16 @@ library SwapUtils {
     );
 
     struct Swap {
+        // variables around the management of A,
+        // the amplification coefficient * n * (n - 1)
+        // see https://www.curve.fi/stableswap-paper.pdf for details
+        uint256 A;
+
+        // fee calculation
+        uint256 swapFee;
+        uint256 adminFee;
+        uint256 defaultWithdrawFee;
+
         LPToken lpToken;
 
         // contract references for all tokens being pooled
@@ -44,40 +54,30 @@ library SwapUtils {
         // the contract's actual token balance might differ
         uint256[] balances;
 
-        // variables around the management of A,
-        // the amplification coefficient * n * (n - 1)
-        // see https://www.curve.fi/stableswap-paper.pdf for details
-        uint256 A;
-
-        // fee calculation
-        uint256 swapFee;
-        uint256 adminFee;
-        uint256 defaultWithdrawFee;
-
         mapping(address => uint256) depositTimestamp;
         mapping(address => uint256) withdrawFeeMultiplier;
     }
 
     // the precision all pools tokens will be converted to
-    uint8 constant POOL_PRECISION_DECIMALS = 18;
+    uint8 private constant POOL_PRECISION_DECIMALS = 18;
 
     // the denominator used to calculate admin and LP fees. For example, an
     // LP fee might be something like tradeAmount.mul(fee).div(FEE_DENOMINATOR)
-    uint256 constant FEE_DENOMINATOR = 10 ** 10;
+    uint256 private constant FEE_DENOMINATOR = 10 ** 10;
 
     // Max swap fee is 1% or 100bps of each swap
-    uint256 constant MAX_SWAP_FEE = 10 ** 8;
+    uint256 private constant MAX_SWAP_FEE = 10 ** 8;
 
     // Max adminFee is 100% of the swapFee
     // adminFee does not add additional fee on top of swapFee
     // Instead it takes a certain % of the swapFee. Therefore it has no impact on the
     // users but only on the earnings of LPs
-    uint256 constant MAX_ADMIN_FEE = 10 ** 10;
+    uint256 private constant MAX_ADMIN_FEE = 10 ** 10;
 
     // Max withdrawFee is 1% of the value withdrawn
     // Fee will be redistributed to the LPs in the pool, rewarding
     // long term providers.
-    uint256 constant MAX_WITHDRAW_FEE = 10 ** 8;
+    uint256 private constant MAX_WITHDRAW_FEE = 10 ** 8;
 
     /*** VIEW & PURE FUNCTIONS ***/
 
@@ -183,7 +183,7 @@ library SwapUtils {
         require(tokenIndex < numTokens, "Token not found");
 
         uint256 c = D;
-        uint256 s = 0;
+        uint256 s;
         uint256 nA = _A.mul(numTokens);
         uint256 cDivider = 1;
 
@@ -199,7 +199,7 @@ library SwapUtils {
         c = c.mul(D).div(nA.mul(numTokens).mul(cDivider));
 
         uint256 b = s.add(D.div(nA));
-        uint256 yPrev = 0;
+        uint256 yPrev;
         uint256 y = D;
         for (uint i = 0; i<256; i++) {
             yPrev = y;
@@ -223,7 +223,7 @@ library SwapUtils {
     function getD(uint256[] memory xp, uint256 _A)
         internal pure returns (uint256) {
         uint256 numTokens = xp.length;
-        uint256 s = 0;
+        uint256 s;
         for (uint i = 0; i < numTokens; i++) {
             s = s.add(xp[i]);
         }
@@ -231,7 +231,7 @@ library SwapUtils {
             return 0;
         }
 
-        uint256 prevD = 0;
+        uint256 prevD;
         uint256 D = s;
         uint256 nA = _A.mul(numTokens);
 
@@ -358,11 +358,11 @@ library SwapUtils {
         uint256 _A = getA(self);
         uint256 D = getD(xp, _A);
         uint256 c = D;
-        uint256 s = 0;
+        uint256 s;
         uint256 nA = numTokens.mul(_A);
         uint256 cDivider = 1;
 
-        uint256 _x = 0;
+        uint256 _x;
         for (uint i = 0; i < numTokens; i++) {
             if (i == tokenIndexFrom) {
                 _x = x;
@@ -378,7 +378,7 @@ library SwapUtils {
         }
         c = c.mul(D).div(nA.mul(numTokens).mul(cDivider));
         uint256 b = s.add(D.div(nA));
-        uint256 yPrev = 0;
+        uint256 yPrev;
         uint256 y = D;
 
         // iterative approximation
@@ -452,7 +452,6 @@ library SwapUtils {
      */
     function calculateCurrentWithdrawFee(Swap storage self, address user) public view returns (uint256) {
         uint256 endTime = self.depositTimestamp[user].add(4 weeks);
-
         if (endTime > block.timestamp) {
             uint256 timeLeftover = endTime - block.timestamp;
             return self.defaultWithdrawFee
@@ -460,8 +459,6 @@ library SwapUtils {
             .mul(timeLeftover)
             .div(4 weeks)
             .div(FEE_DENOMINATOR);
-        } else {
-            return 0;
         }
     }
 
@@ -559,15 +556,15 @@ library SwapUtils {
         uint256[] memory fees = new uint256[](self.pooledTokens.length);
 
         // current state
-        uint256 D0 = 0;
-        if (self.lpToken.totalSupply() > 0) {
+        uint256 D0;
+        if (self.lpToken.totalSupply() != 0) {
             D0 = getD(self);
         }
         uint256[] memory newBalances = self.balances;
 
         for (uint i = 0; i < self.pooledTokens.length; i++) {
             require(
-                self.lpToken.totalSupply() > 0 || amounts[i] > 0,
+                self.lpToken.totalSupply() != 0 || amounts[i] > 0,
                 "If token supply is zero, must supply all tokens in pool"
             );
             newBalances[i] = self.balances[i].add(amounts[i]);
@@ -579,7 +576,7 @@ library SwapUtils {
 
         // updated to reflect fees and calculate the user's LP tokens
         uint256 D2 = D1;
-        if (self.lpToken.totalSupply() > 0) {
+        if (self.lpToken.totalSupply() != 0) {
             for (uint i = 0; i < self.pooledTokens.length; i++) {
                 uint256 idealBalance = D1.mul(self.balances[i]).div(D0);
                 fees[i] = feePerToken(self).mul(
@@ -594,7 +591,7 @@ library SwapUtils {
             self.balances = newBalances;
         }
 
-        uint256 toMint = 0;
+        uint256 toMint;
         if (self.lpToken.totalSupply() == 0) {
             toMint = D1;
         } else {
@@ -604,7 +601,7 @@ library SwapUtils {
         require(toMint >= minToMint, "Couldn't mint min requested LP tokens");
 
         for (uint i = 0; i < self.pooledTokens.length; i++) {
-            if (amounts[i] > 0) {
+            if (amounts[i] != 0) {
                 self.pooledTokens[i].safeTransferFrom(
                     msg.sender, address(this), amounts[i]);
             }
@@ -696,8 +693,8 @@ library SwapUtils {
         require(tokenAmount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
         require(tokenIndex < numTokens, "Token not found");
 
-        uint256 dyFee = 0;
-        uint256 dy = 0;
+        uint256 dyFee;
+        uint256 dy;
 
         (dy, dyFee) = calculateWithdrawOneToken(self, tokenAmount, tokenIndex);
         dy = dy
@@ -784,7 +781,7 @@ library SwapUtils {
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
             IERC20 token = self.pooledTokens[i];
             uint256 balance = token.balanceOf(address(this)) - self.balances[i];
-            if (balance > 0) {
+            if (balance != 0) {
                 token.safeTransfer(to, balance);
             }
         }

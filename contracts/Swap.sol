@@ -1,4 +1,4 @@
-pragma solidity ^0.5.11;
+pragma solidity 0.5.17;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -226,6 +226,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param tokenIndexTo the token the user wants to buy
      * @param dx the amount of tokens the user wants to sell
      * @param minDy the min amount the user would like to receive, or revert.
+     * @param deadline latest timestamp to accept this transaction
      */
     function swap(
         uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy, uint256 deadline
@@ -239,6 +240,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *        precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      *        should mint, otherwise revert. Handy for front-running mitigation
+     * @param deadline latest timestamp to accept this transaction
      */
     function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline)
         external nonReentrant onlyUnpaused deadlineCheck(deadline) {
@@ -264,6 +266,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param amount the amount of LP tokens to burn
      * @param minAmounts the minimum amounts of each token in the pool
      *        acceptable for this burn. Useful as a front-running mitigation
+     * @param deadline latest timestamp to accept this transaction
      */
     function removeLiquidity(uint256 amount, uint256[] calldata minAmounts, uint256 deadline)
         external nonReentrant deadlineCheck(deadline) {
@@ -275,6 +278,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param tokenAmount the amount of the token you want to receive
      * @param tokenIndex the index of the token you want to receive
      * @param minAmount the minimum amount to withdraw, otherwise revert
+     * @param deadline latest timestamp to accept this transaction
      */
     function removeLiquidityOneToken(
         uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount, uint256 deadline
@@ -288,6 +292,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param amounts how much of each token to withdraw
      * @param maxBurnAmount the max LP token provider is willing to pay to
      *        remove liquidity. Useful as a front-running mitigation.
+     * @param deadline latest timestamp to accept this transaction
      */
     function removeLiquidityImbalance(
         uint256[] calldata amounts, uint256 maxBurnAmount, uint256 deadline

@@ -1,4 +1,4 @@
-pragma solidity ^0.5.11;
+pragma solidity 0.5.17;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
@@ -13,7 +13,7 @@ contract OwnerPausable is Ownable {
     event Paused();
     event Unpaused();
 
-    bool paused = false;
+    bool private paused = false;
 
     /**
      * @notice Pause the contract. Revert if already paused.
