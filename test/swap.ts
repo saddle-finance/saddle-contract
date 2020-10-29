@@ -1,30 +1,25 @@
-import { ethers } from "@nomiclabs/buidler"
-import { Wallet, Signer, BigNumber } from "ethers"
-import chai from "chai"
-import { deployContract, solidity } from "ethereum-waffle"
-
-import SwapUtilsArtifact from "../build/artifacts/SwapUtils.json"
-import { SwapUtils } from "../build/typechain/SwapUtils"
-
-import SwapArtifact from "../build/artifacts/Swap.json"
-import { Swap } from "../build/typechain/Swap"
-
-import LPTokenArtifact from "../build/artifacts/LPToken.json"
-import { LpToken } from "../build/typechain/LpToken"
-
-import MathUtilsArtifact from "../build/artifacts/MathUtils.json"
-import { MathUtils } from "../build/typechain/MathUtils"
-
-import AllowlistArtifact from "../build/artifacts/Allowlist.json"
-import { Allowlist } from "../build/typechain/Allowlist"
-
+import { BigNumber, Signer, Wallet } from "ethers"
 import {
+  MAX_UINT256,
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
   getTokenBalances,
-  MAX_UINT256,
   setNextTimestamp,
 } from "./testUtils"
+import { deployContract, solidity } from "ethereum-waffle"
+
+import { Allowlist } from "../build/typechain/Allowlist"
+import AllowlistArtifact from "../build/artifacts/Allowlist.json"
+import LPTokenArtifact from "../build/artifacts/LPToken.json"
+import { LpToken } from "../build/typechain/LpToken"
+import { MathUtils } from "../build/typechain/MathUtils"
+import MathUtilsArtifact from "../build/artifacts/MathUtils.json"
+import { Swap } from "../build/typechain/Swap"
+import SwapArtifact from "../build/artifacts/Swap.json"
+import { SwapUtils } from "../build/typechain/SwapUtils"
+import SwapUtilsArtifact from "../build/artifacts/SwapUtils.json"
+import chai from "chai"
+import { ethers } from "@nomiclabs/buidler"
 
 chai.use(solidity)
 const { expect } = chai
@@ -45,14 +40,15 @@ describe("Swap", () => {
   let user1Address: string
   let user2Address: string
   let swapStorage: {
-    lpToken: string
     A: BigNumber
     swapFee: BigNumber
     adminFee: BigNumber
-    "0": string
+    lpToken: string
+    "0": BigNumber
     "1": BigNumber
     "2": BigNumber
     "3": BigNumber
+    "4": string
   }
 
   // Test Values
@@ -1583,8 +1579,8 @@ describe("Swap", () => {
 
       // Below comparison with defaultWithdrawFee set to zero results in 1100830653956319289
       // Total amount of burned token should be close to
-      // 1100830653956319289 / 0.995
-      expect(swapTokenBefore.sub(swapTokenAfter)).to.eq("1106362463952721723")
+      // 1100830653956319289 * 0.995
+      expect(swapTokenBefore.sub(swapTokenAfter)).to.eq("1095326502998282065")
     })
 
     it("Removing liquidity 2 weeks after deposit", async () => {
@@ -1623,8 +1619,8 @@ describe("Swap", () => {
       expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(String(1e18))
       expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(String(1e17))
 
-      // 1100830653956319289 / 0.9975 = 1103589628026385252
-      expect(swapTokenBefore.sub(swapTokenAfter)).to.eq("1103589628026385252")
+      // 1100830653956319289 * 0.9975 = 1098078577321428490
+      expect(swapTokenBefore.sub(swapTokenAfter)).to.eq("1098078577321428490")
     })
 
     it("Removing liquidity 4 weeks after deposit", async () => {
@@ -1663,7 +1659,7 @@ describe("Swap", () => {
       expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(String(1e18))
       expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(String(1e17))
 
-      // 1100830653956319289 / 1.0000 = 1100830653956319289
+      // 1100830653956319289 * 1.0000 = 1100830653956319289
       expect(swapTokenBefore.sub(swapTokenAfter)).to.eq("1100830653956319289")
     })
   })

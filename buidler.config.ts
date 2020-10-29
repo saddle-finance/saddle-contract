@@ -18,7 +18,7 @@ const config: BuidlerConfig = {
     cache: "./build/cache",
   },
   solc: {
-    version: "0.5.11",
+    version: "0.5.17",
   },
   typechain: {
     outDir: "./build/typechain/",

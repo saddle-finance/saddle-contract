@@ -1,4 +1,4 @@
-pragma solidity ^0.5.11;
+pragma solidity 0.5.17;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -7,15 +7,9 @@ library MathUtils {
 
     function within1(uint a, uint b) external pure returns (bool) {
         if (a > b) {
-            if (a.sub(b) <= 1) {
-                return true;
-            }
-        } else {
-            if (b.sub(a) <= 1) {
-                return true;
-            }
+            return (a.sub(b) <= 1);
         }
-        return false;
+        return (b.sub(a) <= 1);
     }
 
     function difference(uint a, uint b) external pure returns (uint256) {

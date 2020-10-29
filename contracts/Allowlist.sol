@@ -1,4 +1,4 @@
-pragma solidity ^0.5.11;
+pragma solidity 0.5.17;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -13,9 +13,9 @@ contract Allowlist is Ownable, IAllowlist {
 
     uint256 public constant DENOMINATOR = 1e3;
 
-    mapping(address => uint256) multipliers;
-    mapping(address => uint256) poolCaps;
-    mapping(address => uint256) accountLimits;
+    mapping(address => uint256) private multipliers;
+    mapping(address => uint256) private poolCaps;
+    mapping(address => uint256) private accountLimits;
 
     event PoolCap(address indexed poolAddress, uint256 poolCap);
     event PoolAccountLimit(address indexed poolAddress, uint256 accountLimit);
