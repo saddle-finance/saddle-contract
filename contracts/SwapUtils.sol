@@ -755,8 +755,8 @@ library SwapUtils {
 
         uint256 tokenAmount = D0.sub(D2).mul(tokenSupply).div(D0).add(1);
         tokenAmount = tokenAmount
-            .mul(FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender)))
-            .div(FEE_DENOMINATOR);
+            .mul(FEE_DENOMINATOR)
+            .div(FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender)));
 
         require(
             tokenAmount <= maxBurnAmount,
