@@ -238,7 +238,7 @@ library SwapUtils {
         for (uint i = 0; i < 256; i++) {
             uint256 dP = D;
             for (uint j = 0; j < numTokens; j++) {
-                dP = dP.mul(D).div(xp[j].mul(numTokens).add(1));
+                dP = dP.mul(D).div(xp[j].mul(numTokens));
             }
             prevD = D;
             D = nA.mul(s).add(dP.mul(numTokens)).mul(D).div(
@@ -453,7 +453,7 @@ library SwapUtils {
     function calculateCurrentWithdrawFee(Swap storage self, address user) public view returns (uint256) {
         uint256 endTime = self.depositTimestamp[user].add(4 weeks);
         if (endTime > block.timestamp) {
-            uint256 timeLeftover = endTime - block.timestamp;
+            uint256 timeLeftover = endTime.sub(block.timestamp);
             return self.defaultWithdrawFee
             .mul(self.withdrawFeeMultiplier[user])
             .mul(timeLeftover)
@@ -498,7 +498,7 @@ library SwapUtils {
      * @return admin balance in the token's precision
      */
     function getAdminBalance(Swap storage self, uint256 index) external view returns (uint256) {
-        return self.pooledTokens[index].balanceOf(address(this)) - self.balances[index];
+        return self.pooledTokens[index].balanceOf(address(this)).sub(self.balances[index]);
     }
 
     /**
@@ -780,7 +780,7 @@ library SwapUtils {
     function withdrawAdminFees(Swap storage self, address to) external {
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
             IERC20 token = self.pooledTokens[i];
-            uint256 balance = token.balanceOf(address(this)) - self.balances[i];
+            uint256 balance = token.balanceOf(address(this)).sub(self.balances[i]);
             if (balance != 0) {
                 token.safeTransfer(to, balance);
             }
