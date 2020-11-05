@@ -20,6 +20,12 @@ contract Allowlist is Ownable, IAllowlist {
     event PoolCap(address indexed poolAddress, uint256 poolCap);
     event PoolAccountLimit(address indexed poolAddress, uint256 accountLimit);
 
+    constructor() public {
+        // This value will be used as a way of crude checking whether an address holds this Allowlist contract
+        poolCaps[address(0x54dd1e)] = 2020;
+        emit PoolCap(address(0x54dd1e), 2020);
+    }
+
     /**
      * @notice Returns stored allowed amount for the user at the given pool address.
      * @param poolAddress address of the pool
@@ -60,6 +66,7 @@ contract Allowlist is Ownable, IAllowlist {
      * @param accountLimit base amount to be used for calculating allowed amounts of each user
      */
     function setPoolAccountLimit(address poolAddress, uint256 accountLimit) external onlyOwner {
+        require(poolAddress != address(0x0), "0x0 is not a pool address");
         accountLimits[poolAddress] = accountLimit;
         emit PoolAccountLimit(poolAddress, accountLimit);
     }
@@ -70,6 +77,7 @@ contract Allowlist is Ownable, IAllowlist {
      * @param poolCap TVL cap amount - limits the totalSupply of the pool token
      */
     function setPoolCap(address poolAddress, uint256 poolCap) external onlyOwner {
+        require(poolAddress != address(0x0), "0x0 is not a pool address");
         poolCaps[poolAddress] = poolCap;
         emit PoolCap(poolAddress, poolCap);
     }

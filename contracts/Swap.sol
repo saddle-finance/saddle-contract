@@ -18,6 +18,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     SwapUtils.Swap public swapStorage;
     IAllowlist public allowlist;
     bool public isGuarded = true;
+    mapping(address => uint8) private tokenIndexes;
 
     /*** EVENTS ***/
 
@@ -59,6 +60,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         uint256 _fee, uint256 _adminFee, uint256 _withdrawFee, IAllowlist _allowlist
     ) public OwnerPausable() ReentrancyGuard() {
         require(
+            _pooledTokens.length > 1,
+            "Pools must contain more than 1 token"
+        );
+        require(
             _pooledTokens.length <= 32,
             "Pools with over 32 tokens aren't supported"
         );
@@ -67,7 +72,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             "Each pooled token needs a specified precision"
         );
 
-        for (uint i = 0; i < _pooledTokens.length; i++) {
+        for (uint8 i = 0; i < _pooledTokens.length; i++) {
+            if (i > 0) {
+                require(tokenIndexes[address(_pooledTokens[i])] == 0, "Pools cannot have duplicate tokens");
+            }
             require(
                 address(_pooledTokens[i]) != address(0),
                 "The 0 address isn't an ERC-20"
@@ -77,6 +85,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
                 "Token precision can't be higher than the pool precision"
             );
             precisions[i] = (10 ** uint256(SwapUtils.getPoolPrecisionDecimals())).div(precisions[i]);
+            tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
         swapStorage = SwapUtils.Swap({
@@ -91,7 +100,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         });
 
         allowlist = _allowlist;
-        allowlist.getAllowedAmount(address(this), address(0)); // crude check of the allowlist contract address
+        require(allowlist.getPoolCap(address(0x54dd1e)) == 2020, "Allowlist check failed");
         isGuarded = true;
     }
 
@@ -120,8 +129,20 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @notice Return address of the pooled token at given index
      * @param index the index of the token
      */
-    function getToken(uint8 index) external view returns (IERC20) {
+    function getToken(uint8 index) public view returns (IERC20) {
+        require(index < swapStorage.pooledTokens.length, "Out of range");
         return swapStorage.pooledTokens[index];
+    }
+
+    /**
+     * @notice Return the index of the given token address. Reverts if no matching
+     *         token is found.
+     * @param tokenAddress address of the token
+     */
+    function getTokenIndex(address tokenAddress) external view returns (uint8) {
+        uint8 index = tokenIndexes[tokenAddress];
+        require(address(getToken(index)) == tokenAddress, "Token does not exist");
+        return index;
     }
 
     /**
@@ -136,6 +157,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param index the index of the token
      */
     function getTokenBalance(uint8 index) external view returns (uint256) {
+        require(index < swapStorage.pooledTokens.length, "Index out of range");
         return swapStorage.balances[index];
     }
 
