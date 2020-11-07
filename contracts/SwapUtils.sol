@@ -279,9 +279,9 @@ library SwapUtils {
             numTokens == precisionMultipliers.length,
             "Balances must map to token precision multipliers"
         );
-        uint256[] memory xp = _balances;
+        uint256[] memory xp = new uint256[](numTokens);
         for (uint i = 0; i < numTokens; i++) {
-            xp[i] = xp[i].mul(precisionMultipliers[i]);
+            xp[i] = _balances[i].mul(precisionMultipliers[i]);
         }
         return xp;
     }
