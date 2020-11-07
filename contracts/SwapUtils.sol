@@ -232,29 +232,28 @@ library SwapUtils {
      */
     function getD(uint256[] memory xp, uint256 _A)
         internal pure returns (uint256) {
-        GetDInfo memory v = GetDInfo(0, 0, 0);
-
-        for (uint i = 0; i < xp.length; i++) {
-            v.s = v.s.add(xp[i]);
+        uint256 numTokens = xp.length;
+        uint256 s;
+        for (uint i = 0; i < numTokens; i++) {
+            s = s.add(xp[i]);
         }
-        if (v.s == 0) {
+        if (s == 0) {
             return 0;
         }
 
-        uint256 D = v.s;
-        v.nA = _A.mul(xp.length);
+        uint256 prevD;
+        uint256 D = s;
+        uint256 nA = _A.mul(numTokens);
 
         for (uint i = 0; i < 256; i++) {
             uint256 dP = D;
-            uint256 denom = 1;
-            for (uint j = 0; j < xp.length; j++) {
-                dP = dP.mul(D);
-                denom = denom.mul(xp[j].mul(xp.length));
+            for (uint j = 0; j < numTokens; j++) {
+                dP = dP.mul(D).div(xp[j].mul(numTokens));
             }
-            v.prevD = D;
-            D = v.nA.mul(v.s).add(dP.mul(xp.length).div(denom)).mul(D).div(
-                v.nA.sub(1).mul(D).add(xp.length.add(1).mul(dP).div(denom)));
-            if (D.within1(v.prevD)) {
+            prevD = D;
+            D = nA.mul(s).add(dP.mul(numTokens)).mul(D).div(
+                nA.sub(1).mul(D).add(numTokens.add(1).mul(dP)));
+            if (D.within1(prevD)) {
                 break;
             }
         }
