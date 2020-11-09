@@ -158,7 +158,7 @@ describe("Swap", () => {
 
   describe("swapStorage", () => {
     describe("lpToken", async () => {
-      it("Returns correct lpTokeName", async () => {
+      it("Returns correct lpTokenName", async () => {
         expect(await swapToken.name()).to.eq(LP_TOKEN_NAME)
       })
       it("Returns correct lpTokenSymbol", async () => {
@@ -1224,7 +1224,7 @@ describe("Swap", () => {
       )
 
       expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(
-        BigNumber.from("1000009516257264880"),
+        BigNumber.from("1000009516257264879"),
       )
 
       expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(
