@@ -41,15 +41,13 @@ describe("Swap", () => {
   let user1Address: string
   let user2Address: string
   let swapStorage: {
-    A: BigNumber
+    initialA: BigNumber
+    futureA: BigNumber
+    initialATime: BigNumber
+    futureATime: BigNumber
     swapFee: BigNumber
     adminFee: BigNumber
     lpToken: string
-    "0": BigNumber
-    "1": BigNumber
-    "2": BigNumber
-    "3": BigNumber
-    "4": string
   }
 
   // Test Values

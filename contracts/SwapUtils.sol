@@ -28,12 +28,21 @@ library SwapUtils {
         uint256[] tokenAmounts, uint256[] fees, uint256 invariant,
         uint256 lpTokenSupply
     );
+    event NewAdminFee(uint256 newAdminFee);
+    event NewSwapFee(uint256 newSwapFee);
+    event NewWithdrawFee(uint256 newWithdrawFee);
+    event RampA(uint256 oldA, uint256 newA, uint256 initialTime, uint256 futureTime);
+    event StopRampA(uint256 A, uint256 time);
+
 
     struct Swap {
-        // variables around the management of A,
+        // variables around the ramp management of A,
         // the amplification coefficient * n * (n - 1)
         // see https://www.curve.fi/stableswap-paper.pdf for details
-        uint256 A;
+        uint256 initialA;
+        uint256 futureA;
+        uint256 initialATime;
+        uint256 futureATime;
 
         // fee calculation
         uint256 swapFee;
@@ -88,28 +97,87 @@ library SwapUtils {
     // long term providers.
     uint256 private constant MAX_WITHDRAW_FEE = 10 ** 8;
 
+    // Constant value used as max loop limit
     uint256 private constant MAX_LOOP_LIMIT = 256;
+
+    // Constant values used in ramping A calculations
+    uint256 private constant A_PRECISION = 100;
+    uint256 private constant MAX_A = 10 ** 6;
+    uint256 private constant MAX_A_CHANGE = 10;
+    uint256 private constant MIN_RAMP_TIME = 1 days;
 
     /*** VIEW & PURE FUNCTIONS ***/
 
     /**
      * @notice Return A, the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
+     * @return A parameter
      */
-    function getA(Swap storage self) public view returns (uint256) {
-        return self.A;
+    function getA(Swap storage self) external view returns (uint256) {
+        return _getA(self);
     }
 
     /**
-     * @notice Return POOL_PRECISION_DECIMALS, precision decimals of all pool tokens
-     *         to be converted to
+     * @notice Return A, the amplification coefficient * n * (n - 1)
+     * @dev See the StableSwap paper for details
+     * @return A parameter
      */
-    function getPoolPrecisionDecimals() public pure returns (uint8) {
+    function _getA(Swap storage self) internal view returns (uint256) {
+        return _getAPrecise(self).div(A_PRECISION);
+    }
+
+    /**
+     * @notice Return A in its raw precision
+     * @dev See the StableSwap paper for details
+     * @return A parameter in its raw precision form
+     */
+    function getAPrecise(Swap storage self) external view returns (uint256) {
+        return _getAPrecise(self);
+    }
+
+    /**
+     * @notice Calculates and returns A based on the ramp settings
+     * @dev See the StableSwap paper for details
+     * @return A parameter in its raw precision form
+     */
+    function _getAPrecise(Swap storage self) internal view returns (uint256) {
+        uint256 t1 = self.futureATime;
+        uint256 A1 = self.futureA;
+
+        if (block.timestamp < t1) {
+            uint256 t0 = self.initialATime;
+            uint256 A0 = self.initialA;
+            if (A1 > A0) {
+                // A0 + (A1 - A0) * (block.timestamp - t0) / (t1 - t0)
+                return A0.add(A1.sub(A0).mul(block.timestamp.sub(t0)).div(t1.sub(t0)));
+            } else {
+                // A0 - (A0 - A1) * (block.timestamp - t0) / (t1 - t0)
+                return A0.sub(A0.sub(A1).mul(block.timestamp.sub(t0)).div(t1.sub(t0)));
+            }
+        } else {
+            return A1;
+        }
+    }
+
+    /**
+     * @notice Returns POOL_PRECISION_DECIMALS, the decimals of all underlying tokens to scaled to
+     * @return precision decimals of all pool tokens to be converted to
+     */
+    function getPoolPrecisionDecimals() external pure returns (uint8) {
         return POOL_PRECISION_DECIMALS;
     }
 
     /**
-     * @notice Return timestamp of last deposit of given address
+     * @notice Returns A_PRECISION, precision used for ramp calculations. This value should be constant.
+     * @return precision of A calculation
+     */
+    function getAPrecision() external pure returns (uint256) {
+        return A_PRECISION;
+    }
+
+    /**
+     * @notice Retrieves the timestamp of last deposit made by the given address
+     * @return timestamp of last deposit
      */
     function getDepositTimestamp(Swap storage self, address user) external view returns (uint256) {
         return self.depositTimestamp[user];
@@ -151,12 +219,12 @@ library SwapUtils {
         // y_i for D - tokenAmount
         uint256[] memory xp = _xp(self);
         CalculateWithdrawOneTokenDYInfo memory v = CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0);
-        v.D0 = getD(xp, getA(self));
+        v.D0 = getD(xp, _getA(self));
         v.D1 = v.D0.sub(tokenAmount.mul(v.D0).div(self.lpToken.totalSupply()));
 
         require(tokenAmount <= xp[tokenIndex], "Cannot withdraw more than available");
 
-        v.newY = getYD(getA(self), tokenIndex, xp, v.D1);
+        v.newY = getYD(_getA(self), tokenIndex, xp, v.D1);
 
         uint256[] memory xpReduced = new uint256[](xp.length);
 
@@ -174,7 +242,7 @@ library SwapUtils {
         }
 
         uint256 dy = xpReduced[tokenIndex].sub(
-            getYD(getA(self), tokenIndex, xpReduced, v.D1));
+            getYD(_getA(self), tokenIndex, xpReduced, v.D1));
         dy = dy.sub(1).div(self.tokenPrecisionMultipliers[tokenIndex]);
 
         return (dy, v.newY);
@@ -203,18 +271,19 @@ library SwapUtils {
         uint256 c = D;
         uint256 s;
         uint256 nA = _A.mul(numTokens);
-        uint256 cDivider = 1;
 
         for (uint256 i = 0; i < numTokens; i++) {
             if (i != tokenIndex) {
                 s = s.add(xp[i]);
-                c = c.mul(D);
-                cDivider = cDivider.mul(xp[i]).mul(numTokens);
+                c = c.mul(D).div(xp[i].mul(numTokens));
+                // If we were to protect the division loss we would have to keep the denominator separate
+                // and divide at the end. However this leads to overflow with large numTokens or/and D.
+                // c = c * D * D * D * ... overflow!
             } else {
                 continue;
             }
         }
-        c = c.mul(D).div(nA.mul(numTokens).mul(cDivider));
+        c = c.mul(D).div(nA.mul(numTokens));
 
         uint256 b = s.add(D.div(nA));
         uint256 yPrev;
@@ -257,6 +326,9 @@ library SwapUtils {
             uint256 dP = D;
             for (uint256 j = 0; j < numTokens; j++) {
                 dP = dP.mul(D).div(xp[j].mul(numTokens));
+                // If we were to protect the division loss we would have to keep the denominator separate
+                // and divide at the end. However this leads to overflow with large numTokens or/and D.
+                // dP = dP * D * D * D * ... overflow!
             }
             prevD = D;
             D = nA.mul(s).add(dP.mul(numTokens)).mul(D).div(
@@ -274,13 +346,12 @@ library SwapUtils {
      */
     function getD(Swap storage self)
         internal view returns (uint256) {
-        return getD(_xp(self), getA(self));
+        return getD(_xp(self), _getA(self));
     }
 
     /**
      * @notice Given a set of balances and precision multipliers, return the
      *         precision-adjusted balances.
-     * @dev
      * @param _balances an array of token balances, in their native precisions.
      *        These should generally correspond with pooled tokens.
      * @param precisionMultipliers an array of multipliers, corresponding to
@@ -329,7 +400,7 @@ library SwapUtils {
      * @return the virtual price, scaled to precision of POOL_PRECISION_DECIMALS
      */
     function getVirtualPrice(Swap storage self) external view returns (uint256) {
-        uint256 D = getD(_xp(self), getA(self));
+        uint256 D = getD(_xp(self), _getA(self));
         uint256 supply = self.lpToken.totalSupply();
         return D.mul(10 ** uint256(ERC20Detailed(self.lpToken).decimals())).div(supply);
     }
@@ -374,7 +445,7 @@ library SwapUtils {
             "Tokens must be in pool"
         );
 
-        uint256 _A = getA(self);
+        uint256 _A = _getA(self);
         uint256 D = getD(xp, _A);
         uint256 c = D;
         uint256 s;
@@ -392,6 +463,9 @@ library SwapUtils {
             }
             s = s.add(_x);
             c = c.mul(D).div(_x.mul(numTokens));
+            // If we were to protect the division loss we would have to keep the denominator separate
+            // and divide at the end. However this leads to overflow with large numTokens or/and D.
+            // c = c * D * D * D * ... overflow!
         }
         c = c.mul(D).div(nA.mul(numTokens));
         uint256 b = s.add(D.div(nA));
@@ -501,7 +575,7 @@ library SwapUtils {
         Swap storage self, uint256[] calldata amounts, bool deposit
     ) external view returns(uint256) {
         uint256 numTokens = self.pooledTokens.length;
-        uint256 _A = getA(self);
+        uint256 _A = _getA(self);
         uint256 D0 = getD(_xp(self, self.balances), _A);
         uint256[] memory balances1 = self.balances;
         for (uint256 i = 0; i < numTokens; i++) {
@@ -598,7 +672,7 @@ library SwapUtils {
         }
 
         // invariant after change
-        uint256 D1 = getD(_xp(self, newBalances), getA(self));
+        uint256 D1 = getD(_xp(self, newBalances), _getA(self));
         require(D1 > D0, "D should increase after additional liquidity");
 
         // updated to reflect fees and calculate the user's LP tokens
@@ -613,7 +687,7 @@ library SwapUtils {
                     fees[i].mul(self.adminFee).div(FEE_DENOMINATOR));
                 newBalances[i] = newBalances[i].sub(fees[i]);
             }
-            D2 = getD(_xp(self, newBalances), getA(self));
+            D2 = getD(_xp(self, newBalances), _getA(self));
         } else {
             // the initial depositor doesn't pay fees
             self.balances = newBalances;
@@ -658,11 +732,11 @@ library SwapUtils {
         uint256 currentFee = calculateCurrentWithdrawFee(self, user);
         uint256 currentBalance = self.lpToken.balanceOf(user);
 
+        // (currentBalance * currentFee + (toMint * (defaultWithdrawFee + 1))) * FEE_DENOMINATOR /
+        // ((toMint + currentBalance) * (defaultWithdrawFee + 1))
         self.withdrawFeeMultiplier[user] = currentBalance.mul(currentFee)
-            .add(toMint.mul(self.defaultWithdrawFee.add(1)))
-            .mul(FEE_DENOMINATOR)
-            .div(toMint.add(currentBalance))
-            .div(self.defaultWithdrawFee.add(1));
+            .add(toMint.mul(self.defaultWithdrawFee.add(1))).mul(FEE_DENOMINATOR)
+            .div(toMint.add(currentBalance).mul(self.defaultWithdrawFee.add(1)));
 
         self.depositTimestamp[user] = block.timestamp;
     }
@@ -765,12 +839,12 @@ library SwapUtils {
 
         uint256[] memory balances1 = self.balances;
 
-        uint256 D0 = getD(_xp(self), getA(self));
+        uint256 D0 = getD(_xp(self), _getA(self));
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
             require(amounts[i] <= balances1[i], "Cannot withdraw more than available");
             balances1[i] = balances1[i].sub(amounts[i]);
         }
-        uint256 D1 = getD(_xp(self, balances1), getA(self));
+        uint256 D1 = getD(_xp(self, balances1), _getA(self));
         uint256[] memory fees = new uint256[](self.pooledTokens.length);
 
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
@@ -782,7 +856,7 @@ library SwapUtils {
             balances1[i] = balances1[i].sub(fees[i]);
         }
 
-        uint256 D2 = getD(_xp(self, balances1), getA(self));
+        uint256 D2 = getD(_xp(self, balances1), _getA(self));
 
         uint256 tokenAmount = D0.sub(D2).mul(tokenSupply).div(D0);
         require(tokenAmount != 0, "Burnt amount cannot be zero");
@@ -828,6 +902,8 @@ library SwapUtils {
     function setAdminFee(Swap storage self, uint256 newAdminFee) external {
         require(newAdminFee <= MAX_ADMIN_FEE, "Fee is too high");
         self.adminFee = newAdminFee;
+
+        emit NewAdminFee(newAdminFee);
     }
 
     /**
@@ -838,6 +914,8 @@ library SwapUtils {
     function setSwapFee(Swap storage self, uint256 newSwapFee) external {
         require(newSwapFee <= MAX_SWAP_FEE, "Fee is too high");
         self.swapFee = newSwapFee;
+
+        emit NewSwapFee(newSwapFee);
     }
 
     /**
@@ -847,5 +925,50 @@ library SwapUtils {
     function setDefaultWithdrawFee(Swap storage self, uint256 newWithdrawFee) external {
         require(newWithdrawFee <= MAX_WITHDRAW_FEE, "Fee is too high");
         self.defaultWithdrawFee = newWithdrawFee;
+
+        emit NewWithdrawFee(newWithdrawFee);
+    }
+
+    /**
+     * @notice Start ramping up or down A parameter towards given futureA_ and futureTime_
+     *         Checks if the change is too rapid, and commits the new A value only when it falls under
+     *         the limit range.
+     * @param futureA_ the new A to ramp towards
+     * @param futureTime_ timestamp when the new A should be reached
+     */
+    function rampA(Swap storage self, uint256 futureA_, uint256 futureTime_) external {
+        require(block.timestamp >= self.initialATime + MIN_RAMP_TIME, "Ramp already ongoing");
+        require(futureTime_ >= block.timestamp + MIN_RAMP_TIME, "Insufficient ramp time");
+
+        uint256 initialA = _getA(self);
+        uint256 futureAPrecise = futureA_ * A_PRECISION;
+
+        require(futureA_ > 0 && futureA_ < MAX_A, "futureA_ must be between 0 and MAX_A");
+        if (futureAPrecise < initialA) {
+            require(futureAPrecise.mul(MAX_A_CHANGE) >= initialA, "MAX_A_CHANGE limit reached");
+        } else {
+            require(futureAPrecise <= initialA.mul(MAX_A_CHANGE), "MAX_A_CHANGE limit reached");
+        }
+
+        self.initialA = initialA;
+        self.futureA = futureAPrecise;
+        self.initialATime = block.timestamp;
+        self.futureATime = futureTime_;
+
+        emit RampA(initialA, futureAPrecise, block.timestamp, futureTime_);
+    }
+
+    /**
+     * @notice Stop ramping A immediately. Has no effect if ramping is already completed or stopped.
+     */
+    function stopRampA(Swap storage self) external {
+        uint256 currentA = _getA(self);
+
+        self.initialA = currentA;
+        self.futureA = currentA;
+        self.initialATime = block.timestamp;
+        self.futureATime = block.timestamp;
+
+        emit StopRampA(currentA, block.timestamp);
     }
 }

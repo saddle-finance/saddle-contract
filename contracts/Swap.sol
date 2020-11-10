@@ -42,6 +42,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     );
 
     /**
+     * @notice Deploys this Swap contract with given parameters as default
+     *         values. This will also deploy a LPToken that represents users
+     *         LP position. The owner of LPToken will be this contract - which means
+     *         only this contract is allowed to mint new tokens.
      * @param _pooledTokens an array of ERC20s this pool will accept
      * @param precisions the precision to use for each pooled token,
      *        eg 10 ** 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
@@ -93,7 +97,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             pooledTokens: _pooledTokens,
             tokenPrecisionMultipliers: precisions,
             balances: new uint256[](_pooledTokens.length),
-            A: _A,
+            initialA: _A.mul(SwapUtils.getAPrecision()),
+            futureA: _A.mul(SwapUtils.getAPrecision()),
+            initialATime: block.timestamp,
+            futureATime: block.timestamp,
             swapFee: _fee,
             adminFee: _adminFee,
             defaultWithdrawFee: _withdrawFee
@@ -120,14 +127,25 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     /**
      * @notice Return A, the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
+     * @return A parameter
      */
     function getA() external view returns (uint256) {
         return swapStorage.getA();
     }
 
     /**
-     * @notice Return address of the pooled token at given index
+     * @notice Return A in its raw precision form
+     * @dev See the StableSwap paper for details
+     * @return A parameter in its raw precision form
+     */
+    function getAPrecise() external view returns (uint256) {
+        return swapStorage.getAPrecise();
+    }
+
+    /**
+     * @notice Return address of the pooled token at given index. Reverts if tokenIndex is out of range.
      * @param index the index of the token
+     * @return address of the token at given index
      */
     function getToken(uint8 index) public view returns (IERC20) {
         require(index < swapStorage.pooledTokens.length, "Out of range");
@@ -138,6 +156,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @notice Return the index of the given token address. Reverts if no matching
      *         token is found.
      * @param tokenAddress address of the token
+     * @return the index of the given token address
      */
     function getTokenIndex(address tokenAddress) external view returns (uint8) {
         uint8 index = tokenIndexes[tokenAddress];
@@ -147,6 +166,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice Return timestamp of last deposit of given address
+     * @return timestamp of the last deposit made by the given address
      */
     function getDepositTimestamp(address user) external view returns (uint256) {
         return swapStorage.getDepositTimestamp(user);
@@ -155,6 +175,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     /**
      * @notice Return current balance of the pooled token at given index
      * @param index the index of the token
+     * @return current balance of the pooled token at given index with token's native precision
      */
     function getTokenBalance(uint8 index) external view returns (uint256) {
         require(index < swapStorage.pooledTokens.length, "Index out of range");
@@ -191,6 +212,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *        corresponding to pooledTokens. The amount should be in each
      *        pooled token's native precision
      * @param deposit whether this is a deposit or a withdrawal
+     * @return token amount the user will receive
      */
     function calculateTokenAmount(uint256[] calldata amounts, bool deposit)
     external view returns(uint256) {
@@ -203,6 +225,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *         LP tokens
      * @param amount the amount of LP tokens that would be burned on
      *        withdrawal
+     * @return array of balances of tokens that user will receive
      */
     function calculateRemoveLiquidity(uint256 amount) external view returns (uint256[] memory) {
         return swapStorage.calculateRemoveLiquidity(amount);
@@ -222,7 +245,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice calculate the fee that is applied when the given user withdraws
+     * @notice Calculate the fee that is applied when the given user withdraws. The withdraw fee
+     *         decays linearly over period of 4 weeks. For example, depositing and withdrawing right away
+     *         will charge you the full amount of withdraw fee. But withdrawing after 4 weeks will charge you
+     *         no additional fees.
      * @dev returned value should be divided by FEE_DENOMINATOR to convert to correct decimals
      * @param user address you want to calculate withdraw fee of
      * @return current withdraw fee of the user
@@ -353,6 +379,24 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function setDefaultWithdrawFee(uint256 newWithdrawFee) external onlyOwner {
         swapStorage.setDefaultWithdrawFee(newWithdrawFee);
+    }
+
+    /**
+     * @notice Start ramping up or down A parameter towards given futureA and futureTime
+     *         Checks if the change is too rapid, and commits the new A value only when it falls under
+     *         the limit range.
+     * @param futureA the new A to ramp towards
+     * @param futureTime timestamp when the new A should be reached
+     */
+    function startRampA(uint256 futureA, uint256 futureTime) external onlyOwner {
+        swapStorage.rampA(futureA, futureTime);
+    }
+
+    /**
+     * @notice Stop ramping A immediately. Has no effect if ramping is already completed or stopped.
+     */
+    function stopRampA() external onlyOwner {
+        swapStorage.stopRampA();
     }
 
     /**

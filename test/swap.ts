@@ -40,15 +40,13 @@ describe("Swap", () => {
   let user1Address: string
   let user2Address: string
   let swapStorage: {
-    A: BigNumber
+    initialA: BigNumber
+    futureA: BigNumber
+    initialATime: BigNumber
+    futureATime: BigNumber
     swapFee: BigNumber
     adminFee: BigNumber
     lpToken: string
-    "0": BigNumber
-    "1": BigNumber
-    "2": BigNumber
-    "3": BigNumber
-    "4": string
   }
 
   // Test Values
@@ -168,13 +166,13 @@ describe("Swap", () => {
 
     describe("A", async () => {
       it("Returns correct A value", async () => {
-        expect(swapStorage.A).to.eq(INITIAL_A_VALUE)
+        expect(await swap.getA()).to.eq(INITIAL_A_VALUE)
       })
     })
 
     describe("fee", async () => {
       it("Returns correct fee value", async () => {
-        expect(swapStorage.swapFee).to.eq(SWAP_FEE)
+        expect((await swap.swapStorage()).swapFee).to.eq(SWAP_FEE)
       })
     })
 
