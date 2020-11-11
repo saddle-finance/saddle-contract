@@ -6,6 +6,7 @@ import {
   getTokenBalances,
   setNextTimestamp,
   setTimestamp,
+  asyncForEach,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -79,14 +80,11 @@ describe("Swap", () => {
     ])) as LpToken
 
     // Mint dummy tokens
-    await firstToken.mint(ownerAddress, String(1e20))
-    await secondToken.mint(ownerAddress, String(1e20))
-
-    await firstToken.mint(user1Address, String(1e20))
-    await secondToken.mint(user1Address, String(1e20))
-
-    await firstToken.mint(user2Address, String(1e20))
-    await secondToken.mint(user2Address, String(1e20))
+    await asyncForEach([owner, user1, user2], async (signer) => {
+      const address = await signer.getAddress()
+      await firstToken.mint(address, String(1e20))
+      await secondToken.mint(address, String(1e20))
+    })
 
     // Deploy Allowlist
     allowlist = (await deployContract(
@@ -140,19 +138,15 @@ describe("Swap", () => {
       [1000, 1000, 1000],
     )
 
-    // Populate the pool with initial liquidity
-    await firstToken.approve(swap.address, MAX_UINT256)
-    await secondToken.approve(swap.address, MAX_UINT256)
+    await asyncForEach([owner, user1, user2], async (signer) => {
+      await firstToken.connect(signer).approve(swap.address, MAX_UINT256)
+      await secondToken.connect(signer).approve(swap.address, MAX_UINT256)
+    })
+
     await swap.addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
 
     expect(await firstToken.balanceOf(swap.address)).to.eq(String(1e18))
     expect(await secondToken.balanceOf(swap.address)).to.eq(String(1e18))
-
-    await firstToken.connect(user1).approve(swap.address, MAX_UINT256)
-    await secondToken.connect(user1).approve(swap.address, MAX_UINT256)
-
-    await firstToken.connect(user2).approve(swap.address, MAX_UINT256)
-    await secondToken.connect(user2).approve(swap.address, MAX_UINT256)
   })
 
   describe("swapStorage", () => {
@@ -1794,7 +1788,7 @@ describe("Swap", () => {
     })
 
     it("Succeeds to ramp upwards", async () => {
-      // call rampA()
+      // call rampA(), changing A to 100 within a span of 1 day (86400 seconds)
       await swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401)
 
       // set timestamp to +10000 seconds

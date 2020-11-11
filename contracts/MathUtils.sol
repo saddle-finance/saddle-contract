@@ -6,11 +6,11 @@ library MathUtils {
     using SafeMath for uint256;
 
     /**
-     * @notice Calculates whether the difference between a and b are
-     *         less than 1
+     * @notice Compares a and b and returns true if the difference between a and b
+     *         is less than 1 or equal to each other.
      * @param a uint256 to compare with
      * @param b uint256 to compare with
-     * @return True if the difference between a and b are less than 1,
+     * @return True if the difference between a and b is less than 1 or equal,
      *         otherwise return false
      */
     function within1(uint256 a, uint256 b) external pure returns (bool) {

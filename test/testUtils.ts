@@ -101,3 +101,12 @@ export async function getCurrentBlockTimestamp(): Promise<number> {
     await ethers.provider.getBlock(await ethers.provider.getBlockNumber())
   ).timestamp
 }
+
+export async function asyncForEach<T>(
+  array: Array<T>,
+  callback: (item: T, index: number) => void,
+): Promise<void> {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index)
+  }
+}

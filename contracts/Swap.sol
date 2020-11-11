@@ -54,8 +54,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param _pooledTokens an array of ERC20s this pool will accept
      * @param precisions the precision to use for each pooled token,
      *        eg 10 ** 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
-     * @param lpTokenName, the long-form name of the token to be deployed
-     * @param lpTokenSymbol, the short symbol for the token to be deployed
+     * @param lpTokenName the long-form name of the token to be deployed
+     * @param lpTokenSymbol the short symbol for the token to be deployed
      * @param _A the amplification coefficient * n * (n - 1). See the
      *        StableSwap paper for details
      * @param _fee default swap fee to be initialized with
@@ -112,7 +112,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         });
 
         allowlist = _allowlist;
-        require(allowlist.getPoolCap(address(0x54dd1e)) == 2020, "Allowlist check failed");
+        require(allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e), "Allowlist check failed");
         isGuarded = true;
     }
 

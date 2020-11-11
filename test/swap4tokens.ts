@@ -4,6 +4,7 @@ import {
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
   getTokenBalance,
+  asyncForEach,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -91,20 +92,15 @@ describe("Swap", () => {
     ])) as LpToken
 
     // Mint dummy tokens
-    await DAI.mint(ownerAddress, String(1e20))
-    await USDC.mint(ownerAddress, String(1e8))
-    await USDT.mint(ownerAddress, String(1e8))
-    await SUSD.mint(ownerAddress, String(1e20))
-
-    await DAI.mint(user1Address, String(1e20))
-    await USDC.mint(user1Address, String(1e8))
-    await USDT.mint(user1Address, String(1e8))
-    await SUSD.mint(user1Address, String(1e20))
-
-    await DAI.mint(user2Address, String(1e20))
-    await USDC.mint(user2Address, String(1e8))
-    await USDT.mint(user2Address, String(1e8))
-    await SUSD.mint(user2Address, String(1e20))
+    await asyncForEach(
+      [ownerAddress, user1Address, user2Address],
+      async (address) => {
+        await DAI.mint(address, String(1e20))
+        await USDC.mint(address, String(1e8))
+        await USDT.mint(address, String(1e8))
+        await SUSD.mint(address, String(1e20))
+      },
+    )
 
     // Deploy Allowlist
     allowlist = (await deployContract(
@@ -161,12 +157,14 @@ describe("Swap", () => {
       [1000, 1000, 1000],
     )
 
-    // Populate the pool with initial liquidity
-    await DAI.approve(swap.address, MAX_UINT256)
-    await USDC.approve(swap.address, MAX_UINT256)
-    await USDT.approve(swap.address, MAX_UINT256)
-    await SUSD.approve(swap.address, MAX_UINT256)
+    await asyncForEach([owner, user1, user2], async (signer) => {
+      await DAI.connect(signer).approve(swap.address, MAX_UINT256)
+      await USDC.connect(signer).approve(swap.address, MAX_UINT256)
+      await USDT.connect(signer).approve(swap.address, MAX_UINT256)
+      await SUSD.connect(signer).approve(swap.address, MAX_UINT256)
+    })
 
+    // Populate the pool with initial liquidity
     await swap.addLiquidity(
       [String(50e18), String(50e6), String(50e6), String(50e18)],
       0,
@@ -181,16 +179,25 @@ describe("Swap", () => {
   })
 
   describe("addLiquidity", () => {
-    it("Add liquidity suceeds with pool with 4 tokens", async () => {
+    it("Add liquidity succeeds with pool with 4 tokens", async () => {
       const calcTokenAmount = await swap.calculateTokenAmount(
         [String(1e18), 0, 0, 0],
         true,
       )
       expect(calcTokenAmount).to.be.eq("999854620735777893")
-      await swap.addLiquidity(
-        [String(1e18), 0, 0, 0],
-        calcTokenAmount.mul(99).div(100),
-        (await getCurrentBlockTimestamp()) + 60,
+
+      // Add liquidity as user1
+      await swap
+        .connect(user1)
+        .addLiquidity(
+          [String(1e18), 0, 0, 0],
+          calcTokenAmount.mul(99).div(100),
+          (await getCurrentBlockTimestamp()) + 60,
+        )
+
+      // Verify swapToken balance
+      expect(await swapToken.balanceOf(await user1.getAddress())).to.be.eq(
+        "999355335447632820",
       )
     })
   })
