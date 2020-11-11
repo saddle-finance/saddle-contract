@@ -5,6 +5,7 @@ import {
   getCurrentBlockTimestamp,
   getTokenBalances,
   setNextTimestamp,
+  setTimestamp,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -167,6 +168,7 @@ describe("Swap", () => {
     describe("A", async () => {
       it("Returns correct A value", async () => {
         expect(await swap.getA()).to.eq(INITIAL_A_VALUE)
+        expect(await swap.getAPrecise()).to.eq(INITIAL_A_VALUE * 100)
       })
     })
 
@@ -190,7 +192,18 @@ describe("Swap", () => {
     })
 
     it("Reverts when index is out of range", async () => {
-      expect(swap.getToken(2)).to.be.reverted
+      await expect(swap.getToken(2)).to.be.reverted
+    })
+  })
+
+  describe("getTokenIndex", () => {
+    it("Returns correct token indexes", async () => {
+      expect(await swap.getTokenIndex(firstToken.address)).to.be.eq(0)
+      expect(await swap.getTokenIndex(secondToken.address)).to.be.eq(1)
+    })
+
+    it("Reverts when token address is not found", async () => {
+      await expect(swap.getTokenIndex("0xdead")).to.be.reverted
     })
   })
 
@@ -1749,6 +1762,93 @@ describe("Swap", () => {
 
     it("Reverts when fee is too high", async () => {
       await expect(swap.setDefaultWithdrawFee(String(15e8))).to.be.reverted
+    })
+  })
+
+  describe("startRampA", () => {
+    it("Succeeds to ramp upwards", async () => {
+      // call startRampA()
+      await swap.startRampA(100, (await getCurrentBlockTimestamp()) + 86401)
+
+      // set timestamp to +10000 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
+      expect(await swap.getA()).to.be.eq(55)
+      expect(await swap.getAPrecise()).to.be.eq(5578)
+
+      // set timestamp to the end of ramp period
+      await setTimestamp((await getCurrentBlockTimestamp()) + 76401)
+      expect(await swap.getA()).to.be.eq(100)
+      expect(await swap.getAPrecise()).to.be.eq(10000)
+    })
+
+    it("Succeeds to ramp downwards", async () => {
+      // call startRampA()
+      await swap.startRampA(10, (await getCurrentBlockTimestamp()) + 86401)
+
+      // set timestamp to +10000 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
+      expect(await swap.getA()).to.be.eq(45)
+      expect(await swap.getAPrecise()).to.be.eq(4538)
+
+      // set timestamp to the end of ramp period
+      await setTimestamp((await getCurrentBlockTimestamp()) + 76401)
+      expect(await swap.getA()).to.be.eq(10)
+      expect(await swap.getAPrecise()).to.be.eq(1000)
+    })
+
+    it("Reverts with 'Ramp already ongoing'", async () => {
+      await swap.startRampA(55, (await getCurrentBlockTimestamp()) + 86401)
+      await expect(
+        swap.startRampA(55, (await getCurrentBlockTimestamp()) + 86401),
+      ).to.be.revertedWith("Ramp already ongoing")
+    })
+
+    it("Reverts with 'Insufficient ramp time'", async () => {
+      await expect(
+        swap.startRampA(55, (await getCurrentBlockTimestamp()) + 86399),
+      ).to.be.revertedWith("Insufficient ramp time")
+    })
+
+    it("Reverts with 'futureA_ must be between 0 and MAX_A'", async () => {
+      await expect(
+        swap.startRampA(0, (await getCurrentBlockTimestamp()) + 86401),
+      ).to.be.revertedWith("futureA_ must be between 0 and MAX_A")
+    })
+
+    it("Reverts with 'futureA_ is too small'", async () => {
+      await expect(
+        swap.startRampA(4, (await getCurrentBlockTimestamp()) + 86401),
+      ).to.be.revertedWith("futureA_ is too small")
+    })
+
+    it("Reverts with 'futureA_ is too large'", async () => {
+      await expect(
+        swap.startRampA(501, (await getCurrentBlockTimestamp()) + 86401),
+      ).to.be.revertedWith("futureA_ is too large")
+    })
+  })
+
+  describe("stopRampA", () => {
+    it("Stop ramp succeeds", async () => {
+      // call startRampA()
+      await swap.startRampA(100, (await getCurrentBlockTimestamp()) + 86401)
+
+      // set timestamp to +10000 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
+      expect(await swap.getA()).to.be.eq(55)
+      expect(await swap.getAPrecise()).to.be.eq(5578)
+
+      // Stop ramp
+      await swap.stopRampA()
+      expect(await swap.getA()).to.be.eq(55)
+      expect(await swap.getAPrecise()).to.be.eq(5578)
+
+      // set timestamp to +80000 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 80000)
+
+      // verify ramp has stopped
+      expect(await swap.getA()).to.be.eq(55)
+      expect(await swap.getAPrecise()).to.be.eq(5578)
     })
   })
 })

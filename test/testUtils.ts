@@ -92,6 +92,10 @@ export async function setNextTimestamp(timestamp: number): Promise<any> {
   }
 }
 
+export async function setTimestamp(timestamp: number): Promise<any> {
+  return ethers.provider.send("evm_mine", [timestamp])
+}
+
 export async function getCurrentBlockTimestamp(): Promise<number> {
   return (
     await ethers.provider.getBlock(await ethers.provider.getBlockNumber())

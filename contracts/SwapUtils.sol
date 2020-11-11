@@ -406,24 +406,6 @@ library SwapUtils {
     }
 
     /**
-     * @notice Calculate the balances of the tokens to send to the user
-     *         after given amount of pool token is burned.
-     * @param amount Amount of pool token to burn
-     * @return balances of the tokens to send to the user
-     */
-    function calculateRebalanceAmounts(Swap storage self, uint256 amount)
-    internal view returns(uint256[] memory) {
-        uint256 tokenSupply = self.lpToken.totalSupply();
-        uint256[] memory amounts = new uint256[](self.pooledTokens.length);
-
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            amounts[i] = self.balances[i].mul(amount).div(tokenSupply);
-        }
-
-        return amounts;
-    }
-
-    /**
      * @notice Calculate the new balances of the tokens given the indexes of the token
      *         that is swapped from (FROM) and the token that is swapped to (TO).
      *         This function is used as a helper function to calculate how much TO token
@@ -940,14 +922,14 @@ library SwapUtils {
         require(block.timestamp >= self.initialATime + MIN_RAMP_TIME, "Ramp already ongoing");
         require(futureTime_ >= block.timestamp + MIN_RAMP_TIME, "Insufficient ramp time");
 
-        uint256 initialA = _getA(self);
+        uint256 initialA = _getAPrecise(self);
         uint256 futureAPrecise = futureA_ * A_PRECISION;
 
         require(futureA_ > 0 && futureA_ < MAX_A, "futureA_ must be between 0 and MAX_A");
         if (futureAPrecise < initialA) {
-            require(futureAPrecise.mul(MAX_A_CHANGE) >= initialA, "MAX_A_CHANGE limit reached");
+            require(futureAPrecise.mul(MAX_A_CHANGE) >= initialA, "futureA_ is too small");
         } else {
-            require(futureAPrecise <= initialA.mul(MAX_A_CHANGE), "MAX_A_CHANGE limit reached");
+            require(futureAPrecise <= initialA.mul(MAX_A_CHANGE), "futureA_ is too large");
         }
 
         self.initialA = initialA;
@@ -959,10 +941,11 @@ library SwapUtils {
     }
 
     /**
-     * @notice Stop ramping A immediately. Has no effect if ramping is already completed or stopped.
+     * @notice Stop ramping A immediately. Has no effect on A if ramping is already completed or stopped.
+     *         Once this function is called, rampA() cannot be called for another MIN_RAMP_TIME seconds
      */
     function stopRampA(Swap storage self) external {
-        uint256 currentA = _getA(self);
+        uint256 currentA = _getAPrecise(self);
 
         self.initialA = currentA;
         self.futureA = currentA;

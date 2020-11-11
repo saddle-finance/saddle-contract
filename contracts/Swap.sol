@@ -99,8 +99,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             balances: new uint256[](_pooledTokens.length),
             initialA: _A.mul(SwapUtils.getAPrecision()),
             futureA: _A.mul(SwapUtils.getAPrecision()),
-            initialATime: block.timestamp,
-            futureATime: block.timestamp,
+            initialATime: 0,
+            futureATime: 0,
             swapFee: _fee,
             adminFee: _adminFee,
             defaultWithdrawFee: _withdrawFee
