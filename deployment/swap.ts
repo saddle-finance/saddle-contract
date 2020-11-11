@@ -12,6 +12,7 @@ import { Wallet } from "ethers"
 import { deployContract } from "ethereum-waffle"
 import { deployContractWithLibraries } from "../test/testUtils"
 import { ethers } from "@nomiclabs/buidler"
+import { BigNumber } from "@ethersproject/bignumber"
 
 // Test Values
 const INITIAL_A_VALUE = 50
@@ -170,6 +171,32 @@ async function deploySwap(): Promise<void> {
       allowlist.address,
     ],
   )) as Swap
+
+  // update dev limits for stableSwap
+  await allowlist.setPoolCap(
+    stablecoinSwap.address,
+    BigNumber.from(10).pow(18).mul(1000),
+  )
+  await allowlist.setPoolAccountLimit(
+    stablecoinSwap.address,
+    BigNumber.from(10).pow(18).mul(1000),
+  )
+
+  // update dev limits for btcSwap
+  await allowlist.setPoolCap(
+    btcSwap.address,
+    BigNumber.from(10).pow(18).mul(1000),
+  )
+  await allowlist.setPoolAccountLimit(
+    btcSwap.address,
+    BigNumber.from(10).pow(18).mul(1000),
+  )
+
+  // update multipliers for both swaps
+  await allowlist.setMultipliers(
+    [ownerAddress, user1Address, user2Address],
+    [1000, 1000, 1000],
+  )
 
   await stablecoinSwap.deployed()
   await btcSwap.deployed()

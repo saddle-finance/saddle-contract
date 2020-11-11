@@ -619,7 +619,7 @@ describe("Swap", () => {
         poolTokenBalanceAfter,
       )
 
-      expect(actualPoolTokenBurned).to.eq(String("1000934178112841888"))
+      expect(actualPoolTokenBurned).to.eq(String("1000934178112841889"))
       expect(actualPoolTokenBurned).to.gte(
         maxPoolTokenAmountToBeBurnedPositiveSlippage,
       )
