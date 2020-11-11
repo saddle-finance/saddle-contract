@@ -40,6 +40,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         uint256[] tokenAmounts, uint256[] fees, uint256 invariant,
         uint256 lpTokenSupply
     );
+    event NewAdminFee(uint256 newAdminFee);
+    event NewSwapFee(uint256 newSwapFee);
+    event NewWithdrawFee(uint256 newWithdrawFee);
+    event RampA(uint256 oldA, uint256 newA, uint256 initialTime, uint256 futureTime);
+    event StopRampA(uint256 A, uint256 time);
 
     /**
      * @notice Deploys this Swap contract with given parameters as default
@@ -388,7 +393,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param futureA the new A to ramp towards
      * @param futureTime timestamp when the new A should be reached
      */
-    function startRampA(uint256 futureA, uint256 futureTime) external onlyOwner {
+    function rampA(uint256 futureA, uint256 futureTime) external onlyOwner {
         swapStorage.rampA(futureA, futureTime);
     }
 

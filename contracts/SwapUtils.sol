@@ -34,7 +34,6 @@ library SwapUtils {
     event RampA(uint256 oldA, uint256 newA, uint256 initialTime, uint256 futureTime);
     event StopRampA(uint256 A, uint256 time);
 
-
     struct Swap {
         // variables around the ramp management of A,
         // the amplification coefficient * n * (n - 1)

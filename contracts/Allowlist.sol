@@ -17,6 +17,7 @@ contract Allowlist is Ownable, IAllowlist {
     mapping(address => uint256) private poolCaps;
     mapping(address => uint256) private accountLimits;
 
+    event SetMultipliers(address[] addressArray, uint256[] multiplierArray);
     event PoolCap(address indexed poolAddress, uint256 poolCap);
     event PoolAccountLimit(address indexed poolAddress, uint256 accountLimit);
 
@@ -58,6 +59,8 @@ contract Allowlist is Ownable, IAllowlist {
         for (uint256 i = 0; i < multiplierArray.length; i++) {
             multipliers[addressArray[i]] = multiplierArray[i];
         }
+
+        emit SetMultipliers(addressArray, multiplierArray);
     }
 
     /**

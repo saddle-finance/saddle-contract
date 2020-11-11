@@ -1104,6 +1104,13 @@ describe("Swap", () => {
   })
 
   describe("setSwapFee", () => {
+    it("Emits NewSwapFee event", async () => {
+      await expect(swap.setSwapFee(BigNumber.from(1e8))).to.emit(
+        swap,
+        "NewSwapFee",
+      )
+    })
+
     it("Reverts when called by non-owners", async () => {
       await expect(swap.connect(user1).setSwapFee(0)).to.be.reverted
       await expect(swap.connect(user2).setSwapFee(BigNumber.from(1e8))).to.be
@@ -1121,6 +1128,13 @@ describe("Swap", () => {
   })
 
   describe("setAdminFee", () => {
+    it("Emits NewAdminFee event", async () => {
+      await expect(swap.setAdminFee(BigNumber.from(1e10))).to.emit(
+        swap,
+        "NewAdminFee",
+      )
+    })
+
     it("Reverts when called by non-owners", async () => {
       await expect(swap.connect(user1).setSwapFee(0)).to.be.reverted
       await expect(swap.connect(user2).setSwapFee(BigNumber.from(1e10))).to.be
@@ -1743,6 +1757,13 @@ describe("Swap", () => {
   })
 
   describe("setDefaultWithdrawFee", () => {
+    it("Emits NewWithdrawFee event", async () => {
+      await expect(swap.setDefaultWithdrawFee(String(5e7))).to.emit(
+        swap,
+        "NewWithdrawFee",
+      )
+    })
+
     it("Setting the withdraw fee affects past deposits as well", async () => {
       await swap.setDefaultWithdrawFee(String(5e7))
       await swap
@@ -1765,10 +1786,16 @@ describe("Swap", () => {
     })
   })
 
-  describe("startRampA", () => {
+  describe("rampA", () => {
+    it("Emits RampA event", async () => {
+      await expect(
+        swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401),
+      ).to.emit(swap, "RampA")
+    })
+
     it("Succeeds to ramp upwards", async () => {
-      // call startRampA()
-      await swap.startRampA(100, (await getCurrentBlockTimestamp()) + 86401)
+      // call rampA()
+      await swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401)
 
       // set timestamp to +10000 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
@@ -1782,8 +1809,8 @@ describe("Swap", () => {
     })
 
     it("Succeeds to ramp downwards", async () => {
-      // call startRampA()
-      await swap.startRampA(10, (await getCurrentBlockTimestamp()) + 86401)
+      // call rampA()
+      await swap.rampA(10, (await getCurrentBlockTimestamp()) + 86401)
 
       // set timestamp to +10000 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
@@ -1796,42 +1823,58 @@ describe("Swap", () => {
       expect(await swap.getAPrecise()).to.be.eq(1000)
     })
 
-    it("Reverts with 'Ramp already ongoing'", async () => {
-      await swap.startRampA(55, (await getCurrentBlockTimestamp()) + 86401)
+    it("Reverts when non-owner calls it", async () => {
       await expect(
-        swap.startRampA(55, (await getCurrentBlockTimestamp()) + 86401),
+        swap
+          .connect(user1)
+          .rampA(55, (await getCurrentBlockTimestamp()) + 86401),
+      ).to.be.reverted
+    })
+
+    it("Reverts with 'Ramp already ongoing'", async () => {
+      await swap.rampA(55, (await getCurrentBlockTimestamp()) + 86401)
+      await expect(
+        swap.rampA(55, (await getCurrentBlockTimestamp()) + 86401),
       ).to.be.revertedWith("Ramp already ongoing")
     })
 
     it("Reverts with 'Insufficient ramp time'", async () => {
       await expect(
-        swap.startRampA(55, (await getCurrentBlockTimestamp()) + 86399),
+        swap.rampA(55, (await getCurrentBlockTimestamp()) + 86399),
       ).to.be.revertedWith("Insufficient ramp time")
     })
 
     it("Reverts with 'futureA_ must be between 0 and MAX_A'", async () => {
       await expect(
-        swap.startRampA(0, (await getCurrentBlockTimestamp()) + 86401),
+        swap.rampA(0, (await getCurrentBlockTimestamp()) + 86401),
       ).to.be.revertedWith("futureA_ must be between 0 and MAX_A")
     })
 
     it("Reverts with 'futureA_ is too small'", async () => {
       await expect(
-        swap.startRampA(4, (await getCurrentBlockTimestamp()) + 86401),
+        swap.rampA(4, (await getCurrentBlockTimestamp()) + 86401),
       ).to.be.revertedWith("futureA_ is too small")
     })
 
     it("Reverts with 'futureA_ is too large'", async () => {
       await expect(
-        swap.startRampA(501, (await getCurrentBlockTimestamp()) + 86401),
+        swap.rampA(501, (await getCurrentBlockTimestamp()) + 86401),
       ).to.be.revertedWith("futureA_ is too large")
     })
   })
 
   describe("stopRampA", () => {
+    it("Emits StopRampA event", async () => {
+      // call rampA()
+      await swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401)
+
+      // Stop ramp
+      expect(swap.stopRampA()).to.emit(swap, "StopRampA")
+    })
+
     it("Stop ramp succeeds", async () => {
-      // call startRampA()
-      await swap.startRampA(100, (await getCurrentBlockTimestamp()) + 86401)
+      // call rampA()
+      await swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401)
 
       // set timestamp to +10000 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
