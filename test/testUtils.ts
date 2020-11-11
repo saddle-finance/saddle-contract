@@ -92,8 +92,21 @@ export async function setNextTimestamp(timestamp: number): Promise<any> {
   }
 }
 
+export async function setTimestamp(timestamp: number): Promise<any> {
+  return ethers.provider.send("evm_mine", [timestamp])
+}
+
 export async function getCurrentBlockTimestamp(): Promise<number> {
   return (
     await ethers.provider.getBlock(await ethers.provider.getBlockNumber())
   ).timestamp
+}
+
+export async function asyncForEach<T>(
+  array: Array<T>,
+  callback: (item: T, index: number) => void,
+): Promise<void> {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index)
+  }
 }

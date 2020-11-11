@@ -18,6 +18,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     SwapUtils.Swap public swapStorage;
     IAllowlist public allowlist;
     bool public isGuarded = true;
+    mapping(address => uint8) private tokenIndexes;
 
     /*** EVENTS ***/
 
@@ -39,14 +40,23 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         uint256[] tokenAmounts, uint256[] fees, uint256 invariant,
         uint256 lpTokenSupply
     );
+    event NewAdminFee(uint256 newAdminFee);
+    event NewSwapFee(uint256 newSwapFee);
+    event NewWithdrawFee(uint256 newWithdrawFee);
+    event RampA(uint256 oldA, uint256 newA, uint256 initialTime, uint256 futureTime);
+    event StopRampA(uint256 A, uint256 time);
 
     /**
+     * @notice Deploys this Swap contract with given parameters as default
+     *         values. This will also deploy a LPToken that represents users
+     *         LP position. The owner of LPToken will be this contract - which means
+     *         only this contract is allowed to mint new tokens.
      * @param _pooledTokens an array of ERC20s this pool will accept
      * @param precisions the precision to use for each pooled token,
-     *        eg 10 ** 8 for WBTC. Cannot be larger than POOL_PRECISION
-     * @param lpTokenName, the long-form name of the token to be deployed
-     * @param lpTokenSymbol, the short symbol for the token to be deployed
-     * @param _A the the amplification coefficient * n * (n - 1). See the
+     *        eg 10 ** 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
+     * @param lpTokenName the long-form name of the token to be deployed
+     * @param lpTokenSymbol the short symbol for the token to be deployed
+     * @param _A the amplification coefficient * n * (n - 1). See the
      *        StableSwap paper for details
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
@@ -59,6 +69,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         uint256 _fee, uint256 _adminFee, uint256 _withdrawFee, IAllowlist _allowlist
     ) public OwnerPausable() ReentrancyGuard() {
         require(
+            _pooledTokens.length > 1,
+            "Pools must contain more than 1 token"
+        );
+        require(
             _pooledTokens.length <= 32,
             "Pools with over 32 tokens aren't supported"
         );
@@ -67,7 +81,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             "Each pooled token needs a specified precision"
         );
 
-        for (uint i = 0; i < _pooledTokens.length; i++) {
+        for (uint8 i = 0; i < _pooledTokens.length; i++) {
+            if (i > 0) {
+                require(tokenIndexes[address(_pooledTokens[i])] == 0, "Pools cannot have duplicate tokens");
+            }
             require(
                 address(_pooledTokens[i]) != address(0),
                 "The 0 address isn't an ERC-20"
@@ -77,6 +94,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
                 "Token precision can't be higher than the pool precision"
             );
             precisions[i] = (10 ** uint256(SwapUtils.getPoolPrecisionDecimals())).div(precisions[i]);
+            tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
         swapStorage = SwapUtils.Swap({
@@ -84,14 +102,17 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             pooledTokens: _pooledTokens,
             tokenPrecisionMultipliers: precisions,
             balances: new uint256[](_pooledTokens.length),
-            A: _A,
+            initialA: _A.mul(SwapUtils.getAPrecision()),
+            futureA: _A.mul(SwapUtils.getAPrecision()),
+            initialATime: 0,
+            futureATime: 0,
             swapFee: _fee,
             adminFee: _adminFee,
             defaultWithdrawFee: _withdrawFee
         });
 
         allowlist = _allowlist;
-        allowlist.getAllowedAmount(address(this), address(0)); // crude check of the allowlist contract address
+        require(allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e), "Allowlist check failed");
         isGuarded = true;
     }
 
@@ -109,23 +130,48 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     /*** VIEW FUNCTIONS ***/
 
     /**
-     * @notice Return A, the the amplification coefficient * n * (n - 1)
+     * @notice Return A, the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
+     * @return A parameter
      */
     function getA() external view returns (uint256) {
         return swapStorage.getA();
     }
 
     /**
-     * @notice Return address of the pooled token at given index
-     * @param index the index of the token
+     * @notice Return A in its raw precision form
+     * @dev See the StableSwap paper for details
+     * @return A parameter in its raw precision form
      */
-    function getToken(uint8 index) external view returns (IERC20) {
+    function getAPrecise() external view returns (uint256) {
+        return swapStorage.getAPrecise();
+    }
+
+    /**
+     * @notice Return address of the pooled token at given index. Reverts if tokenIndex is out of range.
+     * @param index the index of the token
+     * @return address of the token at given index
+     */
+    function getToken(uint8 index) public view returns (IERC20) {
+        require(index < swapStorage.pooledTokens.length, "Out of range");
         return swapStorage.pooledTokens[index];
     }
 
     /**
+     * @notice Return the index of the given token address. Reverts if no matching
+     *         token is found.
+     * @param tokenAddress address of the token
+     * @return the index of the given token address
+     */
+    function getTokenIndex(address tokenAddress) external view returns (uint8) {
+        uint8 index = tokenIndexes[tokenAddress];
+        require(address(getToken(index)) == tokenAddress, "Token does not exist");
+        return index;
+    }
+
+    /**
      * @notice Return timestamp of last deposit of given address
+     * @return timestamp of the last deposit made by the given address
      */
     function getDepositTimestamp(address user) external view returns (uint256) {
         return swapStorage.getDepositTimestamp(user);
@@ -134,14 +180,16 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     /**
      * @notice Return current balance of the pooled token at given index
      * @param index the index of the token
+     * @return current balance of the pooled token at given index with token's native precision
      */
     function getTokenBalance(uint8 index) external view returns (uint256) {
+        require(index < swapStorage.pooledTokens.length, "Index out of range");
         return swapStorage.balances[index];
     }
 
     /**
      * @notice Get the virtual price, to help calculate profit
-     * @return the virtual price, scaled to the POOL_PRECISION
+     * @return the virtual price, scaled to the POOL_PRECISION_DECIMALS
      */
     function getVirtualPrice() external view returns (uint256) {
         return swapStorage.getVirtualPrice();
@@ -169,6 +217,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *        corresponding to pooledTokens. The amount should be in each
      *        pooled token's native precision
      * @param deposit whether this is a deposit or a withdrawal
+     * @return token amount the user will receive
      */
     function calculateTokenAmount(uint256[] calldata amounts, bool deposit)
     external view returns(uint256) {
@@ -181,6 +230,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *         LP tokens
      * @param amount the amount of LP tokens that would be burned on
      *        withdrawal
+     * @return array of balances of tokens that user will receive
      */
     function calculateRemoveLiquidity(uint256 amount) external view returns (uint256[] memory) {
         return swapStorage.calculateRemoveLiquidity(amount);
@@ -200,7 +250,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice calculate the fee that is applied when the given user withdraws
+     * @notice Calculate the fee that is applied when the given user withdraws. The withdraw fee
+     *         decays linearly over period of 4 weeks. For example, depositing and withdrawing right away
+     *         will charge you the full amount of withdraw fee. But withdrawing after 4 weeks will charge you
+     *         no additional fees.
      * @dev returned value should be divided by FEE_DENOMINATOR to convert to correct decimals
      * @param user address you want to calculate withdraw fee of
      * @return current withdraw fee of the user
@@ -331,6 +384,24 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function setDefaultWithdrawFee(uint256 newWithdrawFee) external onlyOwner {
         swapStorage.setDefaultWithdrawFee(newWithdrawFee);
+    }
+
+    /**
+     * @notice Start ramping up or down A parameter towards given futureA and futureTime
+     *         Checks if the change is too rapid, and commits the new A value only when it falls under
+     *         the limit range.
+     * @param futureA the new A to ramp towards
+     * @param futureTime timestamp when the new A should be reached
+     */
+    function rampA(uint256 futureA, uint256 futureTime) external onlyOwner {
+        swapStorage.rampA(futureA, futureTime);
+    }
+
+    /**
+     * @notice Stop ramping A immediately. Has no effect if ramping is already completed or stopped.
+     */
+    function stopRampA() external onlyOwner {
+        swapStorage.stopRampA();
     }
 
     /**
