@@ -20,7 +20,7 @@ describe("Allowlist", () => {
   const allowedAccounts: Array<string> = []
   const muliplierArray: Array<number> = []
 
-  for (let i = 0; i < 450; i++) {
+  for (let i = 0; i < 400; i++) {
     allowedAccounts[i] = ethers.Wallet.createRandom().address
     muliplierArray[i] = 1000 + i
   }
@@ -64,6 +64,12 @@ describe("Allowlist", () => {
       ).to.emit(allowlist, "PoolAccountLimit")
     })
 
+    it("Emits SetMultipliers event", async () => {
+      await expect(
+        allowlist.setMultipliers(allowedAccounts, muliplierArray),
+      ).to.emit(allowlist, "SetMultipliers")
+    })
+
     it("Reverts when non-owner tries to set the pool account limit", async () => {
       await expect(
         allowlist
@@ -74,7 +80,7 @@ describe("Allowlist", () => {
 
     it("Reverts when array lengths are different", async () => {
       await expect(
-        allowlist.setMultipliers(allowedAccounts, muliplierArray.slice(1, 450)),
+        allowlist.setMultipliers(allowedAccounts, muliplierArray.slice(1, 400)),
       ).to.be.reverted
     })
 
