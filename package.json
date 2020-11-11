@@ -30,7 +30,7 @@
     "ethers": "^5.0.14",
     "ethlint": "^1.2.5",
     "husky": "^4.3.0",
-    "lint-staged": "^10.5.0",
+    "lint-staged": "^10.5.1",
     "prettier": "^2.1.2",
     "shelljs": "^0.8.4",
     "solidity-coverage": "^0.7.11",
