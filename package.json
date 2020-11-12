@@ -9,7 +9,7 @@
     "test": "test"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^2.5.1"
+    "@openzeppelin/contracts": "^3.2.0"
   },
   "devDependencies": {
     "@nomiclabs/buidler": "^1.4.8",
