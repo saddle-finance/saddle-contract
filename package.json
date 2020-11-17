@@ -9,18 +9,20 @@
     "test": "test"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^2.5.1"
+    "@eth-optimism/smock": "^0.1.1-alpha.0",
+    "@openzeppelin/contracts": "^2.5.1",
+    "hardhat-typechain": "^0.3.3",
+    "synthetix": "2.32.2"
   },
   "devDependencies": {
-    "@nomiclabs/buidler": "^1.4.8",
-    "@nomiclabs/buidler-ethers": "^2.0.2",
-    "@nomiclabs/buidler-waffle": "^2.1.0",
+    "@nomiclabs/hardhat-ethers": "^2.0.0",
+    "@nomiclabs/hardhat-waffle": "^2.0.0",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
     "@typechain/ethers-v5": "^2.0.0",
     "@types/chai": "^4.2.14",
     "@types/mocha": "^8.0.4",
     "@typescript-eslint/eslint-plugin": "^2.24.0",
     "@typescript-eslint/parser": "^2.24.0",
-    "buidler-typechain": "^0.2.2",
     "chai": "^4.2.0",
     "eslint": "^6.8.0",
     "eslint-config-keep": "git+https://github.com/keep-network/eslint-config-keep.git#0.3.0",
@@ -29,12 +31,14 @@
     "ethereum-waffle": "^3.2.0",
     "ethers": "^5.0.14",
     "ethlint": "^1.2.5",
+    "hardhat": "^2.0.3",
+    "hardhat-gas-reporter": "^1.0.1",
     "husky": "^4.3.0",
     "lint-staged": "^10.5.1",
     "prettier": "^2.1.2",
     "shelljs": "^0.8.4",
-    "solidity-coverage": "^0.7.11",
-    "ts-generator": "0.1.1",
+    "solidity-coverage": "^0.7.12",
+    "ts-generator": "^0.1.1",
     "ts-node": "^9.0.0",
     "typechain": "^3.0.0",
     "typescript": "^4.0.5"
@@ -46,9 +50,9 @@
     "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/*.ts",
     "lint:sol": "solium -d contracts/",
     "lint:fix:sol": "solium -d contracts/ --fix",
-    "build": "buidler compile && buidler typechain && tsc",
-    "test": "buidler test",
-    "coverage": "buidler coverage --network coverage --temp ./build/artifacts",
+    "build": "hardhat compile && hardhat typechain && tsc",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage --temp ./build/artifacts",
     "prepare": "npm run build"
   },
   "husky": {

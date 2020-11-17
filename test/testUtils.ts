@@ -1,7 +1,7 @@
 import { BigNumber, Bytes, ContractFactory, Signer } from "ethers"
 import { Contract } from "@ethersproject/contracts"
-import { Artifact } from "@nomiclabs/buidler/types"
-import { ethers } from "@nomiclabs/buidler"
+import { Artifact } from "hardhat/types"
+import { ethers } from "hardhat"
 
 import { Erc20 as ERC20 } from "../build/typechain/Erc20"
 

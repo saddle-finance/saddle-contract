@@ -1,12 +1,12 @@
-import { ethers } from "@nomiclabs/buidler"
+import { ethers } from "hardhat"
 import { Wallet, Signer } from "ethers"
 import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import StakeableTokenWrapperArtifact from "../build/artifacts/StakeableTokenWrapper.json"
+import StakeableTokenWrapperArtifact from "../build/artifacts/contracts/StakeableTokenWrapper.sol/StakeableTokenWrapper.json"
 import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
 
-import LPTokenArtifact from "../build/artifacts/LPToken.json"
+import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { LpToken } from "../build/typechain/LpToken"
 import { Ierc20 as IERC20 } from "../build/typechain/Ierc20"
 

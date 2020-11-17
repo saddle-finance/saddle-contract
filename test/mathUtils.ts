@@ -1,9 +1,9 @@
-import { ethers } from "@nomiclabs/buidler"
+import { ethers } from "hardhat"
 import { Wallet, Signer, constants } from "ethers"
 import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import MathUtilsArtifact from "../build/artifacts/MathUtils.json"
+import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 
 chai.use(solidity)

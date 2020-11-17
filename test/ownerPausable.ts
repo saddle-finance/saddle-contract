@@ -1,9 +1,9 @@
-import { ethers } from "@nomiclabs/buidler"
+import { ethers } from "hardhat"
 import { Wallet, Signer } from "ethers"
 import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import OwnerPausableArtifact from "../build/artifacts/OwnerPausable.json"
+import OwnerPausableArtifact from "../build/artifacts/contracts/OwnerPausable.sol/OwnerPausable.json"
 import { OwnerPausable } from "../build/typechain/OwnerPausable"
 
 chai.use(solidity)
