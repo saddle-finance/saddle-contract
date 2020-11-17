@@ -1,9 +1,9 @@
-import { ethers } from "@nomiclabs/buidler"
+import { ethers } from "hardhat"
 import { Signer } from "ethers"
 import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import AllowlistArtifact from "../build/artifacts/Allowlist.json"
+import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { Allowlist } from "../build/typechain/Allowlist"
 
 chai.use(solidity)
