@@ -11,6 +11,7 @@ import "./VirtualToken.sol";
 import "./interfaces/IVirtualLike.sol";
 import "./interfaces/ISwap.sol";
 
+// TODO Add NatSpec tags
 contract Bridge is Ownable {
 
     using SafeMath for uint256;
@@ -36,9 +37,10 @@ contract Bridge is Ownable {
 
     }
 
+    // TODO single pending settlement?
     function settle(uint256 range) external {
         // Limit range to 25
-        require(range < 26);
+        require(range < 26, "Range must be lower than 26");
         uint256 maxPos = queuePos.add(range);
 
         // Limit queuePos + range from exceeding queueSize
@@ -47,11 +49,23 @@ contract Bridge is Ownable {
         }
 
         // Iterate through queueData and call settle()
-        for (uint i = queuePos; i < maxPos; i++) {
+        for (uint256 i = queuePos; i < maxPos; i++) {
+
+            // Retrieve pending settlement
             PendingSettlement memory ps = queueData[i];
-            require(ps.virtualSynthOrToken.readyToSettle());
-            for (uint j = 0; j < ps.accounts.length; j++) {
-                queueData[i].virtualSynthOrToken.settle(ps.accounts[j]);
+
+            // Check if it is already settled by others or not
+            if (!ps.virtualSynthOrToken.settled()) {
+
+                // If it's not ready to settle, return early
+                if (!ps.virtualSynthOrToken.readyToSettle()) {
+                    return;
+                }
+
+                // Settle this virtual with the list of accounts
+                for (uint j = 0; j < ps.accounts.length; j++) {
+                    ps.virtualSynthOrToken.settle(ps.accounts[j]);
+                }
             }
             queuePos++;
         }
@@ -67,16 +81,16 @@ contract Bridge is Ownable {
     }
 
     // Swaps a token from a Saddle's pool to any virtual synth
-    function tokenToVSynth(ISwap pool, uint8 tokenFrom, bytes32 synthOutKey,
+    function tokenToVSynth(ISwap swap, uint8 tokenFrom, bytes32 synthOutKey,
         uint256 tokenInAmount, address[] calldata accounts) external {
 
         // Transfer token from msg.sender
-        IERC20 token = pool.getToken(tokenFrom);
+        IERC20 token = swap.getToken(tokenFrom);
         token.transferFrom(msg.sender, address(this), tokenInAmount);
 
         // Swaps token to the supported synth in the pool (sETH, sBTC, or sUSD depending on the pool)
-        pool.swap(tokenFrom, synthIndexes[address(pool)], tokenInAmount, 0, block.timestamp);
-        IERC20 synthFrom = pool.getToken(synthIndexes[address(pool)]);
+        swap.swap(tokenFrom, synthIndexes[address(swap)], tokenInAmount, 0, block.timestamp);
+        IERC20 synthFrom = swap.getToken(synthIndexes[address(swap)]);
 
         // Approve synth for transaction
         uint256 synthInAmount = synthFrom.balanceOf(address(this));
@@ -86,7 +100,8 @@ contract Bridge is Ownable {
         (uint vsynthAmount, IVirtualSynth vsynth) = synthetix.exchangeWithVirtual(
             ISynth(address(synthFrom)).currencyKey(),
             synthInAmount,
-            synthOutKey
+            synthOutKey,
+            0
         );
 
         // Give the virtual synth to the user
@@ -97,32 +112,36 @@ contract Bridge is Ownable {
     }
 
     // Swaps any synth to a token that Saddle's pools support
-    function synthToVToken(ISwap pool, bytes32 synthInKey, uint8 tokenToIndex,
+    function synthToVToken(ISwap swap, bytes32 synthInKey, uint8 tokenToIndex,
         uint256 synthInAmount, address[] calldata accounts) external {
 
         // Limit array size
         require(accounts.length < 6);
 
+        {
         // Recieve synth from the user
         IERC20 synthFrom = IERC20(synthetixResolver.getSynth(synthInKey));
         synthFrom.transferFrom(msg.sender, address(this), synthInAmount);
 
         // Approve synth for transaction.
         synthFrom.approve(address(synthetix), synthInAmount);
-        uint8 synthIndex = synthIndexes[address(pool)];
+        }
+
+        uint8 synthIndex = synthIndexes[address(swap)];
 
         // Swap synths
-        (uint vsynthAmount, IVirtualSynth vsynth) = synthetix.exchangeWithVirtual(
+        (uint256 vsynthAmount, IVirtualSynth vsynth) = synthetix.exchangeWithVirtual(
             synthInKey,
             synthInAmount,
-            ISynth(address(pool.getToken(synthIndex))).currencyKey()
+            ISynth(address(swap.getToken(synthIndex))).currencyKey(),
+            0
         );
 
         // Create virtual token with information of which token swap to
-        ERC20Detailed tokenTo = ERC20Detailed(address(pool.getToken(tokenToIndex)));
+        ERC20Detailed tokenTo = ERC20Detailed(address(swap.getToken(tokenToIndex)));
         VirtualToken vtoken = new VirtualToken(
             vsynth,
-            pool,
+            swap,
             synthIndex,
             tokenToIndex,
             string(abi.encodePacked("Virtual ", tokenTo.name())),
@@ -132,19 +151,15 @@ contract Bridge is Ownable {
 
         // Trasnfer the virtual synth and initialize virtual token
         IERC20(address(vsynth)).transfer(address(vtoken), vsynthAmount);
-        vtoken.initialize(msg.sender, pool.calculateSwap(synthIndex, tokenToIndex, vsynthAmount));
+        vtoken.initialize(msg.sender, swap.calculateSwap(synthIndex, tokenToIndex, vsynthAmount));
 
         // Add virtual token to settle queue with a list of accounts to settle to
         addToSettleQueue(address(vtoken), accounts);
     }
 
-    function tokenToVToken(ISwap[2] calldata pools, address tokenFrom, address tokenTo, uint amount) external {
-
-    }
-
     function setSynthIndex(ISwap swap, uint8 synthIndex, bytes32 currencyKey) external onlyOwner {
+        // Ensure that at given `synthIndex`, there exists the synth with same currency key.
         require(ISynth(address(swap.getToken(synthIndex))).currencyKey() == currencyKey, "currencyKey does not match");
-
         synthIndexes[address(swap)] = synthIndex;
     }
 }
