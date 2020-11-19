@@ -1,18 +1,18 @@
 import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/Allowlist.json"
-import LPTokenArtifact from "../build/artifacts/LPToken.json"
+import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
+import { BigNumber } from "@ethersproject/bignumber"
+import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { LpToken } from "../build/typechain/LpToken"
 import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/MathUtils.json"
+import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
-import SwapArtifact from "../build/artifacts/Swap.json"
+import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../build/artifacts/SwapUtils.json"
+import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import { Wallet } from "ethers"
 import { deployContract } from "ethereum-waffle"
 import { deployContractWithLibraries } from "../test/testUtils"
-import { ethers } from "@nomiclabs/buidler"
-import { BigNumber } from "@ethersproject/bignumber"
+import { ethers } from "hardhat"
 
 // Test Values
 const INITIAL_A_VALUE = 50
@@ -37,53 +37,53 @@ async function deploySwap(): Promise<void> {
   const addresses = [ownerAddress, user1Address, user2Address]
 
   // Deploy dummy tokens
-  const daiToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
-    "Dai",
-    "DAI",
-    "18",
-  ])) as LpToken
+  const daiToken = (await deployContract(
+    (owner as unknown) as Wallet,
+    LPTokenArtifact,
+    ["Dai", "DAI", "18"],
+  )) as LpToken
 
-  const usdcToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
-    "USDC Coin",
-    "USDC",
-    "6",
-  ])) as LpToken
+  const usdcToken = (await deployContract(
+    (owner as unknown) as Wallet,
+    LPTokenArtifact,
+    ["USDC Coin", "USDC", "6"],
+  )) as LpToken
 
-  const usdtToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
-    "Tether",
-    "USDT",
-    "6",
-  ])) as LpToken
+  const usdtToken = (await deployContract(
+    (owner as unknown) as Wallet,
+    LPTokenArtifact,
+    ["Tether", "USDT", "6"],
+  )) as LpToken
 
-  const susdToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
-    "sUSD",
-    "SUSD",
-    "18",
-  ])) as LpToken
+  const susdToken = (await deployContract(
+    (owner as unknown) as Wallet,
+    LPTokenArtifact,
+    ["sUSD", "SUSD", "18"],
+  )) as LpToken
 
-  const tbtcToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
-    "tBTC",
-    "TBTC",
-    "18",
-  ])) as LpToken
+  const tbtcToken = (await deployContract(
+    (owner as unknown) as Wallet,
+    LPTokenArtifact,
+    ["tBTC", "TBTC", "18"],
+  )) as LpToken
 
-  const wbtcToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
-    "Wrapped Bitcoin",
-    "WBTC",
-    "8",
-  ])) as LpToken
+  const wbtcToken = (await deployContract(
+    (owner as unknown) as Wallet,
+    LPTokenArtifact,
+    ["Wrapped Bitcoin", "WBTC", "8"],
+  )) as LpToken
 
-  const renbtcToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
-    "renBTC",
-    "RENBTC",
-    "8",
-  ])) as LpToken
+  const renbtcToken = (await deployContract(
+    (owner as unknown) as Wallet,
+    LPTokenArtifact,
+    ["renBTC", "RENBTC", "8"],
+  )) as LpToken
 
-  const sbtcToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
-    "sBTC",
-    "SBTC",
-    "18",
-  ])) as LpToken
+  const sbtcToken = (await deployContract(
+    (owner as unknown) as Wallet,
+    LPTokenArtifact,
+    ["sBTC", "SBTC", "18"],
+  )) as LpToken
 
   const tokens = [
     daiToken,
@@ -102,19 +102,22 @@ async function deploySwap(): Promise<void> {
 
   addresses.forEach(async (address) => {
     tokens.forEach(async (token) => {
-      await token.mint(address, String(1e20))
+      const decimals = await token.decimals()
+      // Stringifying numbers over 1e20 breaks BigNumber, so get creative
+      const amount = "1" + new Array(decimals + 5).fill(0).join("")
+      await token.mint(address, amount)
     })
   })
 
   // Deploy Allowlist
   const allowlist = (await deployContract(
-    signers[0] as Wallet,
+    (signers[0] as unknown) as Wallet,
     AllowlistArtifact,
   )) as Allowlist
 
   // Deploy MathUtils
   const mathUtils = (await deployContract(
-    signers[0] as Wallet,
+    (signers[0] as unknown) as Wallet,
     MathUtilsArtifact,
   )) as MathUtils
 
