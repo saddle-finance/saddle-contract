@@ -22,14 +22,27 @@ contract StakeableTokenWrapper {
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
 
+    /**
+     * @notice Creates a new StakeableTokenWrapper with given `_stakedToken` address
+     * @param _stakedToken address of a token that will be used to stake
+     */
     constructor(IERC20 _stakedToken) public {
         stakedToken = _stakedToken;
     }
 
+    /**
+     * @notice Read how much `account` has staked in this contract
+     * @param account address of an account
+     * @return amount of total staked ERC20(this.stakedToken) by `account`
+     */
     function balanceOf(address account) external view returns (uint256) {
         return _balances[account];
     }
 
+    /**
+     * @notice Stakes given `amount` in this contract
+     * @param amount amount of ERC20(this.stakedToken) to stake
+     */
     function stake(uint256 amount) external {
         require(amount != 0, "amount == 0");
         totalSupply = totalSupply.add(amount);
@@ -38,6 +51,10 @@ contract StakeableTokenWrapper {
         emit Staked(msg.sender, amount);
     }
 
+    /**
+     * @notice Withdraws given `amount` from this contract
+     * @param amount amount of ERC20(this.stakedToken) to withdraw
+     */
     function withdraw(uint256 amount) external {
         totalSupply = totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);

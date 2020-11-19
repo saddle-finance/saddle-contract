@@ -10,6 +10,13 @@ interface CERC20 {
 }
 
 library CERC20Utils {
+
+    /**
+     * @notice View underlying balances `account` owns of given list of compound tokens (cTokens)
+     * @param cTokens array of compound's token addresses
+     * @param account address of the account you want to check the balances of
+     * @return an array of balances in respective order
+     */
     function getUnderlyingBalances(address[] storage cTokens, address account) external view returns (uint256[] memory) {
         require(account != address(0), "account == address(0)");
         uint256[] memory balances = new uint256[](cTokens.length);

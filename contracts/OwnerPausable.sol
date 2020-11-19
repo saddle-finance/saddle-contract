@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 /**
  * @title OwnerPausable
  * @notice An ownable contract allows the owner to pause and unpause the
- *         contract without a delay.
+ * contract without a delay.
  * @dev Only methods using the provided modifiers will be paused.
  */
 contract OwnerPausable is Ownable {

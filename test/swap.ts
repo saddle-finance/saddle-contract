@@ -1825,11 +1825,13 @@ describe("Swap", () => {
       ).to.be.reverted
     })
 
-    it("Reverts with 'Ramp already ongoing'", async () => {
+    it("Reverts with 'New ramp cannot be started until MIN_RAMP_TIME has passed'", async () => {
       await swap.rampA(55, (await getCurrentBlockTimestamp()) + 86401)
       await expect(
         swap.rampA(55, (await getCurrentBlockTimestamp()) + 86401),
-      ).to.be.revertedWith("Ramp already ongoing")
+      ).to.be.revertedWith(
+        "New ramp cannot be started until MIN_RAMP_TIME has passed",
+      )
     })
 
     it("Reverts with 'Insufficient ramp time'", async () => {
@@ -1886,6 +1888,45 @@ describe("Swap", () => {
       // verify ramp has stopped
       expect(await swap.getA()).to.be.eq(55)
       expect(await swap.getAPrecise()).to.be.eq(5578)
+    })
+
+    it("Reverts with 'Ramp is already stopped'", async () => {
+      // call rampA()
+      await swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401)
+
+      // set timestamp to +10000 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
+      expect(await swap.getA()).to.be.eq(55)
+      expect(await swap.getAPrecise()).to.be.eq(5578)
+
+      // Stop ramp
+      await swap.stopRampA()
+      expect(await swap.getA()).to.be.eq(55)
+      expect(await swap.getAPrecise()).to.be.eq(5578)
+
+      // check call reverts when ramp is already stopped
+      expect(swap.stopRampA()).to.be.revertedWith("Ramp is already stopped")
+    })
+  })
+
+  describe("Check for timestamp manipulations", () => {
+    it("Ramp A with maximum amount and minimum duration", async () => {
+      const initialAPrecise = await swap.getAPrecise()
+      const initialVirtualPrice = await swap.getVirtualPrice()
+
+      // Start ramp
+      await swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401)
+
+      // Malicious miner skips 900 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 900)
+
+      const finalAPrecise = await swap.getAPrecise()
+      const finalVirtulPrice = await swap.getVirtualPrice()
+
+      console.log(finalAPrecise.mul(1e8).div(initialAPrecise).toNumber() / 1e8)
+      console.log(
+        finalVirtulPrice.mul(1e8).div(initialVirtualPrice).toNumber() / 1e8,
+      )
     })
   })
 })

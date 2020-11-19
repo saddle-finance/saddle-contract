@@ -8,6 +8,23 @@ import "./SwapUtils.sol";
 import "./MathUtils.sol";
 import "./Allowlist.sol";
 
+/**
+ * @title Swap - A StableSwap implementation in solidity.
+ * @notice This contract is responsible for custody of closely pegged assets (eg. group of stablecoins)
+ * and automatic market making system. Users become an LP (Liquidity Provider) by depositing their tokens
+ * in desired ratios for an exchange of the pool token that represents their share of the pool.
+ * Users can burn pool tokens and withdraw their share of token(s).
+ *
+ * Each time a swap between the pooled tokens happen, a set fee incurs which effectively get
+ * distributed to the LPs.
+ *
+ * In case of emergencies, admin can pause additional deposits, swaps, or single-asset withdraws - which
+ * stops the ratio of the tokens in the pool from changing.
+ * Users can always withdraw their tokens via multi-asset withdraws.
+ *
+ * @dev Most of the logic is stored as a library `SwapUtils` for the sake of reducing contract's
+ * deployment size.
+ */
 contract Swap is OwnerPausable, ReentrancyGuard {
 
     using SafeERC20 for IERC20;
@@ -48,16 +65,17 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice Deploys this Swap contract with given parameters as default
-     *         values. This will also deploy a LPToken that represents users
-     *         LP position. The owner of LPToken will be this contract - which means
-     *         only this contract is allowed to mint new tokens.
+     * values. This will also deploy a LPToken that represents users
+     * LP position. The owner of LPToken will be this contract - which means
+     * only this contract is allowed to mint new tokens.
+     *
      * @param _pooledTokens an array of ERC20s this pool will accept
      * @param precisions the precision to use for each pooled token,
-     *        eg 10 ** 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
+     * eg 10 ** 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
      * @param lpTokenName the long-form name of the token to be deployed
      * @param lpTokenSymbol the short symbol for the token to be deployed
      * @param _A the amplification coefficient * n * (n - 1). See the
-     *        StableSwap paper for details
+     * StableSwap paper for details
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
      * @param _withdrawFee default withdrawFee to be initliazed with
@@ -159,7 +177,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice Return the index of the given token address. Reverts if no matching
-     *         token is found.
+     * token is found.
      * @param tokenAddress address of the token
      * @return the index of the given token address
      */
@@ -209,13 +227,15 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice A simple method to calculate prices from deposits or
-     *         withdrawals, excluding fees but including slippage. This is
-     *         helpful as an input into the various "min" parameters on calls
-     *         to fight front-running
+     * withdrawals, excluding fees but including slippage. This is
+     * helpful as an input into the various "min" parameters on calls
+     * to fight front-running
+     *
      * @dev This shouldn't be used outside frontends for user estimates.
+     *
      * @param amounts an array of token amounts to deposit or withdrawal,
-     *        corresponding to pooledTokens. The amount should be in each
-     *        pooled token's native precision
+     * corresponding to pooledTokens. The amount should be in each
+     * pooled token's native precision
      * @param deposit whether this is a deposit or a withdrawal
      * @return token amount the user will receive
      */
@@ -226,10 +246,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice A simple method to calculate amount of each underlying
-     *         tokens that is returned upon burning given amount of
-     *         LP tokens
-     * @param amount the amount of LP tokens that would be burned on
-     *        withdrawal
+     * tokens that is returned upon burning given amount of LP tokens
+     * @param amount the amount of LP tokens that would be burned on withdrawal
      * @return array of balances of tokens that user will receive
      */
     function calculateRemoveLiquidity(uint256 amount) external view returns (uint256[] memory) {
@@ -237,12 +255,12 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice calculate the amount of underlying token available to withdraw
-     *         when withdrawing via only single token
+     * @notice Calculate the amount of underlying token available to withdraw
+     * when withdrawing via only single token
      * @param tokenAmount the amount of LP token to burn
      * @param tokenIndex index of which token will be withdrawn
      * @return availableTokenAmount calculated amount of underlying token
-     *         available to withdraw
+     * available to withdraw
      */
     function calculateRemoveLiquidityOneToken(uint256 tokenAmount, uint8 tokenIndex
     ) external view returns (uint256 availableTokenAmount) {
@@ -251,9 +269,9 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice Calculate the fee that is applied when the given user withdraws. The withdraw fee
-     *         decays linearly over period of 4 weeks. For example, depositing and withdrawing right away
-     *         will charge you the full amount of withdraw fee. But withdrawing after 4 weeks will charge you
-     *         no additional fees.
+     * decays linearly over period of 4 weeks. For example, depositing and withdrawing right away
+     * will charge you the full amount of withdraw fee. But withdrawing after 4 weeks will charge you
+     * no additional fees.
      * @dev returned value should be divided by FEE_DENOMINATOR to convert to correct decimals
      * @param user address you want to calculate withdraw fee of
      * @return current withdraw fee of the user
@@ -289,10 +307,9 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice Add liquidity to the pool
-     * @param amounts the amounts of each token to add, in their native
-     *        precision
+     * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
-     *        should mint, otherwise revert. Handy for front-running mitigation
+     * should mint, otherwise revert. Handy for front-running mitigation
      * @param deadline latest timestamp to accept this transaction
      */
     function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline)
@@ -341,10 +358,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice Remove liquidity from the pool, weighted differently than the
-     *         pool's current balances.
+     * pool's current balances.
      * @param amounts how much of each token to withdraw
      * @param maxBurnAmount the max LP token provider is willing to pay to
-     *        remove liquidity. Useful as a front-running mitigation.
+     * remove liquidity. Useful as a front-running mitigation.
      * @param deadline latest timestamp to accept this transaction
      */
     function removeLiquidityImbalance(
@@ -388,8 +405,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice Start ramping up or down A parameter towards given futureA and futureTime
-     *         Checks if the change is too rapid, and commits the new A value only when it falls under
-     *         the limit range.
+     * Checks if the change is too rapid, and commits the new A value only when it falls under
+     * the limit range.
      * @param futureA the new A to ramp towards
      * @param futureTime timestamp when the new A should be reached
      */
