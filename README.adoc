@@ -4,9 +4,9 @@ https://codecov.io/gh/thesis/saddle-contract[image:https://codecov.io/gh/thesis/
 
 The smart contracts behind https://saddle.finance[saddle.finance] 🤠
 
-The contracts are compiled with https://buidler.dev[Buidler], and tested using
-https://buidler.dev/guides/waffle-testing.html[Waffle] and
-https://buidler.dev/guides/typescript.html[TypeScript].
+The contracts are compiled with https://hardhat.org/getting-started/[Hardhat], and tested using
+https://hardhat.org/guides/waffle-testing.html#testing-with-ethers-js-waffle[Waffle] and
+https://hardhat.org/guides/typescript.html#typescript-support[TypeScript].
 
 == Installation
 
@@ -34,11 +34,11 @@ $ npm test
 $ npm run coverage
 ```
 
-=== Deploying contracts to localhost Buidler EVM
+=== Deploying contracts to localhost Hardhat EVM
 
 ```lang=bash
-$ npx buidler node
-$ npx buidler run --network localhost deployment/swap.ts
+$ npx hardhat node
+$ npx hardhat run --network localhost deployment/swap.ts
 ```
 
 You can connect to this RPC server via `localhost:8545`
