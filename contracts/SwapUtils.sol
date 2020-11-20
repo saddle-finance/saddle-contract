@@ -108,8 +108,8 @@ library SwapUtils {
     // Constant values used in ramping A calculations
     uint256 private constant A_PRECISION = 100;
     uint256 private constant MAX_A = 10 ** 6;
-    uint256 private constant MAX_A_CHANGE = 10;
-    uint256 private constant MIN_RAMP_TIME = 1 days;
+    uint256 private constant MAX_A_CHANGE = 2;
+    uint256 private constant MIN_RAMP_TIME = 14 days;
 
     /*** VIEW & PURE FUNCTIONS ***/
 
@@ -937,26 +937,26 @@ library SwapUtils {
      * @param futureTime_ timestamp when the new A should be reached
      */
     function rampA(Swap storage self, uint256 futureA_, uint256 futureTime_) external {
-        require(block.timestamp >= self.initialATime.add(MIN_RAMP_TIME),
-            "New ramp cannot be started until MIN_RAMP_TIME has passed");
+        require(block.timestamp >= self.initialATime.add(1 days),
+            "New ramp cannot be started until 1 day has passed");
         require(futureTime_ >= block.timestamp.add(MIN_RAMP_TIME), "Insufficient ramp time");
+        require(futureA_ > 0 && futureA_ < MAX_A, "futureA_ must be between 0 and MAX_A");
 
-        uint256 initialA = _getAPrecise(self);
+        uint256 initialAPrecise = _getAPrecise(self);
         uint256 futureAPrecise = futureA_.mul(A_PRECISION);
 
-        require(futureA_ > 0 && futureA_ < MAX_A, "futureA_ must be between 0 and MAX_A");
-        if (futureAPrecise < initialA) {
-            require(futureAPrecise.mul(MAX_A_CHANGE) >= initialA, "futureA_ is too small");
+        if (futureAPrecise < initialAPrecise) {
+            require(futureAPrecise.mul(MAX_A_CHANGE) >= initialAPrecise, "futureA_ is too small");
         } else {
-            require(futureAPrecise <= initialA.mul(MAX_A_CHANGE), "futureA_ is too large");
+            require(futureAPrecise <= initialAPrecise.mul(MAX_A_CHANGE), "futureA_ is too large");
         }
 
-        self.initialA = initialA;
+        self.initialA = initialAPrecise;
         self.futureA = futureAPrecise;
         self.initialATime = block.timestamp;
         self.futureATime = futureTime_;
 
-        emit RampA(initialA, futureAPrecise, block.timestamp, futureTime_);
+        emit RampA(initialAPrecise, futureAPrecise, block.timestamp, futureTime_);
     }
 
     /**
