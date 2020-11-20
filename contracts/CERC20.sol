@@ -9,6 +9,10 @@ interface CERC20 {
     function balanceOfUnderlying(address account) external view returns (uint);
 }
 
+/**
+ * @title CERC20Utils library
+ * @notice This library is used to retrieve various information about Compound's CERC20 tokens.
+ */
 library CERC20Utils {
 
     /**

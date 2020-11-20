@@ -6,10 +6,11 @@ import "./LPToken.sol";
 import "./MathUtils.sol";
 
 /**
- * @title SwapUtils
- * @notice A library used within Swap.sol. Contains functions responsible for custody and AMM functionalities.
- * @dev Contracts relying on this library must initialize SwapUtils.Swap struct
- * then use this library for SwapUtils.Swap
+ * @title SwapUtils library
+ * @notice A library to be used within Swap.sol. Contains functions responsible for custody and AMM functionalities.
+ * @dev Contracts relying on this library must initialize SwapUtils.Swap struct then use this library
+ * for SwapUtils.Swap struct. Note that this library contains both functions called by users and admins.
+ * Admin functions should be protected within contracts using this library.
  */
 library SwapUtils {
     using SafeERC20 for IERC20;
