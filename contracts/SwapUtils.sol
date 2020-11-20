@@ -938,8 +938,10 @@ library SwapUtils {
      * @param futureTime_ timestamp when the new A should be reached
      */
     function rampA(Swap storage self, uint256 futureA_, uint256 futureTime_) external {
-        require(block.timestamp >= self.initialATime.add(1 days),
-            "New ramp cannot be started until 1 day has passed");
+        require(
+            block.timestamp >= self.initialATime.add(1 days),
+            "New ramp cannot be started until 1 day has passed"
+        );
         require(futureTime_ >= block.timestamp.add(MIN_RAMP_TIME), "Insufficient ramp time");
         require(futureA_ > 0 && futureA_ < MAX_A, "futureA_ must be between 0 and MAX_A");
 
