@@ -17,8 +17,8 @@ import { ethers } from "hardhat"
 // Test Values
 const INITIAL_A_VALUE = 50
 const SWAP_FEE = 1e7
-const ADMIN_FEE = 5e10
-const WITHDRAW_FEE = 5e8
+const ADMIN_FEE = 0
+const WITHDRAW_FEE = 5e7
 const STABLECOIN_LP_TOKEN_NAME = "Stablecoin LP Token"
 const STABLECOIN_LP_TOKEN_SYMBOL = "SLPT"
 const BTC_LP_TOKEN_NAME = "BTC LP Token"
