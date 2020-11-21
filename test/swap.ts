@@ -1961,7 +1961,7 @@ describe("Swap", () => {
       // = 1.00058822512
     })
 
-    it("Rouge miner attacks while A is ramping upwards", async () => {
+    it("Rogue miner attacks while A is ramping upwards", async () => {
       // This attack is achieved by creating imbalance in the first block then
       // trading in reverse direction in the second block.
 
@@ -1990,7 +1990,7 @@ describe("Swap", () => {
       expect(firstTokenOutput).to.be.eq("996163590871508612")
     })
 
-    it("Rouge miner attacks while A is ramping downwards", async () => {
+    it("Rogue miner attacks while A is ramping downwards", async () => {
       // This attack is achieved by creating imbalance in the first block then
       // trading in reverse direction in the second block.
 
