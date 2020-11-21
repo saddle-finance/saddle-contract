@@ -7,6 +7,14 @@ import { Erc20 as ERC20 } from "../build/typechain/Erc20"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
 
+export enum TIME {
+  SECONDS = 1,
+  DAYS = 86400,
+  WEEKS = 604800,
+}
+
+// DEPLOYMENT helper functions
+
 // Workaround for linking libraries not yet working in buidler-waffle plugin
 // https://github.com/nomiclabs/buidler/issues/611
 export function linkBytecode(
@@ -53,6 +61,8 @@ export async function deployContractWithLibraries(
   }
 }
 
+// Contract calls
+
 export async function getTokenBalances(
   address: string | Signer,
   ...tokens: ERC20[]
@@ -80,6 +90,8 @@ export async function getTokenBalance(
   return token.balanceOf(address)
 }
 
+// EVM methods
+
 export async function setNextTimestamp(timestamp: number): Promise<any> {
   const chainId = (await ethers.provider.getNetwork()).chainId
 
@@ -94,6 +106,14 @@ export async function setNextTimestamp(timestamp: number): Promise<any> {
 
 export async function setTimestamp(timestamp: number): Promise<any> {
   return ethers.provider.send("evm_mine", [timestamp])
+}
+
+export async function takeSnapshot(): Promise<number> {
+  return await ethers.provider.send("evm_snapshot", [])
+}
+
+export async function revertToSnapshot(id: number): Promise<any> {
+  return await ethers.provider.send("evm_revert", [id])
 }
 
 export async function getCurrentBlockTimestamp(): Promise<number> {

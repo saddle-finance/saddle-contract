@@ -2,6 +2,11 @@ pragma solidity 0.5.17;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
+/**
+ * @title MathUtils library
+ * @notice A library to be used in conjuction with SafeMath. Contains functions for calculating
+ * differences between two uint256.
+ */
 library MathUtils {
     using SafeMath for uint256;
 

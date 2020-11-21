@@ -5,6 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
+/**
+ * @title Liquidity Provider Token
+ * @notice This token is an ERC20 detailed token with added capability to be minted by the owner.
+ * It is used to represent user's shares when providing liquidity to swap contracts.
+ */
 contract LPToken is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
 
     /**

@@ -7,6 +7,8 @@ import {
   setNextTimestamp,
   setTimestamp,
   asyncForEach,
+  TIME,
+  getTokenBalance,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -1783,76 +1785,89 @@ describe("Swap", () => {
   describe("rampA", () => {
     it("Emits RampA event", async () => {
       await expect(
-        swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401),
+        swap.rampA(
+          100,
+          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+        ),
       ).to.emit(swap, "RampA")
     })
 
     it("Succeeds to ramp upwards", async () => {
-      // call rampA(), changing A to 100 within a span of 1 day (86400 seconds)
-      await swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401)
+      // call rampA(), changing A to 100 within a span of 14 days
+      const endTimestamp =
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
+      await swap.rampA(100, endTimestamp)
 
-      // set timestamp to +10000 seconds
-      await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
-      expect(await swap.getA()).to.be.eq(55)
-      expect(await swap.getAPrecise()).to.be.eq(5578)
+      // set timestamp to +100000 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 100000)
+      expect(await swap.getA()).to.be.eq(54)
+      expect(await swap.getAPrecise()).to.be.eq(5413)
 
       // set timestamp to the end of ramp period
-      await setTimestamp((await getCurrentBlockTimestamp()) + 76401)
+      await setTimestamp(endTimestamp)
       expect(await swap.getA()).to.be.eq(100)
       expect(await swap.getAPrecise()).to.be.eq(10000)
     })
 
     it("Succeeds to ramp downwards", async () => {
       // call rampA()
-      await swap.rampA(10, (await getCurrentBlockTimestamp()) + 86401)
+      const endTimestamp =
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
+      await swap.rampA(25, endTimestamp)
 
-      // set timestamp to +10000 seconds
-      await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
-      expect(await swap.getA()).to.be.eq(45)
-      expect(await swap.getAPrecise()).to.be.eq(4538)
+      // set timestamp to +100000 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 100000)
+      expect(await swap.getA()).to.be.eq(47)
+      expect(await swap.getAPrecise()).to.be.eq(4794)
 
       // set timestamp to the end of ramp period
-      await setTimestamp((await getCurrentBlockTimestamp()) + 76401)
-      expect(await swap.getA()).to.be.eq(10)
-      expect(await swap.getAPrecise()).to.be.eq(1000)
+      await setTimestamp(endTimestamp)
+      expect(await swap.getA()).to.be.eq(25)
+      expect(await swap.getAPrecise()).to.be.eq(2500)
     })
 
     it("Reverts when non-owner calls it", async () => {
       await expect(
         swap
           .connect(user1)
-          .rampA(55, (await getCurrentBlockTimestamp()) + 86401),
+          .rampA(55, (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1),
       ).to.be.reverted
     })
 
-    it("Reverts with 'Ramp already ongoing'", async () => {
-      await swap.rampA(55, (await getCurrentBlockTimestamp()) + 86401)
+    it("Reverts with 'New ramp cannot be started until 1 day has passed'", async () => {
+      await swap.rampA(
+        55,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+      )
       await expect(
-        swap.rampA(55, (await getCurrentBlockTimestamp()) + 86401),
-      ).to.be.revertedWith("Ramp already ongoing")
+        swap.rampA(55, (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1),
+      ).to.be.revertedWith("New ramp cannot be started until 1 day has passed")
     })
 
     it("Reverts with 'Insufficient ramp time'", async () => {
       await expect(
-        swap.rampA(55, (await getCurrentBlockTimestamp()) + 86399),
+        swap.rampA(55, (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS - 1),
       ).to.be.revertedWith("Insufficient ramp time")
     })
 
     it("Reverts with 'futureA_ must be between 0 and MAX_A'", async () => {
       await expect(
-        swap.rampA(0, (await getCurrentBlockTimestamp()) + 86401),
+        swap.rampA(0, (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1),
       ).to.be.revertedWith("futureA_ must be between 0 and MAX_A")
     })
 
     it("Reverts with 'futureA_ is too small'", async () => {
       await expect(
-        swap.rampA(4, (await getCurrentBlockTimestamp()) + 86401),
+        swap.rampA(24, (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1),
       ).to.be.revertedWith("futureA_ is too small")
     })
 
     it("Reverts with 'futureA_ is too large'", async () => {
       await expect(
-        swap.rampA(501, (await getCurrentBlockTimestamp()) + 86401),
+        swap.rampA(
+          101,
+          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+        ),
       ).to.be.revertedWith("futureA_ is too large")
     })
   })
@@ -1860,7 +1875,10 @@ describe("Swap", () => {
   describe("stopRampA", () => {
     it("Emits StopRampA event", async () => {
       // call rampA()
-      await swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401)
+      await swap.rampA(
+        100,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+      )
 
       // Stop ramp
       expect(swap.stopRampA()).to.emit(swap, "StopRampA")
@@ -1868,24 +1886,137 @@ describe("Swap", () => {
 
     it("Stop ramp succeeds", async () => {
       // call rampA()
-      await swap.rampA(100, (await getCurrentBlockTimestamp()) + 86401)
+      const endTimestamp =
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
+      await swap.rampA(100, endTimestamp)
 
-      // set timestamp to +10000 seconds
-      await setTimestamp((await getCurrentBlockTimestamp()) + 10000)
-      expect(await swap.getA()).to.be.eq(55)
-      expect(await swap.getAPrecise()).to.be.eq(5578)
+      // set timestamp to +100000 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 100000)
+      expect(await swap.getA()).to.be.eq(54)
+      expect(await swap.getAPrecise()).to.be.eq(5413)
 
       // Stop ramp
       await swap.stopRampA()
-      expect(await swap.getA()).to.be.eq(55)
-      expect(await swap.getAPrecise()).to.be.eq(5578)
+      expect(await swap.getA()).to.be.eq(54)
+      expect(await swap.getAPrecise()).to.be.eq(5413)
 
-      // set timestamp to +80000 seconds
-      await setTimestamp((await getCurrentBlockTimestamp()) + 80000)
+      // set timestamp to endTimestamp
+      await setTimestamp(endTimestamp)
 
       // verify ramp has stopped
-      expect(await swap.getA()).to.be.eq(55)
-      expect(await swap.getAPrecise()).to.be.eq(5578)
+      expect(await swap.getA()).to.be.eq(54)
+      expect(await swap.getAPrecise()).to.be.eq(5413)
+    })
+
+    it("Reverts with 'Ramp is already stopped'", async () => {
+      // call rampA()
+      const endTimestamp =
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
+      await swap.rampA(100, endTimestamp)
+
+      // set timestamp to +10000 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 100000)
+      expect(await swap.getA()).to.be.eq(54)
+      expect(await swap.getAPrecise()).to.be.eq(5413)
+
+      // Stop ramp
+      await swap.stopRampA()
+      expect(await swap.getA()).to.be.eq(54)
+      expect(await swap.getAPrecise()).to.be.eq(5413)
+
+      // check call reverts when ramp is already stopped
+      expect(swap.stopRampA()).to.be.revertedWith("Ramp is already stopped")
+    })
+  })
+
+  describe("Check for timestamp manipulations", () => {
+    it("Check for maximum differences in A and virtual price", async () => {
+      const initialAPrecise = await swap.getAPrecise()
+      const initialVirtualPrice = await swap.getVirtualPrice()
+
+      // Start ramp
+      await swap.rampA(
+        100,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+      )
+
+      // Malicious miner skips 900 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 900)
+
+      const maliciousAPrecise = await swap.getAPrecise()
+      const maliciousVirtualPrice = await swap.getVirtualPrice()
+
+      expect(initialAPrecise).to.be.eq(5000)
+      expect(initialVirtualPrice).to.be.eq("1000000000000000000")
+
+      expect(maliciousAPrecise).to.be.eq(5003)
+      expect(maliciousVirtualPrice).to.be.eq(String("1000588225115393233"))
+
+      // Max change of A between two blocks
+      // 5003 / 5000
+      // = 1.0006
+
+      // Max change of virtual price between two blocks
+      // 1000588225115393233 / 1000000000000000000
+      // = 1.00058822512
+    })
+
+    it("Rogue miner attacks while A is ramping upwards", async () => {
+      // This attack is achieved by creating imbalance in the first block then
+      // trading in reverse direction in the second block.
+
+      // Start ramp upwards
+      await swap.rampA(
+        100,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+      )
+
+      let balanceBefore = await getTokenBalance(user1, secondToken)
+      await swap.connect(user1).swap(0, 1, String(1e18), 0, MAX_UINT256)
+      const secondTokenOutput = (await getTokenBalance(user1, secondToken)).sub(
+        balanceBefore,
+      )
+
+      // Malicious miner skips 900 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 900)
+
+      balanceBefore = await getTokenBalance(user1, firstToken)
+      await swap.connect(user1).swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+      const firstTokenOutput = (await getTokenBalance(user1, firstToken)).sub(
+        balanceBefore,
+      )
+
+      // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
+      expect(firstTokenOutput).to.be.eq("996163590871508612")
+    })
+
+    it("Rogue miner attacks while A is ramping downwards", async () => {
+      // This attack is achieved by creating imbalance in the first block then
+      // trading in reverse direction in the second block.
+
+      // Start ramp downwards
+      await swap.rampA(
+        25,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+      )
+
+      let balanceBefore = await getTokenBalance(user1, secondToken)
+      await swap.connect(user1).swap(0, 1, String(1e18), 0, MAX_UINT256)
+      const secondTokenOutput = (await getTokenBalance(user1, secondToken)).sub(
+        balanceBefore,
+      )
+
+      // Malicious miner skips 900 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 900)
+
+      balanceBefore = await getTokenBalance(user1, firstToken)
+      await swap.connect(user1).swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+      const firstTokenOutput = (await getTokenBalance(user1, firstToken)).sub(
+        balanceBefore,
+      )
+
+      // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
+      expect(firstTokenOutput).to.be.eq("980075920971645669")
     })
   })
 })

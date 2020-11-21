@@ -8,6 +8,12 @@ interface IAllowlist {
     function getPoolCap(address poolAddress) external view returns (uint256);
 }
 
+/**
+ * @title Allowlist
+ * @notice This contract is a registry holding information about how much each swap contract should
+ * contain upto. Swap.sol will rely on this contract to determine whether the pool cap is reached and
+ * also whether a user's deposit limit is reached.
+ */
 contract Allowlist is Ownable, IAllowlist {
     using SafeMath for uint256;
 
@@ -21,6 +27,10 @@ contract Allowlist is Ownable, IAllowlist {
     event PoolCap(address indexed poolAddress, uint256 poolCap);
     event PoolAccountLimit(address indexed poolAddress, uint256 accountLimit);
 
+    /**
+     * @notice Creates this contract and sets PoolCap of 0x0 with uint256(0x54dd1e) for
+     * crude checking whether an address holds this contract
+     */
     constructor() public {
         // This value will be used as a way of crude checking whether an address holds this Allowlist contract
         poolCaps[address(0x0)] = uint256(0x54dd1e);

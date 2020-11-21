@@ -5,6 +5,13 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./LPToken.sol";
 import "./MathUtils.sol";
 
+/**
+ * @title SwapUtils library
+ * @notice A library to be used within Swap.sol. Contains functions responsible for custody and AMM functionalities.
+ * @dev Contracts relying on this library must initialize SwapUtils.Swap struct then use this library
+ * for SwapUtils.Swap struct. Note that this library contains both functions called by users and admins.
+ * Admin functions should be protected within contracts using this library.
+ */
 library SwapUtils {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -102,8 +109,8 @@ library SwapUtils {
     // Constant values used in ramping A calculations
     uint256 private constant A_PRECISION = 100;
     uint256 private constant MAX_A = 10 ** 6;
-    uint256 private constant MAX_A_CHANGE = 10;
-    uint256 private constant MIN_RAMP_TIME = 1 days;
+    uint256 private constant MAX_A_CHANGE = 2;
+    uint256 private constant MIN_RAMP_TIME = 14 days;
 
     /*** VIEW & PURE FUNCTIONS ***/
 
@@ -183,7 +190,7 @@ library SwapUtils {
     }
 
     /**
-     * @notice calculate the dy and fee of withdrawing in one token
+     * @notice Calculate the dy and fee of withdrawing in one token
      * @param tokenAmount the amount to withdraw in the pool's precision
      * @param tokenIndex which token will be withdrawn
      * @return the dy and the associated fee
@@ -218,12 +225,12 @@ library SwapUtils {
         // y_i for D - tokenAmount
         uint256[] memory xp = _xp(self);
         CalculateWithdrawOneTokenDYInfo memory v = CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0);
-        v.D0 = getD(xp, _getA(self));
+        v.D0 = getD(xp, _getAPrecise(self));
         v.D1 = v.D0.sub(tokenAmount.mul(v.D0).div(self.lpToken.totalSupply()));
 
         require(tokenAmount <= xp[tokenIndex], "Cannot withdraw more than available");
 
-        v.newY = getYD(_getA(self), tokenIndex, xp, v.D1);
+        v.newY = getYD(_getAPrecise(self), tokenIndex, xp, v.D1);
 
         uint256[] memory xpReduced = new uint256[](xp.length);
 
@@ -241,7 +248,7 @@ library SwapUtils {
         }
 
         uint256 dy = xpReduced[tokenIndex].sub(
-            getYD(_getA(self), tokenIndex, xpReduced, v.D1));
+            getYD(_getAPrecise(self), tokenIndex, xpReduced, v.D1));
         dy = dy.sub(1).div(self.tokenPrecisionMultipliers[tokenIndex]);
 
         return (dy, v.newY);
@@ -249,16 +256,20 @@ library SwapUtils {
 
     /**
      * @notice Calculate the price of a token in the pool given
-     *         precision-adjusted balances and a particular D
-     *         and precision-adjusted array of balances.
-     * @dev This is accomplished via solving the quadratic equation
-     *      iteratively. See the StableSwap paper and Curve.fi
-     *      implementation for details.
-     * @param _A the amplification coefficient * n * (n - 1). See the
-     *        StableSwap paper for details
-     * @param tokenIndex which token we're calculating
+     * precision-adjusted balances and a particular D and precision-adjusted
+     * array of balances.
+     *
+     * @dev This is accomplished via solving the quadratic equation iteratively.
+     * See the StableSwap paper and Curve.fi implementation for further details.
+     *
+     * x_1**2 + x1 * (sum' - (A*n**n - 1) * D / (A * n**n)) = D ** (n + 1) / (n ** (2 * n) * prod' * A)
+     * x_1**2 + b*x_1 = c
+     * x_1 = (x_1**2 + c) / (2*x_1 + b)
+     *
+     * @param _A the amplification coefficient * n * (n - 1). See the StableSwap paper for details.
+     * @param tokenIndex Index of token we are calculating for.
      * @param xp a precision-adjusted set of pool balances. Array should be
-     *        the same cardinality as the pool
+     * the same cardinality as the pool.
      * @param D the stableswap invariant
      * @return the price of the token, in the same precision as in xp
      */
@@ -282,9 +293,9 @@ library SwapUtils {
                 continue;
             }
         }
-        c = c.mul(D).div(nA.mul(numTokens));
+        c = c.mul(D).div(nA.mul(numTokens).div(A_PRECISION));
 
-        uint256 b = s.add(D.div(nA));
+        uint256 b = s.add(D.mul(A_PRECISION).div(nA));
         uint256 yPrev;
         uint256 y = D;
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
@@ -298,13 +309,12 @@ library SwapUtils {
     }
 
     /**
-     * @notice Get D, the StableSwap invariant, based on a set of balances
-     *         and a particular A
-     * @param xp a precision-adjusted set of pool balances. Array should be
-     *        the same cardinality as the pool
-     * @param _A the amplification coefficient * n * (n - 1). See the
-     *        StableSwap paper for details
-     * @return The invariant, at the precision of the pool
+     * @notice Get D, the StableSwap invariant, based on a set of balances and a particular A.
+     * @param xp a precision-adjusted set of pool balances. Array should be the same cardinality
+     * as the pool.
+     * @param _A the amplification coefficient * n * (n - 1) in A_PRECISION.
+     * See the StableSwap paper for details
+     * @return the invariant, at the precision of the pool
      */
     function getD(uint256[] memory xp, uint256 _A)
         internal pure returns (uint256) {
@@ -330,8 +340,8 @@ library SwapUtils {
                 // dP = dP * D * D * D * ... overflow!
             }
             prevD = D;
-            D = nA.mul(s).add(dP.mul(numTokens)).mul(D).div(
-                nA.sub(1).mul(D).add(numTokens.add(1).mul(dP)));
+            D = nA.mul(s).div(A_PRECISION).add(dP.mul(numTokens)).mul(D).div(
+                nA.div(A_PRECISION).sub(1).mul(D).add(numTokens.add(1).mul(dP)));
             if (D.within1(prevD)) {
                 break;
             }
@@ -345,17 +355,20 @@ library SwapUtils {
      */
     function getD(Swap storage self)
         internal view returns (uint256) {
-        return getD(_xp(self), _getA(self));
+        return getD(_xp(self), _getAPrecise(self));
     }
 
     /**
      * @notice Given a set of balances and precision multipliers, return the
-     *         precision-adjusted balances.
+     * precision-adjusted balances.
+     *
      * @param _balances an array of token balances, in their native precisions.
-     *        These should generally correspond with pooled tokens.
+     * These should generally correspond with pooled tokens.
+     *
      * @param precisionMultipliers an array of multipliers, corresponding to
-     *        the amounts in the _balances array. When multiplied together they
-     *        should yield amounts at the pool's precision.
+     * the amounts in the _balances array. When multiplied together they
+     * should yield amounts at the pool's precision.
+     *
      * @return an array of amounts "scaled" to the pool's precision
      */
     function _xp(
@@ -378,7 +391,7 @@ library SwapUtils {
      * @notice Return the precision-adjusted balances of all tokens in the pool
      * @param _balances array of balances to scale
      * @return _balances array "scaled" to the pool's precision, allowing
-     *          them to be more easily compared.
+     * them to be more easily compared.
      */
     function _xp(Swap storage self, uint256[] memory _balances)
         internal view returns (uint256[] memory) {
@@ -388,7 +401,7 @@ library SwapUtils {
     /**
      * @notice Return the precision-adjusted balances of all tokens in the pool
      * @return the pool balances "scaled" to the pool's precision, allowing
-     *          them to be more easily compared.
+     * them to be more easily compared.
      */
     function _xp(Swap storage self) internal view returns (uint256[] memory) {
         return _xp(self.balances, self.tokenPrecisionMultipliers);
@@ -399,16 +412,17 @@ library SwapUtils {
      * @return the virtual price, scaled to precision of POOL_PRECISION_DECIMALS
      */
     function getVirtualPrice(Swap storage self) external view returns (uint256) {
-        uint256 D = getD(_xp(self), _getA(self));
+        uint256 D = getD(_xp(self), _getAPrecise(self));
         uint256 supply = self.lpToken.totalSupply();
         return D.mul(10 ** uint256(ERC20Detailed(self.lpToken).decimals())).div(supply);
     }
 
     /**
      * @notice Calculate the new balances of the tokens given the indexes of the token
-     *         that is swapped from (FROM) and the token that is swapped to (TO).
-     *         This function is used as a helper function to calculate how much TO token
-     *         the user should receive on swap.
+     * that is swapped from (FROM) and the token that is swapped to (TO).
+     * This function is used as a helper function to calculate how much TO token
+     * the user should receive on swap.
+     *
      * @param tokenIndexFrom index of FROM token
      * @param tokenIndexTo index of TO token
      * @param x the new total amount of FROM token
@@ -426,7 +440,7 @@ library SwapUtils {
             "Tokens must be in pool"
         );
 
-        uint256 _A = _getA(self);
+        uint256 _A = _getAPrecise(self);
         uint256 D = getD(xp, _A);
         uint256 c = D;
         uint256 s;
@@ -448,8 +462,8 @@ library SwapUtils {
             // and divide at the end. However this leads to overflow with large numTokens or/and D.
             // c = c * D * D * D * ... overflow!
         }
-        c = c.mul(D).div(nA.mul(numTokens));
-        uint256 b = s.add(D.div(nA));
+        c = c.mul(D).div(nA.mul(numTokens).div(A_PRECISION));
+        uint256 b = s.add(D.mul(A_PRECISION).div(nA));
         uint256 yPrev;
         uint256 y = D;
 
@@ -479,8 +493,10 @@ library SwapUtils {
 
     /**
      * @notice Internally calculates a swap between two tokens.
+     *
      * @dev The caller is expected to transfer the actual amounts (dx and dy)
-     *      using the token contracts.
+     * using the token contracts.
+     *
      * @param tokenIndexFrom the token to sell
      * @param tokenIndexTo the token to buy
      * @param dx the number of tokens to sell
@@ -502,10 +518,11 @@ library SwapUtils {
 
     /**
      * @notice A simple method to calculate amount of each underlying
-     *         tokens that is returned upon burning given amount of
-     *         LP tokens
+     * tokens that is returned upon burning given amount of
+     * LP tokens
+     *
      * @param amount the amount of LP tokens that would to be burned on
-     *        withdrawal
+     * withdrawal
      */
     function calculateRemoveLiquidity(Swap storage self, uint256 amount)
     external view returns (uint256[] memory) {
@@ -543,20 +560,22 @@ library SwapUtils {
 
     /**
      * @notice A simple method to calculate prices from deposits or
-     *         withdrawals, excluding fees but including slippage. This is
-     *         helpful as an input into the various "min" parameters on calls
-     *         to fight front-running
+     * withdrawals, excluding fees but including slippage. This is
+     * helpful as an input into the various "min" parameters on calls
+     * to fight front-running
+     *
      * @dev This shouldn't be used outside frontends for user estimates.
+     *
      * @param amounts an array of token amounts to deposit or withdrawal,
-     *        corresponding to pooledTokens. The amount should be in each
-     *        pooled token's native precision
+     * corresponding to pooledTokens. The amount should be in each
+     * pooled token's native precision
      * @param deposit whether this is a deposit or a withdrawal
      */
     function calculateTokenAmount(
         Swap storage self, uint256[] calldata amounts, bool deposit
     ) external view returns(uint256) {
         uint256 numTokens = self.pooledTokens.length;
-        uint256 _A = _getA(self);
+        uint256 _A = _getAPrecise(self);
         uint256 D0 = getD(_xp(self, self.balances), _A);
         uint256[] memory balances1 = self.balances;
         for (uint256 i = 0; i < numTokens; i++) {
@@ -584,7 +603,7 @@ library SwapUtils {
 
     /**
      * @notice internal helper function to calculate fee per token multiplier used in
-     *         swap fee calculations
+     * swap fee calculations
      */
     function feePerToken(Swap storage self)
     internal view returns(uint256) {
@@ -623,10 +642,9 @@ library SwapUtils {
 
     /**
      * @notice Add liquidity to the pool
-     * @param amounts the amounts of each token to add, in their native
-     *        precision
+     * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
-     *        should mint, otherwise revert. Handy for front-running mitigation
+     * should mint, otherwise revert. Handy for front-running mitigation
      */
     function addLiquidity(Swap storage self, uint256[] calldata amounts, uint256 minToMint)
         external {
@@ -653,7 +671,7 @@ library SwapUtils {
         }
 
         // invariant after change
-        uint256 D1 = getD(_xp(self, newBalances), _getA(self));
+        uint256 D1 = getD(_xp(self, newBalances), _getAPrecise(self));
         require(D1 > D0, "D should increase after additional liquidity");
 
         // updated to reflect fees and calculate the user's LP tokens
@@ -668,7 +686,7 @@ library SwapUtils {
                     fees[i].mul(self.adminFee).div(FEE_DENOMINATOR));
                 newBalances[i] = newBalances[i].sub(fees[i]);
             }
-            D2 = getD(_xp(self, newBalances), _getA(self));
+            D2 = getD(_xp(self, newBalances), _getAPrecise(self));
         } else {
             // the initial depositor doesn't pay fees
             self.balances = newBalances;
@@ -703,9 +721,10 @@ library SwapUtils {
 
     /**
      * @notice Calculate base withdraw fee for the user. If the user is currently
-     *         not participating in the pool, sets to default value. If not, recalculate
-     *         the starting withdraw fee based on the last deposit's time & amount relative
-     *         to the new deposit.
+     * not participating in the pool, sets to default value. If not, recalculate
+     * the starting withdraw fee based on the last deposit's time & amount relative
+     * to the new deposit.
+     *
      * @param user address of the user depositing tokens
      * @param toMint amount of pool tokens to be minted
      */
@@ -727,7 +746,7 @@ library SwapUtils {
      * @dev Liquidity can always be removed, even when the pool is paused.
      * @param amount the amount of LP tokens to burn
      * @param minAmounts the minimum amounts of each token in the pool
-     *        acceptable for this burn. Useful as a front-running mitigation
+     * acceptable for this burn. Useful as a front-running mitigation
      */
     function removeLiquidity(
         Swap storage self, uint256 amount, uint256[] calldata minAmounts
@@ -801,10 +820,11 @@ library SwapUtils {
 
     /**
      * @notice Remove liquidity from the pool, weighted differently than the
-     *         pool's current balances.
+     * pool's current balances.
+     *
      * @param amounts how much of each token to withdraw
      * @param maxBurnAmount the max LP token provider is willing to pay to
-     *        remove liquidity. Useful as a front-running mitigation.
+     * remove liquidity. Useful as a front-running mitigation.
      */
     function removeLiquidityImbalance(
         Swap storage self, uint256[] memory amounts, uint256 maxBurnAmount
@@ -820,12 +840,12 @@ library SwapUtils {
 
         uint256[] memory balances1 = self.balances;
 
-        uint256 D0 = getD(_xp(self), _getA(self));
+        uint256 D0 = getD(_xp(self), _getAPrecise(self));
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
             require(amounts[i] <= balances1[i], "Cannot withdraw more than available");
             balances1[i] = balances1[i].sub(amounts[i]);
         }
-        uint256 D1 = getD(_xp(self, balances1), _getA(self));
+        uint256 D1 = getD(_xp(self, balances1), _getAPrecise(self));
         uint256[] memory fees = new uint256[](self.pooledTokens.length);
 
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
@@ -837,7 +857,7 @@ library SwapUtils {
             balances1[i] = balances1[i].sub(fees[i]);
         }
 
-        uint256 D2 = getD(_xp(self, balances1), _getA(self));
+        uint256 D2 = getD(_xp(self, balances1), _getAPrecise(self));
 
         uint256 tokenAmount = D0.sub(D2).mul(tokenSupply).div(D0);
         require(tokenAmount != 0, "Burnt amount cannot be zero");
@@ -876,7 +896,7 @@ library SwapUtils {
     }
 
     /**
-     * @notice update the admin fee
+     * @notice Sets the admin fee
      * @dev adminFee cannot be higher than 100% of the swap fee
      * @param newAdminFee new admin fee to be applied on future transactions
      */
@@ -912,38 +932,42 @@ library SwapUtils {
 
     /**
      * @notice Start ramping up or down A parameter towards given futureA_ and futureTime_
-     *         Checks if the change is too rapid, and commits the new A value only when it falls under
-     *         the limit range.
+     * Checks if the change is too rapid, and commits the new A value only when it falls under
+     * the limit range.
      * @param futureA_ the new A to ramp towards
      * @param futureTime_ timestamp when the new A should be reached
      */
     function rampA(Swap storage self, uint256 futureA_, uint256 futureTime_) external {
-        require(block.timestamp >= self.initialATime + MIN_RAMP_TIME, "Ramp already ongoing");
-        require(futureTime_ >= block.timestamp + MIN_RAMP_TIME, "Insufficient ramp time");
-
-        uint256 initialA = _getAPrecise(self);
-        uint256 futureAPrecise = futureA_ * A_PRECISION;
-
+        require(
+            block.timestamp >= self.initialATime.add(1 days),
+            "New ramp cannot be started until 1 day has passed"
+        );
+        require(futureTime_ >= block.timestamp.add(MIN_RAMP_TIME), "Insufficient ramp time");
         require(futureA_ > 0 && futureA_ < MAX_A, "futureA_ must be between 0 and MAX_A");
-        if (futureAPrecise < initialA) {
-            require(futureAPrecise.mul(MAX_A_CHANGE) >= initialA, "futureA_ is too small");
+
+        uint256 initialAPrecise = _getAPrecise(self);
+        uint256 futureAPrecise = futureA_.mul(A_PRECISION);
+
+        if (futureAPrecise < initialAPrecise) {
+            require(futureAPrecise.mul(MAX_A_CHANGE) >= initialAPrecise, "futureA_ is too small");
         } else {
-            require(futureAPrecise <= initialA.mul(MAX_A_CHANGE), "futureA_ is too large");
+            require(futureAPrecise <= initialAPrecise.mul(MAX_A_CHANGE), "futureA_ is too large");
         }
 
-        self.initialA = initialA;
+        self.initialA = initialAPrecise;
         self.futureA = futureAPrecise;
         self.initialATime = block.timestamp;
         self.futureATime = futureTime_;
 
-        emit RampA(initialA, futureAPrecise, block.timestamp, futureTime_);
+        emit RampA(initialAPrecise, futureAPrecise, block.timestamp, futureTime_);
     }
 
     /**
-     * @notice Stop ramping A immediately. Has no effect on A if ramping is already completed or stopped.
-     *         Once this function is called, rampA() cannot be called for another MIN_RAMP_TIME seconds
+     * @notice Stops ramping A immediately. Once this function is called, rampA()
+     * cannot be called for another MIN_RAMP_TIME seconds
      */
     function stopRampA(Swap storage self) external {
+        require(self.futureATime > block.timestamp, "Ramp is already stopped");
         uint256 currentA = _getAPrecise(self);
 
         self.initialA = currentA;
