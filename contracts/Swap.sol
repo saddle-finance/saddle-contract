@@ -281,7 +281,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice return accumulated amount of admin fees of the token with given index
+     * @notice This function reads the accumulated amount of admin fees of the token with given index
      * @param index Index of the pooled token
      * @return admin's token balance in the token's precision
      */
@@ -292,10 +292,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     /*** STATE MODIFYING FUNCTIONS ***/
 
     /**
-     * @notice swap two tokens in the pool
-     * @param tokenIndexFrom the token the user wants to sell
-     * @param tokenIndexTo the token the user wants to buy
-     * @param dx the amount of tokens the user wants to sell
+     * @notice Swap two tokens using this pool
+     * @param tokenIndexFrom the token the user wants to swap from
+     * @param tokenIndexTo the token the user wants to swap to
+     * @param dx the amount of tokens the user wants to swap from
      * @param minDy the min amount the user would like to receive, or revert.
      * @param deadline latest timestamp to accept this transaction
      */
@@ -306,7 +306,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Add liquidity to the pool
+     * @notice Add liquidity to the pool with given amounts
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
@@ -331,7 +331,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Burn LP tokens to remove liquidity from the pool.
+     * @notice Burn LP tokens to remove liquidity from the pool. Withdraw fee that decays linearly
+     * over period of 4 weeks since last deposit will apply.
      * @dev Liquidity can always be removed, even when the pool is paused.
      * @param amount the amount of LP tokens to burn
      * @param minAmounts the minimum amounts of each token in the pool
@@ -344,7 +345,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Remove liquidity from the pool all in one token.
+     * @notice Remove liquidity from the pool all in one token. Withdraw fee that decays linearly
+     * over period of 4 weeks since last deposit will apply.
      * @param tokenAmount the amount of the token you want to receive
      * @param tokenIndex the index of the token you want to receive
      * @param minAmount the minimum amount to withdraw, otherwise revert
@@ -358,7 +360,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /**
      * @notice Remove liquidity from the pool, weighted differently than the
-     * pool's current balances.
+     * pool's current balances. Withdraw fee that decays linearly
+     * over period of 4 weeks since last deposit will apply.
      * @param amounts how much of each token to withdraw
      * @param maxBurnAmount the max LP token provider is willing to pay to
      * remove liquidity. Useful as a front-running mitigation.
@@ -373,14 +376,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     /*** ADMIN FUNCTIONS ***/
 
     /**
-     * @notice withdraw all admin fees to the contract owner
+     * @notice Withdraw all admin fees to the contract owner
      */
     function withdrawAdminFees() external onlyOwner {
         swapStorage.withdrawAdminFees(owner());
     }
 
     /**
-     * @notice update the admin fee
+     * @notice Update the admin fee. Admin fee takes portion of the swap fee.
      * @param newAdminFee new admin fee to be applied on future transactions
      */
     function setAdminFee(uint256 newAdminFee) external onlyOwner {
@@ -388,7 +391,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice update the swap fee
+     * @notice Update the swap fee to be applied on swaps
      * @param newSwapFee new swap fee to be applied on future transactions
      */
     function setSwapFee(uint256 newSwapFee) external onlyOwner {
@@ -396,7 +399,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice update the withdraw fee
+     * @notice Update the withdraw fee. This fee decays linearly over 4 weeks since
+     * user's last deposit.
      * @param newWithdrawFee new withdraw fee to be applied on future deposits
      */
     function setDefaultWithdrawFee(uint256 newWithdrawFee) external onlyOwner {
@@ -415,14 +419,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Stop ramping A immediately. Has no effect if ramping is already completed or stopped.
+     * @notice Stop ramping A immediately. Reverts if ramp A is already stopped.
      */
     function stopRampA() external onlyOwner {
         swapStorage.stopRampA();
     }
 
     /**
-     * @notice update the guarded status of the pool deposits
+     * @notice Update the guarded status of the pool deposits
      * @param isGuarded_ boolean value indicating whether the deposits should be guarded
      */
     function setIsGuarded(bool isGuarded_) external onlyOwner {
