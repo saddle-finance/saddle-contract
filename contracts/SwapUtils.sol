@@ -542,7 +542,8 @@ library SwapUtils {
     }
 
     /**
-     * @notice calculate the fee that is applied when the given user withdraws
+     * @notice Calculate the fee that is applied when the given user withdraws.
+     * Withdraw fee decays linearly over 4 weeks.
      * @param user address you want to calculate withdraw fee of
      * @return current withdraw fee of the user
      */
