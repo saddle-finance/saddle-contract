@@ -1,8 +1,8 @@
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { BigNumber } from "@ethersproject/bignumber"
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { LpToken } from "../build/typechain/LpToken"
+import { GenericErc20 } from "../build/typechain/GenericErc20"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
@@ -39,51 +39,59 @@ async function deploySwap(): Promise<void> {
   // Deploy dummy tokens
   const daiToken = (await deployContract(
     (owner as unknown) as Wallet,
-    LPTokenArtifact,
+    GenericERC20Artifact,
     ["Dai", "DAI", "18"],
-  )) as LpToken
+  )) as GenericErc20
+  await daiToken.deployed()
 
   const usdcToken = (await deployContract(
     (owner as unknown) as Wallet,
-    LPTokenArtifact,
+    GenericERC20Artifact,
     ["USDC Coin", "USDC", "6"],
-  )) as LpToken
+  )) as GenericErc20
+  await usdcToken.deployed()
 
   const usdtToken = (await deployContract(
     (owner as unknown) as Wallet,
-    LPTokenArtifact,
+    GenericERC20Artifact,
     ["Tether", "USDT", "6"],
-  )) as LpToken
+  )) as GenericErc20
+  await usdtToken.deployed()
 
   const susdToken = (await deployContract(
     (owner as unknown) as Wallet,
-    LPTokenArtifact,
+    GenericERC20Artifact,
     ["sUSD", "SUSD", "18"],
-  )) as LpToken
+  )) as GenericErc20
+  await susdToken.deployed()
 
   const tbtcToken = (await deployContract(
     (owner as unknown) as Wallet,
-    LPTokenArtifact,
+    GenericERC20Artifact,
     ["tBTC", "TBTC", "18"],
-  )) as LpToken
+  )) as GenericErc20
+  await tbtcToken.deployed()
 
   const wbtcToken = (await deployContract(
     (owner as unknown) as Wallet,
-    LPTokenArtifact,
+    GenericERC20Artifact,
     ["Wrapped Bitcoin", "WBTC", "8"],
-  )) as LpToken
+  )) as GenericErc20
+  await wbtcToken.deployed()
 
   const renbtcToken = (await deployContract(
     (owner as unknown) as Wallet,
-    LPTokenArtifact,
+    GenericERC20Artifact,
     ["renBTC", "RENBTC", "8"],
-  )) as LpToken
+  )) as GenericErc20
+  await renbtcToken.deployed()
 
   const sbtcToken = (await deployContract(
     (owner as unknown) as Wallet,
-    LPTokenArtifact,
+    GenericERC20Artifact,
     ["sBTC", "SBTC", "18"],
-  )) as LpToken
+  )) as GenericErc20
+  await sbtcToken.deployed()
 
   const tokens = [
     daiToken,
@@ -114,12 +122,14 @@ async function deploySwap(): Promise<void> {
     (signers[0] as unknown) as Wallet,
     AllowlistArtifact,
   )) as Allowlist
+  await allowlist.deployed()
 
   // Deploy MathUtils
   const mathUtils = (await deployContract(
     (signers[0] as unknown) as Wallet,
     MathUtilsArtifact,
   )) as MathUtils
+  await mathUtils.deployed()
 
   // Deploy SwapUtils with MathUtils library
   const swapUtils = (await deployContractWithLibraries(
@@ -153,6 +163,8 @@ async function deploySwap(): Promise<void> {
       allowlist.address,
     ],
   )) as Swap
+  await stablecoinSwap.deployed()
+
   const btcSwap = (await deployContractWithLibraries(
     owner,
     SwapArtifact,
@@ -174,6 +186,7 @@ async function deploySwap(): Promise<void> {
       allowlist.address,
     ],
   )) as Swap
+  await btcSwap.deployed()
 
   // update dev limits for stableSwap
   await allowlist.setPoolCap(
@@ -202,10 +215,14 @@ async function deploySwap(): Promise<void> {
   )
 
   await stablecoinSwap.deployed()
+  const stablecoinLpToken = (await stablecoinSwap.swapStorage()).lpToken
   await btcSwap.deployed()
+  const btcLpToken = (await btcSwap.swapStorage()).lpToken
 
   console.log(`Stablecoin swap address: ${stablecoinSwap.address}`)
+  console.log(`Stablecoin swap token address: ${stablecoinLpToken}`)
   console.log(`Tokenized BTC swap address: ${btcSwap.address}`)
+  console.log(`Tokenized BTC swap token address: ${btcLpToken}`)
 }
 
 deploySwap().then(() => {
