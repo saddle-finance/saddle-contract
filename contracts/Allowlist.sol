@@ -2,11 +2,7 @@ pragma solidity 0.5.17;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-
-interface IAllowlist {
-    function getAllowedAmount(address poolAddress, address user) external view returns (uint256);
-    function getPoolCap(address poolAddress) external view returns (uint256);
-}
+import "./interfaces/IAllowlist.sol";
 
 /**
  * @title Allowlist

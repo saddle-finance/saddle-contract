@@ -703,7 +703,7 @@ library SwapUtils {
         require(toMint >= minToMint, "Couldn't mint min requested LP tokens");
 
         // Update msg.sender's withdraw fee
-        updateUserWithdrawFee(self, msg.sender, toMint);
+        _updateUserWithdrawFee(self, msg.sender, toMint);
 
         // mint the user's LP tokens
         self.lpToken.mint(msg.sender, toMint);
@@ -721,15 +721,19 @@ library SwapUtils {
     }
 
     /**
-     * @notice Calculate base withdraw fee for the user. If the user is currently
-     * not participating in the pool, sets to default value. If not, recalculate
+     * @notice Update the withdraw fee for `user`. If the user is currently
+     * not providing liquidity in the pool, sets to default value. If not, recalculate
      * the starting withdraw fee based on the last deposit's time & amount relative
      * to the new deposit.
      *
      * @param user address of the user depositing tokens
      * @param toMint amount of pool tokens to be minted
      */
-    function updateUserWithdrawFee(Swap storage self, address user, uint256 toMint) internal {
+    function updateUserWithdrawFee(Swap storage self, address user, uint256 toMint) external {
+        _updateUserWithdrawFee(self, user, toMint);
+    }
+
+    function _updateUserWithdrawFee(Swap storage self, address user, uint256 toMint) internal {
         uint256 currentFee = calculateCurrentWithdrawFee(self, user);
         uint256 currentBalance = self.lpToken.balanceOf(user);
 
