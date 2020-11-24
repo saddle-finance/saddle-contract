@@ -36,8 +36,8 @@ describe("Swap", () => {
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
-  let firstToken: LpToken
-  let secondToken: LpToken
+  let firstToken: GenericErc20
+  let secondToken: GenericErc20
   let swapToken: LpToken
   let owner: Signer
   let user1: Signer
