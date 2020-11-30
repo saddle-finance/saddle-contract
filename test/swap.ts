@@ -1965,22 +1965,49 @@ describe("Swap", () => {
       // This attack is achieved by creating imbalance in the first block then
       // trading in reverse direction in the second block.
 
+      const initialFirstTokenBalance = await getTokenBalance(user1, firstToken)
+      const initialSecondTokenBalance = await getTokenBalance(
+        user1,
+        secondToken,
+      )
+
+      expect(initialFirstTokenBalance).to.be.eq(String(1e20))
+      expect(initialSecondTokenBalance).to.be.eq(String(1e20))
+
       // Start ramp upwards
       await swap.rampA(
         100,
         (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
       )
+      expect(await swap.getAPrecise()).to.be.eq(5000)
 
-      let balanceBefore = await getTokenBalance(user1, secondToken)
+      // Check current pool balances
+      expect(await swap.getTokenBalance(0)).to.be.eq(String(1e18))
+      expect(await swap.getTokenBalance(1)).to.be.eq(String(1e18))
+
+      // Swap 1e18 of firstToken to secondToken, causing massive imbalance in the pool
       await swap.connect(user1).swap(0, 1, String(1e18), 0, MAX_UINT256)
       const secondTokenOutput = (await getTokenBalance(user1, secondToken)).sub(
-        balanceBefore,
+        initialSecondTokenBalance,
       )
+
+      // First trade results in 9.085e17 of secondToken
+      expect(secondTokenOutput).to.be.eq("908591742545002306")
+
+      // Pool is imbalanced! Now trades from secondToken -> firstToken may be profitable in small sizes
+      // firstToken balance in the pool  : 2.00e18
+      // secondToken balance in the pool : 9.14e16
+      expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+      expect(await swap.getTokenBalance(1)).to.be.eq("91408257454997694")
 
       // Malicious miner skips 900 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 900)
 
-      balanceBefore = await getTokenBalance(user1, firstToken)
+      // Verify A has changed upwards
+      expect(await swap.getAPrecise()).to.be.eq(5003)
+
+      // Trade secondToken to firstToken, taking advantage of the imbalance and sudden change of A
+      const balanceBefore = await getTokenBalance(user1, firstToken)
       await swap.connect(user1).swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
       const firstTokenOutput = (await getTokenBalance(user1, firstToken)).sub(
         balanceBefore,
@@ -1988,28 +2015,69 @@ describe("Swap", () => {
 
       // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
       expect(firstTokenOutput).to.be.eq("996163590871508612")
+
+      const finalFirstTokenBalance = await getTokenBalance(user1, firstToken)
+      const finalSecondTokenBalance = await getTokenBalance(user1, secondToken)
+
+      expect(finalFirstTokenBalance).to.be.lt(initialFirstTokenBalance)
+      expect(finalSecondTokenBalance).to.be.eq(initialSecondTokenBalance)
+      expect(initialFirstTokenBalance.sub(finalFirstTokenBalance)).to.be.eq(
+        "3836409128491388",
+      )
+      expect(initialSecondTokenBalance.sub(finalSecondTokenBalance)).to.be.eq(
+        "0",
+      )
+
+      // The A change was not significant enough for the attacker to take advantage of
+      // Attacker lost 3.836e15 firstToken
     })
 
     it("Rogue miner attacks while A is ramping downwards", async () => {
       // This attack is achieved by creating imbalance in the first block then
       // trading in reverse direction in the second block.
 
+      const initialFirstTokenBalance = await getTokenBalance(user1, firstToken)
+      const initialSecondTokenBalance = await getTokenBalance(
+        user1,
+        secondToken,
+      )
+
+      expect(initialFirstTokenBalance).to.be.eq(String(1e20))
+      expect(initialSecondTokenBalance).to.be.eq(String(1e20))
+
       // Start ramp downwards
       await swap.rampA(
         25,
         (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
       )
+      expect(await swap.getAPrecise()).to.be.eq(5000)
 
-      let balanceBefore = await getTokenBalance(user1, secondToken)
+      // Check current pool balances
+      expect(await swap.getTokenBalance(0)).to.be.eq(String(1e18))
+      expect(await swap.getTokenBalance(1)).to.be.eq(String(1e18))
+
+      // Swap 1e18 of firstToken to secondToken, causing massive imbalance in the pool
       await swap.connect(user1).swap(0, 1, String(1e18), 0, MAX_UINT256)
       const secondTokenOutput = (await getTokenBalance(user1, secondToken)).sub(
-        balanceBefore,
+        initialSecondTokenBalance,
       )
+
+      // First trade results in 9.085e17 of secondToken
+      expect(secondTokenOutput).to.be.eq("908591742545002306")
+
+      // Pool is imbalanced! Now trades from secondToken -> firstToken may be profitable in small sizes
+      // firstToken balance in the pool  : 2.00e18
+      // secondToken balance in the pool : 9.14e16
+      expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+      expect(await swap.getTokenBalance(1)).to.be.eq("91408257454997694")
 
       // Malicious miner skips 900 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 900)
 
-      balanceBefore = await getTokenBalance(user1, firstToken)
+      // Verify A has changed downwards
+      expect(await swap.getAPrecise()).to.be.eq(4999)
+
+      const balanceBefore = await getTokenBalance(user1, firstToken)
       await swap.connect(user1).swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
       const firstTokenOutput = (await getTokenBalance(user1, firstToken)).sub(
         balanceBefore,
@@ -2017,6 +2085,21 @@ describe("Swap", () => {
 
       // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
       expect(firstTokenOutput).to.be.eq("980075920971645669")
+
+      const finalFirstTokenBalance = await getTokenBalance(user1, firstToken)
+      const finalSecondTokenBalance = await getTokenBalance(user1, secondToken)
+
+      expect(finalFirstTokenBalance).to.be.lt(initialFirstTokenBalance)
+      expect(finalSecondTokenBalance).to.be.eq(initialSecondTokenBalance)
+      expect(initialFirstTokenBalance.sub(finalFirstTokenBalance)).to.be.eq(
+        "19924079028354331",
+      )
+      expect(initialSecondTokenBalance.sub(finalSecondTokenBalance)).to.be.eq(
+        "0",
+      )
+
+      // The A change was not significant enough for the attacker to take advantage of
+      // Attacker lost 1.992e17 firstToken
     })
   })
 })

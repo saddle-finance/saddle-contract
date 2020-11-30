@@ -15,7 +15,7 @@ import "./Allowlist.sol";
  * in desired ratios for an exchange of the pool token that represents their share of the pool.
  * Users can burn pool tokens and withdraw their share of token(s).
  *
- * Each time a swap between the pooled tokens happen, a set fee incurs which effectively get
+ * Each time a swap between the pooled tokens happens, a set fee incurs which effectively get
  * distributed to the LPs.
  *
  * In case of emergencies, admin can pause additional deposits, swaps, or single-asset withdraws - which

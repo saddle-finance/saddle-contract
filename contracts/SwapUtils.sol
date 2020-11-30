@@ -523,6 +523,7 @@ library SwapUtils {
      *
      * @param amount the amount of LP tokens that would to be burned on
      * withdrawal
+     * @return array of amounts of tokens user will receive
      */
     function calculateRemoveLiquidity(Swap storage self, uint256 amount)
     external view returns (uint256[] memory) {
