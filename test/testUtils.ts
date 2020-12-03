@@ -63,9 +63,9 @@ export async function deployContractWithLibraries(
 
 // Contract calls
 
-export async function getTokenBalances(
+export async function getUserTokenBalances(
   address: string | Signer,
-  ...tokens: ERC20[]
+  tokens: ERC20[],
 ): Promise<BigNumber[]> {
   const balanceArray = []
 
@@ -80,7 +80,7 @@ export async function getTokenBalances(
   return balanceArray
 }
 
-export async function getTokenBalance(
+export async function getUserTokenBalance(
   address: string | Signer,
   token: ERC20,
 ): Promise<BigNumber> {

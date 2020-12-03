@@ -3,13 +3,15 @@ import {
   MAX_UINT256,
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
-  getTokenBalance,
+  getUserTokenBalance,
   asyncForEach,
+  getUserTokenBalances,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
+import { Erc20 as ERC20 } from "../build/typechain/Erc20"
 import { LpToken } from "../build/typechain/LpToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { MathUtils } from "../build/typechain/MathUtils"
@@ -24,7 +26,7 @@ import { ethers } from "hardhat"
 chai.use(solidity)
 const { expect } = chai
 
-describe("Swap", () => {
+describe("Swap with 4 tokens", () => {
   let signers: Array<Signer>
   let swap: Swap
   let allowlist: Allowlist
@@ -56,8 +58,10 @@ describe("Swap", () => {
   const SWAP_FEE = 1e7
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
+  const TOKENS: ERC20[] = []
 
   beforeEach(async () => {
+    TOKENS.length = 0
     signers = await ethers.getSigners()
     owner = signers[0]
     user1 = signers[1]
@@ -90,6 +94,8 @@ describe("Swap", () => {
       "SUSD",
       "18",
     ])) as LpToken
+
+    TOKENS.push(DAI, USDC, USDT, SUSD)
 
     // Mint dummy tokens
     await asyncForEach(
@@ -139,6 +145,8 @@ describe("Swap", () => {
     )) as Swap
     await swap.deployed()
 
+    expect(await swap.getVirtualPrice()).to.be.eq(0)
+
     swapStorage = await swap.swapStorage()
 
     swapToken = (await ethers.getContractAt(
@@ -175,7 +183,7 @@ describe("Swap", () => {
     expect(await swap.getTokenBalance(1)).to.be.eq(String(50e6))
     expect(await swap.getTokenBalance(2)).to.be.eq(String(50e6))
     expect(await swap.getTokenBalance(3)).to.be.eq(String(50e18))
-    expect(await getTokenBalance(owner, swapToken)).to.be.eq(String(200e18))
+    expect(await getUserTokenBalance(owner, swapToken)).to.be.eq(String(200e18))
   })
 
   describe("addLiquidity", () => {
@@ -208,7 +216,7 @@ describe("Swap", () => {
         .connect(user1)
         .calculateSwap(2, 0, String(1e6))
       expect(calcTokenAmount).to.be.eq("998608238366733809")
-      const DAIBefore = await getTokenBalance(user1, DAI)
+      const DAIBefore = await getUserTokenBalance(user1, DAI)
       await USDT.connect(user1).approve(swap.address, String(1e6))
       await swap
         .connect(user1)
@@ -219,8 +227,76 @@ describe("Swap", () => {
           calcTokenAmount,
           (await getCurrentBlockTimestamp()) + 60,
         )
-      const DAIAfter = await getTokenBalance(user1, DAI)
-      expect(DAIAfter.sub(DAIBefore)).to.be.eq(calcTokenAmount)
+      const DAIAfter = await getUserTokenBalance(user1, DAI)
+
+      // Verify user1 balance changes
+      expect(DAIAfter.sub(DAIBefore)).to.be.eq("998608238366733809")
+
+      // Verify pool balance changes
+      expect(await swap.getTokenBalance(0)).to.be.eq("49001391761633266191")
+    })
+  })
+
+  describe("removeLiquidity", () => {
+    it("Remove Liquidity succeeds", async () => {
+      const calcTokenAmount = await swap.calculateTokenAmount(
+        [String(1e18), 0, 0, 0],
+        true,
+      )
+      expect(calcTokenAmount).to.be.eq("999854620735777893")
+
+      // Add liquidity (1e18 DAI) as user1
+      await swap
+        .connect(user1)
+        .addLiquidity(
+          [String(1e18), 0, 0, 0],
+          calcTokenAmount.mul(99).div(100),
+          (await getCurrentBlockTimestamp()) + 60,
+        )
+
+      // Verify swapToken balance
+      expect(await swapToken.balanceOf(await user1.getAddress())).to.be.eq(
+        "999355335447632820",
+      )
+
+      // Calculate expected amounts of tokens user1 will recieve
+      const expectedAmounts = await swap.calculateRemoveLiquidity(
+        "999355335447632820",
+      )
+
+      expect(expectedAmounts[0]).to.be.eq("253568584947798923")
+      expect(expectedAmounts[1]).to.be.eq("248596")
+      expect(expectedAmounts[2]).to.be.eq("248596")
+      expect(expectedAmounts[3]).to.be.eq("248596651909606787")
+
+      // Allow burn of swapToken
+      await swapToken.connect(user1).approve(swap.address, "999355335447632820")
+      const beforeTokenBalances = await getUserTokenBalances(user1, TOKENS)
+
+      // Withdraw user1's share via all tokens in proportion to pool's balances
+      await swap
+        .connect(user1)
+        .removeLiquidity(
+          "999355335447632820",
+          expectedAmounts,
+          (await getCurrentBlockTimestamp()) + 60,
+        )
+
+      const afterTokenBalances = await getUserTokenBalances(user1, TOKENS)
+
+      // Verify the received amounts are correct
+      expect(afterTokenBalances[0].sub(beforeTokenBalances[0])).to.be.eq(
+        "253568584947798923",
+      )
+      expect(afterTokenBalances[1].sub(beforeTokenBalances[1])).to.be.eq(
+        "248596",
+      )
+      expect(afterTokenBalances[2].sub(beforeTokenBalances[2])).to.be.eq(
+        "248596",
+      )
+      expect(afterTokenBalances[3].sub(beforeTokenBalances[3])).to.be.eq(
+        "248596651909606787",
+      )
     })
   })
 })
