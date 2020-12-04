@@ -361,8 +361,6 @@ describe("Swap with 4 tokens", () => {
       let initialPoolBalances: BigNumber[] = []
 
       beforeEach(async () => {
-        // This attack is achieved by creating imbalance in the first block then
-        // trading in reverse direction in the second block.
         initialAttackerBalances = await getUserTokenBalances(attacker, TOKENS)
 
         expect(initialAttackerBalances[0]).to.be.eq(String(1e20))
@@ -389,6 +387,9 @@ describe("Swap with 4 tokens", () => {
         "When tokens are priced equally: " +
           "attacker creates massive imbalance prior to A change, and resolves it after",
         () => {
+          // This attack is achieved by creating imbalance in the first block then
+          // trading in reverse direction in the second block.
+
           it("Attack fails with 900 seconds between blocks", async () => {
             // Swap 16e6 of USDC to SUSD, causing massive imbalance in the pool
             await swap
@@ -423,7 +424,7 @@ describe("Swap with 4 tokens", () => {
               balanceBefore,
             )
 
-            // If USDCOutput > 1e18, the malicious user leaves with more USDC than the start.
+            // If USDCOutput > 16e6, the attacker leaves with more USDC than the start.
             expect(USDCOutput).to.be.eq("15850101")
 
             const finalAttackerBalances = await getUserTokenBalances(
@@ -456,7 +457,7 @@ describe("Swap with 4 tokens", () => {
             expect(finalPoolBalances[3].sub(initialPoolBalances[3])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 0.15e6 USDC
+            // Pool (liquidity providers) gained 0.15e6 USDC ()
             // The attack did not benefit the attacker.
           })
 
@@ -483,7 +484,7 @@ describe("Swap with 4 tokens", () => {
               "34126363338064619373",
             )
 
-            // Malicious miner skips 900 seconds
+            // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
               (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
             )
@@ -499,7 +500,7 @@ describe("Swap with 4 tokens", () => {
               balanceBefore,
             )
 
-            // If USDCOutput > 1e18, the malicious user leaves with more USDC than the start.
+            // If USDCOutput > 16e6, the attacker leaves with more USDC than the start.
             expect(USDCOutput).to.be.eq("15913488")
 
             const finalAttackerBalances = await getUserTokenBalances(
@@ -542,6 +543,9 @@ describe("Swap with 4 tokens", () => {
         "When token price is unequal: " +
           "attacker 'resolves' the imbalance prior to A change, then recreates the imbalance.",
         () => {
+          // This attack is achieved by attempting to resolve the imbalance by getting as close to 1:1 ratio of tokens.
+          // Then re-creating the imbalance when A has changed.
+
           beforeEach(async () => {
             // Set up pool to be imbalanced prior to the attack
             await swap
@@ -595,7 +599,7 @@ describe("Swap with 4 tokens", () => {
               balanceBefore,
             )
 
-            // If USDCOutput > 1e18, the attacker leaves with more USDC than the start.
+            // If USDCOutput > 25e6, the attacker leaves with more USDC than the start.
             expect(USDCOutput).to.be.eq("24803524")
 
             const finalAttackerBalances = await getUserTokenBalances(
@@ -655,8 +659,7 @@ describe("Swap with 4 tokens", () => {
               "74859519956589418582",
             )
 
-            // Assume 2 weeks go by without any other transactions
-            // This mimics rapid change of A
+            // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
               (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
             )
@@ -672,7 +675,7 @@ describe("Swap with 4 tokens", () => {
               balanceBefore,
             )
 
-            // If USDCOutput > 1e18, the malicious user leaves with more USDC than the start.
+            // If USDCOutput > 25e6, the attacker leaves with more USDC than the start.
             expect(USDCOutput).to.be.eq("25031387")
             // Attack was successful!
 
@@ -782,7 +785,7 @@ describe("Swap with 4 tokens", () => {
               balanceBefore,
             )
 
-            // If USDCOutput > 1e18, the malicious user leaves with more USDC than the start.
+            // If USDCOutput > 16e6, the attacker leaves with more USDC than the start.
             expect(USDCOutput).to.be.eq("15024688")
 
             const finalAttackerBalances = await getUserTokenBalances(
@@ -843,7 +846,7 @@ describe("Swap with 4 tokens", () => {
               "34126363338064619373",
             )
 
-            // Malicious miner skips 900 seconds
+            // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
               (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
             )
@@ -857,7 +860,7 @@ describe("Swap with 4 tokens", () => {
               balanceBefore,
             )
 
-            // If USDCOutput > 1e18, the malicious user leaves with more USDC than the start.
+            // If USDCOutput > 16e6, the attacker leaves with more USDC than the start.
             expect(USDCOutput).to.be.eq("16073391")
 
             const finalAttackerBalances = await getUserTokenBalances(
@@ -904,6 +907,9 @@ describe("Swap with 4 tokens", () => {
         "When token price is unequal: " +
           "attacker 'resolves' the imbalance prior to A change, then recreates the imbalance.",
         () => {
+          // This attack is achieved by attempting to resolve the imbalance by getting as close to 1:1 ratio of tokens.
+          // Then re-creating the imbalance when A has changed.
+
           beforeEach(async () => {
             // Set up pool to be imbalanced prior to the attack
             await swap
@@ -955,7 +961,7 @@ describe("Swap with 4 tokens", () => {
               balanceBefore,
             )
 
-            // If USDCOutput > 25e6, the malicious user leaves with more USDC than the start.
+            // If USDCOutput > 25e6, the attacker leaves with more USDC than the start.
             expect(USDCOutput).to.be.eq("23776613")
 
             const finalAttackerBalances = await getUserTokenBalances(
@@ -1031,7 +1037,7 @@ describe("Swap with 4 tokens", () => {
               balanceBefore,
             )
 
-            // If USDCOutput > 25e6, the malicious user leaves with more USDC than the start.
+            // If USDCOutput > 25e6, the attacker leaves with more USDC than the start.
             expect(USDCOutput).to.be.eq("24794844")
             // Attack was not successful
 
