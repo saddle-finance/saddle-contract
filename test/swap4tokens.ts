@@ -457,7 +457,7 @@ describe("Swap with 4 tokens", () => {
             expect(finalPoolBalances[3].sub(initialPoolBalances[3])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 0.15e6 USDC ()
+            // Pool (liquidity providers) gained 0.15e6 USDC (0.299798% of USDC balance)
             // The attack did not benefit the attacker.
           })
 
@@ -533,7 +533,7 @@ describe("Swap with 4 tokens", () => {
             expect(finalPoolBalances[3].sub(initialPoolBalances[3])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 8.65e4 USDC
+            // Pool (liquidity providers) gained 8.65e4 USDC (0.173024% of USDC balance)
             // The attack did not benefit the attacker.
           })
         },
@@ -894,7 +894,7 @@ describe("Swap with 4 tokens", () => {
             expect(initialPoolBalances[3].sub(finalPoolBalances[3])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) lost 7.34e4 USDC (0.1468% of pool's balance)
+            // Pool (liquidity providers) lost 7.34e4 USDC (0.1468% of USDC balance)
 
             // The attack was successful. The change of A (-50%) gave the attacker a chance to swap
             // more efficiently. The swap fee (0.1%) was not sufficient to counter the efficient trade, giving

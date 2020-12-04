@@ -2120,8 +2120,7 @@ describe("Swap", () => {
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 3.836e15 firstToken
-
+            // Pool (liquidity providers) gained 3.836e15 firstToken (0.3836% of firstToken balance)
             // The attack did not benefit the attacker.
           })
 
@@ -2203,7 +2202,7 @@ describe("Swap", () => {
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 4.426e16 firstToken (4.426% of firstToken balance)
+            // Pool (liquidity providers) gained 4.426e16 firstToken (4.426% of firstToken balance of the pool)
             // The attack did not benefit the attacker.
           })
         },
@@ -2307,7 +2306,7 @@ describe("Swap", () => {
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 4.305e15 firstToken (0.4305% of firstToken balance of pool)
+            // Pool (liquidity providers) gained 4.305e15 firstToken (0.4305% of firstToken balance)
             // The attack did not benefit the attacker.
           })
 
@@ -2393,7 +2392,7 @@ describe("Swap", () => {
             expect(initialPoolBalances[1].sub(finalPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) lost 4.430e15 firstToken (0.430%)
+            // Pool (liquidity providers) lost 4.430e15 firstToken (0.430% of firstToken balance)
 
             // The attack benefited the attacker.
             // Note that this attack is only possible when there are no swaps happening during the 2 weeks ramp period.
@@ -2514,7 +2513,7 @@ describe("Swap", () => {
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 1.992e16 firstToken (1.992% of pool balance)
+            // Pool (liquidity providers) gained 1.992e16 firstToken (1.992% of firstToken balance)
 
             // The attack did not benefit the attacker.
           })
@@ -2580,7 +2579,7 @@ describe("Swap", () => {
             expect(
               finalAttackerBalances[1].sub(initialAttackerBalances[1]),
             ).to.be.eq("0")
-            // Attacker gained 6.625e16 firstToken (6.25% of initial deposit)
+            // Attacker gained 6.625e16 firstToken (6.625% of initial deposit)
 
             // Check for pool balance changes
             const finalPoolBalances = [
@@ -2596,7 +2595,7 @@ describe("Swap", () => {
             expect(initialPoolBalances[1].sub(finalPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) lost 6.625e16 firstToken (6.25% of pool's balance)
+            // Pool (liquidity providers) lost 6.625e16 firstToken (6.625% of firstToken balance)
 
             // The attack was successful. The change of A (-50%) gave the attacker a chance to swap
             // more efficiently. The swap fee (0.1%) was not sufficient to counter the efficient trade, giving
@@ -2703,7 +2702,7 @@ describe("Swap", () => {
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 4.006e16 firstToken (4.006% of pool balance)
+            // Pool (liquidity providers) gained 4.006e16 firstToken (4.006% of firstToken balance)
             // The attack did not benefit the attacker.
           })
 
@@ -2788,7 +2787,7 @@ describe("Swap", () => {
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 1.368e16 firstToken (1.368% of pool's balance)
+            // Pool (liquidity providers) gained 1.368e16 firstToken (1.368% of firstToken balance)
             // The attack did not benefit the attacker
           })
         },
