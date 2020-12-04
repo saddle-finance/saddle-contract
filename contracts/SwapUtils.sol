@@ -414,10 +414,9 @@ library SwapUtils {
     function getVirtualPrice(Swap storage self) external view returns (uint256) {
         uint256 D = getD(_xp(self), _getAPrecise(self));
         uint256 supply = self.lpToken.totalSupply();
-        if (supply == 0) {
-            return 0;
+        if (supply > 0) {
+            return D.mul(10 ** uint256(ERC20Detailed(self.lpToken).decimals())).div(supply);
         }
-        return D.mul(10 ** uint256(ERC20Detailed(self.lpToken).decimals())).div(supply);
     }
 
     /**
