@@ -33,7 +33,7 @@
     "ethlint": "^1.2.5",
     "hardhat": "^2.0.4",
     "hardhat-gas-reporter": "^1.0.3",
-    "husky": "^4.3.0",
+    "husky": "^4.3.5",
     "lint-staged": "^10.5.3",
     "prettier": "^2.2.1",
     "shelljs": "^0.8.4",
