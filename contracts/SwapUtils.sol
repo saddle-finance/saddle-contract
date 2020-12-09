@@ -259,7 +259,7 @@ library SwapUtils {
      * precision-adjusted balances and a particular D and precision-adjusted
      * array of balances.
      *
-     * @dev This is accomplished via solving the quadratic equation iteratively.
+     * @dev This is accomplished via solving the invariant iteratively.
      * See the StableSwap paper and Curve.fi implementation for further details.
      *
      * x_1**2 + x1 * (sum' - (A*n**n - 1) * D / (A * n**n)) = D ** (n + 1) / (n ** (2 * n) * prod' * A)

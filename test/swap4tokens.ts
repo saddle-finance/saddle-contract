@@ -264,7 +264,7 @@ describe("Swap with 4 tokens", () => {
         "999355335447632820",
       )
 
-      // Calculate expected amounts of tokens user1 will recieve
+      // Calculate expected amounts of tokens user1 will receive
       const expectedAmounts = await swap.calculateRemoveLiquidity(
         "999355335447632820",
       )
