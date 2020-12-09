@@ -417,6 +417,7 @@ library SwapUtils {
         if (supply > 0) {
             return D.mul(10 ** uint256(ERC20Detailed(self.lpToken).decimals())).div(supply);
         }
+        return 0;
     }
 
     /**
@@ -560,6 +561,7 @@ library SwapUtils {
             .div(4 weeks)
             .div(FEE_DENOMINATOR);
         }
+        return 0;
     }
 
     /**

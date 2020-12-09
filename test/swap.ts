@@ -2145,7 +2145,7 @@ describe("Swap", () => {
             expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
             expect(await swap.getTokenBalance(1)).to.be.eq("91408257454997694")
 
-            // Malicious miner skips 900 seconds
+            // Assume no transactions occur during 2 weeks
             await setTimestamp(
               (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
             )
@@ -2539,7 +2539,7 @@ describe("Swap", () => {
             expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
             expect(await swap.getTokenBalance(1)).to.be.eq("91408257454997694")
 
-            // Malicious miner skips 900 seconds
+            // Assume no transactions occur during 2 weeks ramp time
             await setTimestamp(
               (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
             )
