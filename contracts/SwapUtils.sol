@@ -259,7 +259,7 @@ library SwapUtils {
      * precision-adjusted balances and a particular D and precision-adjusted
      * array of balances.
      *
-     * @dev This is accomplished via solving the quadratic equation iteratively.
+     * @dev This is accomplished via solving the invariant iteratively.
      * See the StableSwap paper and Curve.fi implementation for further details.
      *
      * x_1**2 + x1 * (sum' - (A*n**n - 1) * D / (A * n**n)) = D ** (n + 1) / (n ** (2 * n) * prod' * A)
@@ -414,7 +414,10 @@ library SwapUtils {
     function getVirtualPrice(Swap storage self) external view returns (uint256) {
         uint256 D = getD(_xp(self), _getAPrecise(self));
         uint256 supply = self.lpToken.totalSupply();
-        return D.mul(10 ** uint256(ERC20Detailed(self.lpToken).decimals())).div(supply);
+        if (supply > 0) {
+            return D.mul(10 ** uint256(ERC20Detailed(self.lpToken).decimals())).div(supply);
+        }
+        return 0;
     }
 
     /**
@@ -523,6 +526,7 @@ library SwapUtils {
      *
      * @param amount the amount of LP tokens that would to be burned on
      * withdrawal
+     * @return array of amounts of tokens user will receive
      */
     function calculateRemoveLiquidity(Swap storage self, uint256 amount)
     external view returns (uint256[] memory) {
@@ -557,6 +561,7 @@ library SwapUtils {
             .div(4 weeks)
             .div(FEE_DENOMINATOR);
         }
+        return 0;
     }
 
     /**

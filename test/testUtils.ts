@@ -4,6 +4,7 @@ import { Artifact } from "hardhat/types"
 import { ethers } from "hardhat"
 
 import { Erc20 as ERC20 } from "../build/typechain/Erc20"
+import { Swap } from "../build/typechain/Swap"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
 
@@ -63,9 +64,21 @@ export async function deployContractWithLibraries(
 
 // Contract calls
 
-export async function getTokenBalances(
+export async function getPoolBalances(
+  swap: Swap,
+  numOfTokens: number,
+): Promise<BigNumber[]> {
+  const balances = []
+
+  for (let i = 0; i < numOfTokens; i++) {
+    balances.push(await swap.getTokenBalance(i))
+  }
+  return balances
+}
+
+export async function getUserTokenBalances(
   address: string | Signer,
-  ...tokens: ERC20[]
+  tokens: ERC20[],
 ): Promise<BigNumber[]> {
   const balanceArray = []
 
@@ -80,7 +93,7 @@ export async function getTokenBalances(
   return balanceArray
 }
 
-export async function getTokenBalance(
+export async function getUserTokenBalance(
   address: string | Signer,
   token: ERC20,
 ): Promise<BigNumber> {
