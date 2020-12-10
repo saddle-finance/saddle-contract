@@ -16,6 +16,8 @@ import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { LpToken } from "../build/typechain/LpToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
+import { GenericErc20 } from "../build/typechain/GenericErc20"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
@@ -34,8 +36,8 @@ describe("Swap", () => {
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
-  let firstToken: LpToken
-  let secondToken: LpToken
+  let firstToken: GenericErc20
+  let secondToken: GenericErc20
   let swapToken: LpToken
   let owner: Signer
   let user1: Signer
@@ -69,17 +71,17 @@ describe("Swap", () => {
     user2Address = await user2.getAddress()
 
     // Deploy dummy tokens
-    firstToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
+    firstToken = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "First Token",
       "FIRST",
       "18",
-    ])) as LpToken
+    ])) as GenericErc20
 
-    secondToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
+    secondToken = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "Second Token",
       "SECOND",
       "18",
-    ])) as LpToken
+    ])) as GenericErc20
 
     // Mint dummy tokens
     await asyncForEach([owner, user1, user2], async (signer) => {
@@ -501,9 +503,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
 
       const currentTimestamp = await getCurrentBlockTimestamp()
       await setNextTimestamp(currentTimestamp + 60 * 10)
@@ -712,9 +712,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
 
       const currentTimestamp = await getCurrentBlockTimestamp()
       await setNextTimestamp(currentTimestamp + 60 * 10)
@@ -873,9 +871,7 @@ describe("Swap", () => {
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
-      const currentUser1Balance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentUser1Balance = await swapToken.balanceOf(user1Address)
 
       const currentTimestamp = await getCurrentBlockTimestamp()
       await setNextTimestamp(currentTimestamp + 60 * 10)
@@ -1302,7 +1298,7 @@ describe("Swap", () => {
 
   describe("Test withdrawal fees on removeLiquidity", () => {
     beforeEach(async () => {
-      expect(await swapToken.balanceOf(await user1.getAddress())).to.eq(0)
+      expect(await swapToken.balanceOf(user1Address)).to.eq(0)
       await swap.setDefaultWithdrawFee(String(5e7))
       await swapToken.connect(user1).approve(swap.address, MAX_UINT256)
     })
@@ -1313,12 +1309,12 @@ describe("Swap", () => {
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
 
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       const [
         firstBalanceBefore,
@@ -1326,9 +1322,7 @@ describe("Swap", () => {
       ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // Manually set the timestamp between addLiquidity and removeLiquidity to 1 second
-      const currentPoolTokenBalance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
 
       await setNextTimestamp(depositTimestamp + 1)
       await swap
@@ -1355,20 +1349,19 @@ describe("Swap", () => {
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
 
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       const [
         firstBalanceBefore,
         secondBalanceBefore,
       ] = await getUserTokenBalances(user1, [firstToken, secondToken])
-      const currentPoolTokenBalance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
+
       // 2 weeks = 2 * 604800 seconds
       await setNextTimestamp(depositTimestamp + 2 * 604800)
       await swap
@@ -1395,12 +1388,12 @@ describe("Swap", () => {
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
 
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       const [
         firstBalanceBefore,
@@ -1408,9 +1401,7 @@ describe("Swap", () => {
       ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // 52 weeks = 604800 * 4 seconds
-      const currentPoolTokenBalance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
       await setNextTimestamp(depositTimestamp + 4 * 604800)
       await swap
         .connect(user1)
@@ -1452,12 +1443,12 @@ describe("Swap", () => {
         .connect(user1)
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       const firstBalanceBefore = await getUserTokenBalance(user1, firstToken)
       const swapTokenBalance = await getUserTokenBalance(user1, swapToken)
@@ -1486,12 +1477,12 @@ describe("Swap", () => {
         .connect(user1)
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       const [
         firstBalanceBefore,
@@ -1522,12 +1513,12 @@ describe("Swap", () => {
         .connect(user1)
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       const [
         firstBalanceBefore,
@@ -1575,12 +1566,12 @@ describe("Swap", () => {
         .connect(user1)
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       const [
         firstTokenBefore,
@@ -1625,12 +1616,12 @@ describe("Swap", () => {
         .connect(user1)
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       const [
         firstTokenBefore,
@@ -1673,12 +1664,12 @@ describe("Swap", () => {
         .connect(user1)
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       const [
         firstTokenBefore,
@@ -1724,12 +1715,12 @@ describe("Swap", () => {
         .connect(user1)
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
       const depositTimestamp = (
-        await swap.getDepositTimestamp(await user1.getAddress())
+        await swap.getDepositTimestamp(user1Address)
       ).toNumber()
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       // 2 weeks after
       await setNextTimestamp(depositTimestamp + 2 * 604800)
@@ -1741,24 +1732,19 @@ describe("Swap", () => {
       // We are adding twice the amount of first deposit at full withdrawal fee amount, 0.5%.
       // Remainder of the fees + new fees is then again stretched out to be discounted over the decay period (4 weeks)
       // (2e18 * 0.25% + 4e18 * 0.5%) / 6e18 = 0.41666666%
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from("41666666"))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from("41666666"),
+      )
 
       await swapToken
         .connect(user1)
-        .approve(
-          swap.address,
-          await swapToken.balanceOf(await user1.getAddress()),
-        )
+        .approve(swap.address, await swapToken.balanceOf(user1Address))
 
       const [
         firstBalanceBefore,
         secondBalanceBefore,
       ] = await getUserTokenBalances(user1, [firstToken, secondToken])
-      const currentPoolTokenBalance = await swapToken.balanceOf(
-        await user1.getAddress(),
-      )
+      const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
 
       // 4 weeks after initial deposit
       await setNextTimestamp(depositTimestamp + 4 * 604800)
@@ -1780,6 +1766,62 @@ describe("Swap", () => {
         "2993750000100000000",
       )
     })
+
+    it("Verify withdraw fees are updated on transfer", async () => {
+      await swap.setDefaultWithdrawFee(String(5e7))
+      await swap
+        .connect(user1)
+        .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
+      const depositTimestamp = (
+        await swap.getDepositTimestamp(user1Address)
+      ).toNumber()
+
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
+
+      // 2 weeks after
+      await setNextTimestamp(depositTimestamp + 2 * TIME.WEEKS)
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(2e18)], 0, MAX_UINT256)
+
+      // At 2 weeks mark, half of first deposit's withdrawal fee is discounted, 0.25%.
+      // We are adding twice the amount of first deposit at full withdrawal fee amount, 0.5%.
+      // Remainder of the fees + new fees is then again stretched out to be discounted over the decay period (4 weeks)
+      // (2e18 * 0.25% + 4e18 * 0.5%) / 6e18 = 0.41666666%
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from("41666666"),
+      )
+
+      // Transfer some of swap token from user1 to user2
+      await swapToken.connect(user1).transfer(user2Address, String(1e18))
+
+      // Verify user1's fee has not changed
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from("41666649"),
+      )
+
+      // Verify user2's fee is set to default value
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.eq(
+        BigNumber.from("50000000"),
+      )
+
+      await setTimestamp((await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS)
+
+      // Verify user2's fee decays as expected
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.eq(
+        BigNumber.from("25000000"),
+      )
+
+      // Transfer more tokens to user2
+      await swapToken.connect(user1).transfer(user2Address, String(1e18))
+
+      // Verify user2's fee has updated with discounted rate
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.eq(
+        BigNumber.from("37499989"),
+      )
+    })
   })
 
   describe("setDefaultWithdrawFee", () => {
@@ -1796,15 +1838,15 @@ describe("Swap", () => {
         .connect(user1)
         .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(5e7),
+      )
 
       await swap.setDefaultWithdrawFee(String(0))
 
-      expect(
-        await swap.calculateCurrentWithdrawFee(await user1.getAddress()),
-      ).to.eq(BigNumber.from(0))
+      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
+        BigNumber.from(0),
+      )
     })
 
     it("Reverts when fee is too high", async () => {

@@ -6,8 +6,8 @@ import { deployContract, solidity } from "ethereum-waffle"
 import StakeableTokenWrapperArtifact from "../build/artifacts/contracts/StakeableTokenWrapper.sol/StakeableTokenWrapper.json"
 import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
 
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { LpToken } from "../build/typechain/LpToken"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
+import { GenericErc20 } from "../build/typechain/GenericErc20"
 import { Ierc20 as IERC20 } from "../build/typechain/Ierc20"
 
 chai.use(solidity)
@@ -16,7 +16,7 @@ const { expect } = chai
 describe("StakeableTokenWrapper", () => {
   let signers: Array<Signer>
 
-  let basicToken: LpToken
+  let basicToken: GenericErc20
   let tokenWrapper: StakeableTokenWrapper
 
   async function deployWrapper(token: IERC20): Promise<StakeableTokenWrapper> {
@@ -31,7 +31,7 @@ describe("StakeableTokenWrapper", () => {
   async function approveAndStake(
     wallet: Wallet,
     amount: number,
-  ): Promise<Array<StakeableTokenWrapper | LpToken>> {
+  ): Promise<Array<StakeableTokenWrapper | GenericErc20>> {
     const wrapperAsStaker = tokenWrapper.connect(wallet)
     const tokenAsStaker = basicToken.connect(wallet)
 
@@ -43,11 +43,11 @@ describe("StakeableTokenWrapper", () => {
 
   beforeEach(async () => {
     signers = await ethers.getSigners()
-    basicToken = (await deployContract(signers[0] as Wallet, LPTokenArtifact, [
-      "Basic Token",
-      "BASIC",
-      "18",
-    ])) as LpToken
+    basicToken = (await deployContract(
+      signers[0] as Wallet,
+      GenericERC20Artifact,
+      ["Basic Token", "BASIC", "18"],
+    )) as GenericErc20
 
     await basicToken.mint(await signers[0].getAddress(), 10 ** 10)
 

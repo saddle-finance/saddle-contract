@@ -14,7 +14,8 @@ import { deployContract, solidity } from "ethereum-waffle"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
-import { Erc20 as ERC20 } from "../build/typechain/Erc20"
+import { GenericErc20 } from "../build/typechain/GenericErc20"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LpToken } from "../build/typechain/LpToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { MathUtils } from "../build/typechain/MathUtils"
@@ -35,10 +36,10 @@ describe("Swap with 4 tokens", () => {
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
-  let DAI: LpToken
-  let USDC: LpToken
-  let USDT: LpToken
-  let SUSD: LpToken
+  let DAI: GenericErc20
+  let USDC: GenericErc20
+  let USDT: GenericErc20
+  let SUSD: GenericErc20
   let swapToken: LpToken
   let owner: Signer
   let user1: Signer
@@ -76,29 +77,29 @@ describe("Swap with 4 tokens", () => {
     user2Address = await user2.getAddress()
 
     // Deploy dummy tokens
-    DAI = (await deployContract(owner as Wallet, LPTokenArtifact, [
+    DAI = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "DAI",
       "DAI",
       "18",
-    ])) as LpToken
+    ])) as GenericErc20
 
-    USDC = (await deployContract(owner as Wallet, LPTokenArtifact, [
+    USDC = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "USDC",
       "USDC",
       "6",
-    ])) as LpToken
+    ])) as GenericErc20
 
-    USDT = (await deployContract(owner as Wallet, LPTokenArtifact, [
+    USDT = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "USDT",
       "USDT",
       "6",
-    ])) as LpToken
+    ])) as GenericErc20
 
-    SUSD = (await deployContract(owner as Wallet, LPTokenArtifact, [
+    SUSD = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "SUSD",
       "SUSD",
       "18",
-    ])) as LpToken
+    ])) as GenericErc20
 
     TOKENS.push(DAI, USDC, USDT, SUSD)
 

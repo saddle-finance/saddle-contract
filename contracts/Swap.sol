@@ -376,6 +376,19 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     /*** ADMIN FUNCTIONS ***/
 
     /**
+     * @notice Updates the user withdraw fee. This function can only be called by
+     * the pool token. Should be used to update the withdraw fee on transfer of pool tokens.
+     * Transferring your pool token will reset the 4 weeks period. If the recipient is already
+     * holding some pool tokens, the withdraw fee will be discounted in respective amounts.
+     * @param recipient address of the recipient of pool token
+     * @param transferAmount amount of pool token to transfer
+     */
+    function updateUserWithdrawFee(address recipient, uint256 transferAmount) external {
+        require(msg.sender == address(swapStorage.lpToken), "Only token transfers can update withdraw fee");
+        swapStorage.updateUserWithdrawFee(recipient, transferAmount);
+    }
+
+    /**
      * @notice Withdraw all admin fees to the contract owner
      */
     function withdrawAdminFees() external onlyOwner {
