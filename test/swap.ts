@@ -3,12 +3,12 @@ import {
   MAX_UINT256,
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
-  getTokenBalances,
+  getUserTokenBalances,
   setNextTimestamp,
   setTimestamp,
   asyncForEach,
   TIME,
-  getTokenBalance,
+  getUserTokenBalance,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -126,6 +126,8 @@ describe("Swap", () => {
       ],
     )) as Swap
     await swap.deployed()
+
+    expect(await swap.getVirtualPrice()).to.be.eq(0)
 
     swapStorage = await swap.swapStorage()
 
@@ -391,7 +393,11 @@ describe("Swap", () => {
         firstTokenBalanceBefore,
         secondTokenBalanceBefore,
         poolTokenBalanceBefore,
-      ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
+      ] = await getUserTokenBalances(user1, [
+        firstToken,
+        secondToken,
+        swapToken,
+      ])
 
       expect(poolTokenBalanceBefore).to.eq(
         BigNumber.from("1996275270169644725"),
@@ -424,7 +430,7 @@ describe("Swap", () => {
       const [
         firstTokenBalanceAfter,
         secondTokenBalanceAfter,
-      ] = await getTokenBalances(user1, firstToken, secondToken)
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // Check the actual returned token amounts match the expected amounts
       expect(firstTokenBalanceAfter.sub(firstTokenBalanceBefore)).to.eq(
@@ -593,7 +599,11 @@ describe("Swap", () => {
         firstTokenBalanceBefore,
         secondTokenBalanceBefore,
         poolTokenBalanceBefore,
-      ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
+      ] = await getUserTokenBalances(user1, [
+        firstToken,
+        secondToken,
+        swapToken,
+      ])
 
       // User 1 withdraws imbalanced tokens
       await swapToken
@@ -611,7 +621,11 @@ describe("Swap", () => {
         firstTokenBalanceAfter,
         secondTokenBalanceAfter,
         poolTokenBalanceAfter,
-      ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
+      ] = await getUserTokenBalances(user1, [
+        firstToken,
+        secondToken,
+        swapToken,
+      ])
 
       // Check the actual returned token amounts match the requested amounts
       expect(firstTokenBalanceAfter.sub(firstTokenBalanceBefore)).to.eq(
@@ -910,7 +924,7 @@ describe("Swap", () => {
       const [
         tokenFromBalanceBefore,
         tokenToBalanceBefore,
-      ] = await getTokenBalances(user1, firstToken, secondToken)
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // User 1 successfully initiates swap
       await swap
@@ -921,7 +935,7 @@ describe("Swap", () => {
       const [
         tokenFromBalanceAfter,
         tokenToBalanceAfter,
-      ] = await getTokenBalances(user1, firstToken, secondToken)
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
       expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
         BigNumber.from(String(1e17)),
       )
@@ -954,7 +968,7 @@ describe("Swap", () => {
       const [
         tokenFromBalanceBefore,
         tokenToBalanceBefore,
-      ] = await getTokenBalances(user1, firstToken, secondToken)
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       const calculatedSwapReturnWithNegativeSlippage = calculatedSwapReturn
         .mul(99)
@@ -978,7 +992,7 @@ describe("Swap", () => {
       const [
         tokenFromBalanceAfter,
         tokenToBalanceAfter,
-      ] = await getTokenBalances(user1, firstToken, secondToken)
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
         BigNumber.from(String(1e17)),
@@ -1188,19 +1202,17 @@ describe("Swap", () => {
       expect(await swap.getAdminBalance(0)).to.eq(String(1001973776101))
       expect(await swap.getAdminBalance(1)).to.eq(String(998024139765))
 
-      const [firstTokenBefore, secondTokenBefore] = await getTokenBalances(
-        owner,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstTokenBefore,
+        secondTokenBefore,
+      ] = await getUserTokenBalances(owner, [firstToken, secondToken])
 
       await swap.withdrawAdminFees()
 
-      const [firstTokenAfter, secondTokenAfter] = await getTokenBalances(
-        owner,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstTokenAfter,
+        secondTokenAfter,
+      ] = await getUserTokenBalances(owner, [firstToken, secondToken])
 
       expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(String(1001973776101))
       expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(
@@ -1222,11 +1234,10 @@ describe("Swap", () => {
 
       await swap.withdrawAdminFees()
 
-      const [firstTokenBefore, secondTokenBefore] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstTokenBefore,
+        secondTokenBefore,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       const user1LPTokenBalance = await swapToken.balanceOf(user1Address)
       await swapToken.connect(user1).approve(swap.address, user1LPTokenBalance)
@@ -1234,11 +1245,10 @@ describe("Swap", () => {
         .connect(user1)
         .removeLiquidity(user1LPTokenBalance, [0, 0], MAX_UINT256)
 
-      const [firstTokenAfter, secondTokenAfter] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstTokenAfter,
+        secondTokenAfter,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(
         BigNumber.from("1000009516257264879"),
@@ -1306,11 +1316,10 @@ describe("Swap", () => {
         BigNumber.from(5e7),
       )
 
-      const [firstBalanceBefore, secondBalanceBefore] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstBalanceBefore,
+        secondBalanceBefore,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // Manually set the timestamp between addLiquidity and removeLiquidity to 1 second
       const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
@@ -1320,11 +1329,10 @@ describe("Swap", () => {
         .connect(user1)
         .removeLiquidity(currentPoolTokenBalance, [0, 0], MAX_UINT256)
 
-      const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstBalanceAfter,
+        secondBalanceAfter,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // Returned amounts are about 99.5% of initial deposits
       expect(firstBalanceAfter.sub(firstBalanceBefore)).to.eq(
@@ -1348,23 +1356,22 @@ describe("Swap", () => {
         BigNumber.from(5e7),
       )
 
-      const [firstBalanceBefore, secondBalanceBefore] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstBalanceBefore,
+        secondBalanceBefore,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
       const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
+
       // 2 weeks = 2 * 604800 seconds
       await setNextTimestamp(depositTimestamp + 2 * 604800)
       await swap
         .connect(user1)
         .removeLiquidity(currentPoolTokenBalance, [0, 0], MAX_UINT256)
 
-      const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstBalanceAfter,
+        secondBalanceAfter,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // Returned amounts are 99.75% of initial deposits
       expect(firstBalanceAfter.sub(firstBalanceBefore)).to.eq(
@@ -1388,11 +1395,10 @@ describe("Swap", () => {
         BigNumber.from(5e7),
       )
 
-      const [firstBalanceBefore, secondBalanceBefore] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstBalanceBefore,
+        secondBalanceBefore,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // 52 weeks = 604800 * 4 seconds
       const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
@@ -1401,11 +1407,10 @@ describe("Swap", () => {
         .connect(user1)
         .removeLiquidity(currentPoolTokenBalance, [0, 0], MAX_UINT256)
 
-      const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstBalanceAfter,
+        secondBalanceAfter,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // Returned amounts are 100% of initial deposits
       expect(firstBalanceAfter.sub(firstBalanceBefore)).to.eq(
@@ -1445,8 +1450,8 @@ describe("Swap", () => {
         BigNumber.from(5e7),
       )
 
-      const [firstBalanceBefore] = await getTokenBalances(user1, firstToken)
-      const [swapTokenBalance] = await getTokenBalances(user1, swapToken)
+      const firstBalanceBefore = await getUserTokenBalance(user1, firstToken)
+      const swapTokenBalance = await getUserTokenBalance(user1, swapToken)
 
       const expectedFirstTokenAmount = await swap.calculateRemoveLiquidityOneToken(
         swapTokenBalance,
@@ -1459,7 +1464,7 @@ describe("Swap", () => {
         .connect(user1)
         .removeLiquidityOneToken(swapTokenBalance, 0, 0, MAX_UINT256)
 
-      const [firstBalanceAfter] = await getTokenBalances(user1, firstToken)
+      const firstBalanceAfter = await getUserTokenBalance(user1, firstToken)
 
       // Close to 1997027120160681835 * 99.5%
       expect(firstBalanceAfter.sub(firstBalanceBefore)).to.eq(
@@ -1479,8 +1484,10 @@ describe("Swap", () => {
         BigNumber.from(5e7),
       )
 
-      const [firstBalanceBefore] = await getTokenBalances(user1, firstToken)
-      const [swapTokenBalance] = await getTokenBalances(user1, swapToken)
+      const [
+        firstBalanceBefore,
+        swapTokenBalance,
+      ] = await getUserTokenBalances(user1, [firstToken, swapToken])
 
       const expectedFirstTokenAmount = await swap.calculateRemoveLiquidityOneToken(
         swapTokenBalance,
@@ -1493,7 +1500,7 @@ describe("Swap", () => {
         .connect(user1)
         .removeLiquidityOneToken(swapTokenBalance, 0, 0, MAX_UINT256)
 
-      const [firstBalanceAfter] = await getTokenBalances(user1, firstToken)
+      const firstBalanceAfter = await getUserTokenBalance(user1, firstToken)
 
       // 1997027120160681835 * 99.75% = 1992034552360280130
       expect(firstBalanceAfter.sub(firstBalanceBefore)).to.eq(
@@ -1513,8 +1520,10 @@ describe("Swap", () => {
         BigNumber.from(5e7),
       )
 
-      const [firstBalanceBefore] = await getTokenBalances(user1, firstToken)
-      const [swapTokenBalance] = await getTokenBalances(user1, swapToken)
+      const [
+        firstBalanceBefore,
+        swapTokenBalance,
+      ] = await getUserTokenBalances(user1, [firstToken, swapToken])
 
       const expectedFirstTokenAmount = await swap.calculateRemoveLiquidityOneToken(
         swapTokenBalance,
@@ -1527,7 +1536,7 @@ describe("Swap", () => {
         .connect(user1)
         .removeLiquidityOneToken(swapTokenBalance, 0, 0, MAX_UINT256)
 
-      const [firstBalanceAfter] = await getTokenBalances(user1, firstToken)
+      const firstBalanceAfter = await getUserTokenBalance(user1, firstToken)
 
       // 1997027120160681835 * 100%
       expect(firstBalanceAfter.sub(firstBalanceBefore)).to.eq(
@@ -1568,7 +1577,11 @@ describe("Swap", () => {
         firstTokenBefore,
         secondTokenBefore,
         swapTokenBefore,
-      ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
+      ] = await getUserTokenBalances(user1, [
+        firstToken,
+        secondToken,
+        swapToken,
+      ])
 
       await setNextTimestamp(depositTimestamp + 1)
       await swap
@@ -1583,7 +1596,11 @@ describe("Swap", () => {
         firstTokenAfter,
         secondTokenAfter,
         swapTokenAfter,
-      ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
+      ] = await getUserTokenBalances(user1, [
+        firstToken,
+        secondToken,
+        swapToken,
+      ])
 
       expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(String(1e18))
       expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(String(1e17))
@@ -1610,7 +1627,11 @@ describe("Swap", () => {
         firstTokenBefore,
         secondTokenBefore,
         swapTokenBefore,
-      ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
+      ] = await getUserTokenBalances(user1, [
+        firstToken,
+        secondToken,
+        swapToken,
+      ])
 
       await setNextTimestamp(depositTimestamp + 2 * 604800)
       await swap
@@ -1625,7 +1646,11 @@ describe("Swap", () => {
         firstTokenAfter,
         secondTokenAfter,
         swapTokenAfter,
-      ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
+      ] = await getUserTokenBalances(user1, [
+        firstToken,
+        secondToken,
+        swapToken,
+      ])
 
       expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(String(1e18))
       expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(String(1e17))
@@ -1650,7 +1675,11 @@ describe("Swap", () => {
         firstTokenBefore,
         secondTokenBefore,
         swapTokenBefore,
-      ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
+      ] = await getUserTokenBalances(user1, [
+        firstToken,
+        secondToken,
+        swapToken,
+      ])
 
       await setNextTimestamp(depositTimestamp + 4 * 604800)
       await swap
@@ -1665,7 +1694,11 @@ describe("Swap", () => {
         firstTokenAfter,
         secondTokenAfter,
         swapTokenAfter,
-      ] = await getTokenBalances(user1, firstToken, secondToken, swapToken)
+      ] = await getUserTokenBalances(user1, [
+        firstToken,
+        secondToken,
+        swapToken,
+      ])
 
       expect(firstTokenAfter.sub(firstTokenBefore)).to.eq(String(1e18))
       expect(secondTokenAfter.sub(secondTokenBefore)).to.eq(String(1e17))
@@ -1707,11 +1740,10 @@ describe("Swap", () => {
         .connect(user1)
         .approve(swap.address, await swapToken.balanceOf(user1Address))
 
-      const [firstBalanceBefore, secondBalanceBefore] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstBalanceBefore,
+        secondBalanceBefore,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
       const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
 
       // 4 weeks after initial deposit
@@ -1720,11 +1752,10 @@ describe("Swap", () => {
         .connect(user1)
         .removeLiquidity(currentPoolTokenBalance, [0, 0], MAX_UINT256)
 
-      const [firstBalanceAfter, secondBalanceAfter] = await getTokenBalances(
-        user1,
-        firstToken,
-        secondToken,
-      )
+      const [
+        firstBalanceAfter,
+        secondBalanceAfter,
+      ] = await getUserTokenBalances(user1, [firstToken, secondToken])
 
       // Returned amounts are (100 - 0.41666666 / 2) = 99.79166667% of total deposits
       // 3e18 * 99.79166667% = 2.9937500001e18
@@ -2002,62 +2033,807 @@ describe("Swap", () => {
       // = 1.00058822512
     })
 
-    it("Rogue miner attacks while A is ramping upwards", async () => {
-      // This attack is achieved by creating imbalance in the first block then
-      // trading in reverse direction in the second block.
+    // Below tests try to verify the issues found in Curve Vulnerability Report are resolved.
+    // https://medium.com/@peter_4205/curve-vulnerability-report-a1d7630140ec
+    // The two cases we are most concerned are:
+    //
+    // 1. A is ramping up, and the pool is at imbalanced state.
+    //
+    // Attacker can 'resolve' the imbalance prior to the change of A. Then try to recreate the imbalance after A has
+    // changed. Due to the price curve becoming more linear, recreating the imbalance will become a lot cheaper. Thus
+    // benefiting the attacker.
+    //
+    // 2. A is ramping down, and the pool is at balanced state
+    //
+    // Attacker can create the imbalance in token balances prior to the change of A. Then try to resolve them
+    // near 1:1 ratio. Since downward change of A will make the price curve less linear, resolving the token balances
+    // to 1:1 ratio will be cheaper. Thus benefiting the attacker
+    //
+    // For visual representation of how price curves differ based on A, please refer to Figure 1 in the above
+    // Curve Vulnerability Report.
 
-      // Start ramp upwards
-      await swap.rampA(
-        100,
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+    describe("Check for attacks while A is ramping upwards", () => {
+      let initialAttackerBalances: BigNumber[] = []
+      let initialPoolBalances: BigNumber[] = []
+      let attacker: Signer
+
+      beforeEach(async () => {
+        // This attack is achieved by creating imbalance in the first block then
+        // trading in reverse direction in the second block.
+        attacker = user1
+
+        initialAttackerBalances = await getUserTokenBalances(attacker, [
+          firstToken,
+          secondToken,
+        ])
+
+        expect(initialAttackerBalances[0]).to.be.eq(String(1e20))
+        expect(initialAttackerBalances[1]).to.be.eq(String(1e20))
+
+        // Start ramp upwards
+        await swap.rampA(
+          100,
+          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+        )
+        expect(await swap.getAPrecise()).to.be.eq(5000)
+
+        // Check current pool balances
+        initialPoolBalances = [
+          await swap.getTokenBalance(0),
+          await swap.getTokenBalance(1),
+        ]
+        expect(initialPoolBalances[0]).to.be.eq(String(1e18))
+        expect(initialPoolBalances[1]).to.be.eq(String(1e18))
+      })
+
+      describe(
+        "When tokens are priced equally: " +
+          "attacker creates massive imbalance prior to A change, and resolves it after",
+        () => {
+          it("Attack fails with 900 seconds between blocks", async () => {
+            // Swap 1e18 of firstToken to secondToken, causing massive imbalance in the pool
+            await swap
+              .connect(attacker)
+              .swap(0, 1, String(1e18), 0, MAX_UINT256)
+            const secondTokenOutput = (
+              await getUserTokenBalance(attacker, secondToken)
+            ).sub(initialAttackerBalances[1])
+
+            // First trade results in 9.085e17 of secondToken
+            expect(secondTokenOutput).to.be.eq("908591742545002306")
+
+            // Pool is imbalanced! Now trades from secondToken -> firstToken may be profitable in small sizes
+            // firstToken balance in the pool  : 2.00e18
+            // secondToken balance in the pool : 9.14e16
+            expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+            expect(await swap.getTokenBalance(1)).to.be.eq("91408257454997694")
+
+            // Malicious miner skips 900 seconds
+            await setTimestamp((await getCurrentBlockTimestamp()) + 900)
+
+            // Verify A has changed upwards
+            // 5000 -> 5003 (0.06%)
+            expect(await swap.getAPrecise()).to.be.eq(5003)
+
+            // Trade secondToken to firstToken, taking advantage of the imbalance and change of A
+            const balanceBefore = await getUserTokenBalance(
+              attacker,
+              firstToken,
+            )
+            await swap
+              .connect(attacker)
+              .swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+            const firstTokenOutput = (
+              await getUserTokenBalance(attacker, firstToken)
+            ).sub(balanceBefore)
+
+            // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
+            expect(firstTokenOutput).to.be.eq("996163590871508612")
+
+            const finalAttackerBalances = await getUserTokenBalances(attacker, [
+              firstToken,
+              secondToken,
+            ])
+
+            expect(finalAttackerBalances[0]).to.be.lt(
+              initialAttackerBalances[0],
+            )
+            expect(finalAttackerBalances[1]).to.be.eq(
+              initialAttackerBalances[1],
+            )
+            expect(
+              initialAttackerBalances[0].sub(finalAttackerBalances[0]),
+            ).to.be.eq("3836409128491388")
+            expect(
+              initialAttackerBalances[1].sub(finalAttackerBalances[1]),
+            ).to.be.eq("0")
+            // Attacker lost 3.836e15 firstToken (0.3836%)
+
+            // Check for pool balance changes
+            const finalPoolBalances = []
+            finalPoolBalances.push(await swap.getTokenBalance(0))
+            finalPoolBalances.push(await swap.getTokenBalance(1))
+
+            expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
+            expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
+            expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
+              "3836409128491388",
+            )
+            expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
+              "0",
+            )
+            // Pool (liquidity providers) gained 3.836e15 firstToken (0.3836% of firstToken balance)
+            // The attack did not benefit the attacker.
+          })
+
+          it("Attack fails with 2 weeks between transactions (mimics rapid A change)", async () => {
+            // This test assumes there are no other transactions during the 2 weeks period of ramping up.
+            // Purpose of this test case is to mimic rapid ramp up of A.
+
+            // Swap 1e18 of firstToken to secondToken, causing massive imbalance in the pool
+            await swap
+              .connect(attacker)
+              .swap(0, 1, String(1e18), 0, MAX_UINT256)
+            const secondTokenOutput = (
+              await getUserTokenBalance(attacker, secondToken)
+            ).sub(initialAttackerBalances[1])
+
+            // First trade results in 9.085e17 of secondToken
+            expect(secondTokenOutput).to.be.eq("908591742545002306")
+
+            // Pool is imbalanced! Now trades from secondToken -> firstToken may be profitable in small sizes
+            // firstToken balance in the pool  : 2.00e18
+            // secondToken balance in the pool : 9.14e16
+            expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+            expect(await swap.getTokenBalance(1)).to.be.eq("91408257454997694")
+
+            // Assume no transactions occur during 2 weeks
+            await setTimestamp(
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
+            )
+
+            // Verify A has changed upwards
+            // 5000 -> 10000 (100%)
+            expect(await swap.getAPrecise()).to.be.eq(10000)
+
+            // Trade secondToken to firstToken, taking advantage of the imbalance and sudden change of A
+            const balanceBefore = await getUserTokenBalance(
+              attacker,
+              firstToken,
+            )
+            await swap
+              .connect(attacker)
+              .swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+            const firstTokenOutput = (
+              await getUserTokenBalance(attacker, firstToken)
+            ).sub(balanceBefore)
+
+            // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
+            expect(firstTokenOutput).to.be.eq("955743484403042509")
+
+            const finalAttackerBalances = await getUserTokenBalances(attacker, [
+              firstToken,
+              secondToken,
+            ])
+
+            expect(finalAttackerBalances[0]).to.be.lt(
+              initialAttackerBalances[0],
+            )
+            expect(finalAttackerBalances[1]).to.be.eq(
+              initialAttackerBalances[1],
+            )
+            expect(
+              initialAttackerBalances[0].sub(finalAttackerBalances[0]),
+            ).to.be.eq("44256515596957491")
+            expect(
+              initialAttackerBalances[1].sub(finalAttackerBalances[1]),
+            ).to.be.eq("0")
+            // Attacker lost 4.426e16 firstToken (4.426%)
+
+            // Check for pool balance changes
+            const finalPoolBalances = [
+              await swap.getTokenBalance(0),
+              await swap.getTokenBalance(1),
+            ]
+
+            expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
+            expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
+            expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
+              "44256515596957491",
+            )
+            expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
+              "0",
+            )
+            // Pool (liquidity providers) gained 4.426e16 firstToken (4.426% of firstToken balance of the pool)
+            // The attack did not benefit the attacker.
+          })
+        },
       )
 
-      let balanceBefore = await getTokenBalance(user1, secondToken)
-      await swap.connect(user1).swap(0, 1, String(1e18), 0, MAX_UINT256)
-      const secondTokenOutput = (await getTokenBalance(user1, secondToken)).sub(
-        balanceBefore,
+      describe(
+        "When token price is unequal: " +
+          "attacker 'resolves' the imbalance prior to A change, then recreates the imbalance.",
+        () => {
+          beforeEach(async () => {
+            // Set up pool to be imbalanced prior to the attack
+            await swap
+              .connect(user2)
+              .addLiquidity(
+                [String(0), String(2e18)],
+                0,
+                (await getCurrentBlockTimestamp()) + 60,
+              )
+
+            // Check current pool balances
+            initialPoolBalances = [
+              await swap.getTokenBalance(0),
+              await swap.getTokenBalance(1),
+            ]
+            expect(initialPoolBalances[0]).to.be.eq(String(1e18))
+            expect(initialPoolBalances[1]).to.be.eq(String(3e18))
+          })
+
+          it("Attack fails with 900 seconds between blocks", async () => {
+            // Swap 1e18 of firstToken to secondToken, resolving imbalance in the pool
+            await swap
+              .connect(attacker)
+              .swap(0, 1, String(1e18), 0, MAX_UINT256)
+            const secondTokenOutput = (
+              await getUserTokenBalance(attacker, secondToken)
+            ).sub(initialAttackerBalances[1])
+
+            // First trade results in 1.012e18 of secondToken
+            // Because the pool was imbalanced in the beginning, this trade results in more than 1e18 secondToken
+            expect(secondTokenOutput).to.be.eq("1011933251060681353")
+
+            // Pool is now almost balanced!
+            // firstToken balance in the pool  : 2.000e18
+            // secondToken balance in the pool : 1.988e18
+            expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+            expect(await swap.getTokenBalance(1)).to.be.eq(
+              "1988066748939318647",
+            )
+
+            // Malicious miner skips 900 seconds
+            await setTimestamp((await getCurrentBlockTimestamp()) + 900)
+
+            // Verify A has changed upwards
+            // 5000 -> 5003 (0.06%)
+            expect(await swap.getAPrecise()).to.be.eq(5003)
+
+            // Trade secondToken to firstToken, taking advantage of the imbalance and sudden change of A
+            const balanceBefore = await getUserTokenBalance(
+              attacker,
+              firstToken,
+            )
+            await swap
+              .connect(attacker)
+              .swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+            const firstTokenOutput = (
+              await getUserTokenBalance(attacker, firstToken)
+            ).sub(balanceBefore)
+
+            // If firstTokenOutput > 1e18, the attacker leaves with more firstToken than the start.
+            expect(firstTokenOutput).to.be.eq("995695076343373004")
+
+            const finalAttackerBalances = await getUserTokenBalances(attacker, [
+              firstToken,
+              secondToken,
+            ])
+
+            expect(finalAttackerBalances[0]).to.be.lt(
+              initialAttackerBalances[0],
+            )
+            expect(finalAttackerBalances[1]).to.be.eq(
+              initialAttackerBalances[1],
+            )
+            expect(
+              initialAttackerBalances[0].sub(finalAttackerBalances[0]),
+            ).to.be.eq("4304923656626996")
+            expect(
+              initialAttackerBalances[1].sub(finalAttackerBalances[1]),
+            ).to.be.eq("0")
+            // Attacker lost 4.305e15 firstToken (0.4305%)
+
+            // Check for pool balance changes
+            const finalPoolBalances = []
+            finalPoolBalances.push(await swap.getTokenBalance(0))
+            finalPoolBalances.push(await swap.getTokenBalance(1))
+
+            expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
+            expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
+            expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
+              "4304923656626996",
+            )
+            expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
+              "0",
+            )
+            // Pool (liquidity providers) gained 4.305e15 firstToken (0.4305% of firstToken balance)
+            // The attack did not benefit the attacker.
+          })
+
+          it("Attack succeeds with 2 weeks between transactions (mimics rapid A change)", async () => {
+            // This test assumes there are no other transactions during the 2 weeks period of ramping up.
+            // Purpose of this test case is to mimic rapid ramp up of A.
+
+            // Swap 1e18 of firstToken to secondToken, resolving the imbalance in the pool
+            await swap
+              .connect(attacker)
+              .swap(0, 1, String(1e18), 0, MAX_UINT256)
+            const secondTokenOutput = (
+              await getUserTokenBalance(attacker, secondToken)
+            ).sub(initialAttackerBalances[1])
+
+            // First trade results in 9.085e17 of secondToken
+            expect(secondTokenOutput).to.be.eq("1011933251060681353")
+
+            // Pool is now almost balanced!
+            // firstToken balance in the pool  : 2.000e18
+            // secondToken balance in the pool : 1.988e18
+            expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+            expect(await swap.getTokenBalance(1)).to.be.eq(
+              "1988066748939318647",
+            )
+
+            // Assume 2 weeks go by without any other transactions
+            // This mimics rapid change of A
+            await setTimestamp(
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
+            )
+
+            // Verify A has changed upwards
+            // 5000 -> 10000 (100%)
+            expect(await swap.getAPrecise()).to.be.eq(10000)
+
+            // Trade secondToken to firstToken, taking advantage of the imbalance and sudden change of A
+            const balanceBefore = await getUserTokenBalance(
+              attacker,
+              firstToken,
+            )
+            await swap
+              .connect(attacker)
+              .swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+            const firstTokenOutput = (
+              await getUserTokenBalance(attacker, firstToken)
+            ).sub(balanceBefore)
+
+            // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
+            expect(firstTokenOutput).to.be.eq("1004298818514364451")
+            // Attack was successful!
+
+            const finalAttackerBalances = await getUserTokenBalances(attacker, [
+              firstToken,
+              secondToken,
+            ])
+
+            expect(initialAttackerBalances[0]).to.be.lt(
+              finalAttackerBalances[0],
+            )
+            expect(initialAttackerBalances[1]).to.be.eq(
+              finalAttackerBalances[1],
+            )
+            expect(
+              finalAttackerBalances[0].sub(initialAttackerBalances[0]),
+            ).to.be.eq("4298818514364451")
+            expect(
+              finalAttackerBalances[1].sub(initialAttackerBalances[1]),
+            ).to.be.eq("0")
+            // Attacker gained 4.430e15 firstToken (0.430%)
+
+            // Check for pool balance changes
+            const finalPoolBalances = [
+              await swap.getTokenBalance(0),
+              await swap.getTokenBalance(1),
+            ]
+
+            expect(finalPoolBalances[0]).to.be.lt(initialPoolBalances[0])
+            expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
+            expect(initialPoolBalances[0].sub(finalPoolBalances[0])).to.be.eq(
+              "4298818514364451",
+            )
+            expect(initialPoolBalances[1].sub(finalPoolBalances[1])).to.be.eq(
+              "0",
+            )
+            // Pool (liquidity providers) lost 4.430e15 firstToken (0.430% of firstToken balance)
+
+            // The attack benefited the attacker.
+            // Note that this attack is only possible when there are no swaps happening during the 2 weeks ramp period.
+          })
+        },
       )
-
-      // Malicious miner skips 900 seconds
-      await setTimestamp((await getCurrentBlockTimestamp()) + 900)
-
-      balanceBefore = await getTokenBalance(user1, firstToken)
-      await swap.connect(user1).swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
-      const firstTokenOutput = (await getTokenBalance(user1, firstToken)).sub(
-        balanceBefore,
-      )
-
-      // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
-      expect(firstTokenOutput).to.be.eq("996163590871508612")
     })
 
-    it("Rogue miner attacks while A is ramping downwards", async () => {
-      // This attack is achieved by creating imbalance in the first block then
-      // trading in reverse direction in the second block.
+    describe("Check for attacks while A is ramping downwards", () => {
+      let initialAttackerBalances: BigNumber[] = []
+      let initialPoolBalances: BigNumber[] = []
+      let attacker: Signer
 
-      // Start ramp downwards
-      await swap.rampA(
-        25,
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+      beforeEach(async () => {
+        // Set up the downward ramp A
+        attacker = user1
+
+        initialAttackerBalances = await getUserTokenBalances(attacker, [
+          firstToken,
+          secondToken,
+        ])
+
+        expect(initialAttackerBalances[0]).to.be.eq(String(1e20))
+        expect(initialAttackerBalances[1]).to.be.eq(String(1e20))
+
+        // Start ramp downwards
+        await swap.rampA(
+          25,
+          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+        )
+        expect(await swap.getAPrecise()).to.be.eq(5000)
+
+        // Check current pool balances
+        initialPoolBalances = [
+          await swap.getTokenBalance(0),
+          await swap.getTokenBalance(1),
+        ]
+        expect(initialPoolBalances[0]).to.be.eq(String(1e18))
+        expect(initialPoolBalances[1]).to.be.eq(String(1e18))
+      })
+
+      describe(
+        "When tokens are priced equally: " +
+          "attacker creates massive imbalance prior to A change, and resolves it after",
+        () => {
+          // This attack is achieved by creating imbalance in the first block then
+          // trading in reverse direction in the second block.
+
+          it("Attack fails with 900 seconds between blocks", async () => {
+            // Swap 1e18 of firstToken to secondToken, causing massive imbalance in the pool
+            await swap
+              .connect(attacker)
+              .swap(0, 1, String(1e18), 0, MAX_UINT256)
+            const secondTokenOutput = (
+              await getUserTokenBalance(attacker, secondToken)
+            ).sub(initialAttackerBalances[1])
+
+            // First trade results in 9.085e17 of secondToken
+            expect(secondTokenOutput).to.be.eq("908591742545002306")
+
+            // Pool is imbalanced! Now trades from secondToken -> firstToken may be profitable in small sizes
+            // firstToken balance in the pool  : 2.00e18
+            // secondToken balance in the pool : 9.14e16
+            expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+            expect(await swap.getTokenBalance(1)).to.be.eq("91408257454997694")
+
+            // Malicious miner skips 900 seconds
+            await setTimestamp((await getCurrentBlockTimestamp()) + 900)
+
+            // Verify A has changed downwards
+            expect(await swap.getAPrecise()).to.be.eq(4999)
+
+            const balanceBefore = await getUserTokenBalance(
+              attacker,
+              firstToken,
+            )
+            await swap
+              .connect(attacker)
+              .swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+            const firstTokenOutput = (
+              await getUserTokenBalance(attacker, firstToken)
+            ).sub(balanceBefore)
+
+            // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
+            expect(firstTokenOutput).to.be.eq("980075920971645669")
+
+            const finalAttackerBalances = await getUserTokenBalances(attacker, [
+              firstToken,
+              secondToken,
+            ])
+
+            // Check for attacker's balance changes
+            expect(finalAttackerBalances[0]).to.be.lt(
+              initialAttackerBalances[0],
+            )
+            expect(finalAttackerBalances[1]).to.be.eq(
+              initialAttackerBalances[1],
+            )
+            expect(
+              initialAttackerBalances[0].sub(finalAttackerBalances[0]),
+            ).to.be.eq("19924079028354331")
+            expect(
+              initialAttackerBalances[1].sub(finalAttackerBalances[1]),
+            ).to.be.eq("0")
+            // Attacker lost 1.992e16 firstToken (1.992% of initial deposit)
+
+            // Check for pool balance changes
+            const finalPoolBalances = [
+              await swap.getTokenBalance(0),
+              await swap.getTokenBalance(1),
+            ]
+
+            expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
+            expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
+            expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
+              "19924079028354331",
+            )
+            expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
+              "0",
+            )
+            // Pool (liquidity providers) gained 1.992e16 firstToken (1.992% of firstToken balance)
+
+            // The attack did not benefit the attacker.
+          })
+
+          it("Attack succeeds with 2 weeks between transactions (mimics rapid A change)", async () => {
+            // This test assumes there are no other transactions during the 2 weeks period of ramping down.
+            // Purpose of this test is to show how dangerous rapid A ramp is.
+
+            // Swap 1e18 of firstToken to secondToken, causing massive imbalance in the pool
+            await swap
+              .connect(attacker)
+              .swap(0, 1, String(1e18), 0, MAX_UINT256)
+            const secondTokenOutput = (
+              await getUserTokenBalance(attacker, secondToken)
+            ).sub(initialAttackerBalances[1])
+
+            // First trade results in 9.085e17 of secondToken
+            expect(secondTokenOutput).to.be.eq("908591742545002306")
+
+            // Pool is imbalanced! Now trades from secondToken -> firstToken may be profitable in small sizes
+            // firstToken balance in the pool  : 2.00e18
+            // secondToken balance in the pool : 9.14e16
+            expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+            expect(await swap.getTokenBalance(1)).to.be.eq("91408257454997694")
+
+            // Assume no transactions occur during 2 weeks ramp time
+            await setTimestamp(
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
+            )
+
+            // Verify A has changed downwards
+            expect(await swap.getAPrecise()).to.be.eq(2500)
+
+            const balanceBefore = await getUserTokenBalance(
+              attacker,
+              firstToken,
+            )
+            await swap
+              .connect(attacker)
+              .swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+            const firstTokenOutput = (
+              await getUserTokenBalance(attacker, firstToken)
+            ).sub(balanceBefore)
+
+            // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
+            expect(firstTokenOutput).to.be.eq("1066252480054180588")
+
+            const finalAttackerBalances = await getUserTokenBalances(attacker, [
+              firstToken,
+              secondToken,
+            ])
+
+            // Check for attacker's balance changes
+            expect(finalAttackerBalances[0]).to.be.gt(
+              initialAttackerBalances[0],
+            )
+            expect(finalAttackerBalances[1]).to.be.eq(
+              initialAttackerBalances[1],
+            )
+            expect(
+              finalAttackerBalances[0].sub(initialAttackerBalances[0]),
+            ).to.be.eq("66252480054180588")
+            expect(
+              finalAttackerBalances[1].sub(initialAttackerBalances[1]),
+            ).to.be.eq("0")
+            // Attacker gained 6.625e16 firstToken (6.625% of initial deposit)
+
+            // Check for pool balance changes
+            const finalPoolBalances = [
+              await swap.getTokenBalance(0),
+              await swap.getTokenBalance(1),
+            ]
+
+            expect(finalPoolBalances[0]).to.be.lt(initialPoolBalances[0])
+            expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
+            expect(initialPoolBalances[0].sub(finalPoolBalances[0])).to.be.eq(
+              "66252480054180588",
+            )
+            expect(initialPoolBalances[1].sub(finalPoolBalances[1])).to.be.eq(
+              "0",
+            )
+            // Pool (liquidity providers) lost 6.625e16 firstToken (6.625% of firstToken balance)
+
+            // The attack was successful. The change of A (-50%) gave the attacker a chance to swap
+            // more efficiently. The swap fee (0.1%) was not sufficient to counter the efficient trade, giving
+            // the attacker more tokens than initial deposit.
+          })
+        },
       )
 
-      let balanceBefore = await getTokenBalance(user1, secondToken)
-      await swap.connect(user1).swap(0, 1, String(1e18), 0, MAX_UINT256)
-      const secondTokenOutput = (await getTokenBalance(user1, secondToken)).sub(
-        balanceBefore,
+      describe(
+        "When token price is unequal: " +
+          "attacker 'resolves' the imbalance prior to A change, then recreates the imbalance.",
+        () => {
+          beforeEach(async () => {
+            // Set up pool to be imbalanced prior to the attack
+            await swap
+              .connect(user2)
+              .addLiquidity(
+                [String(0), String(2e18)],
+                0,
+                (await getCurrentBlockTimestamp()) + 60,
+              )
+
+            // Check current pool balances
+            initialPoolBalances = [
+              await swap.getTokenBalance(0),
+              await swap.getTokenBalance(1),
+            ]
+            expect(initialPoolBalances[0]).to.be.eq(String(1e18))
+            expect(initialPoolBalances[1]).to.be.eq(String(3e18))
+          })
+
+          it("Attack fails with 900 seconds between blocks", async () => {
+            // Swap 1e18 of firstToken to secondToken, resolving imbalance in the pool
+            await swap
+              .connect(attacker)
+              .swap(0, 1, String(1e18), 0, MAX_UINT256)
+            const secondTokenOutput = (
+              await getUserTokenBalance(attacker, secondToken)
+            ).sub(initialAttackerBalances[1])
+
+            // First trade results in 1.012e18 of secondToken
+            // Because the pool was imbalanced in the beginning, this trade results in more than 1e18 secondToken
+            expect(secondTokenOutput).to.be.eq("1011933251060681353")
+
+            // Pool is now almost balanced!
+            // firstToken balance in the pool  : 2.000e18
+            // secondToken balance in the pool : 1.988e18
+            expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+            expect(await swap.getTokenBalance(1)).to.be.eq(
+              "1988066748939318647",
+            )
+
+            // Malicious miner skips 900 seconds
+            await setTimestamp((await getCurrentBlockTimestamp()) + 900)
+
+            // Verify A has changed downwards
+            expect(await swap.getAPrecise()).to.be.eq(4999)
+
+            const balanceBefore = await getUserTokenBalance(
+              attacker,
+              firstToken,
+            )
+            await swap
+              .connect(attacker)
+              .swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+            const firstTokenOutput = (
+              await getUserTokenBalance(attacker, firstToken)
+            ).sub(balanceBefore)
+
+            // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
+            expect(firstTokenOutput).to.be.eq("959937181481987920")
+
+            const finalAttackerBalances = await getUserTokenBalances(attacker, [
+              firstToken,
+              secondToken,
+            ])
+
+            // Check for attacker's balance changes
+            expect(finalAttackerBalances[0]).to.be.lt(
+              initialAttackerBalances[0],
+            )
+            expect(finalAttackerBalances[1]).to.be.eq(
+              initialAttackerBalances[1],
+            )
+            expect(
+              initialAttackerBalances[0].sub(finalAttackerBalances[0]),
+            ).to.be.eq("40062818518012080")
+            expect(
+              initialAttackerBalances[1].sub(finalAttackerBalances[1]),
+            ).to.be.eq("0")
+            // Attacker lost 4.006e16 firstToken (4.006% of initial deposit)
+
+            // Check for pool balance changes
+            const finalPoolBalances = [
+              await swap.getTokenBalance(0),
+              await swap.getTokenBalance(1),
+            ]
+
+            expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
+            expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
+            expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
+              "40062818518012080",
+            )
+            expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
+              "0",
+            )
+            // Pool (liquidity providers) gained 4.006e16 firstToken (4.006% of firstToken balance)
+            // The attack did not benefit the attacker.
+          })
+
+          it("Attack fails with 2 weeks between transactions (mimics rapid A change)", async () => {
+            // This test assumes there are no other transactions during the 2 weeks period of ramping down.
+            // Purpose of this test case is to mimic rapid ramp down of A.
+
+            // Swap 1e18 of firstToken to secondToken, resolving imbalance in the pool
+            await swap
+              .connect(attacker)
+              .swap(0, 1, String(1e18), 0, MAX_UINT256)
+            const secondTokenOutput = (
+              await getUserTokenBalance(attacker, secondToken)
+            ).sub(initialAttackerBalances[1])
+
+            // First trade results in 1.012e18 of secondToken
+            // Because the pool was imbalanced in the beginning, this trade results in more than 1e18 secondToken
+            expect(secondTokenOutput).to.be.eq("1011933251060681353")
+
+            // Pool is now almost balanced!
+            // firstToken balance in the pool  : 2.000e18
+            // secondToken balance in the pool : 1.988e18
+            expect(await swap.getTokenBalance(0)).to.be.eq(String(2e18))
+            expect(await swap.getTokenBalance(1)).to.be.eq(
+              "1988066748939318647",
+            )
+
+            // Assume no other transactions occur during the 2 weeks ramp period
+            await setTimestamp(
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
+            )
+
+            // Verify A has changed downwards
+            expect(await swap.getAPrecise()).to.be.eq(2500)
+
+            const balanceBefore = await getUserTokenBalance(
+              attacker,
+              firstToken,
+            )
+            await swap
+              .connect(attacker)
+              .swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
+            const firstTokenOutput = (
+              await getUserTokenBalance(attacker, firstToken)
+            ).sub(balanceBefore)
+
+            // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
+            expect(firstTokenOutput).to.be.eq("986318317546604072")
+            // Attack was not successful
+
+            const finalAttackerBalances = await getUserTokenBalances(attacker, [
+              firstToken,
+              secondToken,
+            ])
+
+            // Check for attacker's balance changes
+            expect(finalAttackerBalances[0]).to.be.lt(
+              initialAttackerBalances[0],
+            )
+            expect(finalAttackerBalances[1]).to.be.eq(
+              initialAttackerBalances[1],
+            )
+            expect(
+              initialAttackerBalances[0].sub(finalAttackerBalances[0]),
+            ).to.be.eq("13681682453395928")
+            expect(
+              initialAttackerBalances[1].sub(finalAttackerBalances[1]),
+            ).to.be.eq("0")
+            // Attacker lost 1.368e16 firstToken (1.368% of initial deposit)
+
+            // Check for pool balance changes
+            const finalPoolBalances = [
+              await swap.getTokenBalance(0),
+              await swap.getTokenBalance(1),
+            ]
+
+            expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
+            expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
+            expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
+              "13681682453395928",
+            )
+            expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
+              "0",
+            )
+            // Pool (liquidity providers) gained 1.368e16 firstToken (1.368% of firstToken balance)
+            // The attack did not benefit the attacker
+          })
+        },
       )
-
-      // Malicious miner skips 900 seconds
-      await setTimestamp((await getCurrentBlockTimestamp()) + 900)
-
-      balanceBefore = await getTokenBalance(user1, firstToken)
-      await swap.connect(user1).swap(1, 0, secondTokenOutput, 0, MAX_UINT256)
-      const firstTokenOutput = (await getTokenBalance(user1, firstToken)).sub(
-        balanceBefore,
-      )
-
-      // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
-      expect(firstTokenOutput).to.be.eq("980075920971645669")
     })
   })
 })
