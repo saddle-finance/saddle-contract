@@ -63,7 +63,7 @@ describe("Swap with 4 tokens", () => {
   const SWAP_FEE = 1e7
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
-  const TOKENS: ERC20[] = []
+  const TOKENS: GenericErc20[] = []
 
   beforeEach(async () => {
     TOKENS.length = 0
