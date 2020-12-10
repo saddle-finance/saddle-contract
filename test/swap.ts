@@ -1685,14 +1685,14 @@ describe("Swap", () => {
     // If the last deposit was more than 4 weeks prior to the fee increase, fee should be 0.
     //
     // - When fee is increased from x% to y%, where x > 0
-    // Discounts from past deposits should apply accordingly and total fee should increase by rate of (y/x)
+    // Discounts from past deposits should apply accordingly and total fee should increase by rate of (y/x).
     //
     // [Cases when withdraw fee is decreased]
     // - When fee is decreased to 0
     // Fee should be 0 regardless when the user last deposited.
     //
     // - When fee is decreased from x% to y%, where y > 0
-    // Discounts from past deposits should apply accordingly but total fee is decreased by rate of (y/x)
+    // Discounts from past deposits should apply accordingly and total fee should decrease by rate of (y/x).
 
     it("Increase withdraw fee from 0% to 0.5%, immediately after last deposit", async () => {
       // User 2 adds liquidity once when fee is 0%
