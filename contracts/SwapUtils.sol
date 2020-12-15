@@ -191,9 +191,10 @@ library SwapUtils {
 
     /**
      * @notice Calculate the dy and fee of withdrawing in one token
+     * @param account the address that is withdrawing
      * @param tokenAmount the amount to withdraw in the pool's precision
      * @param tokenIndex which token will be withdrawn
-     * @return the dy and the associated admin fee
+     * @return the dy and the associated swap fee
      */
     function calculateWithdrawOneToken(
         Swap storage self, address account, uint256 tokenAmount, uint8 tokenIndex
