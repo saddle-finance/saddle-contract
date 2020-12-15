@@ -233,38 +233,41 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *
      * @dev This shouldn't be used outside frontends for user estimates.
      *
+     * @param account address that is depositing or withdrawing tokens
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
      * pooled token's native precision
      * @param deposit whether this is a deposit or a withdrawal
      * @return token amount the user will receive
      */
-    function calculateTokenAmount(uint256[] calldata amounts, bool deposit)
+    function calculateTokenAmount(address account, uint256[] calldata amounts, bool deposit)
     external view returns(uint256) {
-        return swapStorage.calculateTokenAmount(amounts, deposit);
+        return swapStorage.calculateTokenAmount(account, amounts, deposit);
     }
 
     /**
      * @notice A simple method to calculate amount of each underlying
      * tokens that is returned upon burning given amount of LP tokens
+     * @param account the address that is withdrawing tokens
      * @param amount the amount of LP tokens that would be burned on withdrawal
      * @return array of balances of tokens that user will receive
      */
-    function calculateRemoveLiquidity(uint256 amount) external view returns (uint256[] memory) {
-        return swapStorage.calculateRemoveLiquidity(amount);
+    function calculateRemoveLiquidity(address account, uint256 amount) external view returns (uint256[] memory) {
+        return swapStorage.calculateRemoveLiquidity(account, amount);
     }
 
     /**
      * @notice Calculate the amount of underlying token available to withdraw
      * when withdrawing via only single token
+     * @param account the address that is withdrawing tokens
      * @param tokenAmount the amount of LP token to burn
      * @param tokenIndex index of which token will be withdrawn
      * @return availableTokenAmount calculated amount of underlying token
      * available to withdraw
      */
-    function calculateRemoveLiquidityOneToken(uint256 tokenAmount, uint8 tokenIndex
+    function calculateRemoveLiquidityOneToken(address account, uint256 tokenAmount, uint8 tokenIndex
     ) external view returns (uint256 availableTokenAmount) {
-        (availableTokenAmount, ) = swapStorage.calculateWithdrawOneToken(tokenAmount, tokenIndex);
+        (availableTokenAmount, ) = swapStorage.calculateWithdrawOneToken(account, tokenAmount, tokenIndex);
     }
 
     /**

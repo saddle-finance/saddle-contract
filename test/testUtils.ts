@@ -7,6 +7,7 @@ import { Erc20 as ERC20 } from "../build/typechain/Erc20"
 import { Swap } from "../build/typechain/Swap"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 export enum TIME {
   SECONDS = 1,
