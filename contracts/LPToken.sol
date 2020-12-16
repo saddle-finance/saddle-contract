@@ -1,6 +1,5 @@
 pragma solidity 0.5.17;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
@@ -11,7 +10,7 @@ import "./interfaces/ISwap.sol";
  * @notice This token is an ERC20 detailed token with added capability to be minted by the owner.
  * It is used to represent user's shares when providing liquidity to swap contracts.
  */
-contract LPToken is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
+contract LPToken is ERC20Detailed, ERC20Burnable, Ownable {
     ISwap public swap;
 
     /**
