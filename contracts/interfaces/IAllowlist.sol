@@ -1,4 +1,4 @@
-pragma solidity 0.5.17;
+pragma solidity 0.7.6;
 
 interface IAllowlist {
     function getAllowedAmount(address poolAddress, address user) external view returns (uint256);

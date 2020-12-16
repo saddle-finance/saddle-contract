@@ -1,4 +1,4 @@
-pragma solidity 0.5.17;
+pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -85,7 +85,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         IERC20[] memory _pooledTokens, uint256[] memory precisions,
         string memory lpTokenName, string memory lpTokenSymbol, uint256 _A,
         uint256 _fee, uint256 _adminFee, uint256 _withdrawFee, IAllowlist _allowlist
-    ) public OwnerPausable() ReentrancyGuard() {
+    ) OwnerPausable() ReentrancyGuard() {
         require(
             _pooledTokens.length > 1,
             "Pools must contain more than 1 token"
@@ -108,26 +108,24 @@ contract Swap is OwnerPausable, ReentrancyGuard {
                 "The 0 address isn't an ERC-20"
             );
             require(
-                precisions[i] <= 10 ** uint256(SwapUtils.getPoolPrecisionDecimals()),
+                precisions[i] <= 10 ** uint256(SwapUtils.POOL_PRECISION_DECIMALS),
                 "Token precision can't be higher than the pool precision"
             );
-            precisions[i] = (10 ** uint256(SwapUtils.getPoolPrecisionDecimals())).div(precisions[i]);
+            precisions[i] = (10 ** uint256(SwapUtils.POOL_PRECISION_DECIMALS)).div(precisions[i]);
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
-        swapStorage = SwapUtils.Swap({
-            lpToken: new LPToken(lpTokenName, lpTokenSymbol, SwapUtils.getPoolPrecisionDecimals()),
-            pooledTokens: _pooledTokens,
-            tokenPrecisionMultipliers: precisions,
-            balances: new uint256[](_pooledTokens.length),
-            initialA: _A.mul(SwapUtils.getAPrecision()),
-            futureA: _A.mul(SwapUtils.getAPrecision()),
-            initialATime: 0,
-            futureATime: 0,
-            swapFee: _fee,
-            adminFee: _adminFee,
-            defaultWithdrawFee: _withdrawFee
-        });
+        swapStorage.lpToken = new LPToken(lpTokenName, lpTokenSymbol, SwapUtils.POOL_PRECISION_DECIMALS);
+        swapStorage.pooledTokens = _pooledTokens;
+        swapStorage.tokenPrecisionMultipliers = precisions;
+        swapStorage.balances = new uint256[](_pooledTokens.length);
+        swapStorage.initialA = _A.mul(SwapUtils.A_PRECISION);
+        swapStorage.futureA = _A.mul(SwapUtils.A_PRECISION);
+        swapStorage.initialATime = 0;
+        swapStorage.futureATime = 0;
+        swapStorage.swapFee = _fee;
+        swapStorage.adminFee = _adminFee;
+        swapStorage.defaultWithdrawFee = _withdrawFee;
 
         allowlist = _allowlist;
         require(allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e), "Allowlist check failed");

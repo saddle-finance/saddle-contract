@@ -1,9 +1,8 @@
-pragma solidity 0.5.17;
+pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/ISwap.sol";
 
 /**
@@ -11,7 +10,8 @@ import "./interfaces/ISwap.sol";
  * @notice This token is an ERC20 detailed token with added capability to be minted by the owner.
  * It is used to represent user's shares when providing liquidity to swap contracts.
  */
-contract LPToken is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
+contract LPToken is ERC20Burnable, Ownable {
+    using SafeMath for uint256;
     ISwap public swap;
 
     /**
@@ -22,7 +22,8 @@ contract LPToken is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
      * @param decimals_ number of decimals this token will be based on
      */
     constructor (string memory name_, string memory symbol_, uint8 decimals_
-    ) public ERC20Detailed(name_, symbol_, decimals_) {
+    ) ERC20(name_, symbol_) {
+        _setupDecimals(decimals_);
         swap = ISwap(_msgSender());
     }
 
@@ -37,13 +38,13 @@ contract LPToken is ERC20, ERC20Detailed, ERC20Burnable, Ownable {
         _mint(recipient, amount);
     }
 
-    function transfer(address recipient, uint256 amount) public returns (bool) {
+    function transfer(address recipient, uint256 amount) public override returns (bool) {
         swap.updateUserWithdrawFee(recipient, amount);
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
         swap.updateUserWithdrawFee(recipient, amount);
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), allowance(sender, _msgSender()).sub(amount, "ERC20: transfer amount exceeds allowance"));

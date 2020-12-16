@@ -1,6 +1,6 @@
-pragma solidity 0.5.17;
+pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/IAllowlist.sol";
 
@@ -27,7 +27,7 @@ contract Allowlist is Ownable, IAllowlist {
      * @notice Creates this contract and sets PoolCap of 0x0 with uint256(0x54dd1e) for
      * crude checking whether an address holds this contract
      */
-    constructor() public {
+    constructor() {
         // This value will be used as a way of crude checking whether an address holds this Allowlist contract
         poolCaps[address(0x0)] = uint256(0x54dd1e);
         emit PoolCap(address(0x0), uint256(0x54dd1e));
@@ -38,7 +38,7 @@ contract Allowlist is Ownable, IAllowlist {
      * @param poolAddress address of the pool
      * @param user address of the user
      */
-    function getAllowedAmount(address poolAddress, address user) external view returns (uint256) {
+    function getAllowedAmount(address poolAddress, address user) external override view returns (uint256) {
         return accountLimits[poolAddress].mul(multipliers[user]).div(DENOMINATOR);
     }
 
@@ -46,7 +46,7 @@ contract Allowlist is Ownable, IAllowlist {
      * @notice Returns the TVL cap for given pool address.
      * @param poolAddress address of the pool
      */
-    function getPoolCap(address poolAddress) external view returns (uint256) {
+    function getPoolCap(address poolAddress) external override view returns (uint256) {
         return poolCaps[poolAddress];
     }
 
