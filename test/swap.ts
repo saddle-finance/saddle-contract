@@ -1708,6 +1708,253 @@ describe("Swap", () => {
     })
   })
 
+  describe("Verify changing withdraw fee works as expected", async () => {
+    // This test ensures that changing withdraw fee impacts deposits made in the past
+    //
+    // [Cases when withdraw fee is increased]
+    // - When fee is increased from 0
+    // Current balance and last deposit time is used for fee calculation.
+    // Therefore the fee decays from full amount since the last deposit.
+    // If the last deposit was more than 4 weeks prior to the fee increase, fee should be 0.
+    //
+    // - When fee is increased from x% to y%, where x > 0
+    // Discounts from past deposits should apply accordingly and total fee should increase by rate of (y/x).
+    //
+    // [Cases when withdraw fee is decreased]
+    // - When fee is decreased to 0
+    // Fee should be 0 regardless when the user last deposited.
+    //
+    // - When fee is decreased from x% to y%, where y > 0
+    // Discounts from past deposits should apply accordingly and total fee should decrease by rate of (y/x).
+
+    it("Increase withdraw fee from 0% to 0.5%, immediately after last deposit", async () => {
+      // User 2 adds liquidity once when fee is 0%
+      await swap
+        .connect(user2)
+        .addLiquidity(
+          [String(1e18), String(1e18)],
+          0,
+          (await getCurrentBlockTimestamp()) + 60,
+        )
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+
+      // User 2 adds liquidity again at 2 weeks time
+      const nextTimestamp = (await getCurrentBlockTimestamp()) + TIME.WEEKS * 2
+      await setNextTimestamp(nextTimestamp)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e18), String(1e18)], 0, nextTimestamp + 60)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+
+      // Fee is updated to 0.5%
+      await swap.setDefaultWithdrawFee(String(5e7))
+
+      // Fee should linearly decay from 0.5% to 0% since the last deposit
+      // (Fee is bit less than 0.5% because `swap.setDefaultWithdrawFee` is called one block after the last deposit)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        49999979,
+      )
+
+      // 2 weeks pass
+      // Fee should be around 2.5e7
+      await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        24999979,
+      )
+    })
+
+    it("Increase withdraw fee from 0% to 0.5%, 2 weeks after last deposit", async () => {
+      // User 2 adds liquidity once when fee is 0%
+      await swap
+        .connect(user2)
+        .addLiquidity(
+          [String(1e18), String(1e18)],
+          0,
+          (await getCurrentBlockTimestamp()) + 60,
+        )
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+
+      // User 2 adds liquidity again at 2 weeks time
+      let nextTimestamp = (await getCurrentBlockTimestamp()) + TIME.WEEKS * 2
+      await setNextTimestamp(nextTimestamp)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e18), String(1e18)], 0, nextTimestamp + 60)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+
+      // After 2 weeks since last deposit Fee is updated to 0.5%
+      nextTimestamp = (await getCurrentBlockTimestamp()) + TIME.WEEKS * 2
+      await setNextTimestamp(nextTimestamp)
+      await swap.setDefaultWithdrawFee(String(5e7))
+
+      // Since 2 weeks is already past, fee should linearly decay from 0.25% to 0% over 2 weeks
+      // Fee should start aat 0.25% and decay to 0% linearly over the next 2 weeks
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        25000000,
+      )
+
+      // 2 weeks pass
+      // Fee should be 0
+      await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+    })
+
+    it("Increase withdraw fee from 0% to 0.5%, 4 weeks after last deposit", async () => {
+      // User 2 adds liquidity once when fee is 0%
+      await swap
+        .connect(user2)
+        .addLiquidity(
+          [String(1e18), String(1e18)],
+          0,
+          (await getCurrentBlockTimestamp()) + 60,
+        )
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+
+      // User 2 adds liquidity again at 2 weeks time
+      let nextTimestamp = (await getCurrentBlockTimestamp()) + TIME.WEEKS * 2
+      await setNextTimestamp(nextTimestamp)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e18), String(1e18)], 0, nextTimestamp + 60)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+
+      // After 4 weeks since last deposit, fee is updated to 0.5%
+      nextTimestamp = (await getCurrentBlockTimestamp()) + TIME.WEEKS * 4
+      await setNextTimestamp(nextTimestamp)
+      await swap.setDefaultWithdrawFee(String(5e7))
+
+      // Since 4 weeks is already past since last deposit, fee should be 0.
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+    })
+
+    it("Increase withdraw fee from 0.5% to 1%", async () => {
+      await swap.setDefaultWithdrawFee(String(5e7))
+
+      // User 2 adds liquidity once when fee is 0.5%
+      await swap
+        .connect(user2)
+        .addLiquidity(
+          [String(1e18), String(1e18)],
+          0,
+          (await getCurrentBlockTimestamp()) + 60,
+        )
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        50000000,
+      )
+
+      // User 2 adds liquidity again at 2 weeks time
+      // First deposit is discounted to half. Full fee is applied to second deposit
+      // Total withdraw fee should come out to 0.375%
+      // ((1e18 * 0.25%) + (1e18 * 0.5%)) / 2e18 = 0.375%
+      const nextTimestamp = (await getCurrentBlockTimestamp()) + TIME.WEEKS * 2
+      await setNextTimestamp(nextTimestamp)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e18), String(1e18)], 0, nextTimestamp + 60)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        37500000,
+      )
+
+      // Fee is updated to 1%
+      // Same math should apply as before but with base fee of 1%
+      // ((1e18 * 0.5%) + (1e18 * 1%)) / 2e18 = 0.75%
+      await swap.setDefaultWithdrawFee(String(1e8))
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        74999968,
+      )
+
+      // 2 weeks pass
+      // Fee should be around 2.5e7
+      await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        37499968,
+      )
+    })
+
+    it("Decrease withdraw fee from 0.5% to 0%", async () => {
+      await swap.setDefaultWithdrawFee(String(5e7))
+
+      // User 2 adds liquidity once when fee is 0.5%
+      await swap
+        .connect(user2)
+        .addLiquidity(
+          [String(1e18), String(1e18)],
+          0,
+          (await getCurrentBlockTimestamp()) + 60,
+        )
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        50000000,
+      )
+
+      // User 2 adds liquidity again at 2 weeks time
+      // First deposit is discounted to half. Full fee is applied to second deposit
+      // Total withdraw fee should come out to 0.375%
+      // ((1e18 * 0.25%) + (1e18 * 0.5%)) / 2e18 = 0.375%
+      const nextTimestamp = (await getCurrentBlockTimestamp()) + TIME.WEEKS * 2
+      await setNextTimestamp(nextTimestamp)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e18), String(1e18)], 0, nextTimestamp + 60)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        37500000,
+      )
+
+      // Fee is updated to 0%
+      await swap.setDefaultWithdrawFee(String(0))
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+
+      // 2 weeks pass
+      await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+    })
+
+    it("Decrease withdraw fee from 1% to 0.5%", async () => {
+      await swap.setDefaultWithdrawFee(String(1e8))
+
+      // User 2 adds liquidity once when fee is 1%
+      await swap
+        .connect(user2)
+        .addLiquidity(
+          [String(1e18), String(1e18)],
+          0,
+          (await getCurrentBlockTimestamp()) + 60,
+        )
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        100000000,
+      )
+
+      // User 2 adds liquidity again at 2 weeks time
+      // First deposit is discounted to half. Full fee is applied to second deposit
+      // Total withdraw fee should come out to 0.75%
+      // ((1e18 * 0.5%) + (1e18 * 1%)) / 2e18 = 0.75%
+      const nextTimestamp = (await getCurrentBlockTimestamp()) + TIME.WEEKS * 2
+      await setNextTimestamp(nextTimestamp)
+      await swap
+        .connect(user2)
+        .addLiquidity([String(1e18), String(1e18)], 0, nextTimestamp + 60)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        75000000,
+      )
+
+      // Fee is decreased to 0.5%
+      // Fee should decrease by half
+      await swap.setDefaultWithdrawFee(String(5e7))
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        37499984,
+      )
+
+      // 2 weeks pass
+      await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
+        18749984,
+      )
+
+      // 2 weeks pass. This is 4 weeks mark since last deposit. Fee should be 0.
+      await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
+      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(0)
+    })
+  })
+
   describe("updateUserWithdrawFee", async () => {
     it("Test adding liquidity, and once again at 2 weeks mark then removing all deposits at 4 weeks mark", async () => {
       await swap.setDefaultWithdrawFee(String(5e7))

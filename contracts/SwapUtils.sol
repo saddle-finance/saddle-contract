@@ -739,15 +739,20 @@ library SwapUtils {
     }
 
     function _updateUserWithdrawFee(Swap storage self, address user, uint256 toMint) internal {
-        uint256 currentFee = calculateCurrentWithdrawFee(self, user);
-        uint256 currentBalance = self.lpToken.balanceOf(user);
+        if (self.defaultWithdrawFee == 0) {
+            // If current fee is set to 0%, set multiplier to FEE_DENOMINATOR
+            self.withdrawFeeMultiplier[user] = FEE_DENOMINATOR;
+        } else {
+            // Otherwise, calculate appropriate discount based on last deposit amount
+            uint256 currentFee = calculateCurrentWithdrawFee(self, user);
+            uint256 currentBalance = self.lpToken.balanceOf(user);
 
-        // (currentBalance * currentFee + (toMint * (defaultWithdrawFee + 1))) * FEE_DENOMINATOR /
-        // ((toMint + currentBalance) * (defaultWithdrawFee + 1))
-        self.withdrawFeeMultiplier[user] = currentBalance.mul(currentFee)
-            .add(toMint.mul(self.defaultWithdrawFee.add(1))).mul(FEE_DENOMINATOR)
-            .div(toMint.add(currentBalance).mul(self.defaultWithdrawFee.add(1)));
-
+            // ((currentBalance * currentFee) + (toMint * defaultWithdrawFee)) * FEE_DENOMINATOR /
+            // ((toMint + currentBalance) * defaultWithdrawFee)
+            self.withdrawFeeMultiplier[user] = currentBalance.mul(currentFee)
+            .add(toMint.mul(self.defaultWithdrawFee)).mul(FEE_DENOMINATOR)
+            .div(toMint.add(currentBalance).mul(self.defaultWithdrawFee));
+        }
         self.depositTimestamp[user] = block.timestamp;
     }
 
