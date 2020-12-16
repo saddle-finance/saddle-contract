@@ -101,7 +101,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
         for (uint8 i = 0; i < _pooledTokens.length; i++) {
             if (i > 0) {
-                require(tokenIndexes[address(_pooledTokens[i])] == 0, "Pools cannot have duplicate tokens");
+                // Check if index is already used. Check if 0th element is a duplicate.
+                require(
+                    tokenIndexes[address(_pooledTokens[i])] == 0 && _pooledTokens[0] != _pooledTokens[i],
+                    "Pools cannot have duplicate tokens"
+                );
             }
             require(
                 address(_pooledTokens[i]) != address(0),
