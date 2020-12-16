@@ -289,8 +289,6 @@ library SwapUtils {
                 // If we were to protect the division loss we would have to keep the denominator separate
                 // and divide at the end. However this leads to overflow with large numTokens or/and D.
                 // c = c * D * D * D * ... overflow!
-            } else {
-                continue;
             }
         }
         c = c.mul(D).div(nA.mul(numTokens).div(A_PRECISION));
