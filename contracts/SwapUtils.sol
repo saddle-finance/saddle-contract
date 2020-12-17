@@ -90,25 +90,25 @@ library SwapUtils {
     uint256 private constant FEE_DENOMINATOR = 10 ** 10;
 
     // Max swap fee is 1% or 100bps of each swap
-    uint256 private constant MAX_SWAP_FEE = 10 ** 8;
+    uint256 public constant MAX_SWAP_FEE = 10 ** 8;
 
     // Max adminFee is 100% of the swapFee
     // adminFee does not add additional fee on top of swapFee
     // Instead it takes a certain % of the swapFee. Therefore it has no impact on the
     // users but only on the earnings of LPs
-    uint256 private constant MAX_ADMIN_FEE = 10 ** 10;
+    uint256 public constant MAX_ADMIN_FEE = 10 ** 10;
 
     // Max withdrawFee is 1% of the value withdrawn
     // Fee will be redistributed to the LPs in the pool, rewarding
     // long term providers.
-    uint256 private constant MAX_WITHDRAW_FEE = 10 ** 8;
+    uint256 public constant MAX_WITHDRAW_FEE = 10 ** 8;
 
     // Constant value used as max loop limit
     uint256 private constant MAX_LOOP_LIMIT = 256;
 
     // Constant values used in ramping A calculations
     uint256 public constant A_PRECISION = 100;
-    uint256 private constant MAX_A = 10 ** 6;
+    uint256 public constant MAX_A = 10 ** 6;
     uint256 private constant MAX_A_CHANGE = 2;
     uint256 private constant MIN_RAMP_TIME = 14 days;
 
