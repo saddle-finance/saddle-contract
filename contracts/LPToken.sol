@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -22,7 +22,7 @@ contract LPToken is ERC20Burnable, Ownable {
      * @param decimals_ number of decimals this token will be based on
      */
     constructor (string memory name_, string memory symbol_, uint8 decimals_
-    ) ERC20(name_, symbol_) {
+    ) public ERC20(name_, symbol_) {
         _setupDecimals(decimals_);
         swap = ISwap(_msgSender());
     }

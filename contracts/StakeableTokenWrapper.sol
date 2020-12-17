@@ -1,6 +1,6 @@
 // Generalized and adapted from https://github.com/k06a/Unipool 🙇
 
-pragma solidity 0.7.6;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -26,7 +26,7 @@ contract StakeableTokenWrapper {
      * @notice Creates a new StakeableTokenWrapper with given `_stakedToken` address
      * @param _stakedToken address of a token that will be used to stake
      */
-    constructor(IERC20 _stakedToken) {
+    constructor(IERC20 _stakedToken) public {
         stakedToken = _stakedToken;
     }
 

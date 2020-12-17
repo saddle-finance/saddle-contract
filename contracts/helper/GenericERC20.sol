@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -17,7 +17,7 @@ contract GenericERC20 is ERC20, Ownable {
      * @param decimals_ number of decimals this token will be based on
      */
     constructor (string memory name_, string memory symbol_, uint8 decimals_
-    ) ERC20(name_, symbol_) {
+    ) public ERC20(name_, symbol_) {
         _setupDecimals(decimals_);
     }
 

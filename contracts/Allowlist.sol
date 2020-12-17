@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -27,7 +27,7 @@ contract Allowlist is Ownable, IAllowlist {
      * @notice Creates this contract and sets PoolCap of 0x0 with uint256(0x54dd1e) for
      * crude checking whether an address holds this contract
      */
-    constructor() {
+    constructor() public {
         // This value will be used as a way of crude checking whether an address holds this Allowlist contract
         poolCaps[address(0x0)] = uint256(0x54dd1e);
         emit PoolCap(address(0x0), uint256(0x54dd1e));
