@@ -618,7 +618,10 @@ library SwapUtils {
         (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
         require(dy >= minDy, "Swap didn't result in min tokens");
 
-        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
+        uint256 dyAdminFee = dyFee
+            .mul(self.adminFee)
+            .div(FEE_DENOMINATOR)
+            .div(self.tokenPrecisionMultipliers[tokenIndexTo]);
 
         self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(dx);
         self.balances[tokenIndexTo] = self.balances[tokenIndexTo].sub(dy).sub(dyAdminFee);
