@@ -19,7 +19,7 @@ const config: HardhatUserConfig = {
     cache: "./build/cache",
   },
   solidity: {
-    version: "0.5.17",
+    version: "0.6.12",
     settings: {
       optimizer: {
         enabled: true,

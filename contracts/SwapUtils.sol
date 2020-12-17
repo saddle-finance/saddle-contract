@@ -1,4 +1,4 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -83,7 +83,7 @@ library SwapUtils {
     }
 
     // the precision all pools tokens will be converted to
-    uint8 private constant POOL_PRECISION_DECIMALS = 18;
+    uint8 public constant POOL_PRECISION_DECIMALS = 18;
 
     // the denominator used to calculate admin and LP fees. For example, an
     // LP fee might be something like tradeAmount.mul(fee).div(FEE_DENOMINATOR)
@@ -107,7 +107,7 @@ library SwapUtils {
     uint256 private constant MAX_LOOP_LIMIT = 256;
 
     // Constant values used in ramping A calculations
-    uint256 private constant A_PRECISION = 100;
+    uint256 public constant A_PRECISION = 100;
     uint256 private constant MAX_A = 10 ** 6;
     uint256 private constant MAX_A_CHANGE = 2;
     uint256 private constant MIN_RAMP_TIME = 14 days;
@@ -163,22 +163,6 @@ library SwapUtils {
         } else {
             return A1;
         }
-    }
-
-    /**
-     * @notice Returns POOL_PRECISION_DECIMALS, the decimals of all underlying tokens to scaled to
-     * @return precision decimals of all pool tokens to be converted to
-     */
-    function getPoolPrecisionDecimals() external pure returns (uint8) {
-        return POOL_PRECISION_DECIMALS;
-    }
-
-    /**
-     * @notice Returns A_PRECISION, precision used for ramp calculations. This value should be constant.
-     * @return precision of A calculation
-     */
-    function getAPrecision() external pure returns (uint256) {
-        return A_PRECISION;
     }
 
     /**
@@ -415,7 +399,7 @@ library SwapUtils {
         uint256 D = getD(_xp(self), _getAPrecise(self));
         uint256 supply = self.lpToken.totalSupply();
         if (supply > 0) {
-            return D.mul(10 ** uint256(ERC20Detailed(self.lpToken).decimals())).div(supply);
+            return D.mul(10 ** uint256(ERC20(self.lpToken).decimals())).div(supply);
         }
         return 0;
     }

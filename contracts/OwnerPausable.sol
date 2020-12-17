@@ -1,6 +1,6 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title OwnerPausable
