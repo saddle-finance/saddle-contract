@@ -15,7 +15,7 @@ import "./Allowlist.sol";
  * in desired ratios for an exchange of the pool token that represents their share of the pool.
  * Users can burn pool tokens and withdraw their share of token(s).
  *
- * Each time a swap between the pooled tokens happens, a set fee incurs which effectively get
+ * Each time a swap between the pooled tokens happens, a set fee incurs which effectively gets
  * distributed to the LPs.
  *
  * In case of emergencies, admin can pause additional deposits, swaps, or single-asset withdraws - which
@@ -39,7 +39,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     /*** EVENTS ***/
 
-    // events replicated fromm SwapUtils to make the ABI easier for dumb
+    // events replicated from SwapUtils to make the ABI easier for dumb
     // clients
     event TokenSwap(address indexed buyer, uint256 tokensSold,
         uint256 tokensBought, uint128 soldId, uint128 boughtId
@@ -246,7 +246,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @notice A simple method to calculate amount of each underlying
      * tokens that is returned upon burning given amount of LP tokens
      * @param amount the amount of LP tokens that would be burned on withdrawal
-     * @return array of balances of tokens that user will receive
+     * @return array of token balances that the user will receive
      */
     function calculateRemoveLiquidity(uint256 amount) external view returns (uint256[] memory) {
         return swapStorage.calculateRemoveLiquidity(amount);
