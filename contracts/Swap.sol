@@ -111,6 +111,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
                 precisions[i] <= 10 ** uint256(SwapUtils.POOL_PRECISION_DECIMALS),
                 "Token precision can't be higher than the pool precision"
             );
+            require(
+                precisions[i].pow10(),
+                "Token precision must be a power of 10"
+            );
             precisions[i] = (10 ** uint256(SwapUtils.POOL_PRECISION_DECIMALS)).div(precisions[i]);
             tokenIndexes[address(_pooledTokens[i])] = i;
         }

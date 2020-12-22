@@ -1,10 +1,10 @@
-import { ethers } from "hardhat"
-import { Wallet, Signer, constants } from "ethers"
-import chai from "chai"
+import { Signer, Wallet, constants } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { MathUtils } from "../build/typechain/MathUtils"
+import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
+import chai from "chai"
+import { ethers } from "hardhat"
 
 chai.use(solidity)
 const { expect } = chai
@@ -56,6 +56,24 @@ describe("MathUtils", () => {
     it("Reverts during an integer overflow", async () => {
       await expect(mathUtils.difference(-1, constants.MaxUint256)).to.be
         .reverted
+    })
+  })
+
+  describe("pow10", () => {
+    it("Returns true when n = 1", async () => {
+      expect(await mathUtils.pow10(1)).to.eq(true)
+    })
+
+    it("Returns true when n = 10 ** 8", async () => {
+      expect(await mathUtils.pow10(10 ** 8)).to.eq(true)
+    })
+
+    it("Returns false when n = 0", async () => {
+      expect(await mathUtils.pow10(0)).to.eq(false)
+    })
+
+    it("Returns false when n = 10 ** 8 + 1", async () => {
+      expect(await mathUtils.pow10(10 ** 8 + 1)).to.eq(false)
     })
   })
 })
