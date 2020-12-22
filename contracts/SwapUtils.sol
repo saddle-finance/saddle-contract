@@ -277,7 +277,7 @@ library SwapUtils {
                 continue;
             }
         }
-        c = c.mul(D).div(nA.mul(numTokens).div(A_PRECISION));
+        c = c.mul(D).mul(A_PRECISION).div(nA.mul(numTokens));
 
         uint256 b = s.add(D.mul(A_PRECISION).div(nA));
         uint256 yPrev;
@@ -325,7 +325,7 @@ library SwapUtils {
             }
             prevD = D;
             D = nA.mul(s).div(A_PRECISION).add(dP.mul(numTokens)).mul(D).div(
-                nA.div(A_PRECISION).sub(1).mul(D).add(numTokens.add(1).mul(dP)));
+                nA.sub(A_PRECISION).mul(D).div(A_PRECISION).add(numTokens.add(1).mul(dP)));
             if (D.within1(prevD)) {
                 break;
             }
@@ -449,7 +449,7 @@ library SwapUtils {
             // and divide at the end. However this leads to overflow with large numTokens or/and D.
             // c = c * D * D * D * ... overflow!
         }
-        c = c.mul(D).div(nA.mul(numTokens).div(A_PRECISION));
+        c = c.mul(D).mul(A_PRECISION).div(nA.mul(numTokens));
         uint256 b = s.add(D.mul(A_PRECISION).div(nA));
         uint256 yPrev;
         uint256 y = D;

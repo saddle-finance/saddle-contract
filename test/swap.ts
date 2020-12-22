@@ -2112,37 +2112,59 @@ describe("Swap", () => {
     })
 
     it("Succeeds to ramp upwards", async () => {
+      // Create imbalanced pool to measure virtual price change
+      // We expect virtual price to increase as A decreases
+      await swap.addLiquidity([String(1e18), 0], 0, MAX_UINT256)
+
       // call rampA(), changing A to 100 within a span of 14 days
       const endTimestamp =
         (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
       await swap.rampA(100, endTimestamp)
 
+      // +0 seconds since ramp A
+      expect(await swap.getA()).to.be.eq(50)
+      expect(await swap.getAPrecise()).to.be.eq(5000)
+      expect(await swap.getVirtualPrice()).to.be.eq("1000167146429977312")
+
       // set timestamp to +100000 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 100000)
       expect(await swap.getA()).to.be.eq(54)
       expect(await swap.getAPrecise()).to.be.eq(5413)
+      expect(await swap.getVirtualPrice()).to.be.eq("1000258443200231295")
 
       // set timestamp to the end of ramp period
       await setTimestamp(endTimestamp)
       expect(await swap.getA()).to.be.eq(100)
       expect(await swap.getAPrecise()).to.be.eq(10000)
+      expect(await swap.getVirtualPrice()).to.be.eq("1000771363829405068")
     })
 
     it("Succeeds to ramp downwards", async () => {
+      // Create imbalanced pool to measure virtual price change
+      // We expect virtual price to decrease as A decreases
+      await swap.addLiquidity([String(1e18), 0], 0, MAX_UINT256)
+
       // call rampA()
       const endTimestamp =
         (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
       await swap.rampA(25, endTimestamp)
 
+      // +0 seconds since ramp A
+      expect(await swap.getA()).to.be.eq(50)
+      expect(await swap.getAPrecise()).to.be.eq(5000)
+      expect(await swap.getVirtualPrice()).to.be.eq("1000167146429977312")
+
       // set timestamp to +100000 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 100000)
       expect(await swap.getA()).to.be.eq(47)
       expect(await swap.getAPrecise()).to.be.eq(4794)
+      expect(await swap.getVirtualPrice()).to.be.eq("1000115870150391894")
 
       // set timestamp to the end of ramp period
       await setTimestamp(endTimestamp)
       expect(await swap.getA()).to.be.eq(25)
       expect(await swap.getAPrecise()).to.be.eq(2500)
+      expect(await swap.getVirtualPrice()).to.be.eq("998999574522335473")
     })
 
     it("Reverts when non-owner calls it", async () => {
@@ -2249,9 +2271,15 @@ describe("Swap", () => {
   })
 
   describe("Check for timestamp manipulations", () => {
-    it("Check for maximum differences in A and virtual price", async () => {
-      const initialAPrecise = await swap.getAPrecise()
-      const initialVirtualPrice = await swap.getVirtualPrice()
+    it("Check for maximum differences in A and virtual price when A is increasing", async () => {
+      // Create imbalanced pool to measure virtual price change
+      // Sets the pool in 2:1 ratio where firstToken is significantly cheaper than secondToken
+      await swap.addLiquidity([String(1e18), 0], 0, MAX_UINT256)
+
+      // Initial A and virtual price
+      expect(await swap.getA()).to.be.eq(50)
+      expect(await swap.getAPrecise()).to.be.eq(5000)
+      expect(await swap.getVirtualPrice()).to.be.eq("1000167146429977312")
 
       // Start ramp
       await swap.rampA(
@@ -2262,22 +2290,49 @@ describe("Swap", () => {
       // Malicious miner skips 900 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 900)
 
-      const maliciousAPrecise = await swap.getAPrecise()
-      const maliciousVirtualPrice = await swap.getVirtualPrice()
+      expect(await swap.getA()).to.be.eq(50)
+      expect(await swap.getAPrecise()).to.be.eq(5003)
+      expect(await swap.getVirtualPrice()).to.be.eq("1000167862696363286")
 
-      expect(initialAPrecise).to.be.eq(5000)
-      expect(initialVirtualPrice).to.be.eq("1000000000000000000")
-
-      expect(maliciousAPrecise).to.be.eq(5003)
-      expect(maliciousVirtualPrice).to.be.eq(String("1000588225115393233"))
-
-      // Max change of A between two blocks
+      // Max increase of A between two blocks
       // 5003 / 5000
       // = 1.0006
 
-      // Max change of virtual price between two blocks
-      // 1000588225115393233 / 1000000000000000000
-      // = 1.00058822512
+      // Max increase of virtual price between two blocks (at 2:1 ratio of tokens, starting A = 50)
+      // 1000167862696363286 / 1000167146429977312
+      // = 1.00000071615
+    })
+
+    it("Check for maximum differences in A and virtual price when A is decreasing", async () => {
+      // Create imbalanced pool to measure virtual price change
+      // Sets the pool in 2:1 ratio where firstToken is significantly cheaper than secondToken
+      await swap.addLiquidity([String(1e18), 0], 0, MAX_UINT256)
+
+      // Initial A and virtual price
+      expect(await swap.getA()).to.be.eq(50)
+      expect(await swap.getAPrecise()).to.be.eq(5000)
+      expect(await swap.getVirtualPrice()).to.be.eq("1000167146429977312")
+
+      // Start ramp
+      await swap.rampA(
+        25,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+      )
+
+      // Malicious miner skips 900 seconds
+      await setTimestamp((await getCurrentBlockTimestamp()) + 900)
+
+      expect(await swap.getA()).to.be.eq(49)
+      expect(await swap.getAPrecise()).to.be.eq(4999)
+      expect(await swap.getVirtualPrice()).to.be.eq("1000166907487883089")
+
+      // Max decrease of A between two blocks
+      // 4999 / 5000
+      // = 0.9998
+
+      // Max decrease of virtual price between two blocks (at 2:1 ratio of tokens, starting A = 50)
+      // 1000166907487883089 / 1000167146429977312
+      // = 0.99999976109
     })
 
     // Below tests try to verify the issues found in Curve Vulnerability Report are resolved.
@@ -2375,7 +2430,7 @@ describe("Swap", () => {
             ).sub(balanceBefore)
 
             // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
-            expect(firstTokenOutput).to.be.eq("996163590871508612")
+            expect(firstTokenOutput).to.be.eq("997214696574405737")
 
             const finalAttackerBalances = await getUserTokenBalances(attacker, [
               firstToken,
@@ -2390,11 +2445,11 @@ describe("Swap", () => {
             )
             expect(
               initialAttackerBalances[0].sub(finalAttackerBalances[0]),
-            ).to.be.eq("3836409128491388")
+            ).to.be.eq("2785303425594263")
             expect(
               initialAttackerBalances[1].sub(finalAttackerBalances[1]),
             ).to.be.eq("0")
-            // Attacker lost 3.836e15 firstToken (0.3836%)
+            // Attacker lost 2.785e15 firstToken (0.2785% of initial deposit)
 
             // Check for pool balance changes
             const finalPoolBalances = []
@@ -2404,12 +2459,12 @@ describe("Swap", () => {
             expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
             expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
             expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
-              "3836409128491388",
+              "2785303425594263",
             )
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 3.836e15 firstToken (0.3836% of firstToken balance)
+            // Pool (liquidity providers) gained 2.785e15 firstToken (0.2785% of firstToken balance)
             // The attack did not benefit the attacker.
           })
 
@@ -2561,7 +2616,7 @@ describe("Swap", () => {
             ).sub(balanceBefore)
 
             // If firstTokenOutput > 1e18, the attacker leaves with more firstToken than the start.
-            expect(firstTokenOutput).to.be.eq("995695076343373004")
+            expect(firstTokenOutput).to.be.eq("998017518949630644")
 
             const finalAttackerBalances = await getUserTokenBalances(attacker, [
               firstToken,
@@ -2576,11 +2631,11 @@ describe("Swap", () => {
             )
             expect(
               initialAttackerBalances[0].sub(finalAttackerBalances[0]),
-            ).to.be.eq("4304923656626996")
+            ).to.be.eq("1982481050369356")
             expect(
               initialAttackerBalances[1].sub(finalAttackerBalances[1]),
             ).to.be.eq("0")
-            // Attacker lost 4.305e15 firstToken (0.4305%)
+            // Attacker lost 1.982e15 firstToken (0.1982% of initial deposit)
 
             // Check for pool balance changes
             const finalPoolBalances = []
@@ -2590,12 +2645,12 @@ describe("Swap", () => {
             expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
             expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
             expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
-              "4304923656626996",
+              "1982481050369356",
             )
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 4.305e15 firstToken (0.4305% of firstToken balance)
+            // Pool (liquidity providers) gained 1.982e15 firstToken (0.1982% of firstToken balance)
             // The attack did not benefit the attacker.
           })
 
@@ -2766,7 +2821,7 @@ describe("Swap", () => {
             ).sub(balanceBefore)
 
             // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
-            expect(firstTokenOutput).to.be.eq("980075920971645669")
+            expect(firstTokenOutput).to.be.eq("997276754500361021")
 
             const finalAttackerBalances = await getUserTokenBalances(attacker, [
               firstToken,
@@ -2782,11 +2837,11 @@ describe("Swap", () => {
             )
             expect(
               initialAttackerBalances[0].sub(finalAttackerBalances[0]),
-            ).to.be.eq("19924079028354331")
+            ).to.be.eq("2723245499638979")
             expect(
               initialAttackerBalances[1].sub(finalAttackerBalances[1]),
             ).to.be.eq("0")
-            // Attacker lost 1.992e16 firstToken (1.992% of initial deposit)
+            // Attacker lost 2.723e15 firstToken (0.2723% of initial deposit)
 
             // Check for pool balance changes
             const finalPoolBalances = [
@@ -2797,13 +2852,12 @@ describe("Swap", () => {
             expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
             expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
             expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
-              "19924079028354331",
+              "2723245499638979",
             )
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 1.992e16 firstToken (1.992% of firstToken balance)
-
+            // Pool (liquidity providers) gained 2.723e15 firstToken (0.2723% of firstToken balance)
             // The attack did not benefit the attacker.
           })
 
@@ -2955,7 +3009,7 @@ describe("Swap", () => {
             ).sub(balanceBefore)
 
             // If firstTokenOutput > 1e18, the malicious user leaves with more firstToken than the start.
-            expect(firstTokenOutput).to.be.eq("959937181481987920")
+            expect(firstTokenOutput).to.be.eq("998007711333645455")
 
             const finalAttackerBalances = await getUserTokenBalances(attacker, [
               firstToken,
@@ -2971,11 +3025,11 @@ describe("Swap", () => {
             )
             expect(
               initialAttackerBalances[0].sub(finalAttackerBalances[0]),
-            ).to.be.eq("40062818518012080")
+            ).to.be.eq("1992288666354545")
             expect(
               initialAttackerBalances[1].sub(finalAttackerBalances[1]),
             ).to.be.eq("0")
-            // Attacker lost 4.006e16 firstToken (4.006% of initial deposit)
+            // Attacker lost 1.992e15 firstToken (0.1992% of initial deposit)
 
             // Check for pool balance changes
             const finalPoolBalances = [
@@ -2986,12 +3040,12 @@ describe("Swap", () => {
             expect(finalPoolBalances[0]).to.be.gt(initialPoolBalances[0])
             expect(finalPoolBalances[1]).to.be.eq(initialPoolBalances[1])
             expect(finalPoolBalances[0].sub(initialPoolBalances[0])).to.be.eq(
-              "40062818518012080",
+              "1992288666354545",
             )
             expect(finalPoolBalances[1].sub(initialPoolBalances[1])).to.be.eq(
               "0",
             )
-            // Pool (liquidity providers) gained 4.006e16 firstToken (4.006% of firstToken balance)
+            // Pool (liquidity providers) gained 1.992e15 firstToken (0.1992% of firstToken balance)
             // The attack did not benefit the attacker.
           })
 
