@@ -139,7 +139,7 @@ describe("Swap with 4 tokens", () => {
       { SwapUtils: swapUtils.address },
       [
         [DAI.address, USDC.address, USDT.address, SUSD.address],
-        [String(1e18), String(1e6), String(1e6), String(1e18)],
+        [18, 6, 6, 18],
         LP_TOKEN_NAME,
         LP_TOKEN_SYMBOL,
         INITIAL_A_VALUE,

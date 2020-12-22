@@ -58,22 +58,4 @@ describe("MathUtils", () => {
         .reverted
     })
   })
-
-  describe("pow10", () => {
-    it("Returns true when n = 1", async () => {
-      expect(await mathUtils.pow10(1)).to.eq(true)
-    })
-
-    it("Returns true when n = 10 ** 8", async () => {
-      expect(await mathUtils.pow10(10 ** 8)).to.eq(true)
-    })
-
-    it("Returns false when n = 0", async () => {
-      expect(await mathUtils.pow10(0)).to.eq(false)
-    })
-
-    it("Returns false when n = 10 ** 8 + 1", async () => {
-      expect(await mathUtils.pow10(10 ** 8 + 1)).to.eq(false)
-    })
-  })
 })

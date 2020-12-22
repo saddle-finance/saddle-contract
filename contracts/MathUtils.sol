@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 /**
  * @title MathUtils library
  * @notice A library to be used in conjuction with SafeMath. Contains functions for calculating
- * differences between two uint256 and checking if a uint256 is a power of 10.
+ * differences between two uint256.
  */
 library MathUtils {
     using SafeMath for uint256;
@@ -43,17 +43,5 @@ library MathUtils {
             return a.sub(b);
         }
         return b.sub(a);
-    }
-
-    /**
-     * @notice Check whether n is a power of 10
-     * @param n uint256 to check
-     * @return True if n is a power of 10, otherwise return false
-     */
-    function pow10(uint256 n) public pure returns (bool) {
-        while (n > 9 && n % 10 == 0)  {
-            n = n / 10;
-        }
-        return (n == 1);
     }
 }

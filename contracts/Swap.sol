@@ -70,8 +70,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * only this contract is allowed to mint new tokens.
      *
      * @param _pooledTokens an array of ERC20s this pool will accept
-     * @param precisions the precision to use for each pooled token,
-     * eg 10 ** 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
+     * @param decimals the decimals to use for each pooled token,
+     * eg 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
      * @param lpTokenName the long-form name of the token to be deployed
      * @param lpTokenSymbol the short symbol for the token to be deployed
      * @param _A the amplification coefficient * n * (n - 1). See the
@@ -82,7 +82,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param _allowlist address of allowlist contract for guarded launch
      */
     constructor(
-        IERC20[] memory _pooledTokens, uint256[] memory precisions,
+        IERC20[] memory _pooledTokens, uint8[] memory decimals,
         string memory lpTokenName, string memory lpTokenSymbol, uint256 _A,
         uint256 _fee, uint256 _adminFee, uint256 _withdrawFee, IAllowlist _allowlist
     ) public OwnerPausable() ReentrancyGuard() {
@@ -95,9 +95,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             "Pools with over 32 tokens aren't supported"
         );
         require(
-            _pooledTokens.length == precisions.length,
-            "Each pooled token needs a specified precision"
+            _pooledTokens.length == decimals.length,
+            "Each pooled token needs a specified decimals"
         );
+
+        uint256[] memory precisionMultipliers = new uint256[](decimals.length);
 
         for (uint8 i = 0; i < _pooledTokens.length; i++) {
             if (i > 0) {
@@ -108,20 +110,16 @@ contract Swap is OwnerPausable, ReentrancyGuard {
                 "The 0 address isn't an ERC-20"
             );
             require(
-                precisions[i] <= 10 ** uint256(SwapUtils.POOL_PRECISION_DECIMALS),
-                "Token precision can't be higher than the pool precision"
+                decimals[i] <= SwapUtils.POOL_PRECISION_DECIMALS,
+                "Token decimals can't be higher than the pool's precision decimals"
             );
-            require(
-                precisions[i].pow10(),
-                "Token precision must be a power of 10"
-            );
-            precisions[i] = (10 ** uint256(SwapUtils.POOL_PRECISION_DECIMALS)).div(precisions[i]);
+            precisionMultipliers[i] = 10 ** uint256(SwapUtils.POOL_PRECISION_DECIMALS).sub(uint256(decimals[i]));
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
         swapStorage.lpToken = new LPToken(lpTokenName, lpTokenSymbol, SwapUtils.POOL_PRECISION_DECIMALS);
         swapStorage.pooledTokens = _pooledTokens;
-        swapStorage.tokenPrecisionMultipliers = precisions;
+        swapStorage.tokenPrecisionMultipliers = precisionMultipliers;
         swapStorage.balances = new uint256[](_pooledTokens.length);
         swapStorage.initialA = _A.mul(SwapUtils.A_PRECISION);
         swapStorage.futureA = _A.mul(SwapUtils.A_PRECISION);
