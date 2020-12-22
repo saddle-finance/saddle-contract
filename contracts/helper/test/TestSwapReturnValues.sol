@@ -10,7 +10,7 @@ contract TestSwapReturnValues {
     IERC20 public lpToken;
     uint8 public n;
 
-    uint256 public MAX_INT = 2 ** 256 - 1;
+    uint256 public constant MAX_INT = 2 ** 256 - 1;
 
     constructor(ISwap swapContract, IERC20 lpTokenContract, uint8 numOfTokens) public{
         swap = swapContract;
