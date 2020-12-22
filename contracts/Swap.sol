@@ -33,7 +33,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     using SwapUtils for SwapUtils.Swap;
 
     SwapUtils.Swap public swapStorage;
-    IAllowlist public allowlist;
+    IAllowlist public immutable allowlist;
     bool public isGuarded = true;
     mapping(address => uint8) private tokenIndexes;
 
@@ -86,6 +86,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         string memory lpTokenName, string memory lpTokenSymbol, uint256 _A,
         uint256 _fee, uint256 _adminFee, uint256 _withdrawFee, IAllowlist _allowlist
     ) public OwnerPausable() ReentrancyGuard() {
+
+        // Check _pooledTokens and precisions parameter
         require(
             _pooledTokens.length > 1,
             "Pools must contain more than 1 token"
@@ -115,6 +117,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
+        // Check _A, _fee, _adminFee, _withdrawFee, _allowlist parameters
+        require(_A < SwapUtils.MAX_A, "_A exceeds maximum");
+        require(_fee < SwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
+        require(_adminFee < SwapUtils.MAX_ADMIN_FEE, "_adminFee exceeds maximum");
+        require(_withdrawFee < SwapUtils.MAX_WITHDRAW_FEE, "_withdrawFee exceeds maximum");
+        require(_allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e), "Allowlist check failed");
+
+        // Initialize swapStorage struct
         swapStorage.lpToken = new LPToken(lpTokenName, lpTokenSymbol, SwapUtils.POOL_PRECISION_DECIMALS);
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisions;
@@ -127,8 +137,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         swapStorage.adminFee = _adminFee;
         swapStorage.defaultWithdrawFee = _withdrawFee;
 
+        // Initialize variables related to guarding the initial deposits
         allowlist = _allowlist;
-        require(allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e), "Allowlist check failed");
         isGuarded = true;
     }
 
