@@ -309,7 +309,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function swap(
         uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy, uint256 deadline
-    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+    ) external nonReentrant whenNotPaused deadlineCheck(deadline) {
         return swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
 
@@ -321,7 +321,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param deadline latest timestamp to accept this transaction
      */
     function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline)
-        external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+        external nonReentrant whenNotPaused deadlineCheck(deadline) {
         swapStorage.addLiquidity(amounts, minToMint);
 
         if (isGuarded) {
@@ -362,7 +362,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function removeLiquidityOneToken(
         uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount, uint256 deadline
-    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+    ) external nonReentrant whenNotPaused deadlineCheck(deadline) {
         return swapStorage.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
     }
 
@@ -377,7 +377,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function removeLiquidityImbalance(
         uint256[] calldata amounts, uint256 maxBurnAmount, uint256 deadline
-    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+    ) external nonReentrant whenNotPaused deadlineCheck(deadline) {
         return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
 
