@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev Only methods using the provided modifiers will be paused.
  */
 contract OwnerPausable is Ownable {
-
     event Paused();
     event Unpaused();
 
@@ -30,7 +29,6 @@ contract OwnerPausable is Ownable {
         paused = false;
         emit Unpaused();
     }
-
 
     /**
      * @notice Revert if the contract is paused.

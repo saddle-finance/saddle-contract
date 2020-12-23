@@ -21,7 +21,10 @@ contract LPToken is ERC20Burnable, Ownable {
      * @param symbol_ symbol of this token
      * @param decimals_ number of decimals this token will be based on
      */
-    constructor (string memory name_, string memory symbol_, uint8 decimals_
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_
     ) public ERC20(name_, symbol_) {
         _setupDecimals(decimals_);
         swap = ISwap(_msgSender());
@@ -38,16 +41,31 @@ contract LPToken is ERC20Burnable, Ownable {
         _mint(recipient, amount);
     }
 
-    function transfer(address recipient, uint256 amount) public override returns (bool) {
+    function transfer(address recipient, uint256 amount)
+        public
+        override
+        returns (bool)
+    {
         swap.updateUserWithdrawFee(recipient, amount);
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public override returns (bool) {
         swap.updateUserWithdrawFee(recipient, amount);
         _transfer(sender, recipient, amount);
-        _approve(sender, _msgSender(), allowance(sender, _msgSender()).sub(amount, "ERC20: transfer amount exceeds allowance"));
+        _approve(
+            sender,
+            _msgSender(),
+            allowance(sender, _msgSender()).sub(
+                amount,
+                "ERC20: transfer amount exceeds allowance"
+            )
+        );
         return true;
     }
 }

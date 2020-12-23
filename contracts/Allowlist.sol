@@ -38,15 +38,26 @@ contract Allowlist is Ownable, IAllowlist {
      * @param poolAddress address of the pool
      * @param user address of the user
      */
-    function getAllowedAmount(address poolAddress, address user) external override view returns (uint256) {
-        return accountLimits[poolAddress].mul(multipliers[user]).div(DENOMINATOR);
+    function getAllowedAmount(address poolAddress, address user)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return
+            accountLimits[poolAddress].mul(multipliers[user]).div(DENOMINATOR);
     }
 
     /**
      * @notice Returns the TVL cap for given pool address.
      * @param poolAddress address of the pool
      */
-    function getPoolCap(address poolAddress) external override view returns (uint256) {
+    function getPoolCap(address poolAddress)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return poolCaps[poolAddress];
     }
 
@@ -58,9 +69,14 @@ contract Allowlist is Ownable, IAllowlist {
      * @param multiplierArray array of multipliers for respective addresses
      *        (multiplier set to 1000 equals 1.000x)
      */
-    function setMultipliers(address[] calldata addressArray, uint256[] calldata multiplierArray) external onlyOwner {
-
-        require(addressArray.length == multiplierArray.length, "Array lengths are different");
+    function setMultipliers(
+        address[] calldata addressArray,
+        uint256[] calldata multiplierArray
+    ) external onlyOwner {
+        require(
+            addressArray.length == multiplierArray.length,
+            "Array lengths are different"
+        );
 
         for (uint256 i = 0; i < multiplierArray.length; i++) {
             multipliers[addressArray[i]] = multiplierArray[i];
@@ -74,7 +90,10 @@ contract Allowlist is Ownable, IAllowlist {
      * @param poolAddress address of the pool
      * @param accountLimit base amount to be used for calculating allowed amounts of each user
      */
-    function setPoolAccountLimit(address poolAddress, uint256 accountLimit) external onlyOwner {
+    function setPoolAccountLimit(address poolAddress, uint256 accountLimit)
+        external
+        onlyOwner
+    {
         require(poolAddress != address(0x0), "0x0 is not a pool address");
         accountLimits[poolAddress] = accountLimit;
         emit PoolAccountLimit(poolAddress, accountLimit);
@@ -85,7 +104,10 @@ contract Allowlist is Ownable, IAllowlist {
      * @param poolAddress address of the pool
      * @param poolCap TVL cap amount - limits the totalSupply of the pool token
      */
-    function setPoolCap(address poolAddress, uint256 poolCap) external onlyOwner {
+    function setPoolCap(address poolAddress, uint256 poolCap)
+        external
+        onlyOwner
+    {
         require(poolAddress != address(0x0), "0x0 is not a pool address");
         poolCaps[poolAddress] = poolCap;
         emit PoolCap(poolAddress, poolCap);

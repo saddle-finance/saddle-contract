@@ -26,7 +26,6 @@ import "./Allowlist.sol";
  * deployment size.
  */
 contract Swap is OwnerPausable, ReentrancyGuard {
-
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using MathUtils for uint256;
@@ -41,26 +40,48 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
     // events replicated fromm SwapUtils to make the ABI easier for dumb
     // clients
-    event TokenSwap(address indexed buyer, uint256 tokensSold,
-        uint256 tokensBought, uint128 soldId, uint128 boughtId
+    event TokenSwap(
+        address indexed buyer,
+        uint256 tokensSold,
+        uint256 tokensBought,
+        uint128 soldId,
+        uint128 boughtId
     );
-    event AddLiquidity(address indexed provider, uint256[] tokenAmounts,
-        uint256[] fees, uint256 invariant, uint256 lpTokenSupply
-    );
-    event RemoveLiquidity(address indexed provider, uint256[] tokenAmounts,
+    event AddLiquidity(
+        address indexed provider,
+        uint256[] tokenAmounts,
+        uint256[] fees,
+        uint256 invariant,
         uint256 lpTokenSupply
     );
-    event RemoveLiquidityOne(address indexed provider, uint256 lpTokenAmount,
-        uint256 lpTokenSupply, uint256 boughtId, uint256 tokensBought
+    event RemoveLiquidity(
+        address indexed provider,
+        uint256[] tokenAmounts,
+        uint256 lpTokenSupply
     );
-    event RemoveLiquidityImbalance(address indexed provider,
-        uint256[] tokenAmounts, uint256[] fees, uint256 invariant,
+    event RemoveLiquidityOne(
+        address indexed provider,
+        uint256 lpTokenAmount,
+        uint256 lpTokenSupply,
+        uint256 boughtId,
+        uint256 tokensBought
+    );
+    event RemoveLiquidityImbalance(
+        address indexed provider,
+        uint256[] tokenAmounts,
+        uint256[] fees,
+        uint256 invariant,
         uint256 lpTokenSupply
     );
     event NewAdminFee(uint256 newAdminFee);
     event NewSwapFee(uint256 newSwapFee);
     event NewWithdrawFee(uint256 newWithdrawFee);
-    event RampA(uint256 oldA, uint256 newA, uint256 initialTime, uint256 futureTime);
+    event RampA(
+        uint256 oldA,
+        uint256 newA,
+        uint256 initialTime,
+        uint256 futureTime
+    );
     event StopRampA(uint256 A, uint256 time);
 
     /**
@@ -82,11 +103,16 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param _allowlist address of allowlist contract for guarded launch
      */
     constructor(
-        IERC20[] memory _pooledTokens, uint256[] memory precisions,
-        string memory lpTokenName, string memory lpTokenSymbol, uint256 _A,
-        uint256 _fee, uint256 _adminFee, uint256 _withdrawFee, IAllowlist _allowlist
+        IERC20[] memory _pooledTokens,
+        uint256[] memory precisions,
+        string memory lpTokenName,
+        string memory lpTokenSymbol,
+        uint256 _A,
+        uint256 _fee,
+        uint256 _adminFee,
+        uint256 _withdrawFee,
+        IAllowlist _allowlist
     ) public OwnerPausable() ReentrancyGuard() {
-
         // Check _pooledTokens and precisions parameter
         require(
             _pooledTokens.length > 1,
@@ -103,29 +129,46 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
         for (uint8 i = 0; i < _pooledTokens.length; i++) {
             if (i > 0) {
-                require(tokenIndexes[address(_pooledTokens[i])] == 0, "Pools cannot have duplicate tokens");
+                require(
+                    tokenIndexes[address(_pooledTokens[i])] == 0,
+                    "Pools cannot have duplicate tokens"
+                );
             }
             require(
                 address(_pooledTokens[i]) != address(0),
                 "The 0 address isn't an ERC-20"
             );
             require(
-                precisions[i] <= 10 ** uint256(SwapUtils.POOL_PRECISION_DECIMALS),
+                precisions[i] <= 10**uint256(SwapUtils.POOL_PRECISION_DECIMALS),
                 "Token precision can't be higher than the pool precision"
             );
-            precisions[i] = (10 ** uint256(SwapUtils.POOL_PRECISION_DECIMALS)).div(precisions[i]);
+            precisions[i] = (10**uint256(SwapUtils.POOL_PRECISION_DECIMALS))
+                .div(precisions[i]);
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
         // Check _A, _fee, _adminFee, _withdrawFee, _allowlist parameters
         require(_A < SwapUtils.MAX_A, "_A exceeds maximum");
         require(_fee < SwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
-        require(_adminFee < SwapUtils.MAX_ADMIN_FEE, "_adminFee exceeds maximum");
-        require(_withdrawFee < SwapUtils.MAX_WITHDRAW_FEE, "_withdrawFee exceeds maximum");
-        require(_allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e), "Allowlist check failed");
+        require(
+            _adminFee < SwapUtils.MAX_ADMIN_FEE,
+            "_adminFee exceeds maximum"
+        );
+        require(
+            _withdrawFee < SwapUtils.MAX_WITHDRAW_FEE,
+            "_withdrawFee exceeds maximum"
+        );
+        require(
+            _allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e),
+            "Allowlist check failed"
+        );
 
         // Initialize swapStorage struct
-        swapStorage.lpToken = new LPToken(lpTokenName, lpTokenSymbol, SwapUtils.POOL_PRECISION_DECIMALS);
+        swapStorage.lpToken = new LPToken(
+            lpTokenName,
+            lpTokenSymbol,
+            SwapUtils.POOL_PRECISION_DECIMALS
+        );
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisions;
         swapStorage.balances = new uint256[](_pooledTokens.length);
@@ -191,7 +234,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function getTokenIndex(address tokenAddress) external view returns (uint8) {
         uint8 index = tokenIndexes[tokenAddress];
-        require(address(getToken(index)) == tokenAddress, "Token does not exist");
+        require(
+            address(getToken(index)) == tokenAddress,
+            "Token does not exist"
+        );
         return index;
     }
 
@@ -228,8 +274,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param dx the amount of tokens the user wants to sell
      * @return amount of tokens the user will receive
      */
-    function calculateSwap(uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
-    ) external view returns(uint256) {
+    function calculateSwap(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx
+    ) external view returns (uint256) {
         return swapStorage.calculateSwap(tokenIndexFrom, tokenIndexTo, dx);
     }
 
@@ -248,7 +297,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @return token amount the user will receive
      */
     function calculateTokenAmount(uint256[] calldata amounts, bool deposit)
-    external view returns(uint256) {
+        external
+        view
+        returns (uint256)
+    {
         return swapStorage.calculateTokenAmount(amounts, deposit);
     }
 
@@ -258,7 +310,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param amount the amount of LP tokens that would be burned on withdrawal
      * @return array of balances of tokens that user will receive
      */
-    function calculateRemoveLiquidity(uint256 amount) external view returns (uint256[] memory) {
+    function calculateRemoveLiquidity(uint256 amount)
+        external
+        view
+        returns (uint256[] memory)
+    {
         return swapStorage.calculateRemoveLiquidity(amount);
     }
 
@@ -270,9 +326,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @return availableTokenAmount calculated amount of underlying token
      * available to withdraw
      */
-    function calculateRemoveLiquidityOneToken(uint256 tokenAmount, uint8 tokenIndex
+    function calculateRemoveLiquidityOneToken(
+        uint256 tokenAmount,
+        uint8 tokenIndex
     ) external view returns (uint256 availableTokenAmount) {
-        (availableTokenAmount, ) = swapStorage.calculateWithdrawOneToken(tokenAmount, tokenIndex);
+        (availableTokenAmount, ) = swapStorage.calculateWithdrawOneToken(
+            tokenAmount,
+            tokenIndex
+        );
     }
 
     /**
@@ -284,7 +345,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param user address you want to calculate withdraw fee of
      * @return current withdraw fee of the user
      */
-    function calculateCurrentWithdrawFee(address user) external view returns (uint256) {
+    function calculateCurrentWithdrawFee(address user)
+        external
+        view
+        returns (uint256)
+    {
         return swapStorage.calculateCurrentWithdrawFee(user);
     }
 
@@ -308,7 +373,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param deadline latest timestamp to accept this transaction
      */
     function swap(
-        uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy, uint256 deadline
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx,
+        uint256 minDy,
+        uint256 deadline
     ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
         return swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
@@ -320,19 +389,24 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * should mint, otherwise revert. Handy for front-running mitigation
      * @param deadline latest timestamp to accept this transaction
      */
-    function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline)
-        external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+    function addLiquidity(
+        uint256[] calldata amounts,
+        uint256 minToMint,
+        uint256 deadline
+    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
         swapStorage.addLiquidity(amounts, minToMint);
 
         if (isGuarded) {
             // Check per user deposit limit
             require(
-                allowlist.getAllowedAmount(address(this), msg.sender) >= swapStorage.lpToken.balanceOf(msg.sender),
+                allowlist.getAllowedAmount(address(this), msg.sender) >=
+                    swapStorage.lpToken.balanceOf(msg.sender),
                 "Deposit limit reached"
             );
             // Check pool's TVL cap limit via totalSupply of the pool token
             require(
-                allowlist.getPoolCap(address(this)) >= swapStorage.lpToken.totalSupply(),
+                allowlist.getPoolCap(address(this)) >=
+                    swapStorage.lpToken.totalSupply(),
                 "Pool TVL cap reached"
             );
         }
@@ -347,8 +421,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *        acceptable for this burn. Useful as a front-running mitigation
      * @param deadline latest timestamp to accept this transaction
      */
-    function removeLiquidity(uint256 amount, uint256[] calldata minAmounts, uint256 deadline)
-        external nonReentrant deadlineCheck(deadline) {
+    function removeLiquidity(
+        uint256 amount,
+        uint256[] calldata minAmounts,
+        uint256 deadline
+    ) external nonReentrant deadlineCheck(deadline) {
         return swapStorage.removeLiquidity(amount, minAmounts);
     }
 
@@ -361,9 +438,17 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param deadline latest timestamp to accept this transaction
      */
     function removeLiquidityOneToken(
-        uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount, uint256 deadline
+        uint256 tokenAmount,
+        uint8 tokenIndex,
+        uint256 minAmount,
+        uint256 deadline
     ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
-        return swapStorage.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
+        return
+            swapStorage.removeLiquidityOneToken(
+                tokenAmount,
+                tokenIndex,
+                minAmount
+            );
     }
 
     /**
@@ -376,7 +461,9 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param deadline latest timestamp to accept this transaction
      */
     function removeLiquidityImbalance(
-        uint256[] calldata amounts, uint256 maxBurnAmount, uint256 deadline
+        uint256[] calldata amounts,
+        uint256 maxBurnAmount,
+        uint256 deadline
     ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
         return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
@@ -391,8 +478,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param recipient address of the recipient of pool token
      * @param transferAmount amount of pool token to transfer
      */
-    function updateUserWithdrawFee(address recipient, uint256 transferAmount) external {
-        require(msg.sender == address(swapStorage.lpToken), "Only token transfers can update withdraw fee");
+    function updateUserWithdrawFee(address recipient, uint256 transferAmount)
+        external
+    {
+        require(
+            msg.sender == address(swapStorage.lpToken),
+            "Only token transfers can update withdraw fee"
+        );
         swapStorage.updateUserWithdrawFee(recipient, transferAmount);
     }
 

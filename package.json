@@ -52,7 +52,7 @@
     "lint:ts": "eslint --ext ts ${npm_package_config_eslintPaths} && prettier --list-different test/*.ts",
     "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/*.ts",
     "lint:sol": "solhint 'contracts/**/*.sol'",
-    "lint:fix:sol": "solhint 'contracts/**/*.sol' --fix",
+    "lint:fix:sol": "prettier --write 'contracts/**/*.sol' && solhint 'contracts/**/*.sol' --fix",
     "build": "hardhat compile && hardhat typechain && tsc",
     "test": "hardhat test",
     "coverage": "hardhat coverage --temp ./build/artifacts",
