@@ -32,9 +32,21 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     using MathUtils for uint256;
     using SwapUtils for SwapUtils.Swap;
 
+    // Struct storing data responsible for automatic market maker functionalities. In order to
+    // access this data, this contract uses SwapUtils library. For more details, see SwapUtils.sol
     SwapUtils.Swap public swapStorage;
+
+    // Address to allowlist contract that holds information about maximum totaly supply of lp tokens
+    // and maximum mintable amount per user address. As this is immutable, this will become a constant
+    // after initialization.
     IAllowlist public immutable allowlist;
+
+    // Boolean value that notates whether this pool is guarded or not. When isGuarded is true,
+    // addLiquidity function will be restricted by limits defined in allowlist contract.
     bool public isGuarded = true;
+
+    // Maps token address to an index in the pool. Used to prevent duplicate tokens in the pool.
+    // getTokenIndex function also relies on this mapping to retrieve token index.
     mapping(address => uint8) private tokenIndexes;
 
     /*** EVENTS ***/
