@@ -76,8 +76,8 @@ library SwapUtils {
     // Struct storing variables used in calculation in calculateWithdrawOneTokenDY function
     // to avoid stack too deep error
     struct CalculateWithdrawOneTokenDYInfo {
-        uint256 D0;
-        uint256 D1;
+        uint256 d0;
+        uint256 d1;
         uint256 newY;
         uint256 feePerToken;
     }
@@ -209,30 +209,30 @@ library SwapUtils {
         // y_i for D - tokenAmount
         uint256[] memory xp = _xp(self);
         CalculateWithdrawOneTokenDYInfo memory v = CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0);
-        v.D0 = getD(xp, _getAPrecise(self));
-        v.D1 = v.D0.sub(tokenAmount.mul(v.D0).div(self.lpToken.totalSupply()));
+        v.d0 = getD(xp, _getAPrecise(self));
+        v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(self.lpToken.totalSupply()));
 
         require(tokenAmount <= xp[tokenIndex], "Cannot withdraw more than available");
 
-        v.newY = getYD(_getAPrecise(self), tokenIndex, xp, v.D1);
+        v.newY = getYD(_getAPrecise(self), tokenIndex, xp, v.d1);
 
         uint256[] memory xpReduced = new uint256[](xp.length);
 
-        v.feePerToken = feePerToken(self);
+        v.feePerToken = _feePerToken(self);
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
             uint256 xpi = xp[i];
-            // if i == tokenIndex, dxExpected = xp[i] * D1 / D0 - newY
-            // else dxExpected = xp[i] - (xp[i] * D1 / D0)
+            // if i == tokenIndex, dxExpected = xp[i] * d1 / d0 - newY
+            // else dxExpected = xp[i] - (xp[i] * d1 / d0)
             // xpReduced[i] -= dxExpected * fee / FEE_DENOMINATOR
             xpReduced[i] = xpi.sub(
                 ((i == tokenIndex) ?
-                    xpi.mul(v.D1).div(v.D0).sub(v.newY) :
-                    xpi.sub(xpi.mul(v.D1).div(v.D0))
+                    xpi.mul(v.d1).div(v.d0).sub(v.newY) :
+                    xpi.sub(xpi.mul(v.d1).div(v.d0))
                 ).mul(v.feePerToken).div(FEE_DENOMINATOR));
         }
 
         uint256 dy = xpReduced[tokenIndex].sub(
-            getYD(_getAPrecise(self), tokenIndex, xpReduced, v.D1));
+            getYD(_getAPrecise(self), tokenIndex, xpReduced, v.d1));
         dy = dy.sub(1).div(self.tokenPrecisionMultipliers[tokenIndex]);
 
         return (dy, v.newY);
@@ -250,21 +250,21 @@ library SwapUtils {
      * x_1**2 + b*x_1 = c
      * x_1 = (x_1**2 + c) / (2*x_1 + b)
      *
-     * @param _A the amplification coefficient * n * (n - 1). See the StableSwap paper for details.
+     * @param A the amplification coefficient * n * (n - 1). See the StableSwap paper for details.
      * @param tokenIndex Index of token we are calculating for.
      * @param xp a precision-adjusted set of pool balances. Array should be
      * the same cardinality as the pool.
      * @param D the stableswap invariant
      * @return the price of the token, in the same precision as in xp
      */
-    function getYD(uint256 _A, uint8 tokenIndex, uint256[] memory xp, uint256 D)
+    function getYD(uint256 A, uint8 tokenIndex, uint256[] memory xp, uint256 D)
         internal pure returns (uint256) {
         uint256 numTokens = xp.length;
         require(tokenIndex < numTokens, "Token not found");
 
         uint256 c = D;
         uint256 s;
-        uint256 nA = _A.mul(numTokens);
+        uint256 nA = A.mul(numTokens);
 
         for (uint256 i = 0; i < numTokens; i++) {
             if (i != tokenIndex) {
@@ -296,11 +296,11 @@ library SwapUtils {
      * @notice Get D, the StableSwap invariant, based on a set of balances and a particular A.
      * @param xp a precision-adjusted set of pool balances. Array should be the same cardinality
      * as the pool.
-     * @param _A the amplification coefficient * n * (n - 1) in A_PRECISION.
+     * @param A the amplification coefficient * n * (n - 1) in A_PRECISION.
      * See the StableSwap paper for details
      * @return the invariant, at the precision of the pool
      */
-    function getD(uint256[] memory xp, uint256 _A)
+    function getD(uint256[] memory xp, uint256 A)
         internal pure returns (uint256) {
         uint256 numTokens = xp.length;
         uint256 s;
@@ -313,7 +313,7 @@ library SwapUtils {
 
         uint256 prevD;
         uint256 D = s;
-        uint256 nA = _A.mul(numTokens);
+        uint256 nA = A.mul(numTokens);
 
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
             uint256 dP = D;
@@ -346,40 +346,40 @@ library SwapUtils {
      * @notice Given a set of balances and precision multipliers, return the
      * precision-adjusted balances.
      *
-     * @param _balances an array of token balances, in their native precisions.
+     * @param balances an array of token balances, in their native precisions.
      * These should generally correspond with pooled tokens.
      *
      * @param precisionMultipliers an array of multipliers, corresponding to
-     * the amounts in the _balances array. When multiplied together they
+     * the amounts in the balances array. When multiplied together they
      * should yield amounts at the pool's precision.
      *
      * @return an array of amounts "scaled" to the pool's precision
      */
     function _xp(
-        uint256[] memory _balances,
+        uint256[] memory balances,
         uint256[] memory precisionMultipliers
     ) internal pure returns (uint256[] memory) {
-        uint256 numTokens = _balances.length;
+        uint256 numTokens = balances.length;
         require(
             numTokens == precisionMultipliers.length,
             "Balances must map to token precision multipliers"
         );
         uint256[] memory xp = new uint256[](numTokens);
         for (uint256 i = 0; i < numTokens; i++) {
-            xp[i] = _balances[i].mul(precisionMultipliers[i]);
+            xp[i] = balances[i].mul(precisionMultipliers[i]);
         }
         return xp;
     }
 
     /**
      * @notice Return the precision-adjusted balances of all tokens in the pool
-     * @param _balances array of balances to scale
-     * @return _balances array "scaled" to the pool's precision, allowing
+     * @param balances array of balances to scale
+     * @return balances array "scaled" to the pool's precision, allowing
      * them to be more easily compared.
      */
-    function _xp(Swap storage self, uint256[] memory _balances)
+    function _xp(Swap storage self, uint256[] memory balances)
         internal view returns (uint256[] memory) {
-        return _xp(_balances, self.tokenPrecisionMultipliers);
+        return _xp(balances, self.tokenPrecisionMultipliers);
     }
 
     /**
@@ -427,11 +427,11 @@ library SwapUtils {
             "Tokens must be in pool"
         );
 
-        uint256 _A = _getAPrecise(self);
-        uint256 D = getD(xp, _A);
+        uint256 A = _getAPrecise(self);
+        uint256 D = getD(xp, A);
         uint256 c = D;
         uint256 s;
-        uint256 nA = numTokens.mul(_A);
+        uint256 nA = numTokens.mul(A);
 
         uint256 _x;
         for (uint256 i = 0; i < numTokens; i++) {
@@ -565,8 +565,8 @@ library SwapUtils {
         Swap storage self, uint256[] calldata amounts, bool deposit
     ) external view returns(uint256) {
         uint256 numTokens = self.pooledTokens.length;
-        uint256 _A = _getAPrecise(self);
-        uint256 D0 = getD(_xp(self, self.balances), _A);
+        uint256 A = _getAPrecise(self);
+        uint256 d0 = getD(_xp(self, self.balances), A);
         uint256[] memory balances1 = self.balances;
         for (uint256 i = 0; i < numTokens; i++) {
             if (deposit) {
@@ -576,9 +576,9 @@ library SwapUtils {
                 balances1[i] = balances1[i].sub(amounts[i]);
             }
         }
-        uint256 D1 = getD(_xp(self, balances1), _A);
+        uint256 d1 = getD(_xp(self, balances1), A);
         uint256 totalSupply = self.lpToken.totalSupply();
-        return (deposit ? D1.sub(D0) : D0.sub(D1)).mul(totalSupply).div(D0);
+        return (deposit ? d1.sub(d0) : d0.sub(d1)).mul(totalSupply).div(d0);
     }
 
     /**
@@ -595,7 +595,7 @@ library SwapUtils {
      * @notice internal helper function to calculate fee per token multiplier used in
      * swap fee calculations
      */
-    function feePerToken(Swap storage self)
+    function _feePerToken(Swap storage self)
     internal view returns(uint256) {
         return self.swapFee.mul(self.pooledTokens.length).div(
             self.pooledTokens.length.sub(1).mul(4));
@@ -649,9 +649,9 @@ library SwapUtils {
         uint256[] memory fees = new uint256[](self.pooledTokens.length);
 
         // current state
-        uint256 D0;
+        uint256 d0;
         if (self.lpToken.totalSupply() != 0) {
-            D0 = getD(self);
+            d0 = getD(self);
         }
         uint256[] memory newBalances = self.balances;
 
@@ -664,22 +664,22 @@ library SwapUtils {
         }
 
         // invariant after change
-        uint256 D1 = getD(_xp(self, newBalances), _getAPrecise(self));
-        require(D1 > D0, "D should increase after additional liquidity");
+        uint256 d1 = getD(_xp(self, newBalances), _getAPrecise(self));
+        require(d1 > d0, "D should increase after additional liquidity");
 
         // updated to reflect fees and calculate the user's LP tokens
-        uint256 D2 = D1;
+        uint256 d2 = d1;
         if (self.lpToken.totalSupply() != 0) {
-            uint256 feePerToken_ = feePerToken(self);
+            uint256 feePerToken_ = _feePerToken(self);
             for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-                uint256 idealBalance = D1.mul(self.balances[i]).div(D0);
+                uint256 idealBalance = d1.mul(self.balances[i]).div(d0);
                 fees[i] = feePerToken_.mul(
                     idealBalance.difference(newBalances[i])).div(FEE_DENOMINATOR);
                 self.balances[i] = newBalances[i].sub(
                     fees[i].mul(self.adminFee).div(FEE_DENOMINATOR));
                 newBalances[i] = newBalances[i].sub(fees[i]);
             }
-            D2 = getD(_xp(self, newBalances), _getAPrecise(self));
+            d2 = getD(_xp(self, newBalances), _getAPrecise(self));
         } else {
             // the initial depositor doesn't pay fees
             self.balances = newBalances;
@@ -687,9 +687,9 @@ library SwapUtils {
 
         uint256 toMint;
         if (self.lpToken.totalSupply() == 0) {
-            toMint = D1;
+            toMint = d1;
         } else {
-            toMint = D2.sub(D0).mul(self.lpToken.totalSupply()).div(D0);
+            toMint = d2.sub(d0).mul(self.lpToken.totalSupply()).div(d0);
         }
 
         require(toMint >= minToMint, "Couldn't mint min requested LP tokens");
@@ -708,7 +708,7 @@ library SwapUtils {
         }
 
         emit AddLiquidity(
-            msg.sender, amounts, fees, D1, self.lpToken.totalSupply()
+            msg.sender, amounts, fees, d1, self.lpToken.totalSupply()
         );
     }
 
@@ -838,20 +838,20 @@ library SwapUtils {
         require(maxBurnAmount <= self.lpToken.balanceOf(msg.sender) && maxBurnAmount != 0, ">LP.balanceOf");
 
         uint256 tokenSupply = self.lpToken.totalSupply();
-        uint256 _fee = feePerToken(self);
+        uint256 _fee = _feePerToken(self);
 
         uint256[] memory balances1 = self.balances;
 
-        uint256 D0 = getD(_xp(self), _getAPrecise(self));
+        uint256 d0 = getD(_xp(self), _getAPrecise(self));
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
             require(amounts[i] <= balances1[i], "Cannot withdraw more than available");
             balances1[i] = balances1[i].sub(amounts[i]);
         }
-        uint256 D1 = getD(_xp(self, balances1), _getAPrecise(self));
+        uint256 d1 = getD(_xp(self, balances1), _getAPrecise(self));
         uint256[] memory fees = new uint256[](self.pooledTokens.length);
 
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            uint256 idealBalance = D1.mul(self.balances[i]).div(D0);
+            uint256 idealBalance = d1.mul(self.balances[i]).div(d0);
             uint256 difference = idealBalance.difference(balances1[i]);
             fees[i] = _fee.mul(difference).div(FEE_DENOMINATOR);
             self.balances[i] = balances1[i].sub(fees[i].mul(self.adminFee).div(
@@ -859,9 +859,9 @@ library SwapUtils {
             balances1[i] = balances1[i].sub(fees[i]);
         }
 
-        uint256 D2 = getD(_xp(self, balances1), _getAPrecise(self));
+        uint256 d2 = getD(_xp(self, balances1), _getAPrecise(self));
 
-        uint256 tokenAmount = D0.sub(D2).mul(tokenSupply).div(D0);
+        uint256 tokenAmount = d0.sub(d2).mul(tokenSupply).div(d0);
         require(tokenAmount != 0, "Burnt amount cannot be zero");
         tokenAmount = tokenAmount
             .add(1)
@@ -880,7 +880,7 @@ library SwapUtils {
         }
 
         emit RemoveLiquidityImbalance(
-            msg.sender, amounts, fees, D1, tokenSupply.sub(tokenAmount));
+            msg.sender, amounts, fees, d1, tokenSupply.sub(tokenAmount));
     }
 
     /**
