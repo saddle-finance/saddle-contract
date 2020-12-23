@@ -82,7 +82,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         uint256 initialTime,
         uint256 futureTime
     );
-    event StopRampA(uint256 A, uint256 time);
+    event StopRampA(uint256 currentA, uint256 time);
 
     /**
      * @notice Deploys this Swap contract with given parameters as default
@@ -95,7 +95,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * eg 10 ** 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
      * @param lpTokenName the long-form name of the token to be deployed
      * @param lpTokenSymbol the short symbol for the token to be deployed
-     * @param _A the amplification coefficient * n * (n - 1). See the
+     * @param _a the amplification coefficient * n * (n - 1). See the
      * StableSwap paper for details
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
@@ -107,7 +107,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         uint256[] memory precisions,
         string memory lpTokenName,
         string memory lpTokenSymbol,
-        uint256 _A,
+        uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
         uint256 _withdrawFee,
@@ -147,8 +147,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
-        // Check _A, _fee, _adminFee, _withdrawFee, _allowlist parameters
-        require(_A < SwapUtils.MAX_A, "_A exceeds maximum");
+        // Check _a, _fee, _adminFee, _withdrawFee, _allowlist parameters
+        require(_a < SwapUtils.MAX_A, "_a exceeds maximum");
         require(_fee < SwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
         require(
             _adminFee < SwapUtils.MAX_ADMIN_FEE,
@@ -172,8 +172,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisions;
         swapStorage.balances = new uint256[](_pooledTokens.length);
-        swapStorage.initialA = _A.mul(SwapUtils.A_PRECISION);
-        swapStorage.futureA = _A.mul(SwapUtils.A_PRECISION);
+        swapStorage.initialA = _a.mul(SwapUtils.A_PRECISION);
+        swapStorage.futureA = _a.mul(SwapUtils.A_PRECISION);
         swapStorage.initialATime = 0;
         swapStorage.futureATime = 0;
         swapStorage.swapFee = _fee;

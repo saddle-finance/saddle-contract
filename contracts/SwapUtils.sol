@@ -61,7 +61,7 @@ library SwapUtils {
         uint256 initialTime,
         uint256 futureTime
     );
-    event StopRampA(uint256 A, uint256 time);
+    event StopRampA(uint256 currentA, uint256 time);
 
     struct Swap {
         // variables around the ramp management of A,
@@ -164,26 +164,26 @@ library SwapUtils {
      */
     function _getAPrecise(Swap storage self) internal view returns (uint256) {
         uint256 t1 = self.futureATime;
-        uint256 A1 = self.futureA;
+        uint256 a1 = self.futureA;
 
         if (block.timestamp < t1) {
             uint256 t0 = self.initialATime;
-            uint256 A0 = self.initialA;
-            if (A1 > A0) {
-                // A0 + (A1 - A0) * (block.timestamp - t0) / (t1 - t0)
+            uint256 a0 = self.initialA;
+            if (a1 > a0) {
+                // a0 + (a1 - a0) * (block.timestamp - t0) / (t1 - t0)
                 return
-                    A0.add(
-                        A1.sub(A0).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
+                    a0.add(
+                        a1.sub(a0).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
                     );
             } else {
-                // A0 - (A0 - A1) * (block.timestamp - t0) / (t1 - t0)
+                // a0 - (a0 - a1) * (block.timestamp - t0) / (t1 - t0)
                 return
-                    A0.sub(
-                        A0.sub(A1).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
+                    a0.sub(
+                        a0.sub(a1).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
                     );
             }
         } else {
-            return A1;
+            return a1;
         }
     }
 
@@ -297,30 +297,30 @@ library SwapUtils {
      * x_1**2 + b*x_1 = c
      * x_1 = (x_1**2 + c) / (2*x_1 + b)
      *
-     * @param A the amplification coefficient * n * (n - 1). See the StableSwap paper for details.
+     * @param a the amplification coefficient * n * (n - 1). See the StableSwap paper for details.
      * @param tokenIndex Index of token we are calculating for.
      * @param xp a precision-adjusted set of pool balances. Array should be
      * the same cardinality as the pool.
-     * @param D the stableswap invariant
+     * @param d the stableswap invariant
      * @return the price of the token, in the same precision as in xp
      */
     function getYD(
-        uint256 A,
+        uint256 a,
         uint8 tokenIndex,
         uint256[] memory xp,
-        uint256 D
+        uint256 d
     ) internal pure returns (uint256) {
         uint256 numTokens = xp.length;
         require(tokenIndex < numTokens, "Token not found");
 
-        uint256 c = D;
+        uint256 c = d;
         uint256 s;
-        uint256 nA = A.mul(numTokens);
+        uint256 nA = a.mul(numTokens);
 
         for (uint256 i = 0; i < numTokens; i++) {
             if (i != tokenIndex) {
                 s = s.add(xp[i]);
-                c = c.mul(D).div(xp[i].mul(numTokens));
+                c = c.mul(d).div(xp[i].mul(numTokens));
                 // If we were to protect the division loss we would have to keep the denominator separate
                 // and divide at the end. However this leads to overflow with large numTokens or/and D.
                 // c = c * D * D * D * ... overflow!
@@ -328,14 +328,14 @@ library SwapUtils {
                 continue;
             }
         }
-        c = c.mul(D).div(nA.mul(numTokens).div(A_PRECISION));
+        c = c.mul(d).div(nA.mul(numTokens).div(A_PRECISION));
 
-        uint256 b = s.add(D.mul(A_PRECISION).div(nA));
+        uint256 b = s.add(d.mul(A_PRECISION).div(nA));
         uint256 yPrev;
-        uint256 y = D;
+        uint256 y = d;
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
             yPrev = y;
-            y = y.mul(y).add(c).div(y.mul(2).add(b).sub(D));
+            y = y.mul(y).add(c).div(y.mul(2).add(b).sub(d));
             if (y.within1(yPrev)) {
                 break;
             }
@@ -347,11 +347,11 @@ library SwapUtils {
      * @notice Get D, the StableSwap invariant, based on a set of balances and a particular A.
      * @param xp a precision-adjusted set of pool balances. Array should be the same cardinality
      * as the pool.
-     * @param A the amplification coefficient * n * (n - 1) in A_PRECISION.
+     * @param a the amplification coefficient * n * (n - 1) in A_PRECISION.
      * See the StableSwap paper for details
      * @return the invariant, at the precision of the pool
      */
-    function getD(uint256[] memory xp, uint256 A)
+    function getD(uint256[] memory xp, uint256 a)
         internal
         pure
         returns (uint256)
@@ -366,26 +366,26 @@ library SwapUtils {
         }
 
         uint256 prevD;
-        uint256 D = s;
-        uint256 nA = A.mul(numTokens);
+        uint256 d = s;
+        uint256 nA = a.mul(numTokens);
 
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
-            uint256 dP = D;
+            uint256 dP = d;
             for (uint256 j = 0; j < numTokens; j++) {
-                dP = dP.mul(D).div(xp[j].mul(numTokens));
+                dP = dP.mul(d).div(xp[j].mul(numTokens));
                 // If we were to protect the division loss we would have to keep the denominator separate
                 // and divide at the end. However this leads to overflow with large numTokens or/and D.
                 // dP = dP * D * D * D * ... overflow!
             }
-            prevD = D;
-            D = nA.mul(s).div(A_PRECISION).add(dP.mul(numTokens)).mul(D).div(
-                nA.div(A_PRECISION).sub(1).mul(D).add(numTokens.add(1).mul(dP))
+            prevD = d;
+            d = nA.mul(s).div(A_PRECISION).add(dP.mul(numTokens)).mul(d).div(
+                nA.div(A_PRECISION).sub(1).mul(d).add(numTokens.add(1).mul(dP))
             );
-            if (D.within1(prevD)) {
+            if (d.within1(prevD)) {
                 break;
             }
         }
-        return D;
+        return d;
     }
 
     /**
@@ -457,11 +457,11 @@ library SwapUtils {
         view
         returns (uint256)
     {
-        uint256 D = getD(_xp(self), _getAPrecise(self));
+        uint256 d = getD(_xp(self), _getAPrecise(self));
         uint256 supply = self.lpToken.totalSupply();
         if (supply > 0) {
             return
-                D.mul(10**uint256(ERC20(self.lpToken).decimals())).div(supply);
+                d.mul(10**uint256(ERC20(self.lpToken).decimals())).div(supply);
         }
         return 0;
     }
@@ -495,11 +495,11 @@ library SwapUtils {
             "Tokens must be in pool"
         );
 
-        uint256 A = _getAPrecise(self);
-        uint256 D = getD(xp, A);
-        uint256 c = D;
+        uint256 a = _getAPrecise(self);
+        uint256 d = getD(xp, a);
+        uint256 c = d;
         uint256 s;
-        uint256 nA = numTokens.mul(A);
+        uint256 nA = numTokens.mul(a);
 
         uint256 _x;
         for (uint256 i = 0; i < numTokens; i++) {
@@ -511,20 +511,20 @@ library SwapUtils {
                 continue;
             }
             s = s.add(_x);
-            c = c.mul(D).div(_x.mul(numTokens));
+            c = c.mul(d).div(_x.mul(numTokens));
             // If we were to protect the division loss we would have to keep the denominator separate
             // and divide at the end. However this leads to overflow with large numTokens or/and D.
             // c = c * D * D * D * ... overflow!
         }
-        c = c.mul(D).div(nA.mul(numTokens).div(A_PRECISION));
-        uint256 b = s.add(D.mul(A_PRECISION).div(nA));
+        c = c.mul(d).div(nA.mul(numTokens).div(A_PRECISION));
+        uint256 b = s.add(d.mul(A_PRECISION).div(nA));
         uint256 yPrev;
-        uint256 y = D;
+        uint256 y = d;
 
         // iterative approximation
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
             yPrev = y;
-            y = y.mul(y).add(c).div(y.mul(2).add(b).sub(D));
+            y = y.mul(y).add(c).div(y.mul(2).add(b).sub(d));
             if (y.within1(yPrev)) {
                 break;
             }
@@ -657,8 +657,8 @@ library SwapUtils {
         bool deposit
     ) external view returns (uint256) {
         uint256 numTokens = self.pooledTokens.length;
-        uint256 A = _getAPrecise(self);
-        uint256 d0 = getD(_xp(self, self.balances), A);
+        uint256 a = _getAPrecise(self);
+        uint256 d0 = getD(_xp(self, self.balances), a);
         uint256[] memory balances1 = self.balances;
         for (uint256 i = 0; i < numTokens; i++) {
             if (deposit) {
@@ -671,7 +671,7 @@ library SwapUtils {
                 balances1[i] = balances1[i].sub(amounts[i]);
             }
         }
-        uint256 d1 = getD(_xp(self, balances1), A);
+        uint256 d1 = getD(_xp(self, balances1), a);
         uint256 totalSupply = self.lpToken.totalSupply();
         return (deposit ? d1.sub(d0) : d0.sub(d1)).mul(totalSupply).div(d0);
     }
