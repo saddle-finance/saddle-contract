@@ -117,6 +117,7 @@ library SwapUtils {
     /**
      * @notice Return A, the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
      * @return A parameter
      */
     function getA(Swap storage self) external view returns (uint256) {
@@ -126,6 +127,7 @@ library SwapUtils {
     /**
      * @notice Return A, the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
      * @return A parameter
      */
     function _getA(Swap storage self) internal view returns (uint256) {
@@ -135,6 +137,7 @@ library SwapUtils {
     /**
      * @notice Return A in its raw precision
      * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
      * @return A parameter in its raw precision form
      */
     function getAPrecise(Swap storage self) external view returns (uint256) {
@@ -144,6 +147,7 @@ library SwapUtils {
     /**
      * @notice Calculates and returns A based on the ramp settings
      * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
      * @return A parameter in its raw precision form
      */
     function _getAPrecise(Swap storage self) internal view returns (uint256) {
@@ -167,6 +171,7 @@ library SwapUtils {
 
     /**
      * @notice Retrieves the timestamp of last deposit made by the given address
+     * @param self Swap struct to read from
      * @return timestamp of last deposit
      */
     function getDepositTimestamp(Swap storage self, address user) external view returns (uint256) {
@@ -177,6 +182,7 @@ library SwapUtils {
      * @notice Calculate the dy and fee of withdrawing in one token
      * @param tokenAmount the amount to withdraw in the pool's precision
      * @param tokenIndex which token will be withdrawn
+     * @param self Swap struct to read from
      * @return the dy and the associated fee
      */
     function calculateWithdrawOneToken(
@@ -196,6 +202,7 @@ library SwapUtils {
 
     /**
      * @notice Calculate the dy of withdrawing in one token
+     * @param self Swap struct to read from
      * @param tokenIndex which token will be withdrawn
      * @param tokenAmount the amount to withdraw in the pools precision
      * @return the d and the new y after withdrawing one token
@@ -335,6 +342,7 @@ library SwapUtils {
 
     /**
      * @notice Get D, the StableSwap invariant, based on self Swap struct
+     * @param self Swap struct to read from
      * @return The invariant, at the precision of the pool
      */
     function getD(Swap storage self)
@@ -373,6 +381,7 @@ library SwapUtils {
 
     /**
      * @notice Return the precision-adjusted balances of all tokens in the pool
+     * @param self Swap struct to read from
      * @param _balances array of balances to scale
      * @return _balances array "scaled" to the pool's precision, allowing
      * them to be more easily compared.
@@ -384,6 +393,7 @@ library SwapUtils {
 
     /**
      * @notice Return the precision-adjusted balances of all tokens in the pool
+     * @param self Swap struct to read from
      * @return the pool balances "scaled" to the pool's precision, allowing
      * them to be more easily compared.
      */
@@ -393,6 +403,7 @@ library SwapUtils {
 
     /**
      * @notice Get the virtual price, to help calculate profit
+     * @param self Swap struct to read from
      * @return the virtual price, scaled to precision of POOL_PRECISION_DECIMALS
      */
     function getVirtualPrice(Swap storage self) external view returns (uint256) {
@@ -410,6 +421,7 @@ library SwapUtils {
      * This function is used as a helper function to calculate how much TO token
      * the user should receive on swap.
      *
+     * @param self Swap struct to read from
      * @param tokenIndexFrom index of FROM token
      * @param tokenIndexTo index of TO token
      * @param x the new total amount of FROM token
@@ -467,6 +479,7 @@ library SwapUtils {
 
     /**
      * @notice Externally calculates a swap between two tokens.
+     * @param self Swap struct to read from
      * @param tokenIndexFrom the token to sell
      * @param tokenIndexTo the token to buy
      * @param dx the number of tokens to sell
@@ -484,6 +497,7 @@ library SwapUtils {
      * @dev The caller is expected to transfer the actual amounts (dx and dy)
      * using the token contracts.
      *
+     * @param self Swap struct to read from
      * @param tokenIndexFrom the token to sell
      * @param tokenIndexTo the token to buy
      * @param dx the number of tokens to sell
@@ -556,10 +570,13 @@ library SwapUtils {
      *
      * @dev This shouldn't be used outside frontends for user estimates.
      *
+     * @param self Swap struct to read from
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
      * pooled token's native precision
      * @param deposit whether this is a deposit or a withdrawal
+     * @return if deposit was true, total amount of lp token that will be minted and if
+     * deposit was false, total amount of lp token that will be burned
      */
     function calculateTokenAmount(
         Swap storage self, uint256[] calldata amounts, bool deposit
@@ -583,6 +600,7 @@ library SwapUtils {
 
     /**
      * @notice return accumulated amount of admin fees of the token with given index
+     * @param self Swap struct to read from
      * @param index Index of the pooled token
      * @return admin balance in the token's precision
      */
@@ -594,6 +612,7 @@ library SwapUtils {
     /**
      * @notice internal helper function to calculate fee per token multiplier used in
      * swap fee calculations
+     * @param self Swap struct to read from
      */
     function feePerToken(Swap storage self)
     internal view returns(uint256) {
@@ -605,6 +624,7 @@ library SwapUtils {
 
     /**
      * @notice swap two tokens in the pool
+     * @param self Swap struct to read from and write to
      * @param tokenIndexFrom the token the user wants to sell
      * @param tokenIndexTo the token the user wants to buy
      * @param dx the amount of tokens the user wants to sell
@@ -632,6 +652,7 @@ library SwapUtils {
 
     /**
      * @notice Add liquidity to the pool
+     * @param self Swap struct to read from and write to
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
@@ -712,6 +733,7 @@ library SwapUtils {
      * the starting withdraw fee based on the last deposit's time & amount relative
      * to the new deposit.
      *
+     * @param self Swap struct to read from and write to
      * @param user address of the user depositing tokens
      * @param toMint amount of pool tokens to be minted
      */
@@ -746,6 +768,7 @@ library SwapUtils {
     /**
      * @notice Burn LP tokens to remove liquidity from the pool.
      * @dev Liquidity can always be removed, even when the pool is paused.
+     * @param self Swap struct to read from and write to
      * @param amount the amount of LP tokens to burn
      * @param minAmounts the minimum amounts of each token in the pool
      * acceptable for this burn. Useful as a front-running mitigation
@@ -786,7 +809,8 @@ library SwapUtils {
 
     /**
      * @notice Remove liquidity from the pool all in one token.
-     * @param tokenAmount the amount of the token you want to receive
+     * @param self Swap struct to read from and write to
+     * @param tokenAmount the amount of the lp tokens to burn
      * @param tokenIndex the index of the token you want to receive
      * @param minAmount the minimum amount to withdraw, otherwise revert
      */
@@ -824,6 +848,7 @@ library SwapUtils {
      * @notice Remove liquidity from the pool, weighted differently than the
      * pool's current balances.
      *
+     * @param self Swap struct to read from and write to
      * @param amounts how much of each token to withdraw
      * @param maxBurnAmount the max LP token provider is willing to pay to
      * remove liquidity. Useful as a front-running mitigation.
@@ -885,6 +910,7 @@ library SwapUtils {
 
     /**
      * @notice withdraw all admin fees to a given address
+     * @param self Swap struct to withdraw fees from
      * @param to Address to send the fees to
      */
     function withdrawAdminFees(Swap storage self, address to) external {
@@ -900,6 +926,7 @@ library SwapUtils {
     /**
      * @notice Sets the admin fee
      * @dev adminFee cannot be higher than 100% of the swap fee
+     * @param self Swap struct to update
      * @param newAdminFee new admin fee to be applied on future transactions
      */
     function setAdminFee(Swap storage self, uint256 newAdminFee) external {
@@ -912,6 +939,7 @@ library SwapUtils {
     /**
      * @notice update the swap fee
      * @dev fee cannot be higher than 1% of each swap
+     * @param self Swap struct to update
      * @param newSwapFee new swap fee to be applied on future transactions
      */
     function setSwapFee(Swap storage self, uint256 newSwapFee) external {
@@ -923,6 +951,7 @@ library SwapUtils {
 
     /**
      * @notice update the default withdraw fee. This also affects deposits made in the past as well.
+     * @param self Swap struct to update
      * @param newWithdrawFee new withdraw fee to be applied
      */
     function setDefaultWithdrawFee(Swap storage self, uint256 newWithdrawFee) external {
@@ -936,6 +965,7 @@ library SwapUtils {
      * @notice Start ramping up or down A parameter towards given futureA_ and futureTime_
      * Checks if the change is too rapid, and commits the new A value only when it falls under
      * the limit range.
+     * @param self Swap struct to update
      * @param futureA_ the new A to ramp towards
      * @param futureTime_ timestamp when the new A should be reached
      */
@@ -966,7 +996,8 @@ library SwapUtils {
 
     /**
      * @notice Stops ramping A immediately. Once this function is called, rampA()
-     * cannot be called for another MIN_RAMP_TIME seconds
+     * cannot be called for another 24 hours
+     * @param self Swap struct to update
      */
     function stopRampA(Swap storage self) external {
         require(self.futureATime > block.timestamp, "Ramp is already stopped");
