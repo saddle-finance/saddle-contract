@@ -694,9 +694,6 @@ library SwapUtils {
 
         require(toMint >= minToMint, "Couldn't mint min requested LP tokens");
 
-        // Update msg.sender's withdraw fee
-        _updateUserWithdrawFee(self, msg.sender, toMint);
-
         // mint the user's LP tokens
         self.lpToken.mint(msg.sender, toMint);
 
@@ -726,6 +723,12 @@ library SwapUtils {
     }
 
     function _updateUserWithdrawFee(Swap storage self, address user, uint256 toMint) internal {
+
+        // If token is transferred to address 0 (or burned), don't update the fee.
+        if (user == address(0)) {
+            return;
+        }
+
         if (self.defaultWithdrawFee == 0) {
             // If current fee is set to 0%, set multiplier to FEE_DENOMINATOR
             self.withdrawFeeMultiplier[user] = FEE_DENOMINATOR;
