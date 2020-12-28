@@ -1,13 +1,12 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "synthetix/contracts/interfaces/IVirtualSynth.sol";
 import "./interfaces/ISwap.sol";
 
 // TODO Add NatSpec tags
-contract VirtualToken is ERC20, ERC20Detailed, ERC20Burnable {
+contract VirtualToken is ERC20, ERC20Burnable {
 
     bool private _initialized;
     bool private _settled;
@@ -17,7 +16,8 @@ contract VirtualToken is ERC20, ERC20Detailed, ERC20Burnable {
     uint8 tokenToIndex;
 
     constructor (IVirtualSynth vsynth_, ISwap swap_, uint8 tokenFromIndex_, uint8 tokenToIndex_, string memory name_, string memory symbol_, uint8 decimals_
-    ) public ERC20Detailed(name_, symbol_, decimals_) {
+    ) public ERC20(name_, symbol_) {
+        _setupDecimals(decimals_);
         vsynth = vsynth_;
         swap = swap_;
         tokenFromIndex = tokenFromIndex_;

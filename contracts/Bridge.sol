@@ -1,9 +1,8 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "synthetix/contracts/interfaces/IAddressResolver.sol";
 import "synthetix/contracts/interfaces/ISynthetix.sol";
 import "synthetix/contracts/interfaces/IVirtualSynth.sol";
@@ -34,7 +33,6 @@ contract Bridge is Ownable {
     PendingSettlement[] public queueData;
 
     constructor () public {
-
     }
 
     // TODO single pending settlement?
@@ -138,7 +136,7 @@ contract Bridge is Ownable {
         );
 
         // Create virtual token with information of which token swap to
-        ERC20Detailed tokenTo = ERC20Detailed(address(swap.getToken(tokenToIndex)));
+        ERC20 tokenTo = ERC20(address(swap.getToken(tokenToIndex)));
         VirtualToken vtoken = new VirtualToken(
             vsynth,
             swap,
@@ -149,7 +147,7 @@ contract Bridge is Ownable {
             tokenTo.decimals()
         );
 
-        // Trasnfer the virtual synth and initialize virtual token
+        // Transfer the virtual synth and initialize virtual token
         IERC20(address(vsynth)).transfer(address(vtoken), vsynthAmount);
         vtoken.initialize(msg.sender, swap.calculateSwap(synthIndex, tokenToIndex, vsynthAmount));
 
