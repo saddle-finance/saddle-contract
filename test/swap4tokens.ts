@@ -27,6 +27,9 @@ import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUt
 import chai from "chai"
 import { ethers } from "hardhat"
 
+import merkleTreeData from "./exampleMerkleTree.json"
+import { BytesLike } from "@ethersproject/bytes"
+
 chai.use(solidity)
 const { expect } = chai
 
@@ -64,6 +67,14 @@ describe("Swap with 4 tokens", () => {
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
   const TOKENS: GenericErc20[] = []
+  const ALLOWED_ACCOUNTS: Record<string, any> = merkleTreeData.allowedAccounts
+
+  function getMerkleProof(address: string): BytesLike[] {
+    if (address in ALLOWED_ACCOUNTS) {
+      return ALLOWED_ACCOUNTS[address].proof
+    }
+    return []
+  }
 
   beforeEach(async () => {
     TOKENS.length = 0
@@ -115,10 +126,9 @@ describe("Swap with 4 tokens", () => {
     )
 
     // Deploy Allowlist
-    allowlist = (await deployContract(
-      signers[0] as Wallet,
-      AllowlistArtifact,
-    )) as Allowlist
+    allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
+      merkleTreeData.merkleRoot,
+    ])) as Allowlist
 
     // Deploy MathUtils
     mathUtils = (await deployContract(
@@ -166,10 +176,6 @@ describe("Swap with 4 tokens", () => {
       swap.address,
       BigNumber.from(10).pow(18).mul(1000000),
     )
-    allowlist.setMultipliers(
-      [ownerAddress, user1Address, user2Address],
-      [1000, 1000, 1000],
-    )
 
     await asyncForEach([owner, user1, user2, attacker], async (signer) => {
       await DAI.connect(signer).approve(swap.address, MAX_UINT256)
@@ -179,11 +185,14 @@ describe("Swap with 4 tokens", () => {
     })
 
     // Populate the pool with initial liquidity
-    await swap.addLiquidity(
+    await swap.addLiquidityGuarded(
       [String(50e18), String(50e6), String(50e6), String(50e18)],
       0,
       MAX_UINT256,
+      getMerkleProof(ownerAddress),
     )
+
+    await swap.setGuarded(false)
 
     expect(await swap.getTokenBalance(0)).to.be.eq(String(50e18))
     expect(await swap.getTokenBalance(1)).to.be.eq(String(50e6))

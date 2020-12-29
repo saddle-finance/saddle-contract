@@ -2,6 +2,7 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 import "./interfaces/IAllowlist.sol";
 
 /**
@@ -13,33 +14,36 @@ import "./interfaces/IAllowlist.sol";
 contract Allowlist is Ownable, IAllowlist {
     using SafeMath for uint256;
 
-    uint256 public constant DENOMINATOR = 1e3;
+    bytes32 public merkleRoot;
 
-    mapping(address => uint256) private multipliers;
     mapping(address => uint256) private poolCaps;
     mapping(address => uint256) private accountLimits;
 
-    event SetMultipliers(address[] addressArray, uint256[] multiplierArray);
     event PoolCap(address indexed poolAddress, uint256 poolCap);
     event PoolAccountLimit(address indexed poolAddress, uint256 accountLimit);
+    event NewMerkleRoot(bytes32 merkleRoot);
 
     /**
      * @notice Creates this contract and sets PoolCap of 0x0 with uint256(0x54dd1e) for
      * crude checking whether an address holds this contract
      */
-    constructor() public {
+    constructor(bytes32 merkleRoot_) public {
+        merkleRoot = merkleRoot_;
+
         // This value will be used as a way of crude checking whether an address holds this Allowlist contract
         poolCaps[address(0x0)] = uint256(0x54dd1e);
         emit PoolCap(address(0x0), uint256(0x54dd1e));
+        emit NewMerkleRoot(merkleRoot_);
     }
 
     /**
-     * @notice Returns stored allowed amount for the user at the given pool address.
+     * @notice Returns the max mintable amount of lp token per account in given pool address.
+     * Pools should use this function to check against user's lpToken balance in addLiquidity function.
      * @param poolAddress address of the pool
-     * @param user address of the user
+     * @return max mintable amount per account
      */
-    function getAllowedAmount(address poolAddress, address user) external override view returns (uint256) {
-        return accountLimits[poolAddress].mul(multipliers[user]).div(DENOMINATOR);
+    function getPoolAccountLimit(address poolAddress) external override view returns (uint256) {
+        return accountLimits[poolAddress];
     }
 
     /**
@@ -50,24 +54,21 @@ contract Allowlist is Ownable, IAllowlist {
         return poolCaps[poolAddress];
     }
 
-    // ADMIN FUNCTIONS
-
     /**
-     * @notice Set multipliers for given addresses
-     * @param addressArray array of addresses
-     * @param multiplierArray array of multipliers for respective addresses
-     *        (multiplier set to 1000 equals 1.000x)
+     * @notice Checks existence of keccak256(index, account) as a node in merkle tree stored in this contract.
+     * Pools should use this function to check if the given address qualify for depositing
+     * @param account address to confirm its existence - this would be user address
+     * @param merkleProof data that is used to prove the existence of given parameters. This is generated
+     * during creation of the merkle tree. Users should retrieve this data off chain.
+     * @return boolean value that corresponds to whether the address is found in the merkle tree
      */
-    function setMultipliers(address[] calldata addressArray, uint256[] calldata multiplierArray) external onlyOwner {
-
-        require(addressArray.length == multiplierArray.length, "Array lengths are different");
-
-        for (uint256 i = 0; i < multiplierArray.length; i++) {
-            multipliers[addressArray[i]] = multiplierArray[i];
-        }
-
-        emit SetMultipliers(addressArray, multiplierArray);
+    function verifyAddress(address account, bytes32[] calldata merkleProof) external override view returns (bool) {
+        // Verify the account to multiplier dictionary entry via MerkleProof library
+        bytes32 node = keccak256(abi.encodePacked(account));
+        return MerkleProof.verify(merkleProof, merkleRoot, node);
     }
+
+    // ADMIN FUNCTIONS
 
     /**
      * @notice Set account limit of allowed deposit amounts for the given pool
@@ -89,5 +90,16 @@ contract Allowlist is Ownable, IAllowlist {
         require(poolAddress != address(0x0), "0x0 is not a pool address");
         poolCaps[poolAddress] = poolCap;
         emit PoolCap(poolAddress, poolCap);
+    }
+
+    /**
+     * @notice Updates merkle root that is stored in this contract. This can only called by
+     * the owner. If more addresses are added to the allowlist, new merkle tree should be generated
+     * and merkleRoot should be updated accordingly.
+     * @param merkleRoot_ new merkle root node that contains list of deposit allowed addresses
+     */
+    function updateMerkleRoot(bytes32 merkleRoot_) external onlyOwner {
+        merkleRoot = merkleRoot_;
+        emit NewMerkleRoot(merkleRoot_);
     }
 }

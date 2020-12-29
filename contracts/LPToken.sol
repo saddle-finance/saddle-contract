@@ -41,9 +41,16 @@ contract LPToken is ERC20Burnable, Ownable {
     /**
      * @dev Overrides ERC20._beforeTokenTransfer() which get called on every transfers including
      * minting and burning. This ensures that swap.updateUserWithdrawFees are called everytime.
+     * Additionally, when pool is in guarded phase, transfers between user accounts are not allowed.
      */
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20) {
         super._beforeTokenTransfer(from, to, amount);
+
+        // Check if swap pool is in guarded phase and if the transfer is between user addresses
+        if (swap.isGuarded() && from != address(0) && to != (address(0))) {
+            // Only allow transfers in and out of the swap pool
+            require(from == address(swap) || to == address(swap), "Cannot transfer during guarded launch");
+        }
         swap.updateUserWithdrawFee(to, amount);
     }
 }
