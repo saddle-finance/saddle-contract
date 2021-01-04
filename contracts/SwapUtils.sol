@@ -489,7 +489,8 @@ library SwapUtils {
      * @notice Externally calculates a swap between two tokens.
      * @param tokenIndexFrom the token to sell
      * @param tokenIndexTo the token to buy
-     * @param dx the number of tokens to sell
+     * @param dx the number of tokens to sell. If the token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @return dy the number of tokens the user will get
      */
     function calculateSwap(
@@ -506,7 +507,8 @@ library SwapUtils {
      *
      * @param tokenIndexFrom the token to sell
      * @param tokenIndexTo the token to buy
-     * @param dx the number of tokens to sell
+     * @param dx the number of tokens to sell. If the token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @return dy the number of tokens the user will get
      * @return dyFee the associated fee
      */
@@ -578,7 +580,8 @@ library SwapUtils {
      *
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
-     * pooled token's native precision
+     * pooled token's native precision. If a token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @param deposit whether this is a deposit or a withdrawal
      */
     function calculateTokenAmount(
@@ -636,7 +639,15 @@ library SwapUtils {
         uint256 minDy
     ) external returns (uint256) {
         require(dx <= self.pooledTokens[tokenIndexFrom].balanceOf(msg.sender), "Cannot swap more than you own");
-        (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
+
+        // Transfer tokens first to see if a fee was charged on transfer
+        uint256 beforeBalance = self.pooledTokens[tokenIndexFrom].balanceOf(address(this));
+        self.pooledTokens[tokenIndexFrom].safeTransferFrom(msg.sender, address(this), dx);
+
+        // Use the actual transferred amount for AMM math
+        uint256 transferredDx = self.pooledTokens[tokenIndexFrom].balanceOf(address(this)).sub(beforeBalance);
+
+        (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, transferredDx);
         require(dy >= minDy, "Swap didn't result in min tokens");
 
         uint256 dyAdminFee = dyFee
@@ -644,15 +655,12 @@ library SwapUtils {
             .div(FEE_DENOMINATOR)
             .div(self.tokenPrecisionMultipliers[tokenIndexTo]);
 
-        self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(dx);
+        self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(transferredDx);
         self.balances[tokenIndexTo] = self.balances[tokenIndexTo].sub(dy).sub(dyAdminFee);
 
-        self.pooledTokens[tokenIndexFrom].safeTransferFrom(
-            msg.sender, address(this), dx);
         self.pooledTokens[tokenIndexTo].safeTransfer(msg.sender, dy);
 
-        emit TokenSwap(msg.sender, dx, dy, tokenIndexFrom, tokenIndexTo);
-
+        emit TokenSwap(msg.sender, transferredDx, dy, tokenIndexFrom, tokenIndexTo);
         return dy;
     }
 
@@ -663,7 +671,7 @@ library SwapUtils {
      * should mint, otherwise revert. Handy for front-running mitigation
      * @return amount of LP token user received
      */
-    function addLiquidity(Swap storage self, uint256[] calldata amounts, uint256 minToMint)
+    function addLiquidity(Swap storage self, uint256[] memory amounts, uint256 minToMint)
         external returns (uint256) {
         require(
             amounts.length == self.pooledTokens.length,
@@ -685,6 +693,17 @@ library SwapUtils {
                 self.lpToken.totalSupply() != 0 || amounts[i] > 0,
                 "If token supply is zero, must supply all tokens in pool"
             );
+
+            // Transfer tokens first to see if a fee was charged on transfer
+            if (amounts[i] != 0) {
+                uint256 beforeBalance = self.pooledTokens[i].balanceOf(address(this));
+                self.pooledTokens[i].safeTransferFrom(
+                    msg.sender, address(this), amounts[i]);
+
+                // Update the amounts[] with actual transfer amount
+                amounts[i] = self.pooledTokens[i].balanceOf(address(this)).sub(beforeBalance);
+            }
+
             newBalances[i] = self.balances[i].add(amounts[i]);
         }
 
@@ -724,13 +743,6 @@ library SwapUtils {
 
         // mint the user's LP tokens
         self.lpToken.mint(msg.sender, toMint);
-
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            if (amounts[i] != 0) {
-                self.pooledTokens[i].safeTransferFrom(
-                    msg.sender, address(this), amounts[i]);
-            }
-        }
 
         emit AddLiquidity(
             msg.sender, amounts, fees, v.D1, self.lpToken.totalSupply()
