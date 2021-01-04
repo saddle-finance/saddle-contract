@@ -21,7 +21,10 @@ contract LPToken is ERC20Burnable, Ownable {
      * @param symbol_ symbol of this token
      * @param decimals_ number of decimals this token will be based on
      */
-    constructor (string memory name_, string memory symbol_, uint8 decimals_
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_
     ) public ERC20(name_, symbol_) {
         _setupDecimals(decimals_);
         swap = ISwap(_msgSender());
@@ -42,7 +45,11 @@ contract LPToken is ERC20Burnable, Ownable {
      * @dev Overrides ERC20._beforeTokenTransfer() which get called on every transfers including
      * minting and burning. This ensures that swap.updateUserWithdrawFees are called everytime.
      */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20) {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20) {
         super._beforeTokenTransfer(from, to, amount);
         swap.updateUserWithdrawFee(to, amount);
     }

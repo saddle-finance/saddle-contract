@@ -3,7 +3,6 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
-
 /**
  * @title OwnerPausable
  * @notice An ownable contract allows the owner to pause and unpause the
@@ -11,7 +10,6 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
  * @dev Only methods using the provided modifiers will be paused.
  */
 contract OwnerPausable is Ownable, Pausable {
-
     /**
      * @notice Pause the contract. Revert if already paused.
      */

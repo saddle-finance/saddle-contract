@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
  * differences between two uint256.
  */
 library MathUtils {
-
     /**
      * @notice Compares a and b and returns true if the difference between a and b
      *         is less than 1 or equal to each other.
