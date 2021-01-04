@@ -1638,7 +1638,7 @@ describe("Swap", () => {
       const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
 
       // 2 weeks = 2 * 604800 seconds
-      await setTimestamp(depositTimestamp + 2 * 604800 - 1)
+      await setTimestamp(depositTimestamp + 2 * TIME.WEEKS - 1)
 
       const expectedTokenAmounts = await swap.calculateRemoveLiquidity(
         user1Address,
@@ -1654,7 +1654,7 @@ describe("Swap", () => {
       expect(expectedTokenAmountsWithoutWithdrawalFee[0]).to.eq(String(1e18))
       expect(expectedTokenAmountsWithoutWithdrawalFee[1]).to.eq(String(1e18))
 
-      await setNextTimestamp(depositTimestamp + 2 * 604800)
+      await setNextTimestamp(depositTimestamp + 2 * TIME.WEEKS)
       await swap
         .connect(user1)
         .removeLiquidity(currentPoolTokenBalance, [0, 0], MAX_UINT256)
@@ -1694,7 +1694,7 @@ describe("Swap", () => {
       const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
 
       // 4 weeks = 4 * 604800 seconds
-      await setTimestamp(depositTimestamp + 4 * 604800)
+      await setTimestamp(depositTimestamp + 4 * TIME.WEEKS)
       const expectedTokenAmounts = await swap.calculateRemoveLiquidity(
         user1Address,
         currentPoolTokenBalance,
@@ -1821,7 +1821,7 @@ describe("Swap", () => {
         "1997027120160681835",
       )
 
-      await setTimestamp(depositTimestamp + 2 * 604800 - 1)
+      await setTimestamp(depositTimestamp + 2 * TIME.WEEKS - 1)
 
       const expectedFirstTokenAmount = await swap.calculateRemoveLiquidityOneToken(
         user1Address,
@@ -1830,7 +1830,7 @@ describe("Swap", () => {
       )
       expect(expectedFirstTokenAmount).to.eq("1992034548366225890")
 
-      await setNextTimestamp(depositTimestamp + 2 * 604800)
+      await setNextTimestamp(depositTimestamp + 2 * TIME.WEEKS)
 
       await swap
         .connect(user1)
@@ -1877,7 +1877,7 @@ describe("Swap", () => {
         "1997027120160681835",
       )
 
-      await setTimestamp(depositTimestamp + 4 * 604800)
+      await setTimestamp(depositTimestamp + 4 * TIME.WEEKS)
 
       const expectedFirstTokenAmount = await swap.calculateRemoveLiquidityOneToken(
         user1Address,
@@ -2005,7 +2005,7 @@ describe("Swap", () => {
         swapToken,
       ])
 
-      await setTimestamp(depositTimestamp + 2 * 604800 - 1)
+      await setTimestamp(depositTimestamp + 2 * TIME.WEEKS - 1)
 
       const expectedBurnAmount = await swap.calculateTokenAmount(
         user1Address,
@@ -2023,7 +2023,7 @@ describe("Swap", () => {
         "1100380645892136877",
       )
 
-      await setNextTimestamp(depositTimestamp + 2 * 604800)
+      await setNextTimestamp(depositTimestamp + 2 * TIME.WEEKS)
       await swap
         .connect(user1)
         .removeLiquidityImbalance(
@@ -2072,7 +2072,7 @@ describe("Swap", () => {
         swapToken,
       ])
 
-      await setTimestamp(depositTimestamp + 4 * 604800)
+      await setTimestamp(depositTimestamp + 4 * TIME.WEEKS)
 
       const expectedBurnAmount = await swap.calculateTokenAmount(
         user1Address,
@@ -2385,7 +2385,7 @@ describe("Swap", () => {
       )
 
       // 2 weeks after
-      await setNextTimestamp(depositTimestamp + 2 * 604800)
+      await setNextTimestamp(depositTimestamp + 2 * TIME.WEEKS)
       await swap
         .connect(user1)
         .addLiquidity([String(2e18), String(2e18)], 0, MAX_UINT256)
@@ -2409,7 +2409,7 @@ describe("Swap", () => {
       const currentPoolTokenBalance = await swapToken.balanceOf(user1Address)
 
       // 4 weeks after initial deposit
-      await setNextTimestamp(depositTimestamp + 4 * 604800)
+      await setNextTimestamp(depositTimestamp + 4 * TIME.WEEKS)
       await swap
         .connect(user1)
         .removeLiquidity(currentPoolTokenBalance, [0, 0], MAX_UINT256)
