@@ -1,14 +1,13 @@
-import { ethers } from "hardhat"
-import { Wallet, Signer } from "ethers"
-import chai from "chai"
+import { Signer, Wallet } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
-
-import StakeableTokenWrapperArtifact from "../build/artifacts/contracts/StakeableTokenWrapper.sol/StakeableTokenWrapper.json"
-import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
 
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { GenericErc20 } from "../build/typechain/GenericErc20"
 import { Ierc20 as IERC20 } from "../build/typechain/Ierc20"
+import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
+import StakeableTokenWrapperArtifact from "../build/artifacts/contracts/StakeableTokenWrapper.sol/StakeableTokenWrapper.json"
+import chai from "chai"
+import { ethers } from "hardhat"
 
 chai.use(solidity)
 const { expect } = chai
@@ -55,6 +54,14 @@ describe("StakeableTokenWrapper", () => {
     await basicToken.transfer(await signers[2].getAddress(), 10000)
 
     tokenWrapper = (await deployWrapper(basicToken)) as StakeableTokenWrapper
+  })
+
+  it("Reverts when staking 0", async () => {
+    const wrapperAsStaker1 = tokenWrapper.connect(signers[1] as Wallet)
+    const tokenAsStaker1 = basicToken.connect(signers[1] as Wallet)
+
+    await tokenAsStaker1.approve(wrapperAsStaker1.address, 1000)
+    await expect(wrapperAsStaker1.stake(0)).to.be.reverted
   })
 
   it("Emits an event on staking", async () => {

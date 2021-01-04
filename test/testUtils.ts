@@ -1,12 +1,13 @@
 import { BigNumber, Bytes, ContractFactory, Signer } from "ethers"
-import { Contract } from "@ethersproject/contracts"
-import { Artifact } from "hardhat/types"
-import { ethers } from "hardhat"
 
+import { Artifact } from "hardhat/types"
+import { Contract } from "@ethersproject/contracts"
 import { Erc20 as ERC20 } from "../build/typechain/Erc20"
 import { Swap } from "../build/typechain/Swap"
+import { ethers } from "hardhat"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 export enum TIME {
   SECONDS = 1,
