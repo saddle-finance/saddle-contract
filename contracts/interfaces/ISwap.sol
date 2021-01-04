@@ -14,6 +14,8 @@ interface ISwap {
 
     function getVirtualPrice() external view returns (uint256);
 
+    function isGuarded() external view returns (bool);
+
     // min return calculation functions
     function calculateSwap(
         uint8 tokenIndexFrom,
@@ -49,6 +51,13 @@ interface ISwap {
         uint256[] calldata amounts,
         uint256 minToMint,
         uint256 deadline
+    ) external returns (uint256);
+
+    function addLiquidityGuarded(
+        uint256[] calldata amounts,
+        uint256 minToMint,
+        uint256 deadline,
+        bytes32[] calldata merkleProof
     ) external returns (uint256);
 
     function removeLiquidity(

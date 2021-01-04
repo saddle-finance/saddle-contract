@@ -13,6 +13,7 @@ import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
 import { ethers } from "hardhat"
+import merkleTreeData from "./exampleMerkleTree.json"
 
 chai.use(solidity)
 const { expect } = chai
@@ -50,10 +51,9 @@ describe("Swap", () => {
     ])) as GenericErc20
 
     // Deploy Allowlist
-    allowlist = (await deployContract(
-      signers[0] as Wallet,
-      AllowlistArtifact,
-    )) as Allowlist
+    allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
+      merkleTreeData.merkleRoot,
+    ])) as Allowlist
 
     // Deploy MathUtils
     mathUtils = (await deployContract(

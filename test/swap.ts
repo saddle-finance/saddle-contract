@@ -30,10 +30,13 @@ import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUt
 import chai from "chai"
 import { ethers } from "hardhat"
 
+import merkleTreeData from "./exampleMerkleTree.json"
+import { BytesLike } from "@ethersproject/bytes"
+
 chai.use(solidity)
 const { expect } = chai
 
-describe("Swap", () => {
+describe("Swap", async () => {
   let signers: Array<Signer>
   let swap: Swap
   let testSwapReturnValues: TestSwapReturnValues
@@ -64,6 +67,15 @@ describe("Swap", () => {
   const SWAP_FEE = 1e7
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
+  const MERKLE_ROOT = merkleTreeData.merkleRoot
+  const ALLOWED_ACCOUNTS: Record<string, any> = merkleTreeData.allowedAccounts
+
+  function getMerkleProof(address: string): BytesLike[] {
+    if (address in ALLOWED_ACCOUNTS) {
+      return ALLOWED_ACCOUNTS[address].proof
+    }
+    return []
+  }
 
   beforeEach(async () => {
     signers = await ethers.getSigners()
@@ -95,10 +107,9 @@ describe("Swap", () => {
     })
 
     // Deploy Allowlist
-    allowlist = (await deployContract(
-      signers[0] as Wallet,
-      AllowlistArtifact,
-    )) as Allowlist
+    allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
+      MERKLE_ROOT,
+    ])) as Allowlist
 
     // Deploy MathUtils
     mathUtils = (await deployContract(
@@ -147,20 +158,27 @@ describe("Swap", () => {
     )) as TestSwapReturnValues
     await testSwapReturnValues.deployed()
 
+    // console.log(testSwapReturnValues.address)
+    // 0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0
+
     // Set deposit limits
     await allowlist.setPoolCap(swap.address, String(6e20))
     await allowlist.setPoolAccountLimit(swap.address, String(2e20))
-    await allowlist.setMultipliers(
-      [ownerAddress, user1Address, user2Address, testSwapReturnValues.address],
-      [1000, 1000, 1000, 1000],
-    )
 
     await asyncForEach([owner, user1, user2], async (signer) => {
       await firstToken.connect(signer).approve(swap.address, MAX_UINT256)
       await secondToken.connect(signer).approve(swap.address, MAX_UINT256)
+      await swapToken.connect(signer).approve(swap.address, MAX_UINT256)
     })
 
-    await swap.addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256)
+    await swap.addLiquidityGuarded(
+      [String(1e18), String(1e18)],
+      0,
+      MAX_UINT256,
+      getMerkleProof(ownerAddress),
+    )
+
+    await swap.setGuarded(false)
 
     expect(await firstToken.balanceOf(swap.address)).to.eq(String(1e18))
     expect(await secondToken.balanceOf(swap.address)).to.eq(String(1e18))
@@ -259,7 +277,7 @@ describe("Swap", () => {
     it("Reverts when contract is paused", async () => {
       await swap.pause()
 
-      expect(
+      await expect(
         swap
           .connect(user1)
           .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256),
@@ -383,7 +401,7 @@ describe("Swap", () => {
       // Someone else deposits thus front running user 1's deposit
       await swap.addLiquidity([String(1e18), String(3e18)], 0, MAX_UINT256)
 
-      expect(
+      await expect(
         swap
           .connect(user1)
           .addLiquidity(
@@ -1491,53 +1509,175 @@ describe("Swap", () => {
   })
 
   describe("Guarded launch", () => {
+    beforeEach(async () => {
+      await swap.setGuarded(true)
+    })
+
     it("Only owner can remove the guard", async () => {
       expect(await swap.isGuarded()).to.eq(true)
-      await expect(swap.connect(user1).setIsGuarded(false)).to.be.reverted
-      await swap.connect(owner).setIsGuarded(false)
+      await expect(swap.connect(user1).setGuarded(false)).to.be.reverted
+      await swap.connect(owner).setGuarded(false)
       expect(await swap.isGuarded()).to.eq(false)
     })
 
-    it("Reverts when depositing over individual limit", async () => {
-      const tokenAmount = BigNumber.from(10).pow(22)
-
-      await firstToken.mint(user1Address, tokenAmount)
-      await secondToken.mint(user1Address, tokenAmount)
-
+    it("addLiquidity reverts with 'Pool is guarded, must provide merkle proof'", async () => {
       await expect(
         swap
           .connect(user1)
-          .addLiquidity([tokenAmount, tokenAmount], 0, MAX_UINT256),
-      ).to.be.revertedWith("Deposit limit reached")
+          .addLiquidity([String(1e18), String(3e18)], 0, MAX_UINT256),
+      ).to.be.revertedWith("Pool is guarded, must provide merkle proof")
     })
 
-    it("Succeeds when depositing over the individual limit with the guard disabled", async () => {
-      const tokenAmount = BigNumber.from(10).pow(22)
-
-      await firstToken.mint(user1Address, tokenAmount)
-      await secondToken.mint(user1Address, tokenAmount)
-
-      await swap.connect(owner).setIsGuarded(false)
-
-      await expect(
-        swap
+    describe("addLiquidityGuarded", () => {
+      it("Succeeds with valid address and valid proof", async () => {
+        await swap
           .connect(user1)
-          .addLiquidity([tokenAmount, tokenAmount], 0, MAX_UINT256),
-      ).to.be.ok
+          .addLiquidityGuarded(
+            [String(1e18), String(3e18)],
+            0,
+            MAX_UINT256,
+            getMerkleProof(user1Address),
+          )
+
+        expect(await swapToken.balanceOf(user1Address)).to.eq(
+          "3991672211258372957",
+        )
+      })
+
+      it("Succeeds with invalid proof when pool is not guarded", async () => {
+        await swap.setGuarded(false)
+        await swap
+          .connect(user1)
+          .addLiquidityGuarded([String(1e18), String(3e18)], 0, MAX_UINT256, [])
+
+        expect(await swapToken.balanceOf(user1Address)).to.eq(
+          "3991672211258372957",
+        )
+      })
+
+      it("Reverts with valid address but invalid proof", async () => {
+        await expect(
+          swap
+            .connect(user1)
+            .addLiquidityGuarded(
+              [String(1e18), String(3e18)],
+              0,
+              MAX_UINT256,
+              getMerkleProof(user2Address),
+            ),
+        ).to.be.revertedWith("Invalid merkle proof")
+      })
+
+      it("Reverts with invalid address", async () => {
+        const notAllowedUser = signers[10]
+        await expect(
+          swap
+            .connect(notAllowedUser)
+            .addLiquidityGuarded(
+              [String(1e18), String(3e18)],
+              0,
+              MAX_UINT256,
+              getMerkleProof(user1Address),
+            ),
+        ).to.be.revertedWith("Invalid merkle proof")
+
+        await expect(
+          swap
+            .connect(notAllowedUser)
+            .addLiquidityGuarded(
+              [String(1e18), String(3e18)],
+              0,
+              MAX_UINT256,
+              [],
+            ),
+        ).to.be.revertedWith("Invalid merkle proof")
+      })
+
+      it("Reverts when depositing over individual limit", async () => {
+        const tokenAmount = BigNumber.from(10).pow(22)
+
+        await firstToken.mint(user1Address, tokenAmount)
+        await secondToken.mint(user1Address, tokenAmount)
+
+        await expect(
+          swap
+            .connect(user1)
+            .addLiquidityGuarded(
+              [tokenAmount, tokenAmount],
+              0,
+              MAX_UINT256,
+              getMerkleProof(user1Address),
+            ),
+        ).to.be.revertedWith("Deposit limit reached")
+      })
+
+      it("Succeeds when depositing over the individual limit with the guard disabled", async () => {
+        const tokenAmount = BigNumber.from(10).pow(22)
+
+        await firstToken.mint(user1Address, tokenAmount)
+        await secondToken.mint(user1Address, tokenAmount)
+
+        await swap.connect(owner).setGuarded(false)
+
+        await expect(
+          swap
+            .connect(user1)
+            .addLiquidity([tokenAmount, tokenAmount], 0, MAX_UINT256),
+        ).to.be.ok
+      })
+
+      it("Reverts when depositing over pool cap", async () => {
+        await allowlist.setPoolCap(swap.address, String(1e17))
+
+        expect(await allowlist.getPoolAccountLimit(swap.address)).to.eq(
+          String(2e20),
+        )
+
+        await expect(
+          swap
+            .connect(user1)
+            .addLiquidityGuarded(
+              [String(1e18), String(1e18)],
+              0,
+              MAX_UINT256,
+              getMerkleProof(user1Address),
+            ),
+        ).to.be.revertedWith("Pool TVL cap reached")
+      })
     })
 
-    it("Reverts when depositing over pool cap", async () => {
-      await allowlist.setPoolCap(swap.address, String(1e17))
-
+    it("LP Token transfers between user accounts are blocked", async () => {
       expect(
-        await allowlist.getAllowedAmount(swap.address, user1Address),
-      ).to.eq(String(2e20))
+        swapToken.transfer(
+          user1Address,
+          await swapToken.balanceOf(ownerAddress),
+        ),
+      ).to.be.revertedWith("Cannot transfer during guarded launch")
+    })
 
-      await expect(
-        swap
-          .connect(user1)
-          .addLiquidity([String(1e18), String(1e18)], 0, MAX_UINT256),
-      ).to.be.revertedWith("Pool TVL cap reached")
+    it("LP Token minting and burning works as expected", async () => {
+      await swap
+        .connect(user1)
+        .addLiquidityGuarded(
+          [String(1e18), String(3e18)],
+          0,
+          MAX_UINT256,
+          getMerkleProof(user1Address),
+        )
+      expect(await swapToken.balanceOf(user1Address)).to.eq(
+        "3991672211258372957",
+      )
+
+      await swap
+        .connect(user1)
+        .removeLiquidity("3991672211258372957", [0, 0], MAX_UINT256)
+      expect(await swapToken.balanceOf(user1Address)).to.eq("0")
+      expect(await firstToken.balanceOf(user1Address)).to.eq(
+        "100332406737390609241",
+      )
+      expect(await secondToken.balanceOf(user1Address)).to.eq(
+        "99664813474781218483",
+      )
     })
   })
 
