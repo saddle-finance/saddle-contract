@@ -343,10 +343,14 @@ library SwapUtils {
             D = nA.mul(s).div(A_PRECISION).add(dP.mul(numTokens)).mul(D).div(
                 nA.sub(A_PRECISION).mul(D).div(A_PRECISION).add(numTokens.add(1).mul(dP)));
             if (D.within1(prevD)) {
-                break;
+                return D;
             }
         }
-        return D;
+
+        // Convergence should occur in 4 loops or less. If this is reached, there may be something wrong
+        // with the pool. If this were to occur repeatedly, LPs should withdraw via `removeLiquidity()`
+        // function which does not rely on D.
+        revert("D does not converge");
     }
 
     /**
