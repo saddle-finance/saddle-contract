@@ -371,10 +371,10 @@ library SwapUtils {
             yPrev = y;
             y = y.mul(y).add(c).div(y.mul(2).add(b).sub(d));
             if (y.within1(yPrev)) {
-                break;
+                return y;
             }
         }
-        return y;
+        revert("Approximation did not converge");
     }
 
     /**
@@ -571,10 +571,10 @@ library SwapUtils {
             yPrev = y;
             y = y.mul(y).add(c).div(y.mul(2).add(b).sub(d));
             if (y.within1(yPrev)) {
-                break;
+                return y;
             }
         }
-        return y;
+        revert("Approximation did not converge");
     }
 
     /**
