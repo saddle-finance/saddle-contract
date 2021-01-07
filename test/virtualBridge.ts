@@ -1,4 +1,4 @@
-import { BigNumber, Signer, Wallet } from "ethers"
+import { BigNumber, Signer, utils, Wallet } from "ethers"
 import {
   asyncForEach,
   deployContractWithLibraries,
@@ -11,6 +11,8 @@ import { deployContract, solidity } from "ethereum-waffle"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
+import { Bridge } from "../build/typechain/Bridge"
+import BridgeArtifact from "../build/artifacts/contracts/Bridge.sol/Bridge.json"
 import { GenericErc20 } from "../build/typechain/GenericErc20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LpToken } from "../build/typechain/LpToken"
@@ -26,7 +28,9 @@ import { ethers, network } from "hardhat"
 
 import merkleTreeData from "./exampleMerkleTree.json"
 import { BytesLike } from "@ethersproject/bytes"
+import dotenv from "dotenv"
 
+dotenv.config()
 chai.use(solidity)
 const { expect } = chai
 
@@ -46,6 +50,7 @@ function getMerkleProof(address: string): BytesLike[] {
 
 describe("Virtual swap bridge", () => {
   let signers: Array<Signer>
+  let bridge: Bridge
   let swap: Swap
   let allowlist: Allowlist
   let mathUtils: MathUtils
@@ -222,11 +227,52 @@ describe("Virtual swap bridge", () => {
     )
 
     expect(await swapToken.balanceOf(ownerAddress)).to.eq(String(1e18))
+
+    // Deploy Bridge contract
+    bridge = (await deployContract(owner, BridgeArtifact)) as Bridge
+    await bridge.deployed()
   })
 
   describe("Swap from token to synth", () => {
-    it("Test", async () => {
-      console.log("Tests go here")
+    describe("setSynthIndex", () => {
+      it("Emits SynthIndex event", async () => {
+        await expect(
+          bridge.setSynthIndex(
+            swap.address,
+            2,
+            utils.formatBytes32String("sBTC"),
+          ),
+        ).to.emit(bridge, "SynthIndex")
+      })
+
+      it("Succeeds with correct currencyKey", async () => {
+        await bridge.setSynthIndex(
+          swap.address,
+          2,
+          utils.formatBytes32String("sBTC"),
+        )
+        expect(await bridge.getSynthIndex(swap.address)).to.eq(2)
+      })
+
+      it("Reverts when currencyKey do not match", async () => {
+        await expect(
+          bridge.setSynthIndex(
+            swap.address,
+            2,
+            utils.formatBytes32String("sDEFI"),
+          ),
+        ).to.be.reverted
+      })
+
+      it("Reverts when given index is not a synth", async () => {
+        await expect(
+          bridge.setSynthIndex(
+            swap.address,
+            1,
+            utils.formatBytes32String("sBTC"),
+          ),
+        ).to.be.reverted
+      })
     })
   })
 })

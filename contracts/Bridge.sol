@@ -10,14 +10,26 @@ import "./VirtualToken.sol";
 import "./interfaces/IVirtualLike.sol";
 import "./interfaces/ISwap.sol";
 
+import "hardhat/console.sol";
+
+contract Proxy {
+    address public target;
+}
+
 // TODO Add NatSpec tags
 contract Bridge is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
+    event SynthIndex(
+        address indexed swap,
+        uint8 synthIndex,
+        bytes32 currencyKey
+    );
+
     // Mainnet Synthetix contracts
     IAddressResolver public synthetixResolver =
-        IAddressResolver(0x61166014E3f04E40C953fe4EAb9D9E40863C83AE);
+        IAddressResolver(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2);
     ISynthetix public synthetix =
         ISynthetix(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
 
@@ -37,6 +49,14 @@ contract Bridge is Ownable {
     PendingSettlement[] public queueData;
 
     constructor() public {}
+
+    function _getCurrencyKeyFromProxy(IERC20 proxyAddress)
+        internal
+        view
+        returns (bytes32)
+    {
+        return ISynth(Proxy(address(proxyAddress)).target()).currencyKey();
+    }
 
     function _settle(uint256 id) internal {
         // Retrieve pending settlement
@@ -118,7 +138,7 @@ contract Bridge is Ownable {
         // Swap synths
         (uint256 vsynthAmount, IVirtualSynth vsynth) =
             synthetix.exchangeWithVirtual(
-                ISynth(address(synthFrom)).currencyKey(),
+                _getCurrencyKeyFromProxy(synthFrom),
                 synthInAmount,
                 synthOutKey,
                 0
@@ -161,7 +181,7 @@ contract Bridge is Ownable {
             synthetix.exchangeWithVirtual(
                 synthInKey,
                 synthInAmount,
-                ISynth(address(swap.getToken(synthIndex))).currencyKey(),
+                _getCurrencyKeyFromProxy(swap.getToken(synthIndex)),
                 0
             );
 
@@ -193,12 +213,12 @@ contract Bridge is Ownable {
     ) external {
         // Ensure that at given `synthIndex`, there exists the synth with same currency key.
         require(
-            ISynth(address(swap.getToken(synthIndex))).currencyKey() ==
-                currencyKey,
+            _getCurrencyKeyFromProxy(swap.getToken(synthIndex)) == currencyKey,
             "currencyKey does not match"
         );
         require(synthIndex < MAX_UINT8, "index is too large");
         synthIndexPlusOneArray[address(swap)] = synthIndex + 1;
+        emit SynthIndex(address(swap), synthIndex, currencyKey);
     }
 
     function getSynthIndex(ISwap swap) external view returns (uint8) {
