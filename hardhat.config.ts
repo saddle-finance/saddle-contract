@@ -51,6 +51,9 @@ let config: HardhatUserConfig = {
     currency: "USD",
     gasPrice: 21,
   },
+  mocha: {
+    timeout: 200000,
+  },
 }
 
 if (process.env.ETHERSCAN_API) {
