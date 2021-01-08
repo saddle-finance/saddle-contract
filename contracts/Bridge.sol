@@ -68,6 +68,17 @@ contract Bridge is Ownable {
         uint256 queueId;
     }
 
+    struct SynthToVTokenInfo {
+        bytes32 mediumSynthKey;
+        IVirtualSynth vsynth;
+        uint256 vsynthAmount;
+        uint8 mediumSynthIndex;
+        uint8 tokenToIndex;
+        uint256 vtokenAmount;
+        VirtualToken vtoken;
+        uint256 queueId;
+    }
+
     constructor() public {}
 
     function _getCurrencyKeyFromProxy(IERC20 proxyAddress)
@@ -176,7 +187,7 @@ contract Bridge is Ownable {
     {
         // Struct to hold data for this function
         TokenToVSynthInfo memory v =
-            TokenToVSynthInfo(0, 0, 0, 0, IVirtualSynth(0x0), 0);
+            TokenToVSynthInfo(0, 0, 0, 0, IVirtualSynth(0), 0);
 
         // Transfer token from msg.sender
         v.tokenFromIndex = swap.getTokenIndex(address(tokenFrom)); // revert when token not found in swap pool
@@ -229,6 +240,35 @@ contract Bridge is Ownable {
         return (v.vsynthAmount, v.vsynth, v.queueId);
     }
 
+    function calcSynthToVToken(
+        ISwap swap,
+        bytes32 synthInKey,
+        ERC20 tokenTo,
+        uint256 synthInAmount
+    ) external view returns (uint256) {
+        IExchangeRates exchangeRates =
+            IExchangeRates(synthetixResolver.getAddress(EXCHANGE_RATES_NAME));
+
+        uint8 mediumSynthIndex = _getSynthIndex(swap);
+
+        bytes32 mediumSynthKey =
+            _getCurrencyKeyFromProxy(swap.getToken(mediumSynthIndex));
+
+        uint256 expectedMediumSynthAmount =
+            exchangeRates.effectiveValue(
+                synthInKey,
+                synthInAmount,
+                mediumSynthKey
+            );
+
+        return
+            swap.calculateSwap(
+                mediumSynthIndex,
+                swap.getTokenIndex(address(tokenTo)),
+                expectedMediumSynthAmount
+            );
+    }
+
     // Swaps any synth to a token that Saddle's pools support
     function synthToVToken(
         ISwap swap,
@@ -241,6 +281,18 @@ contract Bridge is Ownable {
         // Limit array size
         require(accounts.length < 6);
 
+        SynthToVTokenInfo memory v =
+            SynthToVTokenInfo(
+                0,
+                IVirtualSynth(0),
+                0,
+                0,
+                0,
+                0,
+                VirtualToken(0),
+                0
+            );
+
         {
             // Recieve synth from the user
             IERC20 synthFrom = IERC20(synthetixResolver.getSynth(synthInKey));
@@ -250,36 +302,41 @@ contract Bridge is Ownable {
             synthFrom.approve(address(synthetix), synthInAmount);
         }
 
-        uint8 synthIndex = _getSynthIndex(swap);
+        v.mediumSynthIndex = _getSynthIndex(swap);
+        v.mediumSynthKey = _getCurrencyKeyFromProxy(
+            swap.getToken(v.mediumSynthIndex)
+        );
+        require(
+            synthInKey != v.mediumSynthKey,
+            "synth is supported via normal swap"
+        );
 
         // Swap synths
-        (uint256 vsynthAmount, IVirtualSynth vsynth) =
-            synthetix.exchangeWithVirtual(
-                synthInKey,
-                synthInAmount,
-                _getCurrencyKeyFromProxy(swap.getToken(synthIndex)),
-                0
-            );
+        (v.vsynthAmount, v.vsynth) = synthetix.exchangeWithVirtual(
+            synthInKey,
+            synthInAmount,
+            v.mediumSynthKey,
+            0
+        );
 
         // Create virtual token with information of which token swap to
-        uint8 tokenToIndex = swap.getTokenIndex(address(tokenTo));
-        VirtualToken vtoken =
-            new VirtualToken(
-                vsynth,
-                swap,
-                synthIndex,
-                tokenToIndex,
-                string(abi.encodePacked("Virtual ", tokenTo.name())),
-                string(abi.encodePacked("V", tokenTo.symbol())),
-                tokenTo.decimals()
-            );
+        v.tokenToIndex = swap.getTokenIndex(address(tokenTo));
+        v.vtoken = new VirtualToken(
+            v.vsynth,
+            swap,
+            v.mediumSynthIndex,
+            v.tokenToIndex,
+            string(abi.encodePacked("Virtual ", tokenTo.name())),
+            string(abi.encodePacked("V", tokenTo.symbol())),
+            tokenTo.decimals()
+        );
 
         // Transfer the virtual synth and initialize virtual token
-        IERC20(address(vsynth)).transfer(address(vtoken), vsynthAmount);
-        vtoken.initialize(msg.sender, minAmount);
+        IERC20(address(v.vsynth)).transfer(address(v.vtoken), v.vsynthAmount);
+        v.vtoken.initialize(msg.sender, minAmount);
 
         // Add virtual token to settle queue with a list of accounts to settle to
-        _addToSettleQueue(address(vtoken), accounts);
+        _addToSettleQueue(address(v.vtoken), accounts);
     }
 
     function setSynthIndex(
