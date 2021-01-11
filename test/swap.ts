@@ -175,7 +175,7 @@ describe("Swap", () => {
           { SwapUtils: swapUtils.address },
           [
             [firstToken.address, secondToken.address, firstToken.address],
-            [String(1e18), String(1e18), String(1e18)],
+            [18, 18, 18],
             LP_TOKEN_NAME,
             LP_TOKEN_SYMBOL,
             INITIAL_A_VALUE,
