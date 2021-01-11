@@ -15,7 +15,7 @@ import "./Allowlist.sol";
  * in desired ratios for an exchange of the pool token that represents their share of the pool.
  * Users can burn pool tokens and withdraw their share of token(s).
  *
- * Each time a swap between the pooled tokens happens, a set fee incurs which effectively get
+ * Each time a swap between the pooled tokens happens, a set fee incurs which effectively gets
  * distributed to the LPs.
  *
  * In case of emergencies, admin can pause additional deposits, swaps, or single-asset withdraws - which
@@ -32,14 +32,26 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     using MathUtils for uint256;
     using SwapUtils for SwapUtils.Swap;
 
+    // Struct storing data responsible for automatic market maker functionalities. In order to
+    // access this data, this contract uses SwapUtils library. For more details, see SwapUtils.sol
     SwapUtils.Swap public swapStorage;
-    IAllowlist public allowlist;
+
+    // Address to allowlist contract that holds information about maximum totaly supply of lp tokens
+    // and maximum mintable amount per user address. As this is immutable, this will become a constant
+    // after initialization.
+    IAllowlist public immutable allowlist;
+
+    // Boolean value that notates whether this pool is guarded or not. When isGuarded is true,
+    // addLiquidity function will be restricted by limits defined in allowlist contract.
     bool public isGuarded = true;
+
+    // Maps token address to an index in the pool. Used to prevent duplicate tokens in the pool.
+    // getTokenIndex function also relies on this mapping to retrieve token index.
     mapping(address => uint8) private tokenIndexes;
 
     /*** EVENTS ***/
 
-    // events replicated fromm SwapUtils to make the ABI easier for dumb
+    // events replicated from SwapUtils to make the ABI easier for dumb
     // clients
     event TokenSwap(address indexed buyer, uint256 tokensSold,
         uint256 tokensBought, uint128 soldId, uint128 boughtId
@@ -86,6 +98,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         string memory lpTokenName, string memory lpTokenSymbol, uint256 _A,
         uint256 _fee, uint256 _adminFee, uint256 _withdrawFee, IAllowlist _allowlist
     ) public OwnerPausable() ReentrancyGuard() {
+
+        // Check _pooledTokens and precisions parameter
         require(
             _pooledTokens.length > 1,
             "Pools must contain more than 1 token"
@@ -101,7 +115,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
         for (uint8 i = 0; i < _pooledTokens.length; i++) {
             if (i > 0) {
-                require(tokenIndexes[address(_pooledTokens[i])] == 0, "Pools cannot have duplicate tokens");
+                // Check if index is already used. Check if 0th element is a duplicate.
+                require(
+                    tokenIndexes[address(_pooledTokens[i])] == 0 && _pooledTokens[0] != _pooledTokens[i],
+                    "Pools cannot have duplicate tokens"
+                );
             }
             require(
                 address(_pooledTokens[i]) != address(0),
@@ -115,6 +133,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
+        // Check _A, _fee, _adminFee, _withdrawFee, _allowlist parameters
+        require(_A < SwapUtils.MAX_A, "_A exceeds maximum");
+        require(_fee < SwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
+        require(_adminFee < SwapUtils.MAX_ADMIN_FEE, "_adminFee exceeds maximum");
+        require(_withdrawFee < SwapUtils.MAX_WITHDRAW_FEE, "_withdrawFee exceeds maximum");
+        require(_allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e), "Allowlist check failed");
+
+        // Initialize swapStorage struct
         swapStorage.lpToken = new LPToken(lpTokenName, lpTokenSymbol, SwapUtils.POOL_PRECISION_DECIMALS);
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisions;
@@ -127,8 +153,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         swapStorage.adminFee = _adminFee;
         swapStorage.defaultWithdrawFee = _withdrawFee;
 
+        // Initialize variables related to guarding the initial deposits
         allowlist = _allowlist;
-        require(allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e), "Allowlist check failed");
         isGuarded = true;
     }
 
@@ -212,10 +238,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice calculate amount of tokens you receive on swap
+     * @notice Calculate amount of tokens you receive on swap
      * @param tokenIndexFrom the token the user wants to sell
      * @param tokenIndexTo the token the user wants to buy
-     * @param dx the amount of tokens the user wants to sell
+     * @param dx the amount of tokens the user wants to sell. If the token charges
+     * a fee on transfers, use the amount that gets transferred after the fee.
      * @return amount of tokens the user will receive
      */
     function calculateSwap(uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
@@ -233,7 +260,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
-     * pooled token's native precision
+     * pooled token's native precision. If a token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @param deposit whether this is a deposit or a withdrawal
      * @return token amount the user will receive
      */
@@ -246,7 +274,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @notice A simple method to calculate amount of each underlying
      * tokens that is returned upon burning given amount of LP tokens
      * @param amount the amount of LP tokens that would be burned on withdrawal
-     * @return array of balances of tokens that user will receive
+     * @return array of token balances that the user will receive
      */
     function calculateRemoveLiquidity(uint256 amount) external view returns (uint256[] memory) {
         return swapStorage.calculateRemoveLiquidity(amount);
@@ -299,7 +327,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function swap(
         uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy, uint256 deadline
-    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+    ) external nonReentrant whenNotPaused deadlineCheck(deadline) {
         return swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
 
@@ -311,7 +339,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param deadline latest timestamp to accept this transaction
      */
     function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline)
-        external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+        external nonReentrant whenNotPaused deadlineCheck(deadline) {
         swapStorage.addLiquidity(amounts, minToMint);
 
         if (isGuarded) {
@@ -352,7 +380,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function removeLiquidityOneToken(
         uint256 tokenAmount, uint8 tokenIndex, uint256 minAmount, uint256 deadline
-    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+    ) external nonReentrant whenNotPaused deadlineCheck(deadline) {
         return swapStorage.removeLiquidityOneToken(tokenAmount, tokenIndex, minAmount);
     }
 
@@ -367,7 +395,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      */
     function removeLiquidityImbalance(
         uint256[] calldata amounts, uint256 maxBurnAmount, uint256 deadline
-    ) external nonReentrant onlyUnpaused deadlineCheck(deadline) {
+    ) external nonReentrant whenNotPaused deadlineCheck(deadline) {
         return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
 

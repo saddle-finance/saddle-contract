@@ -73,8 +73,8 @@ library SwapUtils {
         mapping(address => uint256) withdrawFeeMultiplier;
     }
 
-    // Struct storing variables used in calculation in calculateWithdrawOneTokenDY function
-    // to avoid stack too deep error
+    // Struct storing variables used in calculations in the
+    // calculateWithdrawOneTokenDY function to avoid stack too deep errors
     struct CalculateWithdrawOneTokenDYInfo {
         uint256 D0;
         uint256 D1;
@@ -90,25 +90,25 @@ library SwapUtils {
     uint256 private constant FEE_DENOMINATOR = 10 ** 10;
 
     // Max swap fee is 1% or 100bps of each swap
-    uint256 private constant MAX_SWAP_FEE = 10 ** 8;
+    uint256 public constant MAX_SWAP_FEE = 10 ** 8;
 
     // Max adminFee is 100% of the swapFee
     // adminFee does not add additional fee on top of swapFee
     // Instead it takes a certain % of the swapFee. Therefore it has no impact on the
     // users but only on the earnings of LPs
-    uint256 private constant MAX_ADMIN_FEE = 10 ** 10;
+    uint256 public constant MAX_ADMIN_FEE = 10 ** 10;
 
     // Max withdrawFee is 1% of the value withdrawn
     // Fee will be redistributed to the LPs in the pool, rewarding
     // long term providers.
-    uint256 private constant MAX_WITHDRAW_FEE = 10 ** 8;
+    uint256 public constant MAX_WITHDRAW_FEE = 10 ** 8;
 
     // Constant value used as max loop limit
     uint256 private constant MAX_LOOP_LIMIT = 256;
 
     // Constant values used in ramping A calculations
     uint256 public constant A_PRECISION = 100;
-    uint256 private constant MAX_A = 10 ** 6;
+    uint256 public constant MAX_A = 10 ** 6;
     uint256 private constant MAX_A_CHANGE = 2;
     uint256 private constant MIN_RAMP_TIME = 14 days;
 
@@ -151,12 +151,12 @@ library SwapUtils {
      * @return A parameter in its raw precision form
      */
     function _getAPrecise(Swap storage self) internal view returns (uint256) {
-        uint256 t1 = self.futureATime;
-        uint256 A1 = self.futureA;
+        uint256 t1 = self.futureATime; // time when ramp is finished
+        uint256 A1 = self.futureA;     // final A value when ramp is finished
 
         if (block.timestamp < t1) {
-            uint256 t0 = self.initialATime;
-            uint256 A0 = self.initialA;
+            uint256 t0 = self.initialATime; // time when ramp is started
+            uint256 A0 = self.initialA;     // initial A value when ramp is started
             if (A1 > A0) {
                 // A0 + (A1 - A0) * (block.timestamp - t0) / (t1 - t0)
                 return A0.add(A1.sub(A0).mul(block.timestamp.sub(t0)).div(t1.sub(t0)));
@@ -179,11 +179,12 @@ library SwapUtils {
     }
 
     /**
-     * @notice Calculate the dy and fee of withdrawing in one token
+     * @notice Calculate the dy, the amount of selected token that user receives and
+     * the fee of withdrawing in one token
      * @param tokenAmount the amount to withdraw in the pool's precision
      * @param tokenIndex which token will be withdrawn
      * @param self Swap struct to read from
-     * @return the dy and the associated fee
+     * @return the amount of token user will receive and the associated fee
      */
     function calculateWithdrawOneToken(
         Swap storage self, uint256 tokenAmount, uint8 tokenIndex
@@ -246,9 +247,8 @@ library SwapUtils {
     }
 
     /**
-     * @notice Calculate the price of a token in the pool given
-     * precision-adjusted balances and a particular D and precision-adjusted
-     * array of balances.
+     * @notice Calculate the price of a token in the pool with given
+     * precision-adjusted balances and a particular D.
      *
      * @dev This is accomplished via solving the invariant iteratively.
      * See the StableSwap paper and Curve.fi implementation for further details.
@@ -280,8 +280,6 @@ library SwapUtils {
                 // If we were to protect the division loss we would have to keep the denominator separate
                 // and divide at the end. However this leads to overflow with large numTokens or/and D.
                 // c = c * D * D * D * ... overflow!
-            } else {
-                continue;
             }
         }
         c = c.mul(D).div(nA.mul(numTokens).div(A_PRECISION));
@@ -293,10 +291,10 @@ library SwapUtils {
             yPrev = y;
             y = y.mul(y).add(c).div(y.mul(2).add(b).sub(D));
             if(y.within1(yPrev)) {
-                break;
+                return y;
             }
         }
-        return y;
+        revert("Approximation did not converge");
     }
 
     /**
@@ -334,10 +332,14 @@ library SwapUtils {
             D = nA.mul(s).div(A_PRECISION).add(dP.mul(numTokens)).mul(D).div(
                 nA.div(A_PRECISION).sub(1).mul(D).add(numTokens.add(1).mul(dP)));
             if (D.within1(prevD)) {
-                break;
+                return D;
             }
         }
-        return D;
+
+        // Convergence should occur in 4 loops or less. If this is reached, there may be something wrong
+        // with the pool. If this were to occur repeatedly, LPs should withdraw via `removeLiquidity()`
+        // function which does not rely on D.
+        revert("D does not converge");
     }
 
     /**
@@ -471,10 +473,10 @@ library SwapUtils {
             yPrev = y;
             y = y.mul(y).add(c).div(y.mul(2).add(b).sub(D));
             if (y.within1(yPrev)) {
-                break;
+                return y;
             }
         }
-        return y;
+        revert("Approximation did not converge");
     }
 
     /**
@@ -482,7 +484,8 @@ library SwapUtils {
      * @param self Swap struct to read from
      * @param tokenIndexFrom the token to sell
      * @param tokenIndexTo the token to buy
-     * @param dx the number of tokens to sell
+     * @param dx the number of tokens to sell. If the token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @return dy the number of tokens the user will get
      */
     function calculateSwap(
@@ -500,7 +503,8 @@ library SwapUtils {
      * @param self Swap struct to read from
      * @param tokenIndexFrom the token to sell
      * @param tokenIndexTo the token to buy
-     * @param dx the number of tokens to sell
+     * @param dx the number of tokens to sell. If the token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @return dy the number of tokens the user will get
      * @return dyFee the associated fee
      */
@@ -573,7 +577,8 @@ library SwapUtils {
      * @param self Swap struct to read from
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
-     * pooled token's native precision
+     * pooled token's native precision. If a token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @param deposit whether this is a deposit or a withdrawal
      * @return if deposit was true, total amount of lp token that will be minted and if
      * deposit was false, total amount of lp token that will be burned
@@ -635,19 +640,28 @@ library SwapUtils {
         uint256 minDy
     ) external {
         require(dx <= self.pooledTokens[tokenIndexFrom].balanceOf(msg.sender), "Cannot swap more than you own");
-        (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
+
+        // Transfer tokens first to see if a fee was charged on transfer
+        uint256 beforeBalance = self.pooledTokens[tokenIndexFrom].balanceOf(address(this));
+        self.pooledTokens[tokenIndexFrom].safeTransferFrom(msg.sender, address(this), dx);
+
+        // Use the actual transferred amount for AMM math
+        uint256 transferredDx = self.pooledTokens[tokenIndexFrom].balanceOf(address(this)).sub(beforeBalance);
+
+        (uint256 dy, uint256 dyFee) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, transferredDx);
         require(dy >= minDy, "Swap didn't result in min tokens");
 
-        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
+        uint256 dyAdminFee = dyFee
+            .mul(self.adminFee)
+            .div(FEE_DENOMINATOR)
+            .div(self.tokenPrecisionMultipliers[tokenIndexTo]);
 
-        self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(dx);
+        self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(transferredDx);
         self.balances[tokenIndexTo] = self.balances[tokenIndexTo].sub(dy).sub(dyAdminFee);
 
-        self.pooledTokens[tokenIndexFrom].safeTransferFrom(
-            msg.sender, address(this), dx);
         self.pooledTokens[tokenIndexTo].safeTransfer(msg.sender, dy);
 
-        emit TokenSwap(msg.sender, dx, dy, tokenIndexFrom, tokenIndexTo);
+        emit TokenSwap(msg.sender, transferredDx, dy, tokenIndexFrom, tokenIndexTo);
     }
 
     /**
@@ -657,7 +671,7 @@ library SwapUtils {
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
      */
-    function addLiquidity(Swap storage self, uint256[] calldata amounts, uint256 minToMint)
+    function addLiquidity(Swap storage self, uint256[] memory amounts, uint256 minToMint)
         external {
         require(
             amounts.length == self.pooledTokens.length,
@@ -678,6 +692,17 @@ library SwapUtils {
                 self.lpToken.totalSupply() != 0 || amounts[i] > 0,
                 "If token supply is zero, must supply all tokens in pool"
             );
+
+            // Transfer tokens first to see if a fee was charged on transfer
+            if (amounts[i] != 0) {
+                uint256 beforeBalance = self.pooledTokens[i].balanceOf(address(this));
+                self.pooledTokens[i].safeTransferFrom(
+                    msg.sender, address(this), amounts[i]);
+
+                // Update the amounts[] with actual transfer amount
+                amounts[i] = self.pooledTokens[i].balanceOf(address(this)).sub(beforeBalance);
+            }
+
             newBalances[i] = self.balances[i].add(amounts[i]);
         }
 
@@ -714,13 +739,6 @@ library SwapUtils {
 
         // mint the user's LP tokens
         self.lpToken.mint(msg.sender, toMint);
-
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            if (amounts[i] != 0) {
-                self.pooledTokens[i].safeTransferFrom(
-                    msg.sender, address(this), amounts[i]);
-            }
-        }
 
         emit AddLiquidity(
             msg.sender, amounts, fees, D1, self.lpToken.totalSupply()
