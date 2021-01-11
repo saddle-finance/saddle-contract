@@ -77,7 +77,7 @@ describe("Swap", () => {
           { SwapUtils: swapUtils.address },
           [
             [],
-            [String(1e18), String(1e18)],
+            [18, 18],
             LP_TOKEN_NAME,
             LP_TOKEN_SYMBOL,
             INITIAL_A_VALUE,
@@ -98,7 +98,7 @@ describe("Swap", () => {
           { SwapUtils: swapUtils.address },
           [
             Array(33).fill(firstToken.address),
-            [String(1e18), String(1e18)],
+            [18, 18],
             LP_TOKEN_NAME,
             LP_TOKEN_SYMBOL,
             INITIAL_A_VALUE,
@@ -119,7 +119,7 @@ describe("Swap", () => {
           { SwapUtils: swapUtils.address },
           [
             [firstToken.address, secondToken.address],
-            [String(1e18)],
+            [18],
             LP_TOKEN_NAME,
             LP_TOKEN_SYMBOL,
             INITIAL_A_VALUE,
@@ -129,7 +129,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("Each pooled token needs a specified precision")
+      ).to.be.revertedWith("Each pooled token needs a specified decimals")
     })
 
     it("Reverts with 'Pools cannot have duplicate tokens'", async () => {
@@ -140,7 +140,7 @@ describe("Swap", () => {
           { SwapUtils: swapUtils.address },
           [
             [firstToken.address, firstToken.address],
-            [String(1e18), String(1e18)],
+            [18, 18],
             LP_TOKEN_NAME,
             LP_TOKEN_SYMBOL,
             INITIAL_A_VALUE,
@@ -161,7 +161,7 @@ describe("Swap", () => {
           { SwapUtils: swapUtils.address },
           [
             [ZERO_ADDRESS, ZERO_ADDRESS],
-            [String(1e18), String(1e18)],
+            [18, 18],
             LP_TOKEN_NAME,
             LP_TOKEN_SYMBOL,
             INITIAL_A_VALUE,
@@ -174,7 +174,7 @@ describe("Swap", () => {
       ).to.be.revertedWith("The 0 address isn't an ERC-20")
     })
 
-    it("Reverts with 'Token precision can't be higher than the pool precision'", async () => {
+    it("Reverts with 'Token decimals can't be higher than the pool's precision decimals'", async () => {
       await expect(
         deployContractWithLibraries(
           owner,
@@ -182,7 +182,7 @@ describe("Swap", () => {
           { SwapUtils: swapUtils.address },
           [
             [firstToken.address, secondToken.address],
-            [String(1e19), String(1e18)],
+            [19, 18],
             LP_TOKEN_NAME,
             LP_TOKEN_SYMBOL,
             INITIAL_A_VALUE,
@@ -193,7 +193,7 @@ describe("Swap", () => {
           ],
         ),
       ).to.be.revertedWith(
-        "Token precision can't be higher than the pool precision",
+        "Token decimals can't be higher than the pool's precision decimals",
       )
     })
   })
