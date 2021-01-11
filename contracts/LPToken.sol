@@ -38,16 +38,12 @@ contract LPToken is ERC20Burnable, Ownable {
         _mint(recipient, amount);
     }
 
-    function transfer(address recipient, uint256 amount) public override returns (bool) {
-        swap.updateUserWithdrawFee(recipient, amount);
-        _transfer(_msgSender(), recipient, amount);
-        return true;
-    }
-
-    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
-        swap.updateUserWithdrawFee(recipient, amount);
-        _transfer(sender, recipient, amount);
-        _approve(sender, _msgSender(), allowance(sender, _msgSender()).sub(amount, "ERC20: transfer amount exceeds allowance"));
-        return true;
+    /**
+     * @dev Overrides ERC20._beforeTokenTransfer() which get called on every transfers including
+     * minting and burning. This ensures that swap.updateUserWithdrawFees are called everytime.
+     */
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20) {
+        super._beforeTokenTransfer(from, to, amount);
+        swap.updateUserWithdrawFee(to, amount);
     }
 }
