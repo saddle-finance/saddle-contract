@@ -17,7 +17,7 @@ library CERC20Utils {
     returns (uint256[] memory) {
         require(account != address(0), "account == address(0)");
         uint256[] memory balances = new uint256[](cTokens.length);
-        for (uint i = 0; i<balances.length; i++) {
+        for (uint256 i = 0; i<balances.length; i++) {
             if (cTokens[i] != address(0)) {
                 balances[i] = ICERC20(cTokens[i]).balanceOfUnderlying(account);
             }
