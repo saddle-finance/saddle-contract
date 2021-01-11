@@ -1,10 +1,11 @@
-import { ethers } from "hardhat"
-import { Signer } from "ethers"
-import chai from "chai"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { Allowlist } from "../build/typechain/Allowlist"
+import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
+import { Signer } from "ethers"
+import { ZERO_ADDRESS } from "./testUtils"
+import chai from "chai"
+import { ethers } from "hardhat"
 
 chai.use(solidity)
 const { expect } = chai
@@ -33,6 +34,11 @@ describe("Allowlist", () => {
   })
 
   describe("setPoolCap", () => {
+    it("Reverts when the pool address is 0x0", async () => {
+      await expect(allowlist.setPoolCap(ZERO_ADDRESS, String(6e20))).to.be
+        .reverted
+    })
+
     it("Emits PoolCap event", async () => {
       await expect(allowlist.setPoolCap(POOL_ADDRESS_1, String(6e20))).to.emit(
         allowlist,
@@ -58,6 +64,11 @@ describe("Allowlist", () => {
   })
 
   describe("setPoolAccountLimit & setMultiplier", () => {
+    it("Reverts when the pool address is 0x0", async () => {
+      await expect(allowlist.setPoolAccountLimit(ZERO_ADDRESS, String(6e20))).to
+        .be.reverted
+    })
+
     it("Emits PoolAccountLimit event", async () => {
       await expect(
         allowlist.setPoolAccountLimit(POOL_ADDRESS_1, String(6e20)),

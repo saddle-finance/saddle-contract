@@ -1,15 +1,13 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
  * @title MathUtils library
- * @notice A library to be used in conjuction with SafeMath. Contains functions for calculating
+ * @notice A library to be used in conjunction with SafeMath. Contains functions for calculating
  * differences between two uint256.
  */
 library MathUtils {
-    using SafeMath for uint256;
-
     /**
      * @notice Compares a and b and returns true if the difference between a and b
      *         is less than 1 or equal to each other.
@@ -40,8 +38,8 @@ library MathUtils {
      */
     function _difference(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a > b) {
-            return a.sub(b);
+            return a - b;
         }
-        return b.sub(a);
+        return b - a;
     }
 }

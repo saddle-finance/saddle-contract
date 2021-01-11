@@ -1,6 +1,7 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title OwnerPausable
@@ -8,43 +9,18 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
  * contract without a delay.
  * @dev Only methods using the provided modifiers will be paused.
  */
-contract OwnerPausable is Ownable {
-
-    event Paused();
-    event Unpaused();
-
-    bool private paused = false;
-
+contract OwnerPausable is Ownable, Pausable {
     /**
      * @notice Pause the contract. Revert if already paused.
      */
-    function pause() external onlyOwner onlyUnpaused {
-        paused = true;
-        emit Paused();
+    function pause() external onlyOwner {
+        Pausable._pause();
     }
 
     /**
      * @notice Unpause the contract. Revert if already unpaused.
      */
-    function unpause() external onlyOwner onlyPaused {
-        paused = false;
-        emit Unpaused();
-    }
-
-
-    /**
-     * @notice Revert if the contract is paused.
-     */
-    modifier onlyUnpaused() {
-        require(!paused, "Method can only be called when unpaused");
-        _;
-    }
-
-    /**
-     * @notice Revert if the contract is unpaused.
-     */
-    modifier onlyPaused() {
-        require(paused, "Method can only be called when paused");
-        _;
+    function unpause() external onlyOwner {
+        Pausable._unpause();
     }
 }
