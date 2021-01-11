@@ -22,6 +22,8 @@ import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
+import { TestSwapReturnValues } from "../build/typechain/TestSwapReturnValues"
+import TestSwapReturnValuesArtifact from "../build/artifacts/contracts/helper/test/TestSwapReturnValues.sol/TestSwapReturnValues.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
@@ -33,6 +35,7 @@ const { expect } = chai
 describe("Swap", () => {
   let signers: Array<Signer>
   let swap: Swap
+  let testSwapReturnValues: TestSwapReturnValues
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
@@ -136,12 +139,19 @@ describe("Swap", () => {
       swapStorage.lpToken,
     )) as LpToken
 
+    testSwapReturnValues = (await deployContract(
+      owner,
+      TestSwapReturnValuesArtifact,
+      [swap.address, swapToken.address, 2],
+    )) as TestSwapReturnValues
+    await testSwapReturnValues.deployed()
+
     // Set deposit limits
-    allowlist.setPoolCap(swap.address, String(6e20))
-    allowlist.setPoolAccountLimit(swap.address, String(2e20))
-    allowlist.setMultipliers(
-      [ownerAddress, user1Address, user2Address],
-      [1000, 1000, 1000],
+    await allowlist.setPoolCap(swap.address, String(6e20))
+    await allowlist.setPoolAccountLimit(swap.address, String(2e20))
+    await allowlist.setMultipliers(
+      [ownerAddress, user1Address, user2Address, testSwapReturnValues.address],
+      [1000, 1000, 1000, 1000],
     )
 
     await asyncForEach([owner, user1, user2], async (signer) => {
@@ -165,7 +175,7 @@ describe("Swap", () => {
           { SwapUtils: swapUtils.address },
           [
             [firstToken.address, secondToken.address, firstToken.address],
-            [String(1e18), String(1e18), String(1e18)],
+            [18, 18, 18],
             LP_TOKEN_NAME,
             LP_TOKEN_SYMBOL,
             INITIAL_A_VALUE,
@@ -324,6 +334,16 @@ describe("Swap", () => {
       expect(await swap.getTokenBalance(1)).to.eq(BigNumber.from(String(4e18)))
     })
 
+    it("Returns correct minted lpToken amount", async () => {
+      await firstToken.mint(testSwapReturnValues.address, String(1e20))
+      await secondToken.mint(testSwapReturnValues.address, String(1e20))
+
+      await testSwapReturnValues.test_addLiquidity(
+        [String(1e18), String(2e18)],
+        0,
+      )
+    })
+
     it("Reverts when minToMint is not reached due to front running", async () => {
       const calculatedLPTokenAmount = await swap
         .connect(user1)
@@ -463,6 +483,21 @@ describe("Swap", () => {
       expect(secondTokenBalanceAfter.sub(secondTokenBalanceBefore)).to.eq(
         expectedSecondTokenAmount,
       )
+    })
+
+    it("Returns correct amounts of received tokens", async () => {
+      await firstToken.mint(testSwapReturnValues.address, String(1e20))
+      await secondToken.mint(testSwapReturnValues.address, String(1e20))
+
+      await testSwapReturnValues.test_addLiquidity(
+        [String(1e18), String(2e18)],
+        0,
+      )
+      const tokenBalance = await swapToken.balanceOf(
+        testSwapReturnValues.address,
+      )
+
+      await testSwapReturnValues.test_removeLiquidity(tokenBalance, [0, 0])
     })
 
     it("Reverts when user tries to burn more LP tokens than they own", async () => {
@@ -673,6 +708,24 @@ describe("Swap", () => {
       )
     })
 
+    it("Returns correct amount of burned lpToken", async () => {
+      await firstToken.mint(testSwapReturnValues.address, String(1e20))
+      await secondToken.mint(testSwapReturnValues.address, String(1e20))
+
+      await testSwapReturnValues.test_addLiquidity(
+        [String(1e18), String(2e18)],
+        0,
+      )
+
+      const tokenBalance = await swapToken.balanceOf(
+        testSwapReturnValues.address,
+      )
+      await testSwapReturnValues.test_removeLiquidityImbalance(
+        [String(1e18), String(1e17)],
+        tokenBalance,
+      )
+    })
+
     it("Reverts when user tries to burn more LP tokens than they own", async () => {
       // User 1 adds liquidity
       await swap
@@ -832,6 +885,20 @@ describe("Swap", () => {
       const after = await firstToken.balanceOf(user1Address)
 
       expect(after.sub(before)).to.eq(BigNumber.from("2008990034631583696"))
+    })
+
+    it("Returns correct amount of received token", async () => {
+      await firstToken.mint(testSwapReturnValues.address, String(1e20))
+      await secondToken.mint(testSwapReturnValues.address, String(1e20))
+      await testSwapReturnValues.test_addLiquidity(
+        [String(1e18), String(2e18)],
+        0,
+      )
+      await testSwapReturnValues.test_removeLiquidityOneToken(
+        String(2e18),
+        0,
+        0,
+      )
     })
 
     it("Reverts when user tries to burn more LP tokens than they own", async () => {
@@ -1029,6 +1096,16 @@ describe("Swap", () => {
         calculatedSwapReturnWithNegativeSlippage,
       )
       expect(actualReceivedAmount).to.lt(calculatedSwapReturn)
+    })
+
+    it("Returns correct amount of received token", async () => {
+      await firstToken.mint(testSwapReturnValues.address, String(1e20))
+      await secondToken.mint(testSwapReturnValues.address, String(1e20))
+      await testSwapReturnValues.test_addLiquidity(
+        [String(1e18), String(2e18)],
+        0,
+      )
+      await testSwapReturnValues.test_swap(0, 1, String(1e18), 0)
     })
 
     it("Reverts when block is mined after deadline", async () => {
