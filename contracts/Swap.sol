@@ -103,7 +103,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
         for (uint8 i = 0; i < _pooledTokens.length; i++) {
             if (i > 0) {
-                require(tokenIndexes[address(_pooledTokens[i])] == 0, "Pools cannot have duplicate tokens");
+                // Check if index is already used. Check if 0th element is a duplicate.
+                require(
+                    tokenIndexes[address(_pooledTokens[i])] == 0 && _pooledTokens[0] != _pooledTokens[i],
+                    "Pools cannot have duplicate tokens"
+                );
             }
             require(
                 address(_pooledTokens[i]) != address(0),
@@ -222,10 +226,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice calculate amount of tokens you receive on swap
+     * @notice Calculate amount of tokens you receive on swap
      * @param tokenIndexFrom the token the user wants to sell
      * @param tokenIndexTo the token the user wants to buy
-     * @param dx the amount of tokens the user wants to sell
+     * @param dx the amount of tokens the user wants to sell. If the token charges
+     * a fee on transfers, use the amount that gets transferred after the fee.
      * @return amount of tokens the user will receive
      */
     function calculateSwap(uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx
@@ -243,7 +248,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      *
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
-     * pooled token's native precision
+     * pooled token's native precision. If a token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @param deposit whether this is a deposit or a withdrawal
      * @return token amount the user will receive
      */

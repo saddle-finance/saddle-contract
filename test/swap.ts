@@ -165,6 +165,30 @@ describe("Swap", () => {
     expect(await secondToken.balanceOf(swap.address)).to.eq(String(1e18))
   })
 
+  describe("Swap constructor", () => {
+    it("Reverts when deploying with duplicate tokens", async () => {
+      // Deploy Swap with duplicate tokens
+      expect(
+        deployContractWithLibraries(
+          owner,
+          SwapArtifact,
+          { SwapUtils: swapUtils.address },
+          [
+            [firstToken.address, secondToken.address, firstToken.address],
+            [String(1e18), String(1e18), String(1e18)],
+            LP_TOKEN_NAME,
+            LP_TOKEN_SYMBOL,
+            INITIAL_A_VALUE,
+            SWAP_FEE,
+            0,
+            0,
+            allowlist.address,
+          ],
+        ),
+      ).to.be.revertedWith("Pools cannot have duplicate tokens")
+    })
+  })
+
   describe("swapStorage", () => {
     describe("lpToken", async () => {
       it("Returns correct lpTokenName", async () => {
