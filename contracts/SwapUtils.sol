@@ -89,13 +89,32 @@ library SwapUtils {
         mapping(address => uint256) withdrawFeeMultiplier;
     }
 
-    // Struct storing variables used in calculation in calculateWithdrawOneTokenDY function
-    // to avoid stack too deep error
+    // Struct storing variables used in calculations in the
+    // calculateWithdrawOneTokenDY function to avoid stack too deep errors
     struct CalculateWithdrawOneTokenDYInfo {
         uint256 d0;
         uint256 d1;
         uint256 newY;
         uint256 feePerToken;
+        uint256 preciseA;
+    }
+
+    // Struct storing variables used in calculation in addLiquidity function
+    // to avoid stack too deep error
+    struct AddLiquidityInfo {
+        uint256 d0;
+        uint256 d1;
+        uint256 d2;
+        uint256 preciseA;
+    }
+
+    // Struct storing variables used in calculation in removeLiquidityImbalance function
+    // to avoid stack too deep error
+    struct RemoveLiquidityImbalanceInfo {
+        uint256 d0;
+        uint256 d1;
+        uint256 d2;
+        uint256 preciseA;
     }
 
     // the precision all pools tokens will be converted to
@@ -133,6 +152,7 @@ library SwapUtils {
     /**
      * @notice Return A, the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
      * @return A parameter
      */
     function getA(Swap storage self) external view returns (uint256) {
@@ -142,6 +162,7 @@ library SwapUtils {
     /**
      * @notice Return A, the amplification coefficient * n * (n - 1)
      * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
      * @return A parameter
      */
     function _getA(Swap storage self) internal view returns (uint256) {
@@ -151,6 +172,7 @@ library SwapUtils {
     /**
      * @notice Return A in its raw precision
      * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
      * @return A parameter in its raw precision form
      */
     function getAPrecise(Swap storage self) external view returns (uint256) {
@@ -160,15 +182,16 @@ library SwapUtils {
     /**
      * @notice Calculates and returns A based on the ramp settings
      * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
      * @return A parameter in its raw precision form
      */
     function _getAPrecise(Swap storage self) internal view returns (uint256) {
-        uint256 t1 = self.futureATime;
-        uint256 a1 = self.futureA;
+        uint256 t1 = self.futureATime; // time when ramp is finished
+        uint256 a1 = self.futureA; // final A value when ramp is finished
 
         if (block.timestamp < t1) {
-            uint256 t0 = self.initialATime;
-            uint256 a0 = self.initialA;
+            uint256 t0 = self.initialATime; // time when ramp is started
+            uint256 a0 = self.initialA; // initial A value when ramp is started
             if (a1 > a0) {
                 // a0 + (a1 - a0) * (block.timestamp - t0) / (t1 - t0)
                 return
@@ -189,6 +212,7 @@ library SwapUtils {
 
     /**
      * @notice Retrieves the timestamp of last deposit made by the given address
+     * @param self Swap struct to read from
      * @return timestamp of last deposit
      */
     function getDepositTimestamp(Swap storage self, address user)
@@ -200,10 +224,12 @@ library SwapUtils {
     }
 
     /**
-     * @notice Calculate the dy and fee of withdrawing in one token
+     * @notice Calculate the dy, the amount of selected token that user receives and
+     * the fee of withdrawing in one token
      * @param tokenAmount the amount to withdraw in the pool's precision
      * @param tokenIndex which token will be withdrawn
-     * @return the dy and the associated fee
+     * @param self Swap struct to read from
+     * @return the amount of token user will receive and the associated fee
      */
     function calculateWithdrawOneToken(
         Swap storage self,
@@ -228,6 +254,7 @@ library SwapUtils {
 
     /**
      * @notice Calculate the dy of withdrawing in one token
+     * @param self Swap struct to read from
      * @param tokenIndex which token will be withdrawn
      * @param tokenAmount the amount to withdraw in the pools precision
      * @return the d and the new y after withdrawing one token
@@ -246,8 +273,9 @@ library SwapUtils {
         // y_i for D - tokenAmount
         uint256[] memory xp = _xp(self);
         CalculateWithdrawOneTokenDYInfo memory v =
-            CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0);
-        v.d0 = getD(xp, _getAPrecise(self));
+            CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0, 0);
+        v.preciseA = _getAPrecise(self);
+        v.d0 = getD(xp, v.preciseA);
         v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(self.lpToken.totalSupply()));
 
         require(
@@ -255,7 +283,7 @@ library SwapUtils {
             "Cannot withdraw more than available"
         );
 
-        v.newY = getYD(_getAPrecise(self), tokenIndex, xp, v.d1);
+        v.newY = getYD(v.preciseA, tokenIndex, xp, v.d1);
 
         uint256[] memory xpReduced = new uint256[](xp.length);
 
@@ -278,7 +306,7 @@ library SwapUtils {
 
         uint256 dy =
             xpReduced[tokenIndex].sub(
-                getYD(_getAPrecise(self), tokenIndex, xpReduced, v.d1)
+                getYD(v.preciseA, tokenIndex, xpReduced, v.d1)
             );
         dy = dy.sub(1).div(self.tokenPrecisionMultipliers[tokenIndex]);
 
@@ -286,9 +314,8 @@ library SwapUtils {
     }
 
     /**
-     * @notice Calculate the price of a token in the pool given
-     * precision-adjusted balances and a particular D and precision-adjusted
-     * array of balances.
+     * @notice Calculate the price of a token in the pool with given
+     * precision-adjusted balances and a particular D.
      *
      * @dev This is accomplished via solving the invariant iteratively.
      * See the StableSwap paper and Curve.fi implementation for further details.
@@ -324,11 +351,9 @@ library SwapUtils {
                 // If we were to protect the division loss we would have to keep the denominator separate
                 // and divide at the end. However this leads to overflow with large numTokens or/and D.
                 // c = c * D * D * D * ... overflow!
-            } else {
-                continue;
             }
         }
-        c = c.mul(d).div(nA.mul(numTokens).div(A_PRECISION));
+        c = c.mul(d).mul(A_PRECISION).div(nA.mul(numTokens));
 
         uint256 b = s.add(d.mul(A_PRECISION).div(nA));
         uint256 yPrev;
@@ -337,10 +362,10 @@ library SwapUtils {
             yPrev = y;
             y = y.mul(y).add(c).div(y.mul(2).add(b).sub(d));
             if (y.within1(yPrev)) {
-                break;
+                return y;
             }
         }
-        return y;
+        revert("Approximation did not converge");
     }
 
     /**
@@ -379,17 +404,24 @@ library SwapUtils {
             }
             prevD = d;
             d = nA.mul(s).div(A_PRECISION).add(dP.mul(numTokens)).mul(d).div(
-                nA.div(A_PRECISION).sub(1).mul(d).add(numTokens.add(1).mul(dP))
+                nA.sub(A_PRECISION).mul(d).div(A_PRECISION).add(
+                    numTokens.add(1).mul(dP)
+                )
             );
             if (d.within1(prevD)) {
-                break;
+                return d;
             }
         }
-        return d;
+
+        // Convergence should occur in 4 loops or less. If this is reached, there may be something wrong
+        // with the pool. If this were to occur repeatedly, LPs should withdraw via `removeLiquidity()`
+        // function which does not rely on D.
+        revert("D does not converge");
     }
 
     /**
      * @notice Get D, the StableSwap invariant, based on self Swap struct
+     * @param self Swap struct to read from
      * @return The invariant, at the precision of the pool
      */
     function getD(Swap storage self) internal view returns (uint256) {
@@ -427,6 +459,7 @@ library SwapUtils {
 
     /**
      * @notice Return the precision-adjusted balances of all tokens in the pool
+     * @param self Swap struct to read from
      * @param balances array of balances to scale
      * @return balances array "scaled" to the pool's precision, allowing
      * them to be more easily compared.
@@ -441,6 +474,7 @@ library SwapUtils {
 
     /**
      * @notice Return the precision-adjusted balances of all tokens in the pool
+     * @param self Swap struct to read from
      * @return the pool balances "scaled" to the pool's precision, allowing
      * them to be more easily compared.
      */
@@ -450,6 +484,7 @@ library SwapUtils {
 
     /**
      * @notice Get the virtual price, to help calculate profit
+     * @param self Swap struct to read from
      * @return the virtual price, scaled to precision of POOL_PRECISION_DECIMALS
      */
     function getVirtualPrice(Swap storage self)
@@ -472,6 +507,7 @@ library SwapUtils {
      * This function is used as a helper function to calculate how much TO token
      * the user should receive on swap.
      *
+     * @param self Swap struct to read from
      * @param tokenIndexFrom index of FROM token
      * @param tokenIndexTo index of TO token
      * @param x the new total amount of FROM token
@@ -516,7 +552,7 @@ library SwapUtils {
             // and divide at the end. However this leads to overflow with large numTokens or/and D.
             // c = c * D * D * D * ... overflow!
         }
-        c = c.mul(d).div(nA.mul(numTokens).div(A_PRECISION));
+        c = c.mul(d).mul(A_PRECISION).div(nA.mul(numTokens));
         uint256 b = s.add(d.mul(A_PRECISION).div(nA));
         uint256 yPrev;
         uint256 y = d;
@@ -526,17 +562,19 @@ library SwapUtils {
             yPrev = y;
             y = y.mul(y).add(c).div(y.mul(2).add(b).sub(d));
             if (y.within1(yPrev)) {
-                break;
+                return y;
             }
         }
-        return y;
+        revert("Approximation did not converge");
     }
 
     /**
      * @notice Externally calculates a swap between two tokens.
+     * @param self Swap struct to read from
      * @param tokenIndexFrom the token to sell
      * @param tokenIndexTo the token to buy
-     * @param dx the number of tokens to sell
+     * @param dx the number of tokens to sell. If the token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @return dy the number of tokens the user will get
      */
     function calculateSwap(
@@ -554,9 +592,11 @@ library SwapUtils {
      * @dev The caller is expected to transfer the actual amounts (dx and dy)
      * using the token contracts.
      *
+     * @param self Swap struct to read from
      * @param tokenIndexFrom the token to sell
      * @param tokenIndexTo the token to buy
-     * @param dx the number of tokens to sell
+     * @param dx the number of tokens to sell. If the token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @return dy the number of tokens the user will get
      * @return dyFee the associated fee
      */
@@ -646,10 +686,14 @@ library SwapUtils {
      *
      * @dev This shouldn't be used outside frontends for user estimates.
      *
+     * @param self Swap struct to read from
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
-     * pooled token's native precision
+     * pooled token's native precision. If a token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
      * @param deposit whether this is a deposit or a withdrawal
+     * @return if deposit was true, total amount of lp token that will be minted and if
+     * deposit was false, total amount of lp token that will be burned
      */
     function calculateTokenAmount(
         Swap storage self,
@@ -664,11 +708,10 @@ library SwapUtils {
             if (deposit) {
                 balances1[i] = balances1[i].add(amounts[i]);
             } else {
-                require(
-                    amounts[i] <= balances1[i],
+                balances1[i] = balances1[i].sub(
+                    amounts[i],
                     "Cannot withdraw more than available"
                 );
-                balances1[i] = balances1[i].sub(amounts[i]);
             }
         }
         uint256 d1 = getD(_xp(self, balances1), a);
@@ -678,6 +721,7 @@ library SwapUtils {
 
     /**
      * @notice return accumulated amount of admin fees of the token with given index
+     * @param self Swap struct to read from
      * @param index Index of the pooled token
      * @return admin balance in the token's precision
      */
@@ -696,6 +740,7 @@ library SwapUtils {
     /**
      * @notice internal helper function to calculate fee per token multiplier used in
      * swap fee calculations
+     * @param self Swap struct to read from
      */
     function _feePerToken(Swap storage self) internal view returns (uint256) {
         return
@@ -708,10 +753,12 @@ library SwapUtils {
 
     /**
      * @notice swap two tokens in the pool
+     * @param self Swap struct to read from and write to
      * @param tokenIndexFrom the token the user wants to sell
      * @param tokenIndexTo the token the user wants to buy
      * @param dx the amount of tokens the user wants to sell
      * @param minDy the min amount the user would like to receive, or revert.
+     * @return amount of token user received on swap
      */
     function swap(
         Swap storage self,
@@ -719,13 +766,29 @@ library SwapUtils {
         uint8 tokenIndexTo,
         uint256 dx,
         uint256 minDy
-    ) external {
+    ) external returns (uint256) {
         require(
             dx <= self.pooledTokens[tokenIndexFrom].balanceOf(msg.sender),
             "Cannot swap more than you own"
         );
+
+        // Transfer tokens first to see if a fee was charged on transfer
+        uint256 beforeBalance =
+            self.pooledTokens[tokenIndexFrom].balanceOf(address(this));
+        self.pooledTokens[tokenIndexFrom].safeTransferFrom(
+            msg.sender,
+            address(this),
+            dx
+        );
+
+        // Use the actual transferred amount for AMM math
+        uint256 transferredDx =
+            self.pooledTokens[tokenIndexFrom].balanceOf(address(this)).sub(
+                beforeBalance
+            );
+
         (uint256 dy, uint256 dyFee) =
-            _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
+            _calculateSwap(self, tokenIndexFrom, tokenIndexTo, transferredDx);
         require(dy >= minDy, "Swap didn't result in min tokens");
 
         uint256 dyAdminFee =
@@ -733,32 +796,39 @@ library SwapUtils {
                 self.tokenPrecisionMultipliers[tokenIndexTo]
             );
 
-        self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(dx);
+        self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(
+            transferredDx
+        );
         self.balances[tokenIndexTo] = self.balances[tokenIndexTo].sub(dy).sub(
             dyAdminFee
         );
 
-        self.pooledTokens[tokenIndexFrom].safeTransferFrom(
-            msg.sender,
-            address(this),
-            dx
-        );
         self.pooledTokens[tokenIndexTo].safeTransfer(msg.sender, dy);
 
-        emit TokenSwap(msg.sender, dx, dy, tokenIndexFrom, tokenIndexTo);
+        emit TokenSwap(
+            msg.sender,
+            transferredDx,
+            dy,
+            tokenIndexFrom,
+            tokenIndexTo
+        );
+
+        return dy;
     }
 
     /**
      * @notice Add liquidity to the pool
+     * @param self Swap struct to read from and write to
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
+     * @return amount of LP token user received
      */
     function addLiquidity(
         Swap storage self,
-        uint256[] calldata amounts,
+        uint256[] memory amounts,
         uint256 minToMint
-    ) external {
+    ) external returns (uint256) {
         require(
             amounts.length == self.pooledTokens.length,
             "Amounts must map to pooled tokens"
@@ -767,9 +837,10 @@ library SwapUtils {
         uint256[] memory fees = new uint256[](self.pooledTokens.length);
 
         // current state
-        uint256 d0;
+        AddLiquidityInfo memory v = AddLiquidityInfo(0, 0, 0, 0);
+
         if (self.lpToken.totalSupply() != 0) {
-            d0 = getD(self);
+            v.d0 = getD(self);
         }
         uint256[] memory newBalances = self.balances;
 
@@ -778,20 +849,38 @@ library SwapUtils {
                 self.lpToken.totalSupply() != 0 || amounts[i] > 0,
                 "If token supply is zero, must supply all tokens in pool"
             );
+
+            // Transfer tokens first to see if a fee was charged on transfer
+            if (amounts[i] != 0) {
+                uint256 beforeBalance =
+                    self.pooledTokens[i].balanceOf(address(this));
+                self.pooledTokens[i].safeTransferFrom(
+                    msg.sender,
+                    address(this),
+                    amounts[i]
+                );
+
+                // Update the amounts[] with actual transfer amount
+                amounts[i] = self.pooledTokens[i].balanceOf(address(this)).sub(
+                    beforeBalance
+                );
+            }
+
             newBalances[i] = self.balances[i].add(amounts[i]);
         }
 
         // invariant after change
-        uint256 d1 = getD(_xp(self, newBalances), _getAPrecise(self));
-        require(d1 > d0, "D should increase after additional liquidity");
+        v.preciseA = _getAPrecise(self);
+        v.d1 = getD(_xp(self, newBalances), v.preciseA);
+        require(v.d1 > v.d0, "D should increase after additional liquidity");
 
         // updated to reflect fees and calculate the user's LP tokens
-        uint256 d2 = d1;
+        v.d2 = v.d1;
         if (self.lpToken.totalSupply() != 0) {
-            uint256 feePerToken_ = _feePerToken(self);
+            uint256 feePerToken = _feePerToken(self);
             for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-                uint256 idealBalance = d1.mul(self.balances[i]).div(d0);
-                fees[i] = feePerToken_
+                uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
+                fees[i] = feePerToken
                     .mul(idealBalance.difference(newBalances[i]))
                     .div(FEE_DENOMINATOR);
                 self.balances[i] = newBalances[i].sub(
@@ -799,7 +888,7 @@ library SwapUtils {
                 );
                 newBalances[i] = newBalances[i].sub(fees[i]);
             }
-            d2 = getD(_xp(self, newBalances), _getAPrecise(self));
+            v.d2 = getD(_xp(self, newBalances), v.preciseA);
         } else {
             // the initial depositor doesn't pay fees
             self.balances = newBalances;
@@ -807,36 +896,25 @@ library SwapUtils {
 
         uint256 toMint;
         if (self.lpToken.totalSupply() == 0) {
-            toMint = d1;
+            toMint = v.d1;
         } else {
-            toMint = d2.sub(d0).mul(self.lpToken.totalSupply()).div(d0);
+            toMint = v.d2.sub(v.d0).mul(self.lpToken.totalSupply()).div(v.d0);
         }
 
         require(toMint >= minToMint, "Couldn't mint min requested LP tokens");
 
-        // Update msg.sender's withdraw fee
-        _updateUserWithdrawFee(self, msg.sender, toMint);
-
         // mint the user's LP tokens
         self.lpToken.mint(msg.sender, toMint);
-
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            if (amounts[i] != 0) {
-                self.pooledTokens[i].safeTransferFrom(
-                    msg.sender,
-                    address(this),
-                    amounts[i]
-                );
-            }
-        }
 
         emit AddLiquidity(
             msg.sender,
             amounts,
             fees,
-            d1,
+            v.d1,
             self.lpToken.totalSupply()
         );
+
+        return toMint;
     }
 
     /**
@@ -845,6 +923,7 @@ library SwapUtils {
      * the starting withdraw fee based on the last deposit's time & amount relative
      * to the new deposit.
      *
+     * @param self Swap struct to read from and write to
      * @param user address of the user depositing tokens
      * @param toMint amount of pool tokens to be minted
      */
@@ -861,6 +940,10 @@ library SwapUtils {
         address user,
         uint256 toMint
     ) internal {
+        // If token is transferred to address 0 (or burned), don't update the fee.
+        if (user == address(0)) {
+            return;
+        }
         if (self.defaultWithdrawFee == 0) {
             // If current fee is set to 0%, set multiplier to FEE_DENOMINATOR
             self.withdrawFeeMultiplier[user] = FEE_DENOMINATOR;
@@ -883,15 +966,17 @@ library SwapUtils {
     /**
      * @notice Burn LP tokens to remove liquidity from the pool.
      * @dev Liquidity can always be removed, even when the pool is paused.
+     * @param self Swap struct to read from and write to
      * @param amount the amount of LP tokens to burn
      * @param minAmounts the minimum amounts of each token in the pool
      * acceptable for this burn. Useful as a front-running mitigation
+     * @return amounts of tokens the user received
      */
     function removeLiquidity(
         Swap storage self,
         uint256 amount,
         uint256[] calldata minAmounts
-    ) external {
+    ) external returns (uint256[] memory) {
         require(amount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
         require(
             minAmounts.length == self.pooledTokens.length,
@@ -916,29 +1001,30 @@ library SwapUtils {
                 "Resulted in fewer tokens than expected"
             );
             self.balances[i] = self.balances[i].sub(amounts[i]);
+            self.pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
         }
 
         self.lpToken.burnFrom(msg.sender, amount);
 
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            self.pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
-        }
-
         emit RemoveLiquidity(msg.sender, amounts, self.lpToken.totalSupply());
+
+        return amounts;
     }
 
     /**
      * @notice Remove liquidity from the pool all in one token.
-     * @param tokenAmount the amount of the token you want to receive
+     * @param self Swap struct to read from and write to
+     * @param tokenAmount the amount of the lp tokens to burn
      * @param tokenIndex the index of the token you want to receive
      * @param minAmount the minimum amount to withdraw, otherwise revert
+     * @return amount chosen token that user received
      */
     function removeLiquidityOneToken(
         Swap storage self,
         uint256 tokenAmount,
         uint8 tokenIndex,
         uint256 minAmount
-    ) external {
+    ) external returns (uint256) {
         uint256 totalSupply = self.lpToken.totalSupply();
         uint256 numTokens = self.pooledTokens.length;
         require(
@@ -972,21 +1058,25 @@ library SwapUtils {
             tokenIndex,
             dy
         );
+
+        return dy;
     }
 
     /**
      * @notice Remove liquidity from the pool, weighted differently than the
      * pool's current balances.
      *
+     * @param self Swap struct to read from and write to
      * @param amounts how much of each token to withdraw
      * @param maxBurnAmount the max LP token provider is willing to pay to
      * remove liquidity. Useful as a front-running mitigation.
+     * @return actual amount of LP tokens burned in the withdrawal
      */
     function removeLiquidityImbalance(
         Swap storage self,
         uint256[] memory amounts,
         uint256 maxBurnAmount
-    ) public {
+    ) public returns (uint256) {
         require(
             amounts.length == self.pooledTokens.length,
             "Amounts should correspond to pooled tokens"
@@ -997,35 +1087,39 @@ library SwapUtils {
             ">LP.balanceOf"
         );
 
+        RemoveLiquidityImbalanceInfo memory v =
+            RemoveLiquidityImbalanceInfo(0, 0, 0, 0);
+
         uint256 tokenSupply = self.lpToken.totalSupply();
-        uint256 _fee = _feePerToken(self);
+        uint256 feePerToken = _feePerToken(self);
 
         uint256[] memory balances1 = self.balances;
 
-        uint256 d0 = getD(_xp(self), _getAPrecise(self));
+        v.preciseA = _getAPrecise(self);
+
+        v.d0 = getD(_xp(self), v.preciseA);
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            require(
-                amounts[i] <= balances1[i],
+            balances1[i] = balances1[i].sub(
+                amounts[i],
                 "Cannot withdraw more than available"
             );
-            balances1[i] = balances1[i].sub(amounts[i]);
         }
-        uint256 d1 = getD(_xp(self, balances1), _getAPrecise(self));
+        v.d1 = getD(_xp(self, balances1), v.preciseA);
         uint256[] memory fees = new uint256[](self.pooledTokens.length);
 
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            uint256 idealBalance = d1.mul(self.balances[i]).div(d0);
+            uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
             uint256 difference = idealBalance.difference(balances1[i]);
-            fees[i] = _fee.mul(difference).div(FEE_DENOMINATOR);
+            fees[i] = feePerToken.mul(difference).div(FEE_DENOMINATOR);
             self.balances[i] = balances1[i].sub(
                 fees[i].mul(self.adminFee).div(FEE_DENOMINATOR)
             );
             balances1[i] = balances1[i].sub(fees[i]);
         }
 
-        uint256 d2 = getD(_xp(self, balances1), _getAPrecise(self));
+        v.d2 = getD(_xp(self, balances1), v.preciseA);
 
-        uint256 tokenAmount = d0.sub(d2).mul(tokenSupply).div(d0);
+        uint256 tokenAmount = v.d0.sub(v.d2).mul(tokenSupply).div(v.d0);
         require(tokenAmount != 0, "Burnt amount cannot be zero");
         tokenAmount = tokenAmount.add(1).mul(FEE_DENOMINATOR).div(
             FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender))
@@ -1046,13 +1140,16 @@ library SwapUtils {
             msg.sender,
             amounts,
             fees,
-            d1,
+            v.d1,
             tokenSupply.sub(tokenAmount)
         );
+
+        return tokenAmount;
     }
 
     /**
      * @notice withdraw all admin fees to a given address
+     * @param self Swap struct to withdraw fees from
      * @param to Address to send the fees to
      */
     function withdrawAdminFees(Swap storage self, address to) external {
@@ -1069,6 +1166,7 @@ library SwapUtils {
     /**
      * @notice Sets the admin fee
      * @dev adminFee cannot be higher than 100% of the swap fee
+     * @param self Swap struct to update
      * @param newAdminFee new admin fee to be applied on future transactions
      */
     function setAdminFee(Swap storage self, uint256 newAdminFee) external {
@@ -1081,6 +1179,7 @@ library SwapUtils {
     /**
      * @notice update the swap fee
      * @dev fee cannot be higher than 1% of each swap
+     * @param self Swap struct to update
      * @param newSwapFee new swap fee to be applied on future transactions
      */
     function setSwapFee(Swap storage self, uint256 newSwapFee) external {
@@ -1092,6 +1191,7 @@ library SwapUtils {
 
     /**
      * @notice update the default withdraw fee. This also affects deposits made in the past as well.
+     * @param self Swap struct to update
      * @param newWithdrawFee new withdraw fee to be applied
      */
     function setDefaultWithdrawFee(Swap storage self, uint256 newWithdrawFee)
@@ -1107,6 +1207,7 @@ library SwapUtils {
      * @notice Start ramping up or down A parameter towards given futureA_ and futureTime_
      * Checks if the change is too rapid, and commits the new A value only when it falls under
      * the limit range.
+     * @param self Swap struct to update
      * @param futureA_ the new A to ramp towards
      * @param futureTime_ timestamp when the new A should be reached
      */
@@ -1158,7 +1259,8 @@ library SwapUtils {
 
     /**
      * @notice Stops ramping A immediately. Once this function is called, rampA()
-     * cannot be called for another MIN_RAMP_TIME seconds
+     * cannot be called for another 24 hours
+     * @param self Swap struct to update
      */
     function stopRampA(Swap storage self) external {
         require(self.futureATime > block.timestamp, "Ramp is already stopped");
