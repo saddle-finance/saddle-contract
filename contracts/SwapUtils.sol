@@ -682,6 +682,7 @@ library SwapUtils {
         self.pooledTokens[tokenIndexTo].safeTransfer(msg.sender, dy);
 
         emit TokenSwap(msg.sender, transferredDx, dy, tokenIndexFrom, tokenIndexTo);
+
         return dy;
     }
 
@@ -695,7 +696,6 @@ library SwapUtils {
      */
     function addLiquidity(Swap storage self, uint256[] memory amounts, uint256 minToMint)
         external returns (uint256) {
-
         require(
             amounts.length == self.pooledTokens.length,
             "Amounts must map to pooled tokens"
