@@ -73,8 +73,8 @@ library SwapUtils {
         mapping(address => uint256) withdrawFeeMultiplier;
     }
 
-    // Struct storing variables used in calculation in calculateWithdrawOneTokenDY function
-    // to avoid stack too deep error
+    // Struct storing variables used in calculations in the
+    // calculateWithdrawOneTokenDY function to avoid stack too deep errors
     struct CalculateWithdrawOneTokenDYInfo {
         uint256 D0;
         uint256 D1;
