@@ -318,11 +318,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param deposit whether this is a deposit or a withdrawal
      * @return token amount the user will receive
      */
-    function calculateTokenAmount(address account, uint256[] calldata amounts, bool deposit)
-        external
-        view
-        returns (uint256)
-    {
+    function calculateTokenAmount(
+        address account,
+        uint256[] calldata amounts,
+        bool deposit
+    ) external view returns (uint256) {
         return swapStorage.calculateTokenAmount(account, amounts, deposit);
     }
 
@@ -351,10 +351,15 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * available to withdraw
      */
     function calculateRemoveLiquidityOneToken(
-        address account, uint256 tokenAmount, uint8 tokenIndex
+        address account,
+        uint256 tokenAmount,
+        uint8 tokenIndex
     ) external view returns (uint256 availableTokenAmount) {
         (availableTokenAmount, ) = swapStorage.calculateWithdrawOneToken(
-            account, tokenAmount, tokenIndex);
+            account,
+            tokenAmount,
+            tokenIndex
+        );
     }
 
     /**

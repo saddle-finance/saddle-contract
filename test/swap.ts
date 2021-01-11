@@ -300,7 +300,11 @@ describe("Swap", () => {
       await expect(
         swap
           .connect(user1)
-          .calculateTokenAmount([MAX_UINT256, String(3e18)], false),
+          .calculateTokenAmount(
+            user1Address,
+            [MAX_UINT256, String(3e18)],
+            false,
+          ),
       ).to.be.revertedWith("Cannot withdraw more than available")
     })
 
@@ -453,7 +457,7 @@ describe("Swap", () => {
   describe("removeLiquidity", () => {
     it("Reverts with 'Cannot exceed total supply'", async () => {
       await expect(
-        swap.calculateRemoveLiquidity(MAX_UINT256),
+        swap.calculateRemoveLiquidity(ZERO_ADDRESS, MAX_UINT256),
       ).to.be.revertedWith("Cannot exceed total supply")
     })
 
@@ -936,7 +940,7 @@ describe("Swap", () => {
 
     it("Reverts with 'Token index out of range'", async () => {
       await expect(
-        swap.calculateRemoveLiquidityOneToken(1, 5),
+        swap.calculateRemoveLiquidityOneToken(ZERO_ADDRESS, 1, 5),
       ).to.be.revertedWith("Token index out of range")
     })
 
@@ -949,7 +953,11 @@ describe("Swap", () => {
       expect(currentUser1Balance).to.eq(BigNumber.from("1996275270169644725"))
 
       await expect(
-        swap.calculateRemoveLiquidityOneToken(currentUser1Balance.mul(2), 0),
+        swap.calculateRemoveLiquidityOneToken(
+          user1Address,
+          currentUser1Balance.mul(2),
+          0,
+        ),
       ).to.be.revertedWith("Cannot withdraw more than available")
     })
 
