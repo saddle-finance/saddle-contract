@@ -147,12 +147,12 @@ library SwapUtils {
      * @return A parameter in its raw precision form
      */
     function _getAPrecise(Swap storage self) internal view returns (uint256) {
-        uint256 t1 = self.futureATime;
-        uint256 A1 = self.futureA;
+        uint256 t1 = self.futureATime; // time when ramp is finished
+        uint256 A1 = self.futureA;     // final A value when ramp is finished
 
         if (block.timestamp < t1) {
-            uint256 t0 = self.initialATime;
-            uint256 A0 = self.initialA;
+            uint256 t0 = self.initialATime; // time when ramp is started
+            uint256 A0 = self.initialA;     // initial A value when ramp is started
             if (A1 > A0) {
                 // A0 + (A1 - A0) * (block.timestamp - t0) / (t1 - t0)
                 return A0.add(A1.sub(A0).mul(block.timestamp.sub(t0)).div(t1.sub(t0)));
@@ -174,10 +174,11 @@ library SwapUtils {
     }
 
     /**
-     * @notice Calculate the dy and fee of withdrawing in one token
+     * @notice Calculate the dy, the amount of selected token that user receives and
+     * the fee of withdrawing in one token
      * @param tokenAmount the amount to withdraw in the pool's precision
      * @param tokenIndex which token will be withdrawn
-     * @return the dy and the associated fee
+     * @return the amount of token user will receive and the associated fee
      */
     function calculateWithdrawOneToken(
         Swap storage self, uint256 tokenAmount, uint8 tokenIndex
@@ -239,9 +240,8 @@ library SwapUtils {
     }
 
     /**
-     * @notice Calculate the price of a token in the pool given
-     * precision-adjusted balances and a particular D and precision-adjusted
-     * array of balances.
+     * @notice Calculate the price of a token in the pool with given
+     * precision-adjusted balances and a particular D.
      *
      * @dev This is accomplished via solving the invariant iteratively.
      * See the StableSwap paper and Curve.fi implementation for further details.
