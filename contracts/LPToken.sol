@@ -21,7 +21,10 @@ contract LPToken is ERC20Burnable, Ownable {
      * @param symbol_ symbol of this token
      * @param decimals_ number of decimals this token will be based on
      */
-    constructor (string memory name_, string memory symbol_, uint8 decimals_
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_
     ) public ERC20(name_, symbol_) {
         _setupDecimals(decimals_);
         swap = ISwap(_msgSender());
@@ -43,13 +46,20 @@ contract LPToken is ERC20Burnable, Ownable {
      * minting and burning. This ensures that swap.updateUserWithdrawFees are called everytime.
      * Additionally, when pool is in guarded phase, transfers between user accounts are not allowed.
      */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20) {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20) {
         super._beforeTokenTransfer(from, to, amount);
 
         // Check if swap pool is in guarded phase and if the transfer is between user addresses
         if (swap.isGuarded() && from != address(0) && to != (address(0))) {
             // Only allow transfers in and out of the swap pool
-            require(from == address(swap) || to == address(swap), "Cannot transfer during guarded launch");
+            require(
+                from == address(swap) || to == address(swap),
+                "Cannot transfer during guarded launch"
+            );
         }
         swap.updateUserWithdrawFee(to, amount);
     }

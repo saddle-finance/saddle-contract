@@ -7,7 +7,7 @@ import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowl
 import { Allowlist } from "../build/typechain/Allowlist"
 
 import merkleTreeData from "./exampleMerkleTree.json"
-import { asyncForEach } from "./testUtils"
+import { asyncForEach, ZERO_ADDRESS } from "./testUtils"
 
 chai.use(solidity)
 const { expect } = chai
@@ -40,6 +40,11 @@ describe("Allowlist", () => {
       )
     })
 
+    it("Reverts when the pool address is 0x0", async () => {
+      await expect(allowlist.setPoolCap(ZERO_ADDRESS, String(6e20))).to.be
+        .reverted
+    })
+
     it("Reverts when non-owner tries to set the pool cap", async () => {
       await expect(
         allowlist.connect(malActor).setPoolCap(POOL_ADDRESS_1, String(0)),
@@ -62,6 +67,11 @@ describe("Allowlist", () => {
       await expect(
         allowlist.setPoolAccountLimit(POOL_ADDRESS_1, String(6e20)),
       ).to.emit(allowlist, "PoolAccountLimit")
+    })
+
+    it("Reverts when the pool address is 0x0", async () => {
+      await expect(allowlist.setPoolAccountLimit(ZERO_ADDRESS, String(6e20))).to
+        .be.reverted
     })
 
     it("Reverts when non-owner tries to set the pool account limit", async () => {

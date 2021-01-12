@@ -16,7 +16,9 @@ contract Allowlist is Ownable, IAllowlist {
 
     bytes32 public merkleRoot;
 
+    // Maps pool address -> maximum total supply
     mapping(address => uint256) private poolCaps;
+    // Maps pool address -> maximum amount of pool token mintable per account
     mapping(address => uint256) private accountLimits;
 
     event PoolCap(address indexed poolAddress, uint256 poolCap);
@@ -31,6 +33,8 @@ contract Allowlist is Ownable, IAllowlist {
         merkleRoot = merkleRoot_;
 
         // This value will be used as a way of crude checking whether an address holds this Allowlist contract
+        // Value 0x54dd1e has no inherent meaning other than it is arbitrary value that checks for
+        // user error.
         poolCaps[address(0x0)] = uint256(0x54dd1e);
         emit PoolCap(address(0x0), uint256(0x54dd1e));
         emit NewMerkleRoot(merkleRoot_);
@@ -42,15 +46,25 @@ contract Allowlist is Ownable, IAllowlist {
      * @param poolAddress address of the pool
      * @return max mintable amount per account
      */
-    function getPoolAccountLimit(address poolAddress) external override view returns (uint256) {
+    function getPoolAccountLimit(address poolAddress)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return accountLimits[poolAddress];
     }
 
     /**
-     * @notice Returns the TVL cap for given pool address.
+     * @notice Returns maximum total supply of pool token for given pool address.
      * @param poolAddress address of the pool
      */
-    function getPoolCap(address poolAddress) external override view returns (uint256) {
+    function getPoolCap(address poolAddress)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return poolCaps[poolAddress];
     }
 
@@ -62,7 +76,12 @@ contract Allowlist is Ownable, IAllowlist {
      * during creation of the merkle tree. Users should retrieve this data off chain.
      * @return boolean value that corresponds to whether the address is found in the merkle tree
      */
-    function verifyAddress(address account, bytes32[] calldata merkleProof) external override view returns (bool) {
+    function verifyAddress(address account, bytes32[] calldata merkleProof)
+        external
+        view
+        override
+        returns (bool)
+    {
         // Verify the account to multiplier dictionary entry via MerkleProof library
         bytes32 node = keccak256(abi.encodePacked(account));
         return MerkleProof.verify(merkleProof, merkleRoot, node);
@@ -75,18 +94,24 @@ contract Allowlist is Ownable, IAllowlist {
      * @param poolAddress address of the pool
      * @param accountLimit base amount to be used for calculating allowed amounts of each user
      */
-    function setPoolAccountLimit(address poolAddress, uint256 accountLimit) external onlyOwner {
+    function setPoolAccountLimit(address poolAddress, uint256 accountLimit)
+        external
+        onlyOwner
+    {
         require(poolAddress != address(0x0), "0x0 is not a pool address");
         accountLimits[poolAddress] = accountLimit;
         emit PoolAccountLimit(poolAddress, accountLimit);
     }
 
     /**
-     * @notice Set the TVL cap for given pool address
+     * @notice Set the max number of pool token minted for given pool address
      * @param poolAddress address of the pool
-     * @param poolCap TVL cap amount - limits the totalSupply of the pool token
+     * @param poolCap total value cap amount - limits the totalSupply of the pool token
      */
-    function setPoolCap(address poolAddress, uint256 poolCap) external onlyOwner {
+    function setPoolCap(address poolAddress, uint256 poolCap)
+        external
+        onlyOwner
+    {
         require(poolAddress != address(0x0), "0x0 is not a pool address");
         poolCaps[poolAddress] = poolCap;
         emit PoolCap(poolAddress, poolCap);
