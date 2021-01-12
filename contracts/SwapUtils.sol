@@ -226,13 +226,15 @@ library SwapUtils {
     /**
      * @notice Calculate the dy, the amount of selected token that user receives and
      * the fee of withdrawing in one token
+     * @param account the address that is withdrawing
      * @param tokenAmount the amount to withdraw in the pool's precision
      * @param tokenIndex which token will be withdrawn
      * @param self Swap struct to read from
-     * @return the amount of token user will receive and the associated fee
+     * @return the amount of token user will receive and the associated swap fee
      */
     function calculateWithdrawOneToken(
         Swap storage self,
+        address account,
         uint256 tokenAmount,
         uint8 tokenIndex
     ) public view returns (uint256, uint256) {
@@ -243,13 +245,20 @@ library SwapUtils {
 
         // dy_0 (without fees)
         // dy, dy_0 - dy
-        return (
-            dy,
+
+        uint256 dySwapFee =
             _xp(self)[tokenIndex]
                 .sub(newY)
                 .div(self.tokenPrecisionMultipliers[tokenIndex])
-                .sub(dy)
-        );
+                .sub(dy);
+
+        dy = dy
+            .mul(
+            FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, account))
+        )
+            .div(FEE_DENOMINATOR);
+
+        return (dy, dySwapFee);
     }
 
     /**
@@ -626,29 +635,40 @@ library SwapUtils {
      * tokens that is returned upon burning given amount of
      * LP tokens
      *
+     * @param account the address that is removing liquidity. required for withdraw fee calculation
      * @param amount the amount of LP tokens that would to be burned on
      * withdrawal
      * @return array of amounts of tokens user will receive
      */
-    function calculateRemoveLiquidity(Swap storage self, uint256 amount)
-        external
-        view
-        returns (uint256[] memory)
-    {
-        return _calculateRemoveLiquidity(self, amount);
+    function calculateRemoveLiquidity(
+        Swap storage self,
+        address account,
+        uint256 amount
+    ) external view returns (uint256[] memory) {
+        return _calculateRemoveLiquidity(self, account, amount);
     }
 
-    function _calculateRemoveLiquidity(Swap storage self, uint256 amount)
-        internal
-        view
-        returns (uint256[] memory)
-    {
+    function _calculateRemoveLiquidity(
+        Swap storage self,
+        address account,
+        uint256 amount
+    ) internal view returns (uint256[] memory) {
         uint256 totalSupply = self.lpToken.totalSupply();
         require(amount <= totalSupply, "Cannot exceed total supply");
+
+        uint256 feeAdjustedAmount =
+            amount
+                .mul(
+                FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, account))
+            )
+                .div(FEE_DENOMINATOR);
+
         uint256[] memory amounts = new uint256[](self.pooledTokens.length);
 
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            amounts[i] = self.balances[i].mul(amount).div(totalSupply);
+            amounts[i] = self.balances[i].mul(feeAdjustedAmount).div(
+                totalSupply
+            );
         }
         return amounts;
     }
@@ -687,6 +707,7 @@ library SwapUtils {
      * @dev This shouldn't be used outside frontends for user estimates.
      *
      * @param self Swap struct to read from
+     * @param account address of the account depositing or withdrawing tokens
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
      * pooled token's native precision. If a token charges a fee on transfers,
@@ -697,6 +718,7 @@ library SwapUtils {
      */
     function calculateTokenAmount(
         Swap storage self,
+        address account,
         uint256[] calldata amounts,
         bool deposit
     ) external view returns (uint256) {
@@ -716,7 +738,17 @@ library SwapUtils {
         }
         uint256 d1 = getD(_xp(self, balances1), a);
         uint256 totalSupply = self.lpToken.totalSupply();
-        return (deposit ? d1.sub(d0) : d0.sub(d1)).mul(totalSupply).div(d0);
+
+        if (deposit) {
+            return d1.sub(d0).mul(totalSupply).div(d0);
+        } else {
+            return
+                d0.sub(d1).mul(totalSupply).div(d0).mul(FEE_DENOMINATOR).div(
+                    FEE_DENOMINATOR.sub(
+                        calculateCurrentWithdrawFee(self, account)
+                    )
+                );
+        }
     }
 
     /**
@@ -983,17 +1015,8 @@ library SwapUtils {
             "Min amounts should correspond to pooled tokens"
         );
 
-        uint256 adjustedAmount =
-            amount
-                .mul(
-                FEE_DENOMINATOR.sub(
-                    calculateCurrentWithdrawFee(self, msg.sender)
-                )
-            )
-                .div(FEE_DENOMINATOR);
-
         uint256[] memory amounts =
-            _calculateRemoveLiquidity(self, adjustedAmount);
+            _calculateRemoveLiquidity(self, msg.sender, amount);
 
         for (uint256 i = 0; i < amounts.length; i++) {
             require(
@@ -1036,12 +1059,12 @@ library SwapUtils {
         uint256 dyFee;
         uint256 dy;
 
-        (dy, dyFee) = calculateWithdrawOneToken(self, tokenAmount, tokenIndex);
-        dy = dy
-            .mul(
-            FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender))
-        )
-            .div(FEE_DENOMINATOR);
+        (dy, dyFee) = calculateWithdrawOneToken(
+            self,
+            msg.sender,
+            tokenAmount,
+            tokenIndex
+        );
 
         require(dy >= minAmount, "The min amount of tokens wasn't met");
 
