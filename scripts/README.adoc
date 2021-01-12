@@ -1,0 +1,17 @@
+== Usage
+
+```lang=bash
+cp .env-dev .env
+```
+Ask for a team member for missing fields in your .env. 
+Once you fill in the variables:
+
+```lang=bash
+pipenv run python3 record_pool_stats.py
+```
+
+Delete the pool-stats-dev.json on Fleek as necessary for your development
+
+== Production
+
+This script runs periodically as a Github action
