@@ -14,8 +14,8 @@ import "./interfaces/IAllowlist.sol";
 contract Allowlist is Ownable, IAllowlist {
     using SafeMath for uint256;
 
+    // Represents the root node of merkle tree containing a list of eligible addresses
     bytes32 public merkleRoot;
-
     // Maps pool address -> maximum total supply
     mapping(address => uint256) private poolCaps;
     // Maps pool address -> maximum amount of pool token mintable per account
@@ -28,6 +28,8 @@ contract Allowlist is Ownable, IAllowlist {
     /**
      * @notice Creates this contract and sets PoolCap of 0x0 with uint256(0x54dd1e) for
      * crude checking whether an address holds this contract
+     * @param merkleRoot_ bytes32 that represent merkle root node. This is generated off chain with the list of
+     * qualifying addresses
      */
     constructor(bytes32 merkleRoot_) public {
         merkleRoot = merkleRoot_;
