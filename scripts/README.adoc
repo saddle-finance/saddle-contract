@@ -1,0 +1,35 @@
+== Installation
+
+Install IPFS:
+
+```lang=bash
+brew install ipfs
+ipfs init && ipfs daemon
+```
+
+or for ubuntu:
+
+```lang=bash
+snap install ipfs
+ipfs init && ipfs daemon
+```
+
+In a different terminal window, install requiremnts:
+
+```lang=bash
+pipenv install
+```
+
+== Usage
+
+For development:
+
+```lang=bash
+pipenv run python3 record_pool_stats.py --dev
+```
+
+Production:
+
+```lang=bash
+pipenv run python3 record_pool_stats.py
+```
