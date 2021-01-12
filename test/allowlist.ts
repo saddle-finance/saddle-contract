@@ -6,14 +6,19 @@ import { deployContract, solidity } from "ethereum-waffle"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { Allowlist } from "../build/typechain/Allowlist"
 
-import merkleTreeData from "./exampleMerkleTree.json"
-import { asyncForEach, ZERO_ADDRESS } from "./testUtils"
+import {
+  asyncForEach,
+  getTestMerkleAllowedAccounts,
+  getTestMerkleRoot,
+  ZERO_ADDRESS,
+} from "./testUtils"
 
 chai.use(solidity)
 const { expect } = chai
 
 const POOL_ADDRESS_1 = "0x0000000000000000000000000000000000000001"
 const POOL_ADDRESS_2 = "0x0000000000000000000000000000000000000002"
+const ALLOWED_ACCOUNTS = getTestMerkleAllowedAccounts()
 
 describe("Allowlist", () => {
   let signers: Array<Signer>
@@ -21,14 +26,12 @@ describe("Allowlist", () => {
   let malActor: Signer
   let allowlist: Allowlist
 
-  const ALLOWED_ACCOUNTS: Record<string, any> = merkleTreeData.allowedAccounts
-
   beforeEach(async () => {
     signers = await ethers.getSigners()
     owner = signers[0]
     malActor = signers[10]
     allowlist = (await deployContract(owner, AllowlistArtifact, [
-      merkleTreeData.merkleRoot,
+      getTestMerkleRoot(),
     ])) as Allowlist
   })
 

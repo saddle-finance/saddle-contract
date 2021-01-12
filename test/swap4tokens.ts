@@ -9,6 +9,8 @@ import {
   TIME,
   setTimestamp,
   getPoolBalances,
+  getTestMerkleProof,
+  getTestMerkleRoot,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -26,9 +28,6 @@ import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
 import { ethers } from "hardhat"
-
-import merkleTreeData from "./exampleMerkleTree.json"
-import { BytesLike } from "@ethersproject/bytes"
 
 chai.use(solidity)
 const { expect } = chai
@@ -67,14 +66,6 @@ describe("Swap with 4 tokens", () => {
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
   const TOKENS: GenericErc20[] = []
-  const ALLOWED_ACCOUNTS: Record<string, any> = merkleTreeData.allowedAccounts
-
-  function getMerkleProof(address: string): BytesLike[] {
-    if (address in ALLOWED_ACCOUNTS) {
-      return ALLOWED_ACCOUNTS[address].proof
-    }
-    return []
-  }
 
   beforeEach(async () => {
     TOKENS.length = 0
@@ -127,7 +118,7 @@ describe("Swap with 4 tokens", () => {
 
     // Deploy Allowlist
     allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
-      merkleTreeData.merkleRoot,
+      getTestMerkleRoot(),
     ])) as Allowlist
 
     // Deploy MathUtils
@@ -189,7 +180,7 @@ describe("Swap with 4 tokens", () => {
       [String(50e18), String(50e6), String(50e6), String(50e18)],
       0,
       MAX_UINT256,
-      getMerkleProof(ownerAddress),
+      getTestMerkleProof(ownerAddress),
     )
 
     await swap.setGuarded(false)

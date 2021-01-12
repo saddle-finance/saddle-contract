@@ -10,6 +10,8 @@ import {
   getUserTokenBalances,
   setNextTimestamp,
   setTimestamp,
+  getTestMerkleRoot,
+  getTestMerkleProof,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -29,9 +31,6 @@ import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
 import { ethers } from "hardhat"
-
-import merkleTreeData from "../test/exampleMerkleTree.json"
-import { BytesLike } from "@ethersproject/bytes"
 
 chai.use(solidity)
 const { expect } = chai
@@ -67,15 +66,7 @@ describe("Swap", async () => {
   const SWAP_FEE = 1e7
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
-  const MERKLE_ROOT = merkleTreeData.merkleRoot
-  const ALLOWED_ACCOUNTS: Record<string, any> = merkleTreeData.allowedAccounts
-
-  function getMerkleProof(address: string): BytesLike[] {
-    if (address in ALLOWED_ACCOUNTS) {
-      return ALLOWED_ACCOUNTS[address].proof
-    }
-    return []
-  }
+  const MERKLE_ROOT = getTestMerkleRoot()
 
   beforeEach(async () => {
     signers = await ethers.getSigners()
@@ -158,9 +149,6 @@ describe("Swap", async () => {
     )) as TestSwapReturnValues
     await testSwapReturnValues.deployed()
 
-    // console.log(testSwapReturnValues.address)
-    // 0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0
-
     // Set deposit limits
     await allowlist.setPoolCap(swap.address, String(6e20))
     await allowlist.setPoolAccountLimit(swap.address, String(2e20))
@@ -175,7 +163,7 @@ describe("Swap", async () => {
       [String(1e18), String(1e18)],
       0,
       MAX_UINT256,
-      getMerkleProof(ownerAddress),
+      getTestMerkleProof(ownerAddress),
     )
 
     await swap.setGuarded(false)
@@ -1560,7 +1548,7 @@ describe("Swap", async () => {
             [String(1e18), String(3e18)],
             0,
             MAX_UINT256,
-            getMerkleProof(user1Address),
+            getTestMerkleProof(user1Address),
           )
 
         expect(await swapToken.balanceOf(user1Address)).to.eq(
@@ -1587,7 +1575,7 @@ describe("Swap", async () => {
               [String(1e18), String(3e18)],
               0,
               MAX_UINT256,
-              getMerkleProof(user2Address),
+              getTestMerkleProof(user2Address),
             ),
         ).to.be.revertedWith("Invalid merkle proof")
       })
@@ -1601,7 +1589,7 @@ describe("Swap", async () => {
               [String(1e18), String(3e18)],
               0,
               MAX_UINT256,
-              getMerkleProof(user1Address),
+              getTestMerkleProof(user1Address),
             ),
         ).to.be.revertedWith("Invalid merkle proof")
 
@@ -1630,7 +1618,7 @@ describe("Swap", async () => {
               [tokenAmount, tokenAmount],
               0,
               MAX_UINT256,
-              getMerkleProof(user1Address),
+              getTestMerkleProof(user1Address),
             ),
         ).to.be.revertedWith("Deposit limit reached")
       })
@@ -1664,7 +1652,7 @@ describe("Swap", async () => {
               [String(1e18), String(1e18)],
               0,
               MAX_UINT256,
-              getMerkleProof(user1Address),
+              getTestMerkleProof(user1Address),
             ),
         ).to.be.revertedWith("Pool TVL cap reached")
       })
@@ -1686,7 +1674,7 @@ describe("Swap", async () => {
           [String(1e18), String(3e18)],
           0,
           MAX_UINT256,
-          getMerkleProof(user1Address),
+          getTestMerkleProof(user1Address),
         )
       expect(await swapToken.balanceOf(user1Address)).to.eq(
         "3991672211258372957",
