@@ -261,8 +261,8 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Reads and returns the address of allowlist that is set during deployment of this contract
-     * @return the address of allowlist contract casted to IAllowlist interface
+     * @notice Reads and returns the address of the allowlist that is set during deployment of this contract
+     * @return the address of the allowlist contract casted to the IAllowlist interface
      */
     function getAllowlist() external view returns (IAllowlist) {
         return allowlist;
@@ -425,15 +425,15 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     /**
      * @notice Add liquidity to the pool with given amounts during guarded launch phase. Only users
      * with valid address and proof can successfully call this function. When this function is called
-     * after guarded phase is over, merkleProof is ignored.
+     * after the guarded release phase is over, the merkleProof is ignored.
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
      * @param deadline latest timestamp to accept this transaction
      * @param merkleProof data generated when constructing the allowlist merkle tree. Users can
-     * get this data off chain. Even if the address is in the allowlist, user must include
-     * valid proof for this call to succeed. It the pool is no longer in guarded release phase,
-     * this parameter is ignored
+     * get this data off chain. Even if the address is in the allowlist, users must include
+     * a valid proof for this call to succeed. If the pool is no longer in the guarded release phase,
+     * this parameter is ignored.
      * @return amount of LP token user minted and received
      */
     function addLiquidity(
@@ -599,7 +599,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Disabled guarded launch phase, removing any limits on deposit amounts and addresses
+     * @notice Disables the guarded launch phase, removing any limits on deposit amounts and addresses
      */
     function disableGuard() external onlyOwner {
         guarded = false;

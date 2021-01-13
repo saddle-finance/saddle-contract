@@ -26,10 +26,10 @@ contract Allowlist is Ownable, IAllowlist {
     event NewMerkleRoot(bytes32 merkleRoot);
 
     /**
-     * @notice Creates this contract and sets PoolCap of 0x0 with uint256(0x54dd1e) for
-     * crude checking whether an address holds this contract
-     * @param merkleRoot_ bytes32 that represent merkle root node. This is generated off chain with the list of
-     * qualifying addresses
+     * @notice Creates this contract and sets the PoolCap of 0x0 with uint256(0x54dd1e) for
+     * crude checking whether an address holds this contract.
+     * @param merkleRoot_ bytes32 that represent a merkle root node. This is generated off chain with the list of
+     * qualifying addresses.
      */
     constructor(bytes32 merkleRoot_) public {
         merkleRoot = merkleRoot_;
@@ -43,10 +43,9 @@ contract Allowlist is Ownable, IAllowlist {
     }
 
     /**
-     * @notice Returns the max mintable amount of lp token per account in given pool address.
-     * Pools should use this function to check against user's lpToken balance in addLiquidity function.
+     * @notice Returns the max mintable amount of the lp token per account in given pool address.
      * @param poolAddress address of the pool
-     * @return max mintable amount of lp token per account
+     * @return max mintable amount of the lp token per account
      */
     function getPoolAccountLimit(address poolAddress)
         external
@@ -58,7 +57,7 @@ contract Allowlist is Ownable, IAllowlist {
     }
 
     /**
-     * @notice Returns maximum total supply of pool token for given pool address.
+     * @notice Returns the maximum total supply of the pool token for the given pool address.
      * @param poolAddress address of the pool
      */
     function getPoolCap(address poolAddress)
@@ -71,12 +70,12 @@ contract Allowlist is Ownable, IAllowlist {
     }
 
     /**
-     * @notice Checks existence of keccak256(index, account) as a node in merkle tree stored in this contract.
-     * Pools should use this function to check if the given address qualify for depositing
-     * @param account address to confirm its existence - this would be user address
+     * @notice Checks existence of keccak256(account) as a node in the merkle tree inferred by the merkle root node
+     * stored in this contract. Pools should use this function to check if the given address qualifies for depositing.
+     * @param account address to confirm its existence in the merkle tree - this would be user address
      * @param merkleProof data that is used to prove the existence of given parameters. This is generated
-     * during creation of the merkle tree. Users should retrieve this data off chain.
-     * @return boolean value that corresponds to whether the address is found in the merkle tree
+     * during the creation of the merkle tree. Users should retrieve this data off chain.
+     * @return a boolean value that corresponds to whether the address is found in the merkle tree
      */
     function verifyAddress(address account, bytes32[] calldata merkleProof)
         external
@@ -84,7 +83,7 @@ contract Allowlist is Ownable, IAllowlist {
         override
         returns (bool)
     {
-        // Verify the account exists in the merkle tree via MerkleProof library
+        // Verify the account exists in the merkle tree via the MerkleProof library
         bytes32 node = keccak256(abi.encodePacked(account));
         return MerkleProof.verify(merkleProof, merkleRoot, node);
     }
@@ -92,9 +91,9 @@ contract Allowlist is Ownable, IAllowlist {
     // ADMIN FUNCTIONS
 
     /**
-     * @notice Set account limit of allowed deposit amounts for the given pool
+     * @notice Sets the account limit of allowed deposit amounts for the given pool
      * @param poolAddress address of the pool
-     * @param accountLimit base amount to be used for calculating allowed amounts of each user
+     * @param accountLimit the max number of the pool token a single user can mint
      */
     function setPoolAccountLimit(address poolAddress, uint256 accountLimit)
         external
@@ -106,9 +105,9 @@ contract Allowlist is Ownable, IAllowlist {
     }
 
     /**
-     * @notice Set the max number of pool token minted for given pool address
+     * @notice Sets the max total supply of LPToken for the given pool address
      * @param poolAddress address of the pool
-     * @param poolCap total value cap amount - limits the totalSupply of the pool token
+     * @param poolCap the max total supply of the pool token
      */
     function setPoolCap(address poolAddress, uint256 poolCap)
         external
@@ -120,10 +119,10 @@ contract Allowlist is Ownable, IAllowlist {
     }
 
     /**
-     * @notice Updates merkle root that is stored in this contract. This can only be called by
-     * the owner. If more addresses are added to the allowlist, new merkle tree should be generated
+     * @notice Updates the merkle root that is stored in this contract. This can only be called by
+     * the owner. If more addresses are added to the list, a new merkle tree and a merkle root node should be generated,
      * and merkleRoot should be updated accordingly.
-     * @param merkleRoot_ new merkle root node that contains list of deposit allowed addresses
+     * @param merkleRoot_ a new merkle root node that contains a list of deposit allowed addresses
      */
     function updateMerkleRoot(bytes32 merkleRoot_) external onlyOwner {
         merkleRoot = merkleRoot_;

@@ -13,15 +13,15 @@ import "./interfaces/ISwap.sol";
 contract LPToken is ERC20Burnable, Ownable {
     using SafeMath for uint256;
 
-    // Address of swap contract that owns this LP token. When a user adds liquidity to the swap contract, they receive
-    // proportionate amount of this LPToken.
+    // Address of the swap contract that owns this LP token. When a user adds liquidity to the swap contract,
+    // they receive a proportionate amount of this LPToken.
     ISwap public swap;
 
-    // Maps user account to total number of LPToken minted by them. Used to limit minting during guard release phase
+    // Maps user account to total number of LPToken minted by them. Used to limit minting during guarded release phase
     mapping(address => uint256) public mintedAmounts;
 
     /**
-     * @notice Deploy LPToken contract with given name, symbol, and decimals
+     * @notice Deploys LPToken contract with given name, symbol, and decimals
      * @dev the caller of this constructor will become the owner of this contract
      * @param name_ name of this token
      * @param symbol_ symbol of this token
@@ -37,8 +37,8 @@ contract LPToken is ERC20Burnable, Ownable {
     }
 
     /**
-     * @notice Mints given amount of LPToken to recipient. During guarded release phase, a single cannot mint more
-     * than the per account limit defined in allowlist contract
+     * @notice Mints the given amount of LPToken to the recipient. During the guarded release phase, the total supply
+     * and the maximum number of the tokens that a single account can mint are limited.
      * @dev only owner can call this mint function
      * @param recipient address of account to receive the tokens
      * @param amount amount of tokens to mint
