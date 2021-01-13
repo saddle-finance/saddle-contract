@@ -12,7 +12,13 @@ import "./interfaces/ISwap.sol";
  */
 contract LPToken is ERC20Burnable, Ownable {
     using SafeMath for uint256;
+
+    // Address of swap contract that owns this LP token. When a user adds liquidity to the swap contract, they receive
+    // proportionate amount of this LPToken.
     ISwap public swap;
+
+    // Maps user account to total number of LPToken minted by them. Used to limit minting during guard release phase
+    mapping(address => uint256) public mintedAmounts;
 
     /**
      * @notice Deploy LPToken contract with given name, symbol, and decimals
@@ -31,20 +37,34 @@ contract LPToken is ERC20Burnable, Ownable {
     }
 
     /**
-     * @notice Mints given amount of LPToken to recipient
+     * @notice Mints given amount of LPToken to recipient. During guarded release phase, a single cannot mint more
+     * than the per account limit defined in allowlist contract
      * @dev only owner can call this mint function
      * @param recipient address of account to receive the tokens
      * @param amount amount of tokens to mint
      */
     function mint(address recipient, uint256 amount) external onlyOwner {
         require(amount != 0, "amount == 0");
+        if (swap.isGuarded()) {
+            IAllowlist allowlist = swap.getAllowlist();
+            uint256 totalMinted = mintedAmounts[recipient].add(amount);
+            require(
+                totalMinted <= allowlist.getPoolAccountLimit(address(swap)),
+                "account deposit limit"
+            );
+            require(
+                totalSupply().add(amount) <=
+                    allowlist.getPoolCap(address(swap)),
+                "pool total supply limit"
+            );
+            mintedAmounts[recipient] = totalMinted;
+        }
         _mint(recipient, amount);
     }
 
     /**
      * @dev Overrides ERC20._beforeTokenTransfer() which get called on every transfers including
      * minting and burning. This ensures that swap.updateUserWithdrawFees are called everytime.
-     * Additionally, when pool is in guarded phase, transfers between user accounts are not allowed.
      */
     function _beforeTokenTransfer(
         address from,
@@ -52,15 +72,6 @@ contract LPToken is ERC20Burnable, Ownable {
         uint256 amount
     ) internal override(ERC20) {
         super._beforeTokenTransfer(from, to, amount);
-
-        // Check if swap pool is in guarded phase and if the transfer is between user addresses
-        if (swap.isGuarded() && from != address(0) && to != (address(0))) {
-            // Only allow transfers in and out of the swap pool
-            require(
-                from == address(swap) || to == address(swap),
-                "Cannot transfer during guarded launch"
-            );
-        }
         swap.updateUserWithdrawFee(to, amount);
     }
 }

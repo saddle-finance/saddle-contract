@@ -176,14 +176,14 @@ describe("Swap with 4 tokens", () => {
     })
 
     // Populate the pool with initial liquidity
-    await swap.addLiquidityGuarded(
+    await swap.addLiquidity(
       [String(50e18), String(50e6), String(50e6), String(50e18)],
       0,
       MAX_UINT256,
       getTestMerkleProof(ownerAddress),
     )
 
-    await swap.setGuarded(false)
+    await swap.disableGuard()
 
     expect(await swap.getTokenBalance(0)).to.be.eq(String(50e18))
     expect(await swap.getTokenBalance(1)).to.be.eq(String(50e6))
@@ -208,6 +208,7 @@ describe("Swap with 4 tokens", () => {
           [String(1e18), 0, 0, 0],
           calcTokenAmount.mul(99).div(100),
           (await getCurrentBlockTimestamp()) + 60,
+          [],
         )
 
       // Verify swapToken balance
@@ -260,6 +261,7 @@ describe("Swap with 4 tokens", () => {
           [String(1e18), 0, 0, 0],
           calcTokenAmount.mul(99).div(100),
           (await getCurrentBlockTimestamp()) + 60,
+          [],
         )
 
       // Verify swapToken balance
@@ -316,7 +318,7 @@ describe("Swap with 4 tokens", () => {
       // We expect virtual price to increase as A increases
       await swap
         .connect(user1)
-        .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256)
+        .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256, [])
 
       // Start ramp
       await swap.rampA(
@@ -352,7 +354,7 @@ describe("Swap with 4 tokens", () => {
       // We expect virtual price to decrease as A decreases
       await swap
         .connect(user1)
-        .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256)
+        .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256, [])
 
       // Start ramp
       await swap.rampA(
@@ -599,6 +601,7 @@ describe("Swap with 4 tokens", () => {
                 [0, 0, 0, String(50e18)],
                 0,
                 (await getCurrentBlockTimestamp()) + 60,
+                [],
               )
 
             // Check current pool balances
@@ -963,6 +966,7 @@ describe("Swap with 4 tokens", () => {
                 [0, 0, 0, String(50e18)],
                 0,
                 (await getCurrentBlockTimestamp()) + 60,
+                [],
               )
 
             // Check current pool balances

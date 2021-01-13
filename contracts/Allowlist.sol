@@ -46,7 +46,7 @@ contract Allowlist is Ownable, IAllowlist {
      * @notice Returns the max mintable amount of lp token per account in given pool address.
      * Pools should use this function to check against user's lpToken balance in addLiquidity function.
      * @param poolAddress address of the pool
-     * @return max mintable amount per account
+     * @return max mintable amount of lp token per account
      */
     function getPoolAccountLimit(address poolAddress)
         external
@@ -84,7 +84,7 @@ contract Allowlist is Ownable, IAllowlist {
         override
         returns (bool)
     {
-        // Verify the account to multiplier dictionary entry via MerkleProof library
+        // Verify the account exists in the merkle tree via MerkleProof library
         bytes32 node = keccak256(abi.encodePacked(account));
         return MerkleProof.verify(merkleProof, merkleRoot, node);
     }
@@ -120,7 +120,7 @@ contract Allowlist is Ownable, IAllowlist {
     }
 
     /**
-     * @notice Updates merkle root that is stored in this contract. This can only called by
+     * @notice Updates merkle root that is stored in this contract. This can only be called by
      * the owner. If more addresses are added to the allowlist, new merkle tree should be generated
      * and merkleRoot should be updated accordingly.
      * @param merkleRoot_ new merkle root node that contains list of deposit allowed addresses

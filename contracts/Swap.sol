@@ -38,7 +38,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     // Address to allowlist contract that holds information about maximum totaly supply of lp tokens
     // and maximum mintable amount per user address. As this is immutable, this will become a constant
     // after initialization.
-    IAllowlist public immutable allowlist;
+    IAllowlist private immutable allowlist;
 
     // Boolean value that notates whether this pool is guarded or not. When isGuarded is true,
     // addLiquidity function will be restricted by limits defined in allowlist contract.
@@ -261,6 +261,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
+     * @notice Reads and returns the address of allowlist that is set during deployment of this contract
+     * @return the address of allowlist contract casted to IAllowlist interface
+     */
+    function getAllowlist() external view returns (IAllowlist) {
+        return allowlist;
+    }
+
+    /**
      * @notice Return timestamp of last deposit of given address
      * @return timestamp of the last deposit made by the given address
      */
@@ -415,43 +423,20 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Add liquidity to the pool with given amounts
-     * @param amounts the amounts of each token to add, in their native precision
-     * @param minToMint the minimum LP tokens adding this amount of liquidity
-     * should mint, otherwise revert. Handy for front-running mitigation
-     * @param deadline latest timestamp to accept this transaction
-     * @return amount of LP token user minted and received
-     */
-    function addLiquidity(
-        uint256[] calldata amounts,
-        uint256 minToMint,
-        uint256 deadline
-    )
-        external
-        nonReentrant
-        whenNotPaused
-        deadlineCheck(deadline)
-        returns (uint256)
-    {
-        require(!guarded, "Pool is guarded, must provide merkle proof");
-        return swapStorage.addLiquidity(amounts, minToMint);
-    }
-
-    /**
      * @notice Add liquidity to the pool with given amounts during guarded launch phase. Only users
      * with valid address and proof can successfully call this function. When this function is called
-     * after guarded phase is over, merkleProof is ignored and function behaves identically to
-     * regular addLiquidity() function.
+     * after guarded phase is over, merkleProof is ignored.
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
      * @param deadline latest timestamp to accept this transaction
      * @param merkleProof data generated when constructing the allowlist merkle tree. Users can
      * get this data off chain. Even if the address is in the allowlist, user must include
-     * valid proof for this call to succeed.
+     * valid proof for this call to succeed. It the pool is no longer in guarded release phase,
+     * this parameter is ignored
      * @return amount of LP token user minted and received
      */
-    function addLiquidityGuarded(
+    function addLiquidity(
         uint256[] calldata amounts,
         uint256 minToMint,
         uint256 deadline,
@@ -463,31 +448,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         deadlineCheck(deadline)
         returns (uint256)
     {
-        if (guarded) {
-            require(
-                allowlist.verifyAddress(msg.sender, merkleProof),
-                "Invalid merkle proof"
-            );
-        }
+        require(
+            !guarded ||
+                (guarded && allowlist.verifyAddress(msg.sender, merkleProof)),
+            "Invalid merkle proof"
+        );
 
-        uint256 mintedAmount = swapStorage.addLiquidity(amounts, minToMint);
-
-        if (guarded) {
-            // Check per user deposit limit
-            require(
-                allowlist.getPoolAccountLimit(address(this)) >=
-                    swapStorage.lpToken.balanceOf(msg.sender),
-                "Deposit limit reached"
-            );
-            // Check pool's total cap limit via totalSupply of the pool token
-            require(
-                allowlist.getPoolCap(address(this)) >=
-                    swapStorage.lpToken.totalSupply(),
-                "Pool TVL cap reached"
-            );
-        }
-
-        return mintedAmount;
+        return swapStorage.addLiquidity(amounts, minToMint);
     }
 
     /**
@@ -632,11 +599,10 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Update the guarded status of the pool deposits
-     * @param guarded_ boolean value indicating whether the deposits should be guarded
+     * @notice Disabled guarded launch phase, removing any limits on deposit amounts and addresses
      */
-    function setGuarded(bool guarded_) external onlyOwner {
-        guarded = guarded_;
+    function disableGuard() external onlyOwner {
+        guarded = false;
     }
 
     /**
