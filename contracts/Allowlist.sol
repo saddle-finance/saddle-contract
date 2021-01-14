@@ -85,8 +85,9 @@ contract Allowlist is Ownable, IAllowlist {
     /**
      * @notice Checks the existence of keccak256(account) as a node in the merkle tree inferred by the merkle root node
      * stored in this contract. Pools should use this function to check if the given address qualifies for depositing.
-     * If the given account has already been verified with the correct merkleProof, this function will return true
-     * regardless of the merkleProof parameter.
+     * If the given account has already been verified with the correct merkleProof, this function will return true when
+     * merkleProof is empty. The verified status will be overwritten if the previously verified user calls this function
+     * with an incorrect merkleProof.
      * @param account address to confirm its existence in the merkle tree
      * @param merkleProof data that is used to prove the existence of given parameters. This is generated
      * during the creation of the merkle tree. Users should retrieve this data off-chain.

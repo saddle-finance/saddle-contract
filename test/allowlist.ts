@@ -12,6 +12,7 @@ import {
   getTestMerkleRoot,
   ZERO_ADDRESS,
 } from "./testUtils"
+import { formatBytes32String } from "ethers/lib/utils"
 
 chai.use(solidity)
 const { expect } = chai
@@ -105,14 +106,72 @@ describe("Allowlist", () => {
   describe("verifyAddress() & isAccountVerified()", () => {
     it("Returns true when proof and address are correct", async () => {
       await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
+        expect(
+          await allowlist.callStatic.verifyAddress(
+            account,
+            ALLOWED_ACCOUNTS[account].proof,
+          ),
+        ).to.be.eq(true)
         await allowlist.verifyAddress(account, ALLOWED_ACCOUNTS[account].proof)
 
         expect(await allowlist.isAccountVerified(account)).to.be.eq(true)
       })
     })
 
-    it("Returns false when proof is wrong", async () => {
+    it("Returns true when merkleProof is empty and the account has been verified", async () => {
       await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
+        // Verify with the correct proof
+        expect(
+          await allowlist.callStatic.verifyAddress(
+            account,
+            ALLOWED_ACCOUNTS[account].proof,
+          ),
+        ).to.be.eq(true)
+        await allowlist.verifyAddress(account, ALLOWED_ACCOUNTS[account].proof)
+        expect(await allowlist.isAccountVerified(account)).to.be.eq(true)
+
+        // Try calling `verifyAddress()` with an empty proof
+        expect(await allowlist.callStatic.verifyAddress(account, [])).to.be.eq(
+          true,
+        )
+        await allowlist.verifyAddress(account, [])
+
+        expect(await allowlist.isAccountVerified(account)).to.be.eq(true)
+      })
+    })
+
+    it("Returns false when merkleProof is wrong and the account has been verified", async () => {
+      await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
+        // Verify with the correct proof
+        expect(
+          await allowlist.callStatic.verifyAddress(
+            account,
+            ALLOWED_ACCOUNTS[account].proof,
+          ),
+        ).to.be.eq(true)
+        await allowlist.verifyAddress(account, ALLOWED_ACCOUNTS[account].proof)
+        expect(await allowlist.isAccountVerified(account)).to.be.eq(true)
+
+        // Try calling `verifyAddress()` with an incorrect proof
+        expect(
+          await allowlist.callStatic.verifyAddress(account, [
+            formatBytes32String("Incorrect Proof"),
+          ]),
+        ).to.be.eq(false)
+        await allowlist.verifyAddress(account, [
+          formatBytes32String("Incorrect Proof"),
+        ])
+
+        // Verification status is overwritten to false
+        expect(await allowlist.isAccountVerified(account)).to.be.eq(false)
+      })
+    })
+
+    it("Returns false when merkleProof is empty and the account has NOT been verified", async () => {
+      await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
+        expect(await allowlist.callStatic.verifyAddress(account, [])).to.be.eq(
+          false,
+        )
         await allowlist.verifyAddress(account, [])
         expect(await allowlist.isAccountVerified(account)).to.be.eq(false)
       })
@@ -121,6 +180,13 @@ describe("Allowlist", () => {
     it("Returns false when address is wrong", async () => {
       const malActorAddress = await malActor.getAddress()
       await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
+        expect(
+          await allowlist.callStatic.verifyAddress(
+            malActorAddress,
+            ALLOWED_ACCOUNTS[account].proof,
+          ),
+        ).to.be.eq(false)
+
         await allowlist.verifyAddress(
           malActorAddress,
           ALLOWED_ACCOUNTS[account].proof,
