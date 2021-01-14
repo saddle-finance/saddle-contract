@@ -10,6 +10,5 @@ interface IAllowlist {
 
     function verifyAddress(address account, bytes32[] calldata merkleProof)
         external
-        view
         returns (bool);
 }

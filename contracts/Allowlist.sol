@@ -20,6 +20,8 @@ contract Allowlist is Ownable, IAllowlist {
     mapping(address => uint256) private poolCaps;
     // Maps pool address -> maximum amount of pool token mintable per account
     mapping(address => uint256) private accountLimits;
+    // Maps account address -> boolean value indicating whether it has been checked and verified against the merkle tree
+    mapping(address => bool) private verified;
 
     event PoolCap(address indexed poolAddress, uint256 poolCap);
     event PoolAccountLimit(address indexed poolAddress, uint256 accountLimit);
@@ -70,22 +72,42 @@ contract Allowlist is Ownable, IAllowlist {
     }
 
     /**
-     * @notice Checks existence of keccak256(account) as a node in the merkle tree inferred by the merkle root node
+     * @notice Returns true if the given account's existence has been verified against any of the past or
+     * the present merkle tree. Note that if it has been verified in the past, this function will return true
+     * even if the current merkle tree does not contain the account.
+     * @param account the address to check if it has been verified
+     * @return a boolean value representing whether the account has been verified in the past or the present merkle tree
+     */
+    function isAccountVerified(address account) external view returns (bool) {
+        return verified[account];
+    }
+
+    /**
+     * @notice Checks the existence of keccak256(account) as a node in the merkle tree inferred by the merkle root node
      * stored in this contract. Pools should use this function to check if the given address qualifies for depositing.
-     * @param account address to confirm its existence in the merkle tree - this would be user address
+     * If the given account has already been verified with the correct merkleProof, this function will return true
+     * regardless of the merkleProof parameter.
+     * @param account address to confirm its existence in the merkle tree
      * @param merkleProof data that is used to prove the existence of given parameters. This is generated
-     * during the creation of the merkle tree. Users should retrieve this data off chain.
-     * @return a boolean value that corresponds to whether the address is found in the merkle tree
+     * during the creation of the merkle tree. Users should retrieve this data off-chain.
+     * @return a boolean value that corresponds to whether the address with the proof has been verified in the past
+     * or if they exist in the current merkle tree.
      */
     function verifyAddress(address account, bytes32[] calldata merkleProof)
         external
-        view
         override
         returns (bool)
     {
-        // Verify the account exists in the merkle tree via the MerkleProof library
-        bytes32 node = keccak256(abi.encodePacked(account));
-        return MerkleProof.verify(merkleProof, merkleRoot, node);
+        if (merkleProof.length != 0) {
+            // Verify the account exists in the merkle tree via the MerkleProof library
+            bytes32 node = keccak256(abi.encodePacked(account));
+            verified[account] = MerkleProof.verify(
+                merkleProof,
+                merkleRoot,
+                node
+            );
+        }
+        return verified[account];
     }
 
     // ADMIN FUNCTIONS

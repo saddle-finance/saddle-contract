@@ -102,33 +102,33 @@ describe("Allowlist", () => {
     })
   })
 
-  describe("verifyAddress", () => {
+  describe("verifyAddress() & isAccountVerified()", () => {
     it("Returns true when proof and address are correct", async () => {
       await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
-        expect(
-          await allowlist.verifyAddress(
-            account,
-            ALLOWED_ACCOUNTS[account].proof,
-          ),
-        ).to.be.eq(true)
+        await allowlist.verifyAddress(account, ALLOWED_ACCOUNTS[account].proof)
+
+        expect(await allowlist.isAccountVerified(account)).to.be.eq(true)
       })
     })
 
     it("Returns false when proof is wrong", async () => {
       await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
-        expect(await allowlist.verifyAddress(account, [])).to.be.eq(false)
+        await allowlist.verifyAddress(account, [])
+        expect(await allowlist.isAccountVerified(account)).to.be.eq(false)
       })
     })
 
     it("Returns false when address is wrong", async () => {
       const malActorAddress = await malActor.getAddress()
       await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
-        expect(
-          await allowlist.verifyAddress(
-            malActorAddress,
-            ALLOWED_ACCOUNTS[account].proof,
-          ),
-        ).to.be.eq(false)
+        await allowlist.verifyAddress(
+          malActorAddress,
+          ALLOWED_ACCOUNTS[account].proof,
+        )
+
+        expect(await allowlist.isAccountVerified(malActorAddress)).to.be.eq(
+          false,
+        )
       })
     })
   })

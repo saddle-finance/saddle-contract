@@ -448,13 +448,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         deadlineCheck(deadline)
         returns (uint256)
     {
-        require(
-            !guarded ||
-                (guarded && allowlist.verifyAddress(msg.sender, merkleProof)),
-            "Invalid merkle proof"
-        );
-
-        return swapStorage.addLiquidity(amounts, minToMint);
+        return swapStorage.addLiquidity(amounts, minToMint, merkleProof);
     }
 
     /**

@@ -1537,12 +1537,12 @@ describe("Swap", async () => {
       expect(await swap.isGuarded()).to.eq(false)
     })
 
-    it("addLiquidity reverts with 'Invalid merkle proof'", async () => {
+    it("addLiquidity with empty merkle proof reverts", async () => {
       await expect(
         swap
           .connect(user1)
           .addLiquidity([String(1e18), String(3e18)], 0, MAX_UINT256, []),
-      ).to.be.revertedWith("Invalid merkle proof")
+      ).to.be.reverted
     })
 
     describe("addLiquidity", () => {
@@ -1598,11 +1598,22 @@ describe("Swap", async () => {
               MAX_UINT256,
               getTestMerkleProof(user2Address),
             ),
-        ).to.be.revertedWith("Invalid merkle proof")
+        ).to.be.reverted
       })
 
       it("Reverts with invalid address", async () => {
         const notAllowedUser = signers[10]
+
+        await firstToken.mint(await notAllowedUser.getAddress(), String(1e18))
+        await secondToken.mint(await notAllowedUser.getAddress(), String(3e18))
+
+        await firstToken
+          .connect(notAllowedUser)
+          .approve(swap.address, MAX_UINT256)
+        await secondToken
+          .connect(notAllowedUser)
+          .approve(swap.address, MAX_UINT256)
+
         await expect(
           swap
             .connect(notAllowedUser)
@@ -1612,13 +1623,13 @@ describe("Swap", async () => {
               MAX_UINT256,
               getTestMerkleProof(user1Address),
             ),
-        ).to.be.revertedWith("Invalid merkle proof")
+        ).to.be.reverted
 
         await expect(
           swap
             .connect(notAllowedUser)
             .addLiquidity([String(1e18), String(3e18)], 0, MAX_UINT256, []),
-        ).to.be.revertedWith("Invalid merkle proof")
+        ).to.be.reverted
       })
 
       it("Reverts when depositing over individual limit", async () => {
