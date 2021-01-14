@@ -104,6 +104,9 @@ describe("Allowlist", () => {
   })
 
   describe("verifyAddress() & isAccountVerified()", () => {
+    // For verifyAddress(), as the function modifies the state, we need to call it with callStatic
+    // chain such that the call is computed but not executed.
+
     it("Returns true when proof and address are correct", async () => {
       await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
         expect(
@@ -118,7 +121,7 @@ describe("Allowlist", () => {
       })
     })
 
-    it("Returns true when merkleProof is empty and the account has been verified", async () => {
+    it("Returns true when merkleProof is empty but the account has been verified", async () => {
       await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
         // Verify with the correct proof
         expect(
@@ -140,7 +143,7 @@ describe("Allowlist", () => {
       })
     })
 
-    it("Returns false when merkleProof is wrong and the account has been verified", async () => {
+    it("Returns true when merkleProof is wrong but the account has been verified", async () => {
       await asyncForEach(Object.keys(ALLOWED_ACCOUNTS), async (account) => {
         // Verify with the correct proof
         expect(
@@ -153,17 +156,18 @@ describe("Allowlist", () => {
         expect(await allowlist.isAccountVerified(account)).to.be.eq(true)
 
         // Try calling `verifyAddress()` with an incorrect proof
+        // Since the account has already been verified, the function still returns true.
         expect(
           await allowlist.callStatic.verifyAddress(account, [
             formatBytes32String("Incorrect Proof"),
           ]),
-        ).to.be.eq(false)
+        ).to.be.eq(true)
         await allowlist.verifyAddress(account, [
           formatBytes32String("Incorrect Proof"),
         ])
 
-        // Verification status is overwritten to false
-        expect(await allowlist.isAccountVerified(account)).to.be.eq(false)
+        // Verification status is true.
+        expect(await allowlist.isAccountVerified(account)).to.be.eq(true)
       })
     })
 

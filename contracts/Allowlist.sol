@@ -102,11 +102,10 @@ contract Allowlist is Ownable, IAllowlist {
         if (merkleProof.length != 0) {
             // Verify the account exists in the merkle tree via the MerkleProof library
             bytes32 node = keccak256(abi.encodePacked(account));
-            verified[account] = MerkleProof.verify(
-                merkleProof,
-                merkleRoot,
-                node
-            );
+            if (MerkleProof.verify(merkleProof, merkleRoot, node)) {
+                verified[account] = true;
+                return true;
+            }
         }
         return verified[account];
     }
