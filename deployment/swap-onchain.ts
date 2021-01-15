@@ -29,7 +29,7 @@ const BTC_LP_TOKEN_NAME = "Saddle tBTC/WBTC/renBTC/sBTC"
 const BTC_LP_TOKEN_SYMBOL = "saddleTWRenSBTC"
 
 // Address to own the timelock contract
-const TIMELOCK_ADMIN = "0xMULTISIG_ADDRESS" // TODO
+const TIMELOCK_ADMIN = "0x3F8E527aF4e0c6e763e8f368AC679c44C45626aE"
 
 // To run this script and deploy the contracts on the mainnet:
 //    npx hardhat run deployment/swap-onchain.ts --network mainnet
@@ -46,8 +46,8 @@ async function deploySwap(): Promise<void> {
   const allowlist = (await deployContract(
     deployer,
     AllowlistArtifact,
-    ["0xca0f8c7ee1addcc5fce6a7c989ba3f210db065c36c276b71b8c8253a339318a3"], // test merkle root https://github.com/saddle-finance/saddle-test-addresses
-    // ["0xc799ec3a26ef7b4c295f6f02d1e6f65c35cef24447ff343076060bfc0eafb24e"], // production merkle root
+    // ["0xca0f8c7ee1addcc5fce6a7c989ba3f210db065c36c276b71b8c8253a339318a3"], // test merkle root https://github.com/saddle-finance/saddle-test-addresses
+    ["0xc799ec3a26ef7b4c295f6f02d1e6f65c35cef24447ff343076060bfc0eafb24e"], // production merkle root
   )) as Allowlist
   await allowlist.deployed()
   console.log(`Allowlist address: ${allowlist.address}`)
