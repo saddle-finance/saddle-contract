@@ -11,8 +11,9 @@ import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import { Wallet } from "ethers"
 import { deployContract } from "ethereum-waffle"
-import { deployContractWithLibraries } from "../test/testUtils"
+import { asyncForEach, deployContractWithLibraries } from "../test/testUtils"
 import { ethers } from "hardhat"
+import merkleTreeData from "../test/exampleMerkleTree.json"
 
 // Test Values
 const INITIAL_A_VALUE = 50
@@ -108,8 +109,8 @@ async function deploySwap(): Promise<void> {
     await Promise.all(tokens.map(async (t) => [await t.symbol(), t.address])),
   )
 
-  addresses.forEach(async (address) => {
-    tokens.forEach(async (token) => {
+  await asyncForEach(addresses, async (address) => {
+    await asyncForEach(tokens, async (token) => {
       const decimals = await token.decimals()
       // Stringifying numbers over 1e20 breaks BigNumber, so get creative
       const amount = "1" + new Array(decimals + 5).fill(0).join("")
@@ -121,6 +122,7 @@ async function deploySwap(): Promise<void> {
   const allowlist = (await deployContract(
     (signers[0] as unknown) as Wallet,
     AllowlistArtifact,
+    [merkleTreeData.merkleRoot],
   )) as Allowlist
   await allowlist.deployed()
 
@@ -206,12 +208,6 @@ async function deploySwap(): Promise<void> {
   await allowlist.setPoolAccountLimit(
     btcSwap.address,
     BigNumber.from(10).pow(18).mul(1000),
-  )
-
-  // update multipliers for both swaps
-  await allowlist.setMultipliers(
-    [ownerAddress, user1Address, user2Address],
-    [1000, 1000, 1000],
   )
 
   await stablecoinSwap.deployed()

@@ -38,11 +38,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     // Address to allowlist contract that holds information about maximum totaly supply of lp tokens
     // and maximum mintable amount per user address. As this is immutable, this will become a constant
     // after initialization.
-    IAllowlist public immutable allowlist;
+    IAllowlist private immutable allowlist;
 
     // Boolean value that notates whether this pool is guarded or not. When isGuarded is true,
     // addLiquidity function will be restricted by limits defined in allowlist contract.
-    bool public isGuarded = true;
+    bool private guarded = true;
 
     // Maps token address to an index in the pool. Used to prevent duplicate tokens in the pool.
     // getTokenIndex function also relies on this mapping to retrieve token index.
@@ -201,7 +201,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
         // Initialize variables related to guarding the initial deposits
         allowlist = _allowlist;
-        isGuarded = true;
+        guarded = true;
     }
 
     /*** MODIFIERS ***/
@@ -258,6 +258,14 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             "Token does not exist"
         );
         return index;
+    }
+
+    /**
+     * @notice Reads and returns the address of the allowlist that is set during deployment of this contract
+     * @return the address of the allowlist contract casted to the IAllowlist interface
+     */
+    function getAllowlist() external view returns (IAllowlist) {
+        return allowlist;
     }
 
     /**
@@ -415,17 +423,24 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Add liquidity to the pool with given amounts
+     * @notice Add liquidity to the pool with given amounts during guarded launch phase. Only users
+     * with valid address and proof can successfully call this function. When this function is called
+     * after the guarded release phase is over, the merkleProof is ignored.
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
      * @param deadline latest timestamp to accept this transaction
+     * @param merkleProof data generated when constructing the allowlist merkle tree. Users can
+     * get this data off chain. Even if the address is in the allowlist, users must include
+     * a valid proof for this call to succeed. If the pool is no longer in the guarded release phase,
+     * this parameter is ignored.
      * @return amount of LP token user minted and received
      */
     function addLiquidity(
         uint256[] calldata amounts,
         uint256 minToMint,
-        uint256 deadline
+        uint256 deadline,
+        bytes32[] calldata merkleProof
     )
         external
         nonReentrant
@@ -433,24 +448,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         deadlineCheck(deadline)
         returns (uint256)
     {
-        uint256 mintAmount = swapStorage.addLiquidity(amounts, minToMint);
-
-        if (isGuarded) {
-            // Check per user deposit limit
-            require(
-                allowlist.getAllowedAmount(address(this), msg.sender) >=
-                    swapStorage.lpToken.balanceOf(msg.sender),
-                "Deposit limit reached"
-            );
-            // Check pool's TVL cap limit via totalSupply of the pool token
-            require(
-                allowlist.getPoolCap(address(this)) >=
-                    swapStorage.lpToken.totalSupply(),
-                "Pool TVL cap reached"
-            );
-        }
-
-        return mintAmount;
+        return swapStorage.addLiquidity(amounts, minToMint, merkleProof);
     }
 
     /**
@@ -595,10 +593,17 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Update the guarded status of the pool deposits
-     * @param isGuarded_ boolean value indicating whether the deposits should be guarded
+     * @notice Disables the guarded launch phase, removing any limits on deposit amounts and addresses
      */
-    function setIsGuarded(bool isGuarded_) external onlyOwner {
-        isGuarded = isGuarded_;
+    function disableGuard() external onlyOwner {
+        guarded = false;
+    }
+
+    /**
+     * @notice Reads and returns current guarded status of the pool
+     * @return guarded_ boolean value indicating whether the deposits should be guarded
+     */
+    function isGuarded() external view returns (bool) {
+        return guarded;
     }
 }
