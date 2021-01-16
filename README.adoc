@@ -42,3 +42,11 @@ $ npx hardhat run --network localhost deployment/swap.ts
 ```
 
 You can connect to this RPC server via `localhost:8545`
+
+=== Generating GitBook docs
+
+```lang=bash
+$ npx solidity-docgen --templates=templates
+```
+
+The output in the `docs` folder should be copied to the appropriate folder in the https://github.com/saddle-finance/saddle-docs/tree/master/solidity-docs[saddle-docs repo].
