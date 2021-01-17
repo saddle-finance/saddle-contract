@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 // Generalized and adapted from https://github.com/k06a/Unipool 🙇
 
 pragma solidity 0.6.12;
