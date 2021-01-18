@@ -113,7 +113,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * StableSwap paper for details
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
-     * @param _withdrawFee default withdrawFee to be initliazed with
+     * @param _withdrawFee default withdrawFee to be initialized with
      * @param _allowlist address of allowlist contract for guarded launch
      */
     constructor(

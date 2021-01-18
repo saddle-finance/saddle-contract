@@ -13,7 +13,6 @@ import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
 import { ethers } from "hardhat"
-
 import merkleTreeData from "../test/exampleMerkleTree.json"
 
 chai.use(solidity)
@@ -196,6 +195,90 @@ describe("Swap", () => {
       ).to.be.revertedWith(
         "Token decimals can't be higher than the pool's precision decimals",
       )
+    })
+
+    it("Reverts with '_a exceeds maximum'", async () => {
+      await expect(
+        deployContractWithLibraries(
+          owner,
+          SwapArtifact,
+          { SwapUtils: swapUtils.address },
+          [
+            [firstToken.address, secondToken.address],
+            [18, 18],
+            LP_TOKEN_NAME,
+            LP_TOKEN_SYMBOL,
+            10e6 + 1,
+            SWAP_FEE,
+            0,
+            0,
+            allowlist.address,
+          ],
+        ),
+      ).to.be.revertedWith("_a exceeds maximum")
+    })
+
+    it("Reverts with '_fee exceeds maximum'", async () => {
+      await expect(
+        deployContractWithLibraries(
+          owner,
+          SwapArtifact,
+          { SwapUtils: swapUtils.address },
+          [
+            [firstToken.address, secondToken.address],
+            [18, 18],
+            LP_TOKEN_NAME,
+            LP_TOKEN_SYMBOL,
+            INITIAL_A_VALUE,
+            10e8 + 1,
+            0,
+            0,
+            allowlist.address,
+          ],
+        ),
+      ).to.be.revertedWith("_fee exceeds maximum")
+    })
+
+    it("Reverts with '_adminFee exceeds maximum'", async () => {
+      await expect(
+        deployContractWithLibraries(
+          owner,
+          SwapArtifact,
+          { SwapUtils: swapUtils.address },
+          [
+            [firstToken.address, secondToken.address],
+            [18, 18],
+            LP_TOKEN_NAME,
+            LP_TOKEN_SYMBOL,
+            INITIAL_A_VALUE,
+            SWAP_FEE,
+            10e10 + 1,
+            0,
+            allowlist.address,
+          ],
+        ),
+      ).to.be.revertedWith("_adminFee exceeds maximum")
+    })
+
+    it("Reverts with '_withdrawFee exceeds maximum'", async () => {
+      await expect(
+        deployContractWithLibraries(
+          owner,
+          SwapArtifact,
+          { SwapUtils: swapUtils.address },
+          [
+            [firstToken.address, secondToken.address],
+            [18, 18],
+            LP_TOKEN_NAME,
+            LP_TOKEN_SYMBOL,
+            INITIAL_A_VALUE,
+            SWAP_FEE,
+            0,
+            10e8 + 1,
+            allowlist.address,
+          ],
+        ),
+      ).to.be.revertedWith("_withdrawFee exceeds maximum")
     })
   })
 })
