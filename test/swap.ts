@@ -6,12 +6,12 @@ import {
   asyncForEach,
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
+  getTestMerkleProof,
+  getTestMerkleRoot,
   getUserTokenBalance,
   getUserTokenBalances,
   setNextTimestamp,
   setTimestamp,
-  getTestMerkleRoot,
-  getTestMerkleProof,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -25,10 +25,10 @@ import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
-import { TestSwapReturnValues } from "../build/typechain/TestSwapReturnValues"
-import TestSwapReturnValuesArtifact from "../build/artifacts/contracts/helper/test/TestSwapReturnValues.sol/TestSwapReturnValues.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
+import { TestSwapReturnValues } from "../build/typechain/TestSwapReturnValues"
+import TestSwapReturnValuesArtifact from "../build/artifacts/contracts/helper/test/TestSwapReturnValues.sol/TestSwapReturnValues.json"
 import chai from "chai"
 import { ethers } from "hardhat"
 
@@ -277,10 +277,10 @@ describe("Swap", async () => {
       ).to.be.reverted
     })
 
-    it("Reverts with 'Amounts must map to pooled tokens'", async () => {
+    it("Reverts with 'Amounts must match pooled tokens'", async () => {
       await expect(
         swap.connect(user1).addLiquidity([String(1e16)], 0, MAX_UINT256, []),
-      ).to.be.revertedWith("Amounts must map to pooled tokens")
+      ).to.be.revertedWith("Amounts must match pooled tokens")
     })
 
     it("Reverts with 'Cannot withdraw more than available'", async () => {
@@ -295,16 +295,14 @@ describe("Swap", async () => {
       ).to.be.revertedWith("Cannot withdraw more than available")
     })
 
-    it("Reverts with 'If token supply is zero, must supply all tokens in pool'", async () => {
+    it("Reverts with 'Must supply all tokens in pool'", async () => {
       swapToken.approve(swap.address, String(2e18))
       await swap.removeLiquidity(String(2e18), [0, 0], MAX_UINT256)
       await expect(
         swap
           .connect(user1)
           .addLiquidity([0, String(3e18)], MAX_UINT256, MAX_UINT256, []),
-      ).to.be.revertedWith(
-        "If token supply is zero, must supply all tokens in pool",
-      )
+      ).to.be.revertedWith("Must supply all tokens in pool")
     })
 
     it("Succeeds with expected output amount of pool tokens", async () => {
@@ -457,10 +455,10 @@ describe("Swap", async () => {
       ).to.be.revertedWith("Cannot exceed total supply")
     })
 
-    it("Reverts with 'Min amounts should correspond to pooled tokens'", async () => {
+    it("Reverts with 'minAmounts must match poolTokens'", async () => {
       await expect(
         swap.removeLiquidity(String(2e18), [0], MAX_UINT256),
-      ).to.be.revertedWith("Min amounts should correspond to pooled tokens")
+      ).to.be.revertedWith("minAmounts must match poolTokens")
     })
 
     it("Succeeds even when contract is paused", async () => {
@@ -698,10 +696,10 @@ describe("Swap", async () => {
       ).to.be.reverted
     })
 
-    it("Reverts with 'Amounts should correspond to pooled tokens'", async () => {
+    it("Reverts with 'Amounts should match pool tokens'", async () => {
       await expect(
         swap.removeLiquidityImbalance([String(1e18)], MAX_UINT256, MAX_UINT256),
-      ).to.be.revertedWith("Amounts should correspond to pooled tokens")
+      ).to.be.revertedWith("Amounts should match pool tokens")
     })
 
     it("Reverts with 'Cannot withdraw more than available'", async () => {
@@ -949,7 +947,7 @@ describe("Swap", async () => {
       ).to.be.revertedWith("Token index out of range")
     })
 
-    it("Reverts with 'Cannot withdraw more than available'", async () => {
+    it("Reverts with 'Withdraw exceeds available'", async () => {
       // User 1 adds liquidity
       await swap
         .connect(user1)
@@ -963,7 +961,7 @@ describe("Swap", async () => {
           currentUser1Balance.mul(2),
           0,
         ),
-      ).to.be.revertedWith("Cannot withdraw more than available")
+      ).to.be.revertedWith("Withdraw exceeds available")
     })
 
     it("Reverts with 'Token not found'", async () => {
@@ -2520,10 +2518,10 @@ describe("Swap", async () => {
     beforeEach(async () => {
       await swap.disableGuard()
     })
-    it("Reverts with 'Only token transfers can update withdraw fee'", async () => {
+    it("Reverts with 'Only callable by pool token'", async () => {
       await expect(
         swap.connect(user1).updateUserWithdrawFee(ZERO_ADDRESS, String(5e7)),
-      ).to.be.revertedWith("Only token transfers can update withdraw fee")
+      ).to.be.revertedWith("Only callable by pool token")
     })
 
     it("Test adding liquidity, and once again at 2 weeks mark then removing all deposits at 4 weeks mark", async () => {
@@ -2751,14 +2749,14 @@ describe("Swap", async () => {
       ).to.be.reverted
     })
 
-    it("Reverts with 'New ramp cannot be started until 1 day has passed'", async () => {
+    it("Reverts with 'Wait 1 day before starting ramp'", async () => {
       await swap.rampA(
         55,
         (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
       )
       await expect(
         swap.rampA(55, (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1),
-      ).to.be.revertedWith("New ramp cannot be started until 1 day has passed")
+      ).to.be.revertedWith("Wait 1 day before starting ramp")
     })
 
     it("Reverts with 'Insufficient ramp time'", async () => {
@@ -2767,10 +2765,10 @@ describe("Swap", async () => {
       ).to.be.revertedWith("Insufficient ramp time")
     })
 
-    it("Reverts with 'futureA_ must be between 0 and MAX_A'", async () => {
+    it("Reverts with 'futureA_ must be > 0 and < MAX_A'", async () => {
       await expect(
         swap.rampA(0, (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1),
-      ).to.be.revertedWith("futureA_ must be between 0 and MAX_A")
+      ).to.be.revertedWith("futureA_ must be > 0 and < MAX_A")
     })
 
     it("Reverts with 'futureA_ is too small'", async () => {

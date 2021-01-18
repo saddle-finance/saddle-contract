@@ -69,7 +69,7 @@ describe("Swap", () => {
   })
 
   describe("swapStorage#constructor", () => {
-    it("Reverts with 'Pools must contain more than 1 token'", async () => {
+    it("Reverts with '_pooledTokens.length <= 1'", async () => {
       await expect(
         deployContractWithLibraries(
           owner,
@@ -87,10 +87,10 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("Pools must contain more than 1 token")
+      ).to.be.revertedWith("_pooledTokens.length <= 1")
     })
 
-    it("Reverts with 'Pools with over 32 tokens aren't supported'", async () => {
+    it("Reverts with '_pooledTokens.length > 32'", async () => {
       await expect(
         deployContractWithLibraries(
           owner,
@@ -108,10 +108,10 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("Pools with over 32 tokens aren't supported")
+      ).to.be.revertedWith("_pooledTokens.length > 32")
     })
 
-    it("Reverts with 'Each pooled token needs a specified precision'", async () => {
+    it("Reverts with '_pooledTokens decimals mismatch'", async () => {
       await expect(
         deployContractWithLibraries(
           owner,
@@ -129,10 +129,10 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("Each pooled token needs a specified decimals")
+      ).to.be.revertedWith("_pooledTokens decimals mismatch")
     })
 
-    it("Reverts with 'Pools cannot have duplicate tokens'", async () => {
+    it("Reverts with 'Duplicate tokens'", async () => {
       await expect(
         deployContractWithLibraries(
           owner,
@@ -150,7 +150,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("Pools cannot have duplicate tokens")
+      ).to.be.revertedWith("Duplicate tokens")
     })
 
     it("Reverts with 'The 0 address isn't an ERC-20'", async () => {
@@ -174,7 +174,7 @@ describe("Swap", () => {
       ).to.be.revertedWith("The 0 address isn't an ERC-20")
     })
 
-    it("Reverts with 'Token decimals can't be higher than the pool's precision decimals'", async () => {
+    it("Reverts with 'Token decimals exceeds max'", async () => {
       await expect(
         deployContractWithLibraries(
           owner,
@@ -192,9 +192,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith(
-        "Token decimals can't be higher than the pool's precision decimals",
-      )
+      ).to.be.revertedWith("Token decimals exceeds max")
     })
 
     it("Reverts with '_a exceeds maximum'", async () => {
