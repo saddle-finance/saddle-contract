@@ -1,8 +1,6 @@
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { BigNumber } from "@ethersproject/bignumber"
-import { Timelock } from "../build/typechain/Timelock"
-import TimelockArtifact from "../build/artifacts/contracts/Timelock.sol/Timelock.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
@@ -10,7 +8,7 @@ import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import { deployContract } from "ethereum-waffle"
-import { deployContractWithLibraries, TIME } from "../test/testUtils"
+import { deployContractWithLibraries } from "../test/testUtils"
 import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address"
 
@@ -28,8 +26,9 @@ const WITHDRAW_FEE = 0
 const BTC_LP_TOKEN_NAME = "Saddle tBTC/WBTC/renBTC/sBTC"
 const BTC_LP_TOKEN_SYMBOL = "saddleTWRenSBTC"
 
-// Address to own the timelock contract
-const TIMELOCK_ADMIN = "0x3F8E527aF4e0c6e763e8f368AC679c44C45626aE"
+// Multisig address to own the btc swap pool
+// List of signers can be found here: https://docs.saddle.finance/faq#who-controls-saddles-admin-keys
+const MULTISIG_ADDRESS = "0x3F8E527aF4e0c6e763e8f368AC679c44C45626aE"
 
 // To run this script and deploy the contracts on the mainnet:
 //    npx hardhat run deployment/swap-onchain.ts --network mainnet
@@ -114,17 +113,9 @@ async function deploySwap(): Promise<void> {
   console.log(`Tokenized BTC swap address: ${btcSwap.address}`)
   console.log(`Tokenized BTC swap token address: ${btcLpToken}`)
 
-  // Deploy Timelock.sol with 2 days delay time
-  const timelock = (await deployContract(deployer, TimelockArtifact, [
-    TIMELOCK_ADMIN,
-    2 * TIME.DAYS,
-  ])) as Timelock
-  await timelock.deployed()
-  console.log(`Timelock address: ${timelock.address}`)
-
-  // Transfer ownership of the btc swap contract to timelock
-  await btcSwap.transferOwnership(timelock.address)
-  console.log(`Transferred owner of BTC swap to Timelock: ${timelock.address}`)
+  // Transfer ownership of the btc swap contract to the multisig
+  await btcSwap.transferOwnership(MULTISIG_ADDRESS)
+  console.log(`Transferred owner of BTC swap to multisig: ${MULTISIG_ADDRESS}`)
 }
 
 deploySwap().then(() => {
