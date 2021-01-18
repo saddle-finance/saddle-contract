@@ -289,10 +289,7 @@ library SwapUtils {
         v.d0 = getD(xp, v.preciseA);
         v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(self.lpToken.totalSupply()));
 
-        require(
-            tokenAmount <= xp[tokenIndex],
-            "Cannot withdraw more than available"
-        );
+        require(tokenAmount <= xp[tokenIndex], "Withdraw exceeds available");
 
         v.newY = getYD(v.preciseA, tokenIndex, xp, v.d1);
 
@@ -459,7 +456,7 @@ library SwapUtils {
         uint256 numTokens = balances.length;
         require(
             numTokens == precisionMultipliers.length,
-            "Balances must map to token precision multipliers"
+            "Balances must match multipliers"
         );
         uint256[] memory xp = new uint256[](numTokens);
         for (uint256 i = 0; i < numTokens; i++) {
@@ -868,7 +865,7 @@ library SwapUtils {
     ) external returns (uint256) {
         require(
             amounts.length == self.pooledTokens.length,
-            "Amounts must map to pooled tokens"
+            "Amounts must match pooled tokens"
         );
 
         uint256[] memory fees = new uint256[](self.pooledTokens.length);
@@ -884,7 +881,7 @@ library SwapUtils {
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
             require(
                 self.lpToken.totalSupply() != 0 || amounts[i] > 0,
-                "If token supply is zero, must supply all tokens in pool"
+                "Must supply all tokens in pool"
             );
 
             // Transfer tokens first to see if a fee was charged on transfer
@@ -909,7 +906,7 @@ library SwapUtils {
         // invariant after change
         v.preciseA = _getAPrecise(self);
         v.d1 = getD(_xp(self, newBalances), v.preciseA);
-        require(v.d1 > v.d0, "D should increase after additional liquidity");
+        require(v.d1 > v.d0, "D should increase");
 
         // updated to reflect fees and calculate the user's LP tokens
         v.d2 = v.d1;
@@ -938,7 +935,7 @@ library SwapUtils {
             toMint = v.d2.sub(v.d0).mul(self.lpToken.totalSupply()).div(v.d0);
         }
 
-        require(toMint >= minToMint, "Couldn't mint min requested LP tokens");
+        require(toMint >= minToMint, "Couldn't mint min requested");
 
         // mint the user's LP tokens
         self.lpToken.mint(msg.sender, toMint, merkleProof);
@@ -1017,17 +1014,14 @@ library SwapUtils {
         require(amount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
         require(
             minAmounts.length == self.pooledTokens.length,
-            "Min amounts should correspond to pooled tokens"
+            "minAmounts must match poolTokens"
         );
 
         uint256[] memory amounts =
             _calculateRemoveLiquidity(self, msg.sender, amount);
 
         for (uint256 i = 0; i < amounts.length; i++) {
-            require(
-                amounts[i] >= minAmounts[i],
-                "Resulted in fewer tokens than expected"
-            );
+            require(amounts[i] >= minAmounts[i], "amounts[i] < minAmounts[i]");
             self.balances[i] = self.balances[i].sub(amounts[i]);
             self.pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
         }
@@ -1071,7 +1065,7 @@ library SwapUtils {
             tokenIndex
         );
 
-        require(dy >= minAmount, "The min amount of tokens wasn't met");
+        require(dy >= minAmount, "dy < minAmount");
 
         self.balances[tokenIndex] = self.balances[tokenIndex].sub(
             dy.add(dyFee.mul(self.adminFee).div(FEE_DENOMINATOR))
@@ -1107,7 +1101,7 @@ library SwapUtils {
     ) public returns (uint256) {
         require(
             amounts.length == self.pooledTokens.length,
-            "Amounts should correspond to pooled tokens"
+            "Amounts should match pool tokens"
         );
         require(
             maxBurnAmount <= self.lpToken.balanceOf(msg.sender) &&
@@ -1152,10 +1146,7 @@ library SwapUtils {
             FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender))
         );
 
-        require(
-            tokenAmount <= maxBurnAmount,
-            "More expensive than the max burn amount"
-        );
+        require(tokenAmount <= maxBurnAmount, "tokenAmount > maxBurnAmount");
 
         self.lpToken.burnFrom(msg.sender, tokenAmount);
 
@@ -1245,7 +1236,7 @@ library SwapUtils {
     ) external {
         require(
             block.timestamp >= self.initialATime.add(1 days),
-            "New ramp cannot be started until 1 day has passed"
+            "Wait 1 day before starting ramp"
         );
         require(
             futureTime_ >= block.timestamp.add(MIN_RAMP_TIME),
@@ -1253,7 +1244,7 @@ library SwapUtils {
         );
         require(
             futureA_ > 0 && futureA_ < MAX_A,
-            "futureA_ must be between 0 and MAX_A"
+            "futureA_ must be > 0 and < MAX_A"
         );
 
         uint256 initialAPrecise = _getAPrecise(self);

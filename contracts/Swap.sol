@@ -128,17 +128,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         IAllowlist _allowlist
     ) public OwnerPausable() ReentrancyGuard() {
         // Check _pooledTokens and precisions parameter
-        require(
-            _pooledTokens.length > 1,
-            "Pools must contain more than 1 token"
-        );
-        require(
-            _pooledTokens.length <= 32,
-            "Pools with over 32 tokens aren't supported"
-        );
+        require(_pooledTokens.length > 1, "_pooledTokens.length <= 1");
+        require(_pooledTokens.length <= 32, "_pooledTokens.length > 32");
         require(
             _pooledTokens.length == decimals.length,
-            "Each pooled token needs a specified decimals"
+            "_pooledTokens decimals mismatch"
         );
 
         uint256[] memory precisionMultipliers = new uint256[](decimals.length);
@@ -149,7 +143,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
                 require(
                     tokenIndexes[address(_pooledTokens[i])] == 0 &&
                         _pooledTokens[0] != _pooledTokens[i],
-                    "Pools cannot have duplicate tokens"
+                    "Duplicate tokens"
                 );
             }
             require(
@@ -158,7 +152,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             );
             require(
                 decimals[i] <= SwapUtils.POOL_PRECISION_DECIMALS,
-                "Token decimals can't be higher than the pool's precision decimals"
+                "Token decimals exceeds max"
             );
             precisionMultipliers[i] =
                 10 **
@@ -539,7 +533,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     {
         require(
             msg.sender == address(swapStorage.lpToken),
-            "Only token transfers can update withdraw fee"
+            "Only callable by pool token"
         );
         swapStorage.updateUserWithdrawFee(recipient, transferAmount);
     }
