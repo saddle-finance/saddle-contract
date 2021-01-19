@@ -3,15 +3,24 @@ import { HardhatUserConfig } from "hardhat/config"
 import "@nomiclabs/hardhat-ethers"
 import "@nomiclabs/hardhat-waffle"
 import "@nomiclabs/hardhat-web3"
+import "@nomiclabs/hardhat-etherscan"
 import "hardhat-gas-reporter"
 import "solidity-coverage"
 import "hardhat-typechain"
+import dotenv from "dotenv"
 
-const config: HardhatUserConfig = {
+dotenv.config()
+
+let config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     coverage: {
       url: "http://127.0.0.1:8555",
+    },
+    mainnet: {
+      url:
+        "https://eth-mainnet.alchemyapi.io/v2/81vG7yyuGWiFN6Hzu47-MnCIVmSd5MpY",
+      gasPrice: 55 * 1000000000,
     },
   },
   paths: {
@@ -19,13 +28,20 @@ const config: HardhatUserConfig = {
     cache: "./build/cache",
   },
   solidity: {
-    version: "0.6.12",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 10000,
+    compilers: [
+      {
+        version: "0.6.12",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10000,
+          },
+        },
       },
-    },
+      {
+        version: "0.5.16",
+      },
+    ],
   },
   typechain: {
     outDir: "./build/typechain/",
@@ -35,6 +51,20 @@ const config: HardhatUserConfig = {
     currency: "USD",
     gasPrice: 21,
   },
+}
+
+if (process.env.ETHERSCAN_API) {
+  config = { ...config, etherscan: { apiKey: process.env.ETHERSCAN_API } }
+}
+
+if (process.env.ACCOUNT_PRIVATE_KEYS) {
+  config.networks = {
+    ...config.networks,
+    mainnet: {
+      ...config.networks?.mainnet,
+      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
+    },
+  }
 }
 
 export default config

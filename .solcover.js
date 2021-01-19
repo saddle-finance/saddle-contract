@@ -7,5 +7,5 @@ module.exports = {
   onIstanbulComplete: async function(config){
     shell.rm('-rf', './build/typechain'); // Clean up at the end
   },
-  skipFiles: ['helper/test/TestSwapReturnValues.sol']
+  skipFiles: ['helper/test/TestSwapReturnValues.sol', 'Timelock.sol']
 }
