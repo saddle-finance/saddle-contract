@@ -1,10 +1,10 @@
-import { BigNumber, Bytes, ContractFactory, Signer } from "ethers"
+import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
 
 import { Artifact } from "hardhat/types"
 import { Contract } from "@ethersproject/contracts"
 import { ERC20 } from "../build/typechain/ERC20"
 import { Swap } from "../build/typechain/Swap"
-import { ethers } from "hardhat"
+import { ethers, network } from "hardhat"
 import { BytesLike } from "@ethersproject/bytes"
 
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
@@ -159,6 +159,17 @@ export async function getCurrentBlockTimestamp(): Promise<number> {
   return (
     await ethers.provider.getBlock(await ethers.provider.getBlockNumber())
   ).timestamp
+}
+
+export async function impersonateAccount(
+  address: string,
+): Promise<providers.JsonRpcSigner> {
+  await network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [address],
+  })
+
+  return ethers.provider.getSigner(address)
 }
 
 export async function asyncForEach<T>(

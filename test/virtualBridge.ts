@@ -3,6 +3,8 @@ import {
   asyncForEach,
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
+  getTestMerkleProof,
+  getTestMerkleRoot,
   getUserTokenBalances,
   impersonateAccount,
   increaseTimestamp,
@@ -34,8 +36,6 @@ import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUt
 import chai from "chai"
 import { ethers, network } from "hardhat"
 
-import merkleTreeData from "./exampleMerkleTree.json"
-import { BytesLike } from "@ethersproject/bytes"
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -46,15 +46,6 @@ const INITIAL_A_VALUE = 50
 const SWAP_FEE = 4e6
 const LP_TOKEN_NAME = "Test LP Token Name"
 const LP_TOKEN_SYMBOL = "TESTLP"
-const MERKLE_ROOT = merkleTreeData.merkleRoot
-const ALLOWED_ACCOUNTS: Record<string, any> = merkleTreeData.allowedAccounts
-
-function getMerkleProof(address: string): BytesLike[] {
-  if (address in ALLOWED_ACCOUNTS) {
-    return ALLOWED_ACCOUNTS[address].proof
-  }
-  return []
-}
 
 describe("Virtual swap bridge", () => {
   let signers: Array<Signer>
@@ -127,7 +118,7 @@ describe("Virtual swap bridge", () => {
     },
     susd: {
       address: "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
-      holders: ["0x49be88f0fcc3a8393a59d3688480d7d253c37d2a"],
+      holders: ["0xC8C2b727d864CC75199f5118F0943d2087fB543b"],
       contract: null,
     },
     sdefi: {
@@ -207,7 +198,7 @@ describe("Virtual swap bridge", () => {
 
     // Deploy Allowlist
     allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
-      MERKLE_ROOT,
+      getTestMerkleRoot(),
     ])) as Allowlist
 
     // Deploy MathUtils
@@ -265,19 +256,22 @@ describe("Virtual swap bridge", () => {
     )
 
     // Approve token transfer to Swap for addling liquidity and to bridge for virtual swaps
-    await asyncForEach([tbtc, wbtc, renbtc, sbtc], async (t: GenericErc20) => {
-      await t.connect(user1).approve(swap.address, MAX_UINT256)
-      await t.connect(user1).approve(bridge.address, MAX_UINT256)
-    })
+    await asyncForEach(
+      [tbtc, wbtc, renbtc, sbtc, susd, sdefi],
+      async (t: GenericErc20) => {
+        await t.connect(user1).approve(swap.address, MAX_UINT256)
+        await t.connect(user1).approve(bridge.address, MAX_UINT256)
+      },
+    )
 
     // Add initial liquidity
     await swap
       .connect(user1)
-      .addLiquidityGuarded(
+      .addLiquidity(
         [String(45e18), String(45e8), String(45e8), String(45e18)],
         0,
         (await getCurrentBlockTimestamp()) + 60,
-        getMerkleProof(user1Address),
+        getTestMerkleProof(user1Address),
       )
 
     expect(await swapToken.balanceOf(user1Address)).to.eq(String(180e18))
@@ -537,8 +531,6 @@ describe("Virtual swap bridge", () => {
         utils.formatBytes32String("sBTC"),
       )
       expect(await bridge.getSynthIndex(swap.address)).to.eq(3)
-
-      susd.connect(user1).approve(bridge.address, MAX_UINT256)
     })
 
     it("Succeeds to calculate sUSD -> tBTC", async () => {
@@ -549,7 +541,7 @@ describe("Virtual swap bridge", () => {
         BigNumber.from(50000).mul(String(1e18)),
       )
 
-      // 5000 sUSD -> 1.468897 tBTC
+      // 50000 sUSD -> 1.468897 tBTC
       expect(expectedVirtualTokenAmount).to.eq("1468897441660230103")
     })
 
@@ -563,6 +555,74 @@ describe("Virtual swap bridge", () => {
 
       // 15 sDEFI -> 2.211387 tBTC
       expect(expectedVirtualTokenAmount).to.eq("2211387595574030393")
+    })
+  })
+
+  describe("synthToVToken", async () => {
+    beforeEach(async () => {
+      // Set sBTC index
+      await bridge.setSynthIndex(
+        swap.address,
+        3,
+        utils.formatBytes32String("sBTC"),
+      )
+      expect(await bridge.getSynthIndex(swap.address)).to.eq(3)
+    })
+
+    it("Succeeds to swap sUSD -> vtBTC -> settle to tBTC", async () => {
+      const expectedVirtualTokenAmount = await bridge.calcSynthToVToken(
+        swap.address,
+        utils.formatBytes32String("sUSD"),
+        tbtc.address,
+        BigNumber.from(50000).mul(String(1e18)),
+      )
+
+      // 50000 sUSD -> 1.468897 tBTC
+      expect(expectedVirtualTokenAmount).to.eq("1468897441660230103")
+
+      const [vTokenAmount, vTokenAddress, queueId] = await bridge
+        .connect(user1)
+        .callStatic.synthToVToken(
+          swap.address,
+          utils.formatBytes32String("sUSD"),
+          tbtc.address,
+          BigNumber.from(50000).mul(String(1e18)),
+          [user1Address],
+          expectedVirtualTokenAmount.mul(99).div(100),
+        )
+
+      await bridge
+        .connect(user1)
+        .synthToVToken(
+          swap.address,
+          utils.formatBytes32String("sUSD"),
+          tbtc.address,
+          BigNumber.from(50000).mul(String(1e18)),
+          [user1Address],
+          expectedVirtualTokenAmount.mul(99).div(100),
+        )
+
+      // On an actual network, front end should parse the logs to retrieve the queueId
+
+      const vTokenERC20 = (await ethers.getContractAt(
+        ERC20Artifact.abi,
+        vTokenAddress,
+      )) as ERC20
+
+      expect(await vTokenERC20.balanceOf(user1Address)).to.eq(
+        "1454208467243627801",
+      )
+      expect(vTokenAmount).to.eq("1454208467243627801")
+
+      expect(await bridge.readyToSettle(queueId)).to.eq(false)
+
+      await increaseTimestamp(600)
+
+      const tBTCAmountBefore = await tbtc.balanceOf(user1Address)
+      await bridge.settle(queueId)
+      const tBTCAmountAfter = await tbtc.balanceOf(user1Address)
+
+      expect(tBTCAmountAfter.sub(tBTCAmountBefore)).to.eq("1464493571116930502")
     })
   })
 })

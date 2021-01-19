@@ -17,6 +17,10 @@ contract Proxy {
     address public target;
 }
 
+contract Target {
+    address public proxy;
+}
+
 // TODO Add NatSpec tags
 contract Bridge is Ownable {
     using SafeMath for uint256;
@@ -30,10 +34,19 @@ contract Bridge is Ownable {
     event TokenToVSynth(
         address indexed requester,
         ISwap swapPool,
-        IERC20 fromToken,
-        ISynth synth,
-        IVirtualSynth vSynth,
-        uint256 fromTokenInputAmount,
+        IERC20 tokenFrom,
+        IVirtualSynth vSynthTo,
+        uint256 tokenFromInAmount,
+        uint256 vSynthToOutAmount,
+        uint256 queueId
+    );
+    event SynthToVToken(
+        address indexed requester,
+        ISwap swapPool,
+        IERC20 synthFrom,
+        VirtualToken vTokenTo,
+        uint256 synthFromInAmount,
+        uint256 vTokenToOutAmount,
         uint256 queueId
     );
 
@@ -74,7 +87,6 @@ contract Bridge is Ownable {
         uint256 vsynthAmount;
         uint8 mediumSynthIndex;
         uint8 tokenToIndex;
-        uint256 vtokenAmount;
         VirtualToken vtoken;
         uint256 queueId;
     }
@@ -223,7 +235,7 @@ contract Bridge is Ownable {
         // Give the virtual synth to the user
         IERC20(address(v.vsynth)).transfer(msg.sender, v.vsynthAmount);
 
-        // Add virtual token to settle queue with a list of accounts to settle to
+        // Add virtual synth to settle queue with a list of accounts to settle to
         v.queueId = _addToSettleQueue(address(v.vsynth), accounts);
 
         // Emit TokenToVSynth event with relevant data
@@ -231,9 +243,9 @@ contract Bridge is Ownable {
             msg.sender,
             swap,
             tokenFrom,
-            v.vsynth.synth(),
             v.vsynth,
             tokenInAmount,
+            v.vsynthAmount,
             v.queueId
         );
 
@@ -277,30 +289,27 @@ contract Bridge is Ownable {
         uint256 synthInAmount,
         address[] calldata accounts,
         uint256 minAmount
-    ) external {
+    )
+        external
+        returns (
+            uint256,
+            VirtualToken,
+            uint256
+        )
+    {
         // Limit array size
         require(accounts.length < 6);
 
         SynthToVTokenInfo memory v =
-            SynthToVTokenInfo(
-                0,
-                IVirtualSynth(0),
-                0,
-                0,
-                0,
-                0,
-                VirtualToken(0),
-                0
-            );
+            SynthToVTokenInfo(0, IVirtualSynth(0), 0, 0, 0, VirtualToken(0), 0);
 
-        {
-            // Recieve synth from the user
-            IERC20 synthFrom = IERC20(synthetixResolver.getSynth(synthInKey));
-            synthFrom.transferFrom(msg.sender, address(this), synthInAmount);
+        // Recieve synth from the user
+        IERC20 synthFrom =
+            IERC20(Target(synthetixResolver.getSynth(synthInKey)).proxy());
+        synthFrom.safeTransferFrom(msg.sender, address(this), synthInAmount);
 
-            // Approve synth for transaction.
-            synthFrom.approve(address(synthetix), synthInAmount);
-        }
+        // Approve synth for transaction.
+        synthFrom.approve(address(synthetix), synthInAmount);
 
         v.mediumSynthIndex = _getSynthIndex(swap);
         v.mediumSynthKey = _getCurrencyKeyFromProxy(
@@ -327,7 +336,7 @@ contract Bridge is Ownable {
             v.mediumSynthIndex,
             v.tokenToIndex,
             string(abi.encodePacked("Virtual ", tokenTo.name())),
-            string(abi.encodePacked("V", tokenTo.symbol())),
+            string(abi.encodePacked("v", tokenTo.symbol())),
             tokenTo.decimals()
         );
 
@@ -336,7 +345,20 @@ contract Bridge is Ownable {
         v.vtoken.initialize(msg.sender, minAmount);
 
         // Add virtual token to settle queue with a list of accounts to settle to
-        _addToSettleQueue(address(v.vtoken), accounts);
+        v.queueId = _addToSettleQueue(address(v.vtoken), accounts);
+
+        // Emit TokenToVSynth event with relevant data
+        emit SynthToVToken(
+            msg.sender,
+            swap,
+            synthFrom,
+            v.vtoken,
+            synthInAmount,
+            minAmount,
+            v.queueId
+        );
+
+        return (minAmount, v.vtoken, v.queueId);
     }
 
     function setSynthIndex(

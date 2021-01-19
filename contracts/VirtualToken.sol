@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "synthetix/contracts/interfaces/IVirtualSynth.sol";
 import "./interfaces/ISwap.sol";
 
+import "hardhat/console.sol";
+
 // TODO Add NatSpec tags
 contract VirtualToken is ERC20, ERC20Burnable {
     bool private _initialized;
@@ -93,7 +95,6 @@ contract VirtualToken is ERC20, ERC20Burnable {
                 block.timestamp
             );
         }
-
         _settled = true;
     }
 
