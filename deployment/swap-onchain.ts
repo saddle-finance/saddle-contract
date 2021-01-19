@@ -28,6 +28,7 @@ const BTC_LP_TOKEN_SYMBOL = "saddleTWRenSBTC"
 
 // Multisig address to own the btc swap pool
 // List of signers can be found here: https://docs.saddle.finance/faq#who-controls-saddles-admin-keys
+// https://gnosis-safe.io/app/#/safes/0x3F8E527aF4e0c6e763e8f368AC679c44C45626aE/settings
 const MULTISIG_ADDRESS = "0x3F8E527aF4e0c6e763e8f368AC679c44C45626aE"
 
 // To run this script and deploy the contracts on the mainnet:
@@ -104,7 +105,7 @@ async function deploySwap(): Promise<void> {
   // Individual deposit limit = 1 BTC
   await allowlist.setPoolAccountLimit(
     btcSwap.address,
-    BigNumber.from(10).pow(18).mul(1),
+    BigNumber.from(10).pow(18),
   )
 
   await btcSwap.deployed()
@@ -113,9 +114,12 @@ async function deploySwap(): Promise<void> {
   console.log(`Tokenized BTC swap address: ${btcSwap.address}`)
   console.log(`Tokenized BTC swap token address: ${btcLpToken}`)
 
-  // Transfer ownership of the btc swap contract to the multisig
+  // Transfer the ownership of the btc swap and the allowlist to the multisig
   await btcSwap.transferOwnership(MULTISIG_ADDRESS)
-  console.log(`Transferred owner of BTC swap to multisig: ${MULTISIG_ADDRESS}`)
+  await allowlist.transferOwnership(MULTISIG_ADDRESS)
+  console.log(
+    `Transferred the ownership of the BTC swap contract and the allowlist to multisig: ${MULTISIG_ADDRESS}`,
+  )
 }
 
 deploySwap().then(() => {
