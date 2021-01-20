@@ -487,6 +487,7 @@ describe("Virtual swap bridge", () => {
         "67033573058662666",
       )
       expect(vSynthAmount).to.eq("67033573058662666")
+      expect(queueId).to.eq("0")
 
       // Wait for settle period
       await increaseTimestamp(600)
@@ -580,14 +581,13 @@ describe("Virtual swap bridge", () => {
       // 50000 sUSD -> 1.468897 tBTC
       expect(expectedVirtualTokenAmount).to.eq("1468897441660230103")
 
-      const [vTokenAmount, vTokenAddress, queueId] = await bridge
+      const [vTokenId, queueId] = await bridge
         .connect(user1)
         .callStatic.synthToVToken(
           swap.address,
           utils.formatBytes32String("sUSD"),
           tbtc.address,
           BigNumber.from(50000).mul(String(1e18)),
-          [user1Address],
           expectedVirtualTokenAmount.mul(99).div(100),
         )
 
@@ -598,21 +598,12 @@ describe("Virtual swap bridge", () => {
           utils.formatBytes32String("sUSD"),
           tbtc.address,
           BigNumber.from(50000).mul(String(1e18)),
-          [user1Address],
           expectedVirtualTokenAmount.mul(99).div(100),
         )
 
       // On an actual network, front end should parse the logs to retrieve the queueId
-
-      const vTokenERC20 = (await ethers.getContractAt(
-        ERC20Artifact.abi,
-        vTokenAddress,
-      )) as ERC20
-
-      expect(await vTokenERC20.balanceOf(user1Address)).to.eq(
-        "1454208467243627801",
-      )
-      expect(vTokenAmount).to.eq("1454208467243627801")
+      expect(vTokenId).to.eq("1")
+      expect(queueId).to.eq("0")
 
       expect(await bridge.readyToSettle(queueId)).to.eq(false)
 

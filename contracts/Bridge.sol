@@ -7,7 +7,7 @@ import "synthetix/contracts/interfaces/IAddressResolver.sol";
 import "synthetix/contracts/interfaces/ISynthetix.sol";
 import "synthetix/contracts/interfaces/IVirtualSynth.sol";
 import "synthetix/contracts/interfaces/IExchangeRates.sol";
-import "./VirtualToken.sol";
+import "./VirtualTokenNFT.sol";
 import "./interfaces/IVirtualLike.sol";
 import "./interfaces/ISwap.sol";
 
@@ -44,7 +44,7 @@ contract Bridge is Ownable {
         address indexed requester,
         ISwap swapPool,
         IERC20 synthFrom,
-        VirtualToken vTokenTo,
+        uint256 vTokenId,
         uint256 synthFromInAmount,
         uint256 vTokenToOutAmount,
         uint256 queueId
@@ -59,8 +59,8 @@ contract Bridge is Ownable {
     uint256 constant MAX_UINT256 = 2**256 - 1;
     uint8 constant MAX_UINT8 = 2**8 - 1;
     bytes32 constant EXCHANGE_RATES_NAME = "ExchangeRates";
+    VirtualTokenNFT immutable virtualTokenNFT;
 
-    uint256 public queuePos;
     PendingSettlement[] public queueData;
 
     // Index of synth in each swap pool
@@ -68,8 +68,9 @@ contract Bridge is Ownable {
 
     // Settlement queue
     struct PendingSettlement {
-        IVirtualLike virtualSynthOrToken;
+        address virtualSynthOrToken;
         address[] accounts;
+        uint256 virtualTokenId;
     }
 
     struct TokenToVSynthInfo {
@@ -87,11 +88,13 @@ contract Bridge is Ownable {
         uint256 vsynthAmount;
         uint8 mediumSynthIndex;
         uint8 tokenToIndex;
-        VirtualToken vtoken;
+        uint256 vTokenId;
         uint256 queueId;
     }
 
-    constructor() public {}
+    constructor() public {
+        virtualTokenNFT = new VirtualTokenNFT("Saddle SynthToToken Virtual Swap NFT", "saddleVirtualSwap");
+    }
 
     function _getCurrencyKeyFromProxy(IERC20 proxyAddress)
         internal
@@ -105,17 +108,14 @@ contract Bridge is Ownable {
         // Retrieve pending settlement
         PendingSettlement memory ps = queueData[id];
 
-        // Check if it is yet to be settled
-        if (!ps.virtualSynthOrToken.settled()) {
-            // If it's not ready to settle, return early
-            if (!ps.virtualSynthOrToken.readyToSettle()) {
-                revert("settlement not ready");
-            }
-
-            // Settle this virtual with the list of accounts
+        // This implies the pending settlement is holding a virtual synth
+        uint256 virtualTokenid = ps.virtualTokenId;
+        if (virtualTokenid == 0) {
             for (uint256 j = 0; j < ps.accounts.length; j++) {
-                ps.virtualSynthOrToken.settle(ps.accounts[j]);
+                IVirtualSynth(ps.virtualSynthOrToken).settle(ps.accounts[j]);
             }
+        } else {
+            virtualTokenNFT.settle(virtualTokenid);
         }
     }
 
@@ -123,34 +123,40 @@ contract Bridge is Ownable {
         _settle(id);
     }
 
-    function readyToSettle(uint256 id) public view returns (bool) {
-        return IVirtualLike(queueData[id].virtualSynthOrToken).readyToSettle();
+    function readyToSettle(uint256 id) external view returns (bool) {
+        PendingSettlement memory ps = queueData[id];
+
+        uint256 virtualTokenid = ps.virtualTokenId;
+        if (virtualTokenid == 0) {
+            return IVirtualSynth(ps.virtualSynthOrToken).readyToSettle();
+        } else {
+            return virtualTokenNFT.readyToSettle(virtualTokenid);
+        }
     }
 
-    function settleRange(uint256 range) external {
+    function settleRange(uint256 min, uint256 max) external {
         // Limit range to 25
-        require(range < 26, "Range must be lower than 26");
-        uint256 maxPos = queuePos.add(range);
+        require(max.sub(min) < 26, "Range must be lower than 26");
 
         // Limit queuePos + range from exceeding queueSize
-        if (maxPos > queueData.length) {
-            maxPos = queueData.length;
+        if (max > queueData.length) {
+            max = queueData.length;
         }
 
         // Iterate through queueData and call settle()
-        for (uint256 i = queuePos; i < maxPos; i++) {
+        for (uint256 i = min; i < max; i++) {
             _settle(i);
-            queuePos.add(1);
         }
     }
 
     function _addToSettleQueue(
         address virtualSynthOrToken,
-        address[] memory accounts
+        address[] memory accounts,
+        uint256 virtualTokenId
     ) internal returns (uint256) {
         require(queueData.length < MAX_UINT256, "queueData reached max size");
         queueData.push(
-            PendingSettlement(IVirtualLike(virtualSynthOrToken), accounts)
+            PendingSettlement(virtualSynthOrToken, accounts, virtualTokenId)
         );
         return queueData.length - 1;
     }
@@ -236,7 +242,7 @@ contract Bridge is Ownable {
         IERC20(address(v.vsynth)).transfer(msg.sender, v.vsynthAmount);
 
         // Add virtual synth to settle queue with a list of accounts to settle to
-        v.queueId = _addToSettleQueue(address(v.vsynth), accounts);
+        v.queueId = _addToSettleQueue(address(v.vsynth), accounts, 0);
 
         // Emit TokenToVSynth event with relevant data
         emit TokenToVSynth(
@@ -287,21 +293,16 @@ contract Bridge is Ownable {
         bytes32 synthInKey,
         ERC20 tokenTo,
         uint256 synthInAmount,
-        address[] calldata accounts,
         uint256 minAmount
     )
         external
         returns (
             uint256,
-            VirtualToken,
             uint256
         )
     {
-        // Limit array size
-        require(accounts.length < 6);
-
         SynthToVTokenInfo memory v =
-            SynthToVTokenInfo(0, IVirtualSynth(0), 0, 0, 0, VirtualToken(0), 0);
+            SynthToVTokenInfo(0, IVirtualSynth(0), 0, 0, 0, 0, 0);
 
         // Recieve synth from the user
         IERC20 synthFrom =
@@ -330,35 +331,37 @@ contract Bridge is Ownable {
 
         // Create virtual token with information of which token swap to
         v.tokenToIndex = swap.getTokenIndex(address(tokenTo));
-        v.vtoken = new VirtualToken(
-            v.vsynth,
+
+        // Approve the transfer of the virtual synth to the virtual token NFT contract
+        IERC20(address(v.vsynth)).approve(
+            address(virtualTokenNFT),
+            v.vsynthAmount
+        );
+        v.vTokenId = virtualTokenNFT.mintNewPendingSwap(
+            msg.sender,
             swap,
+            v.vsynth,
+            v.vsynthAmount,
+            minAmount,
             v.mediumSynthIndex,
-            v.tokenToIndex,
-            string(abi.encodePacked("Virtual ", tokenTo.name())),
-            string(abi.encodePacked("v", tokenTo.symbol())),
-            tokenTo.decimals()
+            v.tokenToIndex
         );
 
-        // Transfer the virtual synth and initialize virtual token
-        IERC20(address(v.vsynth)).transfer(address(v.vtoken), v.vsynthAmount);
-        v.vtoken.initialize(msg.sender, minAmount);
-
         // Add virtual token to settle queue with a list of accounts to settle to
-        v.queueId = _addToSettleQueue(address(v.vtoken), accounts);
+        v.queueId = _addToSettleQueue(address(0), new address[](0), v.vTokenId);
 
         // Emit TokenToVSynth event with relevant data
         emit SynthToVToken(
             msg.sender,
             swap,
             synthFrom,
-            v.vtoken,
+            v.vTokenId,
             synthInAmount,
             minAmount,
             v.queueId
         );
 
-        return (minAmount, v.vtoken, v.queueId);
+        return (v.vTokenId, v.queueId);
     }
 
     function setSynthIndex(
