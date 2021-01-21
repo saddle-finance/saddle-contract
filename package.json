@@ -14,7 +14,7 @@
     "openzeppelin-contracts-sol-0.5": "npm:@openzeppelin/contracts@2.5.1",
     "dotenv": "^8.2.0",
     "hardhat-typechain": "^0.3.4",
-    "synthetix": "2.35.6"
+    "synthetix": "2.37.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.1",
@@ -34,7 +34,7 @@
     "ethereum-waffle": "^3.2.1",
     "ethers": "^5.0.20",
     "ethlint": "^1.2.5",
-    "hardhat": "^2.0.7",
+    "hardhat": "^2.0.8",
     "hardhat-gas-reporter": "^1.0.4",
     "husky": "^4.3.7",
     "lint-staged": "^10.5.3",
@@ -43,7 +43,7 @@
     "shelljs": "^0.8.4",
     "solhint": "^3.3.2",
     "solhint-plugin-prettier": "0.0.5",
-    "solidity-coverage": "^0.7.13",
+    "solidity-coverage": "^0.7.14",
     "solidity-docgen": "^0.5.11",
     "ts-generator": "^0.1.1",
     "ts-node": "^9.1.1",
