@@ -12,13 +12,14 @@ import {
   revertToSnapshot,
   setTimestamp,
   takeSnapshot,
+  ZERO_ADDRESS,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { Bridge } from "../build/typechain/Bridge"
-import BridgeArtifact from "../build/artifacts/contracts/Bridge.sol/Bridge.json"
+import BridgeArtifact from "../build/artifacts/contracts/VirtualSwap/Bridge.sol/Bridge.json"
 import { GenericErc20 } from "../build/typechain/GenericErc20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LpToken } from "../build/typechain/LpToken"
@@ -332,7 +333,7 @@ describe("Virtual swap bridge", () => {
     it("Succeeds to calculate wBTC -> sUSD", async () => {
       const expectedReturnAmount = await bridge.calcTokenToVSynth(
         swap.address,
-        wbtc.address,
+        await swap.getTokenIndex(wbtc.address),
         utils.formatBytes32String("sUSD"),
         String(0.01e8),
       )
@@ -344,7 +345,7 @@ describe("Virtual swap bridge", () => {
     it("Succeeds to calculate wBTC -> sDEFI", async () => {
       const expectedReturnAmount = await bridge.calcTokenToVSynth(
         swap.address,
-        wbtc.address,
+        await swap.getTokenIndex(wbtc.address),
         utils.formatBytes32String("sDEFI"),
         String(0.01e8),
       )
@@ -367,10 +368,12 @@ describe("Virtual swap bridge", () => {
     })
 
     it("Succeeds to swap wBTC -> vsUSD -> settled to sUSD", async () => {
+      const wbtcIndex = await swap.getTokenIndex(wbtc.address)
+
       // Calculate expected amounts
       const expectedReturnAmount = await bridge.calcTokenToVSynth(
         swap.address,
-        wbtc.address,
+        wbtcIndex,
         utils.formatBytes32String("sUSD"),
         String(0.01e8),
       )
@@ -383,11 +386,11 @@ describe("Virtual swap bridge", () => {
         .connect(user1)
         .callStatic.tokenToVSynth(
           swap.address,
-          wbtc.address,
+          wbtcIndex,
           utils.formatBytes32String("sUSD"),
           String(0.01e8),
-          [user1Address],
           expectedReturnAmount.mul(99).div(100),
+          ZERO_ADDRESS,
         )
 
       await (
@@ -395,11 +398,11 @@ describe("Virtual swap bridge", () => {
           .connect(user1)
           .tokenToVSynth(
             swap.address,
-            wbtc.address,
+            wbtcIndex,
             utils.formatBytes32String("sUSD"),
             String(0.01e8),
-            [user1Address],
             expectedReturnAmount.mul(99).div(100),
+            ZERO_ADDRESS,
           )
       ).wait()
 
@@ -437,9 +440,11 @@ describe("Virtual swap bridge", () => {
     })
 
     it("Succeeds to swap wBTC -> vsDEFI -> settle to sDEFI", async () => {
+      const wbtcIndex = await swap.getTokenIndex(wbtc.address)
+
       const expectedReturnAmount = await bridge.calcTokenToVSynth(
         swap.address,
-        wbtc.address,
+        wbtcIndex,
         utils.formatBytes32String("sDEFI"),
         String(0.01e8),
       )
@@ -453,11 +458,11 @@ describe("Virtual swap bridge", () => {
         .connect(user1)
         .callStatic.tokenToVSynth(
           swap.address,
-          wbtc.address,
+          wbtcIndex,
           utils.formatBytes32String("sDEFI"),
           String(0.01e8),
-          [user1Address],
           expectedReturnAmount.mul(99).div(100),
+          ZERO_ADDRESS,
         )
 
       await (
@@ -465,11 +470,11 @@ describe("Virtual swap bridge", () => {
           .connect(user1)
           .tokenToVSynth(
             swap.address,
-            wbtc.address,
+            wbtcIndex,
             utils.formatBytes32String("sDEFI"),
             String(0.01e8),
-            [user1Address],
             expectedReturnAmount.mul(99).div(100),
+            ZERO_ADDRESS,
           )
       ).wait()
 
@@ -513,11 +518,11 @@ describe("Virtual swap bridge", () => {
           .connect(user1)
           .tokenToVSynth(
             swap.address,
-            wbtc.address,
+            await swap.getTokenIndex(wbtc.address),
             utils.formatBytes32String("sUSD"),
             String(0.01e8),
-            [user1Address],
             MAX_UINT256,
+            ZERO_ADDRESS,
           ),
       ).to.be.reverted
     })
@@ -538,7 +543,7 @@ describe("Virtual swap bridge", () => {
       const expectedVirtualTokenAmount = await bridge.calcSynthToVToken(
         swap.address,
         utils.formatBytes32String("sUSD"),
-        tbtc.address,
+        await swap.getTokenIndex(tbtc.address),
         BigNumber.from(50000).mul(String(1e18)),
       )
 
@@ -550,7 +555,7 @@ describe("Virtual swap bridge", () => {
       const expectedVirtualTokenAmount = await bridge.calcSynthToVToken(
         swap.address,
         utils.formatBytes32String("sDEFI"),
-        tbtc.address,
+        await swap.getTokenIndex(tbtc.address),
         BigNumber.from(15).mul(String(1e18)),
       )
 
@@ -571,10 +576,12 @@ describe("Virtual swap bridge", () => {
     })
 
     it("Succeeds to swap sUSD -> vtBTC -> settle to tBTC", async () => {
+      const tbtcIndex = await swap.getTokenIndex(tbtc.address)
+
       const expectedVirtualTokenAmount = await bridge.calcSynthToVToken(
         swap.address,
         utils.formatBytes32String("sUSD"),
-        tbtc.address,
+        tbtcIndex,
         BigNumber.from(50000).mul(String(1e18)),
       )
 
@@ -586,9 +593,10 @@ describe("Virtual swap bridge", () => {
         .callStatic.synthToVToken(
           swap.address,
           utils.formatBytes32String("sUSD"),
-          tbtc.address,
+          tbtcIndex,
           BigNumber.from(50000).mul(String(1e18)),
           expectedVirtualTokenAmount.mul(99).div(100),
+          ZERO_ADDRESS,
         )
 
       await bridge
@@ -596,9 +604,10 @@ describe("Virtual swap bridge", () => {
         .synthToVToken(
           swap.address,
           utils.formatBytes32String("sUSD"),
-          tbtc.address,
+          tbtcIndex,
           BigNumber.from(50000).mul(String(1e18)),
           expectedVirtualTokenAmount.mul(99).div(100),
+          ZERO_ADDRESS,
         )
 
       // On an actual network, front end should parse the logs to retrieve the queueId

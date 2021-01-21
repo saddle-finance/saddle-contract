@@ -3,7 +3,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/token/ERC721/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "synthetix/contracts/interfaces/IVirtualSynth.sol";
-import "./interfaces/ISwap.sol";
+import "../interfaces/ISwap.sol";
 
 import "hardhat/console.sol";
 
@@ -34,7 +34,7 @@ contract VirtualTokenNFT is ERC721, Ownable {
 
     function mintNewPendingSwap(
         address to,
-        ISwap swap_,
+        ISwap swap,
         IVirtualSynth vSynth,
         uint256 vSynthAmount,
         uint256 minAmount,
@@ -49,7 +49,7 @@ contract VirtualTokenNFT is ERC721, Ownable {
 
         pendingSwapData.push(
             PendingSynthToToken(
-                swap_,
+                swap,
                 vSynth,
                 vSynthAmount,
                 minAmount,
