@@ -24,10 +24,6 @@ import { GenericErc20 } from "../build/typechain/GenericErc20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LpToken } from "../build/typechain/LpToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { IVirtualSynth } from "../build/typechain/IVirtualSynth"
-import IVirtualSynthArtifact from "../build/artifacts/synthetix/contracts/interfaces/IVirtualSynth.sol/IVirtualSynth.json"
-import ERC20Artifact from "../build/artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
-import { Erc20 as ERC20 } from "../build/typechain/Erc20"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
@@ -319,7 +315,7 @@ describe("Virtual swap bridge", () => {
     })
   })
 
-  describe("calcTokenToVSynth", () => {
+  describe("calcTokenToSynth", () => {
     beforeEach(async () => {
       // Set sBTC index
       await bridge.setSynthIndex(
@@ -331,7 +327,7 @@ describe("Virtual swap bridge", () => {
     })
 
     it("Succeeds to calculate wBTC -> sUSD", async () => {
-      const expectedReturnAmount = await bridge.calcTokenToVSynth(
+      const expectedReturnAmount = await bridge.calcTokenToSynth(
         swap.address,
         await swap.getTokenIndex(wbtc.address),
         utils.formatBytes32String("sUSD"),
@@ -343,7 +339,7 @@ describe("Virtual swap bridge", () => {
     })
 
     it("Succeeds to calculate wBTC -> sDEFI", async () => {
-      const expectedReturnAmount = await bridge.calcTokenToVSynth(
+      const expectedReturnAmount = await bridge.calcTokenToSynth(
         swap.address,
         await swap.getTokenIndex(wbtc.address),
         utils.formatBytes32String("sDEFI"),
@@ -371,7 +367,7 @@ describe("Virtual swap bridge", () => {
       const wbtcIndex = await swap.getTokenIndex(wbtc.address)
 
       // Calculate expected amounts
-      const expectedReturnAmount = await bridge.calcTokenToVSynth(
+      const expectedReturnAmount = await bridge.calcTokenToSynth(
         swap.address,
         wbtcIndex,
         utils.formatBytes32String("sUSD"),
@@ -382,9 +378,9 @@ describe("Virtual swap bridge", () => {
       expect(expectedReturnAmount).to.eq("339899620423006524397")
 
       // Initiate tokenToVSynth
-      const [vSynthAmount, vSynthAddress, queueId] = await bridge
+      const queueId = await bridge
         .connect(user1)
-        .callStatic.tokenToVSynth(
+        .callStatic.tokenToSynth(
           swap.address,
           wbtcIndex,
           utils.formatBytes32String("sUSD"),
@@ -396,7 +392,7 @@ describe("Virtual swap bridge", () => {
       await (
         await bridge
           .connect(user1)
-          .tokenToVSynth(
+          .tokenToSynth(
             swap.address,
             wbtcIndex,
             utils.formatBytes32String("sUSD"),
@@ -406,31 +402,15 @@ describe("Virtual swap bridge", () => {
           )
       ).wait()
 
-      const vSynthERC20 = (await ethers.getContractAt(
-        ERC20Artifact.abi,
-        vSynthAddress,
-      )) as ERC20
-      const vSynth = (await ethers.getContractAt(
-        IVirtualSynthArtifact.abi,
-        vSynthAddress,
-      )) as IVirtualSynth
-
-      // Check vsynth balance of user1
-      expect(await vSynthERC20.balanceOf(user1Address)).to.eq(
-        "338879921561737504823",
-      )
-      expect(vSynthAmount).to.eq("338879921561737504823")
       const sUSDBalanceBefore = await susd.balanceOf(user1Address)
 
       // Wait for settle period
-      await increaseTimestamp(600)
-      expect(await bridge.readyToSettle(queueId)).to.eq(true)
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
+      await increaseTimestamp(360)
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
 
       // Settle virtual synth
       await (await bridge.settle(queueId)).wait()
-      expect(await vSynthERC20.balanceOf(user1Address)).to.eq("0")
-
-      expect(await vSynth.synth()).to.eq(susd.address)
 
       // Check synth balance
       const sUSDBalanceAfter = await susd.balanceOf(user1Address)
@@ -442,7 +422,7 @@ describe("Virtual swap bridge", () => {
     it("Succeeds to swap wBTC -> vsDEFI -> settle to sDEFI", async () => {
       const wbtcIndex = await swap.getTokenIndex(wbtc.address)
 
-      const expectedReturnAmount = await bridge.calcTokenToVSynth(
+      const expectedReturnAmount = await bridge.calcTokenToSynth(
         swap.address,
         wbtcIndex,
         utils.formatBytes32String("sDEFI"),
@@ -454,9 +434,9 @@ describe("Virtual swap bridge", () => {
       expect(expectedReturnAmount).to.eq("67710679857235017")
 
       // Initiate tokenToVSynth
-      const [vSynthAmount, vSynthAddress, queueId] = await bridge
+      const queueId = await bridge
         .connect(user1)
-        .callStatic.tokenToVSynth(
+        .callStatic.tokenToSynth(
           swap.address,
           wbtcIndex,
           utils.formatBytes32String("sDEFI"),
@@ -468,7 +448,7 @@ describe("Virtual swap bridge", () => {
       await (
         await bridge
           .connect(user1)
-          .tokenToVSynth(
+          .tokenToSynth(
             swap.address,
             wbtcIndex,
             utils.formatBytes32String("sDEFI"),
@@ -478,31 +458,16 @@ describe("Virtual swap bridge", () => {
           )
       ).wait()
 
-      const vSynthERC20 = (await ethers.getContractAt(
-        ERC20Artifact.abi,
-        vSynthAddress,
-      )) as ERC20
-      const vSynth = (await ethers.getContractAt(
-        IVirtualSynthArtifact.abi,
-        vSynthAddress,
-      )) as IVirtualSynth
-
-      // Check vsynth balance of user1
-      expect(await vSynthERC20.balanceOf(user1Address)).to.eq(
-        "67033573058662666",
-      )
-      expect(vSynthAmount).to.eq("67033573058662666")
       expect(queueId).to.eq("0")
 
       // Wait for settle period
-      await increaseTimestamp(600)
-      expect(await bridge.readyToSettle(queueId)).to.eq(true)
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
+      await increaseTimestamp(360)
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
       const sDEFIBalanceBefore = await sdefi.balanceOf(user1Address)
 
       // Settle virtual synth
       await (await bridge.settle(queueId)).wait()
-      expect(await vSynthERC20.balanceOf(user1Address)).to.eq("0")
-      expect(await vSynth.synth()).to.eq(sdefi.address)
 
       // Check synth balance
       const sDEFIBalanceAfter = await sdefi.balanceOf(user1Address)
@@ -516,7 +481,7 @@ describe("Virtual swap bridge", () => {
       await expect(
         bridge
           .connect(user1)
-          .tokenToVSynth(
+          .tokenToSynth(
             swap.address,
             await swap.getTokenIndex(wbtc.address),
             utils.formatBytes32String("sUSD"),
@@ -528,7 +493,7 @@ describe("Virtual swap bridge", () => {
     })
   })
 
-  describe("calcSynthToVToken", async () => {
+  describe("calcSynthToToken", async () => {
     beforeEach(async () => {
       // Set sBTC index
       await bridge.setSynthIndex(
@@ -540,7 +505,7 @@ describe("Virtual swap bridge", () => {
     })
 
     it("Succeeds to calculate sUSD -> tBTC", async () => {
-      const expectedVirtualTokenAmount = await bridge.calcSynthToVToken(
+      const expectedVirtualTokenAmount = await bridge.calcSynthToToken(
         swap.address,
         utils.formatBytes32String("sUSD"),
         await swap.getTokenIndex(tbtc.address),
@@ -552,7 +517,7 @@ describe("Virtual swap bridge", () => {
     })
 
     it("Succeeds to calculate sDEFI -> tBTC", async () => {
-      const expectedVirtualTokenAmount = await bridge.calcSynthToVToken(
+      const expectedVirtualTokenAmount = await bridge.calcSynthToToken(
         swap.address,
         utils.formatBytes32String("sDEFI"),
         await swap.getTokenIndex(tbtc.address),
@@ -578,7 +543,7 @@ describe("Virtual swap bridge", () => {
     it("Succeeds to swap sUSD -> vtBTC -> settle to tBTC", async () => {
       const tbtcIndex = await swap.getTokenIndex(tbtc.address)
 
-      const expectedVirtualTokenAmount = await bridge.calcSynthToVToken(
+      const expectedVirtualTokenAmount = await bridge.calcSynthToToken(
         swap.address,
         utils.formatBytes32String("sUSD"),
         tbtcIndex,
@@ -588,9 +553,9 @@ describe("Virtual swap bridge", () => {
       // 50000 sUSD -> 1.468897 tBTC
       expect(expectedVirtualTokenAmount).to.eq("1468897441660230103")
 
-      const [vTokenId, queueId] = await bridge
+      const queueId = await bridge
         .connect(user1)
-        .callStatic.synthToVToken(
+        .callStatic.synthToToken(
           swap.address,
           utils.formatBytes32String("sUSD"),
           tbtcIndex,
@@ -601,7 +566,7 @@ describe("Virtual swap bridge", () => {
 
       await bridge
         .connect(user1)
-        .synthToVToken(
+        .synthToToken(
           swap.address,
           utils.formatBytes32String("sUSD"),
           tbtcIndex,
@@ -611,12 +576,11 @@ describe("Virtual swap bridge", () => {
         )
 
       // On an actual network, front end should parse the logs to retrieve the queueId
-      expect(vTokenId).to.eq("1")
       expect(queueId).to.eq("0")
 
-      expect(await bridge.readyToSettle(queueId)).to.eq(false)
-
-      await increaseTimestamp(600)
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
+      await increaseTimestamp(360)
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
 
       const tBTCAmountBefore = await tbtc.balanceOf(user1Address)
       await bridge.settle(queueId)
