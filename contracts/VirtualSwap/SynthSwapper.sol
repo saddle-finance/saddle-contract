@@ -5,27 +5,19 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SynthSwapper {
     address payable immutable owner;
-    IERC20 immutable synth;
-    ISynthetix immutable synthetix;
-    uint256 immutable synthAmount;
     bytes32 constant TRACKING =
         0x534144444c450000000000000000000000000000000000000000000000000000;
 
-    constructor(
-        IERC20 synth_,
-        ISynthetix synthetix_,
-        uint256 synthAmount_
-    ) public {
+    constructor() public {
         owner = msg.sender;
-        synth = synth_;
-        synthetix = synthetix_;
-        synthAmount = synthAmount_;
     }
 
-    function swapSynth(bytes32 sourceKey, bytes32 destKey)
-        external
-        returns (uint256)
-    {
+    function swapSynth(
+        ISynthetix synthetix,
+        bytes32 sourceKey,
+        uint256 synthAmount,
+        bytes32 destKey
+    ) external returns (uint256) {
         require(msg.sender == owner);
         return
             synthetix.exchangeWithTracking(
@@ -38,12 +30,12 @@ contract SynthSwapper {
     }
 
     function withdraw(
-        IERC20 synth_,
+        IERC20 synth,
         address recipient,
-        uint256 amount_
+        uint256 withdrawAmount
     ) external {
         require(msg.sender == owner);
-        synth_.transfer(recipient, amount_);
+        synth.transfer(recipient, withdrawAmount);
         selfdestruct(owner);
     }
 }

@@ -49,6 +49,15 @@ contract Bridge is Ownable {
         uint256 vTokenToOutAmount,
         uint256 queueId
     );
+    event TokenToToken(
+        address indexed requester,
+        ISwap[2] swapPools,
+        uint8 tokenFromIndex,
+        uint8 tokenToIndex,
+        uint256 tokenFromAmount,
+        uint256[2] minAmounts,
+        uint256 queueId
+    );
 
     // Mainnet Synthetix contracts
     IAddressResolver constant SYNTHETIX_RESOLVER =
@@ -90,7 +99,7 @@ contract Bridge is Ownable {
         bool settled;
     }
 
-    struct TokenToVSynthInfo {
+    struct TokenToSynthInfo {
         IERC20 tokenFrom;
         uint8 synthIndex;
         uint256 mediumSynthAmount;
@@ -99,11 +108,15 @@ contract Bridge is Ownable {
         uint256 queueId;
     }
 
-    struct SynthToVTokenInfo {
+    struct SynthToTokenInfo {
         bytes32 mediumSynthKey;
         SynthSwapper synthSwapper;
-        uint256 mediumSynthAmount;
         uint8 mediumSynthIndex;
+    }
+
+    struct TokenToTokenInfo {
+        SynthSwapper synthSwapper;
+        bytes32 secondSynthKey;
     }
 
     constructor() public {
@@ -282,8 +295,8 @@ contract Bridge is Ownable {
         address recipient
     ) external returns (uint256) {
         // Struct to hold data for this function
-        TokenToVSynthInfo memory v =
-            TokenToVSynthInfo(IERC20(0), 0, 0, 0, SynthSwapper(0), 0);
+        TokenToSynthInfo memory v =
+            TokenToSynthInfo(IERC20(0), 0, 0, 0, SynthSwapper(0), 0);
 
         if (recipient == address(0)) {
             recipient = msg.sender;
@@ -306,17 +319,14 @@ contract Bridge is Ownable {
         );
 
         IERC20 mediumSynth = IERC20(_getSynthAddress(swap));
-        v.synthSwapper = new SynthSwapper(
-            mediumSynth,
-            SYNTHETIX,
-            v.mediumSynthAmount
-        );
-        mediumSynth.approve(address(v.synthSwapper), v.mediumSynthAmount);
+        v.synthSwapper = new SynthSwapper();
         mediumSynth.transfer(address(v.synthSwapper), v.mediumSynthAmount);
 
         // Swap synths
         v.destSynthAmount = v.synthSwapper.swapSynth(
+            SYNTHETIX,
             _getSynthKey(swap),
+            v.mediumSynthAmount,
             synthOutKey
         );
         require(v.destSynthAmount >= minAmount, "Insufficient output");
@@ -354,9 +364,8 @@ contract Bridge is Ownable {
             IExchangeRates(SYNTHETIX_RESOLVER.getAddress(EXCHANGE_RATES_NAME));
 
         uint8 mediumSynthIndex = _getSynthIndex(swap);
-
-        bytes32 mediumSynthKey =
-            _getCurrencyKeyFromProxy(_getSynthAddress(swap));
+        bytes32 mediumSynthKey = _getSynthKey(swap);
+        require(synthInKey != mediumSynthKey, "use normal swap");
 
         uint256 expectedMediumSynthAmount =
             exchangeRates.effectiveValue(
@@ -382,8 +391,7 @@ contract Bridge is Ownable {
         uint256 minAmount,
         address recipient
     ) external returns (uint256) {
-        SynthToVTokenInfo memory v =
-            SynthToVTokenInfo(0, SynthSwapper(0), 0, 0);
+        SynthToTokenInfo memory v = SynthToTokenInfo(0, SynthSwapper(0), 0);
 
         if (recipient == address(0)) {
             recipient = msg.sender;
@@ -402,11 +410,12 @@ contract Bridge is Ownable {
         );
 
         // Create new SynthSwapper contract then commit swap
-        v.synthSwapper = new SynthSwapper(synthFrom, SYNTHETIX, synthInAmount);
-        synthFrom.approve(address(v.synthSwapper), synthInAmount);
+        v.synthSwapper = new SynthSwapper();
         synthFrom.transfer(address(v.synthSwapper), synthInAmount);
-        v.mediumSynthAmount = v.synthSwapper.swapSynth(
+        v.synthSwapper.swapSynth(
+            SYNTHETIX,
             synthInKey,
+            synthInAmount,
             v.mediumSynthKey
         );
 
@@ -436,6 +445,117 @@ contract Bridge is Ownable {
 
         return (queueId);
     }
+
+    function calcTokenToToken(
+        ISwap[2] calldata swaps,
+        uint8 tokenFromIndex,
+        uint8 tokenToIndex,
+        uint256 tokenFromAmount
+    ) external view returns (uint256, uint256) {
+        IExchangeRates exchangeRates =
+            IExchangeRates(SYNTHETIX_RESOLVER.getAddress(EXCHANGE_RATES_NAME));
+
+        uint256 firstSynthAmount =
+            swaps[0].calculateSwap(
+                tokenFromIndex,
+                _getSynthIndex(swaps[0]),
+                tokenFromAmount
+            );
+
+        uint256 secondSynthAmount =
+            exchangeRates.effectiveValue(
+                _getSynthKey(swaps[0]),
+                firstSynthAmount,
+                _getSynthKey(swaps[1])
+            );
+
+        return (
+            firstSynthAmount,
+            swaps[1].calculateSwap(
+                _getSynthIndex(swaps[1]),
+                tokenToIndex,
+                secondSynthAmount
+            )
+        );
+    }
+
+    function tokenToToken(
+        ISwap[2] calldata swaps,
+        uint8 tokenFromIndex,
+        uint8 tokenToIndex,
+        uint256 tokenFromAmount,
+        uint256[2] calldata minAmounts,
+        address recipient
+    ) external returns (uint256) {
+        if (recipient == address(0)) {
+            recipient = msg.sender;
+        }
+
+        TokenToTokenInfo memory v = TokenToTokenInfo(SynthSwapper(0), 0);
+
+        // Receive token from the user
+        ISwap swap = swaps[0];
+        {
+            IERC20 tokenFrom = swap.getToken(tokenFromIndex);
+            tokenFrom.safeTransferFrom(
+                msg.sender,
+                address(this),
+                tokenFromAmount
+            );
+            tokenFrom.approve(address(swap), tokenFromAmount);
+        }
+
+        uint256 firstSynthAmount =
+            swap.swap(
+                tokenFromIndex,
+                _getSynthIndex(swap),
+                tokenFromAmount,
+                minAmounts[0],
+                block.timestamp
+            );
+
+        {
+            IERC20 synthFrom = IERC20(_getSynthAddress(swap));
+            v.synthSwapper = new SynthSwapper();
+            v.secondSynthKey = _getSynthKey(swaps[1]);
+            synthFrom.transfer(address(v.synthSwapper), firstSynthAmount);
+            v.synthSwapper.swapSynth(
+                SYNTHETIX,
+                _getSynthKey(swap),
+                firstSynthAmount,
+                v.secondSynthKey
+            );
+        }
+
+        // Add virtual token to settle queue with a list of accounts to settle to
+        uint256 queueId =
+            _addToPendingSynthToTokenSettlementQueue(
+                PendingSynthToTokenSettlement(
+                    v.synthSwapper,
+                    v.secondSynthKey,
+                    recipient,
+                    swaps[1],
+                    tokenToIndex,
+                    minAmounts[1],
+                    false
+                )
+            );
+
+        // Emit TokenToVSynth event with relevant data
+        emit TokenToToken(
+            msg.sender,
+            swaps,
+            tokenFromIndex,
+            tokenToIndex,
+            tokenFromAmount,
+            minAmounts,
+            queueId
+        );
+
+        return (queueId);
+    }
+
+    // Management
 
     function setSynthIndex(
         ISwap swap,

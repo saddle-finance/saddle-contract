@@ -2,7 +2,6 @@ import { BigNumber, Signer, utils, Wallet } from "ethers"
 import {
   asyncForEach,
   deployContractWithLibraries,
-  getCurrentBlockTimestamp,
   getTestMerkleProof,
   getTestMerkleRoot,
   getUserTokenBalances,
@@ -47,7 +46,8 @@ const LP_TOKEN_SYMBOL = "TESTLP"
 describe("Virtual swap bridge", () => {
   let signers: Array<Signer>
   let bridge: Bridge
-  let swap: Swap
+  let btcSwap: Swap
+  let usdSwap: Swap
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
@@ -57,7 +57,8 @@ describe("Virtual swap bridge", () => {
   let tbtc: GenericErc20
   let susd: GenericErc20
   let sdefi: GenericErc20
-  let swapToken: LpToken
+  let usdc: GenericErc20
+  let btcSwapToken: LpToken
   let owner: Signer
   let user1: Signer
   let user2: Signer
@@ -68,7 +69,7 @@ describe("Virtual swap bridge", () => {
   let user1Address: string
   // eslint-disable-next-line no-unused-vars
   let user2Address: string
-  let swapStorage: {
+  let btcSwapStorage: {
     initialA: BigNumber
     futureA: BigNumber
     initialATime: BigNumber
@@ -116,6 +117,11 @@ describe("Virtual swap bridge", () => {
     susd: {
       address: "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
       holders: ["0xC8C2b727d864CC75199f5118F0943d2087fB543b"],
+      contract: null,
+    },
+    usdc: {
+      address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      holders: ["0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8"],
       contract: null,
     },
     sdefi: {
@@ -180,18 +186,23 @@ describe("Virtual swap bridge", () => {
     sbtc = tokenList.sbtc.contract
     susd = tokenList.susd.contract
     sdefi = tokenList.sdefi.contract
+    usdc = tokenList.usdc.contract
 
     const balances = await getUserTokenBalances(user1Address, [
       tbtc,
       wbtc,
       renbtc,
       sbtc,
+      susd,
+      usdc,
     ])
 
     expect(balances[0]).to.eq("72953806919870472431")
     expect(balances[1]).to.eq("90380233073")
     expect(balances[2]).to.eq("32765116441")
     expect(balances[3]).to.eq("46220887120771774898")
+    expect(balances[4]).to.eq("6559142099847758949166311")
+    expect(balances[5]).to.eq("315600946507951")
 
     // Deploy Allowlist
     allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
@@ -211,7 +222,7 @@ describe("Virtual swap bridge", () => {
     await swapUtils.deployed()
 
     // Deploy Swap with SwapUtils library
-    swap = (await deployContractWithLibraries(
+    btcSwap = (await deployContractWithLibraries(
       owner,
       SwapArtifact,
       { SwapUtils: swapUtils.address },
@@ -232,53 +243,87 @@ describe("Virtual swap bridge", () => {
         allowlist.address,
       ],
     )) as Swap
-    await swap.deployed()
+    await btcSwap.deployed()
+    btcSwapStorage = await btcSwap.swapStorage()
 
-    swapStorage = await swap.swapStorage()
-
-    swapToken = (await ethers.getContractAt(
+    btcSwapToken = (await ethers.getContractAt(
       LPTokenArtifact.abi,
-      swapStorage.lpToken,
+      btcSwapStorage.lpToken,
     )) as LpToken
+
+    usdSwap = (await deployContractWithLibraries(
+      owner,
+      SwapArtifact,
+      { SwapUtils: swapUtils.address },
+      [
+        [tokenList.susd.address, tokenList.usdc.address],
+        [18, 6],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        0,
+        0,
+        allowlist.address,
+      ],
+    )) as Swap
 
     // Deploy Bridge contract
     bridge = (await deployContract(owner, BridgeArtifact)) as Bridge
     await bridge.deployed()
 
     // Set deposit limits
-    await allowlist.setPoolCap(swap.address, BigNumber.from(10).pow(24))
+    await allowlist.setPoolCap(btcSwap.address, BigNumber.from(10).pow(24))
     await allowlist.setPoolAccountLimit(
-      swap.address,
+      btcSwap.address,
       BigNumber.from(10).pow(24),
+    )
+    await allowlist.setPoolCap(usdSwap.address, BigNumber.from(10).pow(18 + 10))
+    await allowlist.setPoolAccountLimit(
+      usdSwap.address,
+      BigNumber.from(10).pow(18 + 10),
     )
 
     // Approve token transfer to Swap for addling liquidity and to bridge for virtual swaps
     await asyncForEach(
-      [tbtc, wbtc, renbtc, sbtc, susd, sdefi],
+      [tbtc, wbtc, renbtc, sbtc, susd, sdefi, usdc],
       async (t: GenericErc20) => {
-        await t.connect(user1).approve(swap.address, MAX_UINT256)
+        await t.connect(user1).approve(btcSwap.address, MAX_UINT256)
+        await t.connect(user1).approve(usdSwap.address, MAX_UINT256)
         await t.connect(user1).approve(bridge.address, MAX_UINT256)
       },
     )
 
     // Add initial liquidity
-    await swap
+    await btcSwap
       .connect(user1)
       .addLiquidity(
         [String(45e18), String(45e8), String(45e8), String(45e18)],
         0,
-        (await getCurrentBlockTimestamp()) + 60,
+        MAX_UINT256,
         getTestMerkleProof(user1Address),
       )
 
-    expect(await swapToken.balanceOf(user1Address)).to.eq(String(180e18))
+    await usdSwap
+      .connect(user1)
+      .addLiquidity(
+        [
+          BigNumber.from(String(1e18)).mul(5000000),
+          BigNumber.from(String(1e6)).mul(5000000),
+        ],
+        0,
+        MAX_UINT256,
+        getTestMerkleProof(user1Address),
+      )
+
+    expect(await btcSwapToken.balanceOf(user1Address)).to.eq(String(180e18))
   })
 
   describe("setSynthIndex", () => {
     it("Emits SynthIndex event", async () => {
       await expect(
         bridge.setSynthIndex(
-          swap.address,
+          btcSwap.address,
           3,
           utils.formatBytes32String("sBTC"),
         ),
@@ -287,17 +332,17 @@ describe("Virtual swap bridge", () => {
 
     it("Succeeds with correct currencyKey", async () => {
       await bridge.setSynthIndex(
-        swap.address,
+        btcSwap.address,
         3,
         utils.formatBytes32String("sBTC"),
       )
-      expect(await bridge.getSynthIndex(swap.address)).to.eq(3)
+      expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
     })
 
     it("Reverts when currencyKey do not match", async () => {
       await expect(
         bridge.setSynthIndex(
-          swap.address,
+          btcSwap.address,
           3,
           utils.formatBytes32String("sDEFI"),
         ),
@@ -307,7 +352,7 @@ describe("Virtual swap bridge", () => {
     it("Reverts when given index is not a synth", async () => {
       await expect(
         bridge.setSynthIndex(
-          swap.address,
+          btcSwap.address,
           1,
           utils.formatBytes32String("sBTC"),
         ),
@@ -319,17 +364,17 @@ describe("Virtual swap bridge", () => {
     beforeEach(async () => {
       // Set sBTC index
       await bridge.setSynthIndex(
-        swap.address,
+        btcSwap.address,
         3,
         utils.formatBytes32String("sBTC"),
       )
-      expect(await bridge.getSynthIndex(swap.address)).to.eq(3)
+      expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
     })
 
     it("Succeeds to calculate wBTC -> sUSD", async () => {
       const expectedReturnAmount = await bridge.calcTokenToSynth(
-        swap.address,
-        await swap.getTokenIndex(wbtc.address),
+        btcSwap.address,
+        await btcSwap.getTokenIndex(wbtc.address),
         utils.formatBytes32String("sUSD"),
         String(0.01e8),
       )
@@ -340,8 +385,8 @@ describe("Virtual swap bridge", () => {
 
     it("Succeeds to calculate wBTC -> sDEFI", async () => {
       const expectedReturnAmount = await bridge.calcTokenToSynth(
-        swap.address,
-        await swap.getTokenIndex(wbtc.address),
+        btcSwap.address,
+        await btcSwap.getTokenIndex(wbtc.address),
         utils.formatBytes32String("sDEFI"),
         String(0.01e8),
       )
@@ -352,23 +397,23 @@ describe("Virtual swap bridge", () => {
     })
   })
 
-  describe("tokenToVSynth", () => {
+  describe("tokenToSynth", () => {
     beforeEach(async () => {
       // Set sBTC index
       await bridge.setSynthIndex(
-        swap.address,
+        btcSwap.address,
         3,
         utils.formatBytes32String("sBTC"),
       )
-      expect(await bridge.getSynthIndex(swap.address)).to.eq(3)
+      expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
     })
 
     it("Succeeds to swap wBTC -> vsUSD -> settled to sUSD", async () => {
-      const wbtcIndex = await swap.getTokenIndex(wbtc.address)
+      const wbtcIndex = await btcSwap.getTokenIndex(wbtc.address)
 
       // Calculate expected amounts
       const expectedReturnAmount = await bridge.calcTokenToSynth(
-        swap.address,
+        btcSwap.address,
         wbtcIndex,
         utils.formatBytes32String("sUSD"),
         String(0.01e8),
@@ -377,11 +422,11 @@ describe("Virtual swap bridge", () => {
       // 0.01 wBTC -> 339.43044953 sUSD
       expect(expectedReturnAmount).to.eq("339899620423006524397")
 
-      // Initiate tokenToVSynth
+      // Initiate tokenToSynth
       const queueId = await bridge
         .connect(user1)
         .callStatic.tokenToSynth(
-          swap.address,
+          btcSwap.address,
           wbtcIndex,
           utils.formatBytes32String("sUSD"),
           String(0.01e8),
@@ -393,7 +438,7 @@ describe("Virtual swap bridge", () => {
         await bridge
           .connect(user1)
           .tokenToSynth(
-            swap.address,
+            btcSwap.address,
             wbtcIndex,
             utils.formatBytes32String("sUSD"),
             String(0.01e8),
@@ -420,10 +465,10 @@ describe("Virtual swap bridge", () => {
     })
 
     it("Succeeds to swap wBTC -> vsDEFI -> settle to sDEFI", async () => {
-      const wbtcIndex = await swap.getTokenIndex(wbtc.address)
+      const wbtcIndex = await btcSwap.getTokenIndex(wbtc.address)
 
       const expectedReturnAmount = await bridge.calcTokenToSynth(
-        swap.address,
+        btcSwap.address,
         wbtcIndex,
         utils.formatBytes32String("sDEFI"),
         String(0.01e8),
@@ -433,11 +478,11 @@ describe("Virtual swap bridge", () => {
       // 0.01 wBTC -> 0.06761721732 sDEFI
       expect(expectedReturnAmount).to.eq("67710679857235017")
 
-      // Initiate tokenToVSynth
+      // Initiate tokenToSynth
       const queueId = await bridge
         .connect(user1)
         .callStatic.tokenToSynth(
-          swap.address,
+          btcSwap.address,
           wbtcIndex,
           utils.formatBytes32String("sDEFI"),
           String(0.01e8),
@@ -449,7 +494,7 @@ describe("Virtual swap bridge", () => {
         await bridge
           .connect(user1)
           .tokenToSynth(
-            swap.address,
+            btcSwap.address,
             wbtcIndex,
             utils.formatBytes32String("sDEFI"),
             String(0.01e8),
@@ -477,13 +522,13 @@ describe("Virtual swap bridge", () => {
     })
 
     it("Reverts when minAmount is not reached", async () => {
-      // Initiate tokenToVSynth with max uint value as the minAmount parameter
+      // Initiate tokenToSynth with max uint value as the minAmount parameter
       await expect(
         bridge
           .connect(user1)
           .tokenToSynth(
-            swap.address,
-            await swap.getTokenIndex(wbtc.address),
+            btcSwap.address,
+            await btcSwap.getTokenIndex(wbtc.address),
             utils.formatBytes32String("sUSD"),
             String(0.01e8),
             MAX_UINT256,
@@ -497,18 +542,18 @@ describe("Virtual swap bridge", () => {
     beforeEach(async () => {
       // Set sBTC index
       await bridge.setSynthIndex(
-        swap.address,
+        btcSwap.address,
         3,
         utils.formatBytes32String("sBTC"),
       )
-      expect(await bridge.getSynthIndex(swap.address)).to.eq(3)
+      expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
     })
 
     it("Succeeds to calculate sUSD -> tBTC", async () => {
       const expectedVirtualTokenAmount = await bridge.calcSynthToToken(
-        swap.address,
+        btcSwap.address,
         utils.formatBytes32String("sUSD"),
-        await swap.getTokenIndex(tbtc.address),
+        await btcSwap.getTokenIndex(tbtc.address),
         BigNumber.from(50000).mul(String(1e18)),
       )
 
@@ -518,9 +563,9 @@ describe("Virtual swap bridge", () => {
 
     it("Succeeds to calculate sDEFI -> tBTC", async () => {
       const expectedVirtualTokenAmount = await bridge.calcSynthToToken(
-        swap.address,
+        btcSwap.address,
         utils.formatBytes32String("sDEFI"),
-        await swap.getTokenIndex(tbtc.address),
+        await btcSwap.getTokenIndex(tbtc.address),
         BigNumber.from(15).mul(String(1e18)),
       )
 
@@ -529,22 +574,22 @@ describe("Virtual swap bridge", () => {
     })
   })
 
-  describe("synthToVToken", async () => {
+  describe("synthToToken", async () => {
     beforeEach(async () => {
       // Set sBTC index
       await bridge.setSynthIndex(
-        swap.address,
+        btcSwap.address,
         3,
         utils.formatBytes32String("sBTC"),
       )
-      expect(await bridge.getSynthIndex(swap.address)).to.eq(3)
+      expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
     })
 
     it("Succeeds to swap sUSD -> vtBTC -> settle to tBTC", async () => {
-      const tbtcIndex = await swap.getTokenIndex(tbtc.address)
+      const tbtcIndex = await btcSwap.getTokenIndex(tbtc.address)
 
       const expectedVirtualTokenAmount = await bridge.calcSynthToToken(
-        swap.address,
+        btcSwap.address,
         utils.formatBytes32String("sUSD"),
         tbtcIndex,
         BigNumber.from(50000).mul(String(1e18)),
@@ -556,7 +601,7 @@ describe("Virtual swap bridge", () => {
       const queueId = await bridge
         .connect(user1)
         .callStatic.synthToToken(
-          swap.address,
+          btcSwap.address,
           utils.formatBytes32String("sUSD"),
           tbtcIndex,
           BigNumber.from(50000).mul(String(1e18)),
@@ -567,7 +612,7 @@ describe("Virtual swap bridge", () => {
       await bridge
         .connect(user1)
         .synthToToken(
-          swap.address,
+          btcSwap.address,
           utils.formatBytes32String("sUSD"),
           tbtcIndex,
           BigNumber.from(50000).mul(String(1e18)),
@@ -587,6 +632,121 @@ describe("Virtual swap bridge", () => {
       const tBTCAmountAfter = await tbtc.balanceOf(user1Address)
 
       expect(tBTCAmountAfter.sub(tBTCAmountBefore)).to.eq("1464493571116930502")
+    })
+  })
+
+  describe("calcTokenToToken", async () => {
+    beforeEach(async () => {
+      // Set sBTC index
+      await bridge.setSynthIndex(
+        btcSwap.address,
+        3,
+        utils.formatBytes32String("sBTC"),
+      )
+      expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
+
+      await bridge.setSynthIndex(
+        usdSwap.address,
+        0,
+        utils.formatBytes32String("sUSD"),
+      )
+      expect(await bridge.getSynthIndex(usdSwap.address)).to.eq(0)
+    })
+
+    it("Succeeds to calculate tBTC -> sBTC -> sUSD -> USDC", async () => {
+      const expectedTokenAmounts = await bridge.calcTokenToToken(
+        [btcSwap.address, usdSwap.address],
+        0,
+        1,
+        BigNumber.from(String(1e18)).mul(10),
+      )
+
+      // 10 tBTC -> 337,768 USDC
+      expect(expectedTokenAmounts[1]).to.eq("337768257810")
+    })
+
+    it("Succeeds to calculate USDC -> sUSD -> sBTC -> WBTC", async () => {
+      const expectedTokenAmounts = await bridge.calcTokenToToken(
+        [usdSwap.address, btcSwap.address],
+        1,
+        1,
+        BigNumber.from(String(1e6)).mul(337768),
+      )
+
+      // 337,768 USDC -> 9.867 WBTC
+      expect(expectedTokenAmounts[1]).to.eq("986742649")
+    })
+  })
+
+  describe("tokenToToken", async () => {
+    beforeEach(async () => {
+      // Set sBTC index
+      await bridge.setSynthIndex(
+        btcSwap.address,
+        3,
+        utils.formatBytes32String("sBTC"),
+      )
+      expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
+
+      await bridge.setSynthIndex(
+        usdSwap.address,
+        0,
+        utils.formatBytes32String("sUSD"),
+      )
+      expect(await bridge.getSynthIndex(usdSwap.address)).to.eq(0)
+    })
+
+    it("Succeeds to swap tBTC -> sBTC -> sUSD -> USDC", async () => {
+      const expectedTokenAmounts = await bridge.calcTokenToToken(
+        [btcSwap.address, usdSwap.address],
+        0,
+        1,
+        BigNumber.from(String(1e18)).mul(10),
+      )
+
+      // 10 tBTC -> 337,768 USDC
+      expect(expectedTokenAmounts[1]).to.eq("337768257810")
+
+      const queueId = await bridge
+        .connect(user1)
+        .callStatic.tokenToToken(
+          [btcSwap.address, usdSwap.address],
+          0,
+          1,
+          BigNumber.from(String(1e18)).mul(10),
+          [
+            expectedTokenAmounts[0].mul(99).div(100),
+            expectedTokenAmounts[1].mul(99).div(100),
+          ],
+          ZERO_ADDRESS,
+        )
+
+      await bridge
+        .connect(user1)
+        .tokenToToken(
+          [btcSwap.address, usdSwap.address],
+          0,
+          1,
+          BigNumber.from(String(1e18)).mul(10),
+          [
+            expectedTokenAmounts[0].mul(99).div(100),
+            expectedTokenAmounts[1].mul(99).div(100),
+          ],
+          ZERO_ADDRESS,
+        )
+
+      // On an actual network, front end should parse the logs to retrieve the queueId
+      expect(queueId).to.eq("0")
+
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
+      await increaseTimestamp(360)
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
+
+      const usdcAmountBefore = await usdc.balanceOf(user1Address)
+      await bridge.settle(queueId)
+      const usdcAmountAfter = await usdc.balanceOf(user1Address)
+
+      expect(usdcAmountAfter.sub(usdcAmountBefore)).to.eq("336756309476")
     })
   })
 })
