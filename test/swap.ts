@@ -20,7 +20,7 @@ import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowl
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { LPToken } from "../build/typechain/LpToken"
+import { LPToken } from "../build/typechain/LPToken"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"

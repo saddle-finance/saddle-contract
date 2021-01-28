@@ -2,7 +2,7 @@ import { Signer, Wallet } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
 
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { LPToken } from "../build/typechain/LpToken"
+import { LPToken } from "../build/typechain/LPToken"
 import chai from "chai"
 import { ethers } from "hardhat"
 
