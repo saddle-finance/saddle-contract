@@ -2,7 +2,7 @@ import { BigNumber, Bytes, ContractFactory, Signer } from "ethers"
 
 import { Artifact } from "hardhat/types"
 import { Contract } from "@ethersproject/contracts"
-import { Erc20 as ERC20 } from "../build/typechain/Erc20"
+import { ERC20 } from "../build/typechain/ERC20"
 import { Swap } from "../build/typechain/Swap"
 import { ethers } from "hardhat"
 import { BytesLike } from "@ethersproject/bytes"

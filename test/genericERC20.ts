@@ -2,7 +2,7 @@ import { Signer, Wallet } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
 
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
-import { GenericErc20 } from "../build/typechain/GenericErc20"
+import { GenericERC20 } from "../build/typechain/GenericERC20"
 import chai from "chai"
 import { ethers } from "hardhat"
 
@@ -12,7 +12,7 @@ const { expect } = chai
 describe("GenericERC20", async () => {
   let signers: Array<Signer>
   let owner: Signer
-  let firstToken: GenericErc20
+  let firstToken: GenericERC20
 
   it("Reverts when minting 0", async () => {
     signers = await ethers.getSigners()
@@ -22,7 +22,7 @@ describe("GenericERC20", async () => {
       "First Token",
       "FIRST",
       "18",
-    ])) as GenericErc20
+    ])) as GenericERC20
     await expect(firstToken.mint(await owner.getAddress(), 0)).to.be.reverted
   })
 })

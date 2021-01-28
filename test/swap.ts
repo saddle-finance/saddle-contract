@@ -18,9 +18,9 @@ import { deployContract, solidity } from "ethereum-waffle"
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
-import { GenericErc20 } from "../build/typechain/GenericErc20"
+import { GenericERC20 } from "../build/typechain/GenericERC20"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { LpToken } from "../build/typechain/LpToken"
+import { LPToken } from "../build/typechain/LPToken"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
@@ -42,9 +42,9 @@ describe("Swap", async () => {
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
-  let firstToken: GenericErc20
-  let secondToken: GenericErc20
-  let swapToken: LpToken
+  let firstToken: GenericERC20
+  let secondToken: GenericERC20
+  let swapToken: LPToken
   let owner: Signer
   let user1: Signer
   let user2: Signer
@@ -82,13 +82,13 @@ describe("Swap", async () => {
       "First Token",
       "FIRST",
       "18",
-    ])) as GenericErc20
+    ])) as GenericERC20
 
     secondToken = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "Second Token",
       "SECOND",
       "18",
-    ])) as GenericErc20
+    ])) as GenericERC20
 
     // Mint dummy tokens
     await asyncForEach([owner, user1, user2], async (signer) => {
@@ -140,7 +140,7 @@ describe("Swap", async () => {
     swapToken = (await ethers.getContractAt(
       LPTokenArtifact.abi,
       swapStorage.lpToken,
-    )) as LpToken
+    )) as LPToken
 
     testSwapReturnValues = (await deployContract(
       owner,

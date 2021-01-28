@@ -5,7 +5,7 @@ import { deployContract, solidity } from "ethereum-waffle"
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
-import { GenericErc20 } from "../build/typechain/GenericErc20"
+import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
@@ -23,8 +23,8 @@ describe("Swap", () => {
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
-  let firstToken: GenericErc20
-  let secondToken: GenericErc20
+  let firstToken: GenericERC20
+  let secondToken: GenericERC20
   let owner: Signer
 
   // Test Values
@@ -42,13 +42,13 @@ describe("Swap", () => {
       "First Token",
       "FIRST",
       "18",
-    ])) as GenericErc20
+    ])) as GenericERC20
 
     secondToken = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "Second Token",
       "SECOND",
       "18",
-    ])) as GenericErc20
+    ])) as GenericERC20
 
     // Deploy Allowlist
     allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [

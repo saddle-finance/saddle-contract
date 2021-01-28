@@ -2,7 +2,7 @@ import { Signer, Wallet } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
 
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { LpToken } from "../build/typechain/LpToken"
+import { LPToken } from "../build/typechain/LPToken"
 import chai from "chai"
 import { ethers } from "hardhat"
 
@@ -12,7 +12,7 @@ const { expect } = chai
 describe("LPToken", async () => {
   let signers: Array<Signer>
   let owner: Signer
-  let firstToken: LpToken
+  let firstToken: LPToken
 
   it("Reverts when minting 0", async () => {
     signers = await ethers.getSigners()
@@ -22,7 +22,7 @@ describe("LPToken", async () => {
       "First Token",
       "FIRST",
       "18",
-    ])) as LpToken
+    ])) as LPToken
     await expect(firstToken.mint(await owner.getAddress(), 0, [])).to.be
       .reverted
   })

@@ -16,9 +16,9 @@ import { deployContract, solidity } from "ethereum-waffle"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
-import { GenericErc20 } from "../build/typechain/GenericErc20"
+import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
-import { LpToken } from "../build/typechain/LpToken"
+import { LPToken } from "../build/typechain/LPToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
@@ -38,11 +38,11 @@ describe("Swap with 4 tokens", () => {
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
-  let DAI: GenericErc20
-  let USDC: GenericErc20
-  let USDT: GenericErc20
-  let SUSD: GenericErc20
-  let swapToken: LpToken
+  let DAI: GenericERC20
+  let USDC: GenericERC20
+  let USDT: GenericERC20
+  let SUSD: GenericERC20
+  let swapToken: LPToken
   let owner: Signer
   let user1: Signer
   let user2: Signer
@@ -65,7 +65,7 @@ describe("Swap with 4 tokens", () => {
   const SWAP_FEE = 1e7
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
-  const TOKENS: GenericErc20[] = []
+  const TOKENS: GenericERC20[] = []
 
   beforeEach(async () => {
     TOKENS.length = 0
@@ -83,25 +83,25 @@ describe("Swap with 4 tokens", () => {
       "DAI",
       "DAI",
       "18",
-    ])) as GenericErc20
+    ])) as GenericERC20
 
     USDC = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "USDC",
       "USDC",
       "6",
-    ])) as GenericErc20
+    ])) as GenericERC20
 
     USDT = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "USDT",
       "USDT",
       "6",
-    ])) as GenericErc20
+    ])) as GenericERC20
 
     SUSD = (await deployContract(owner as Wallet, GenericERC20Artifact, [
       "SUSD",
       "SUSD",
       "18",
-    ])) as GenericErc20
+    ])) as GenericERC20
 
     TOKENS.push(DAI, USDC, USDT, SUSD)
 
@@ -159,7 +159,7 @@ describe("Swap with 4 tokens", () => {
     swapToken = (await ethers.getContractAt(
       LPTokenArtifact.abi,
       swapStorage.lpToken,
-    )) as LpToken
+    )) as LPToken
 
     // Set deposit limits
     allowlist.setPoolCap(swap.address, BigNumber.from(10).pow(18).mul(6000000))
