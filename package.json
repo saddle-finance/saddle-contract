@@ -31,7 +31,7 @@
     "eslint-config-keep": "git+https://github.com/keep-network/eslint-config-keep.git#0.3.0",
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-prettier": "^3.3.1",
-    "ethereum-waffle": "^3.2.1",
+    "ethereum-waffle": "^3.2.2",
     "ethers": "^5.0.20",
     "ethlint": "^1.2.5",
     "hardhat": "^2.0.8",
