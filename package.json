@@ -1,5 +1,5 @@
 {
-  "name": "@thesis/saddle-contract",
+  "name": "saddle-contract",
   "version": "0.0.1",
   "description": "The smart contracts behind saddle.finance 🤠",
   "files": [
@@ -72,7 +72,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thesis/saddle-contract.git"
+    "url": "git+https://github.com/saddle-finance/saddle-contract.git"
   },
   "keywords": [
     "cryptocurrency",
