@@ -1,7 +1,7 @@
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { BigNumber } from "@ethersproject/bignumber"
-import { GenericErc20 } from "../build/typechain/GenericErc20"
+import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
@@ -42,56 +42,56 @@ async function deploySwap(): Promise<void> {
     (owner as unknown) as Wallet,
     GenericERC20Artifact,
     ["Dai", "DAI", "18"],
-  )) as GenericErc20
+  )) as GenericERC20
   await daiToken.deployed()
 
   const usdcToken = (await deployContract(
     (owner as unknown) as Wallet,
     GenericERC20Artifact,
     ["USDC Coin", "USDC", "6"],
-  )) as GenericErc20
+  )) as GenericERC20
   await usdcToken.deployed()
 
   const usdtToken = (await deployContract(
     (owner as unknown) as Wallet,
     GenericERC20Artifact,
     ["Tether", "USDT", "6"],
-  )) as GenericErc20
+  )) as GenericERC20
   await usdtToken.deployed()
 
   const susdToken = (await deployContract(
     (owner as unknown) as Wallet,
     GenericERC20Artifact,
     ["sUSD", "SUSD", "18"],
-  )) as GenericErc20
+  )) as GenericERC20
   await susdToken.deployed()
 
   const tbtcToken = (await deployContract(
     (owner as unknown) as Wallet,
     GenericERC20Artifact,
     ["tBTC", "TBTC", "18"],
-  )) as GenericErc20
+  )) as GenericERC20
   await tbtcToken.deployed()
 
   const wbtcToken = (await deployContract(
     (owner as unknown) as Wallet,
     GenericERC20Artifact,
     ["Wrapped Bitcoin", "WBTC", "8"],
-  )) as GenericErc20
+  )) as GenericERC20
   await wbtcToken.deployed()
 
   const renbtcToken = (await deployContract(
     (owner as unknown) as Wallet,
     GenericERC20Artifact,
     ["renBTC", "RENBTC", "8"],
-  )) as GenericErc20
+  )) as GenericERC20
   await renbtcToken.deployed()
 
   const sbtcToken = (await deployContract(
     (owner as unknown) as Wallet,
     GenericERC20Artifact,
     ["sBTC", "SBTC", "18"],
-  )) as GenericErc20
+  )) as GenericERC20
   await sbtcToken.deployed()
 
   const tokens = [
