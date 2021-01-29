@@ -31,7 +31,8 @@ contract Bridge is Ownable {
     event SynthIndex(
         address indexed swap,
         uint8 synthIndex,
-        bytes32 currencyKey
+        bytes32 currencyKey,
+        address synthAddress
     );
     event TokenToSynth(
         address indexed requester,
@@ -39,7 +40,7 @@ contract Bridge is Ownable {
         IERC20 tokenFrom,
         uint256 tokenFromInAmount,
         uint256 vSynthToOutAmount,
-        uint256 queueId
+        uint256 itemId
     );
     event SynthToToken(
         address indexed requester,
@@ -47,7 +48,7 @@ contract Bridge is Ownable {
         IERC20 synthFrom,
         uint256 synthFromInAmount,
         uint256 vTokenToOutAmount,
-        uint256 queueId
+        uint256 itemId
     );
     event TokenToToken(
         address indexed requester,
@@ -56,31 +57,37 @@ contract Bridge is Ownable {
         uint8 tokenToIndex,
         uint256 tokenFromAmount,
         uint256[2] minAmounts,
-        uint256 queueId
+        uint256 itemId
     );
 
     // Mainnet Synthetix contracts
-    IAddressResolver constant SYNTHETIX_RESOLVER =
+    IAddressResolver public constant SYNTHETIX_RESOLVER =
         IAddressResolver(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2);
-    ISynthetix constant SYNTHETIX =
+    ISynthetix public constant SYNTHETIX =
         ISynthetix(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
-    IExchanger EXCHANGER;
+    IExchanger public EXCHANGER;
 
-    uint256 constant MAX_UINT256 = 2**256 - 1;
-    uint8 constant MAX_UINT8 = 2**8 - 1;
-    bytes32 constant EXCHANGE_RATES_NAME = "ExchangeRates";
+    // CONSTANTS
+    uint256 public constant MAX_UINT256 = 2**256 - 1;
+    uint8 public constant MAX_UINT8 = 2**8 - 1;
+    bytes32 public constant EXCHANGE_RATES_NAME = "ExchangeRates";
+    bytes32 public constant EXCHANGER_NAME = "Exchanger";
 
+    // MAPPINGS FOR STORING PENDING SETTLEMENTS
+    // Two mappings never share the same key
     mapping(uint256 => PendingSynthToTokenSettlement)
-        public pendingSynthToTokenSettlement;
-    mapping(uint256 => PendingSynthSettlement) public pendingSynthSettlement;
-    uint256 public settlementLength;
+        public pendingSynthToTokenSettlements;
+    mapping(uint256 => PendingSynthSettlement) public pendingSynthSettlements;
+    uint256 public pendingSettlementsLength;
 
+    // MAPPINGS FOR STORING SYNTH INFO OF GIVEN POOL
     // Maps swap address to its index + 1
-    mapping(address => uint8) public synthIndexesPlusOne;
+    mapping(address => uint8) private synthIndexesPlusOne;
     // Maps swap address to the synth address the swap pool contains
-    mapping(address => address) public synthAddresses;
-    mapping(address => bytes32) public synthKeys;
+    mapping(address => address) private synthAddresses;
+    mapping(address => bytes32) private synthKeys;
 
+    // Structs holding information about pending settlements
     struct PendingSynthSettlement {
         SynthSwapper ss;
         bytes32 synthKey;
@@ -88,7 +95,6 @@ contract Bridge is Ownable {
         bool settled;
     }
 
-    // Settlement queue
     struct PendingSynthToTokenSettlement {
         SynthSwapper ss;
         bytes32 synthKey;
@@ -99,13 +105,14 @@ contract Bridge is Ownable {
         bool settled;
     }
 
+    // Structs used to avoid stack too deep errors
     struct TokenToSynthInfo {
         IERC20 tokenFrom;
         uint8 synthIndex;
         uint256 mediumSynthAmount;
         uint256 destSynthAmount;
         SynthSwapper synthSwapper;
-        uint256 queueId;
+        uint256 itemId;
     }
 
     struct SynthToTokenInfo {
@@ -120,19 +127,21 @@ contract Bridge is Ownable {
     }
 
     constructor() public {
-        EXCHANGER = IExchanger(
-            SYNTHETIX_RESOLVER.getAddress(
-                0x45786368616e6765720000000000000000000000000000000000000000000000
-            )
-        );
+        EXCHANGER = IExchanger(SYNTHETIX_RESOLVER.getAddress(EXCHANGER_NAME));
     }
 
-    function maxSecsLeftInWaitingPeriod(uint256 queueId)
+    modifier checkItemId(uint256 itemId) {
+        require(itemId < pendingSettlementsLength, "itemId is not recognized");
+        _;
+    }
+
+    function maxSecsLeftInWaitingPeriod(uint256 itemId)
         external
         view
+        checkItemId(itemId)
         returns (uint256)
     {
-        PendingSynthSettlement memory pss = pendingSynthSettlement[queueId];
+        PendingSynthSettlement memory pss = pendingSynthSettlements[itemId];
         address synthSwapper;
         bytes32 synthKey;
 
@@ -141,7 +150,7 @@ contract Bridge is Ownable {
             synthKey = pss.synthKey;
         } else {
             PendingSynthToTokenSettlement memory pstts =
-                pendingSynthToTokenSettlement[queueId];
+                pendingSynthToTokenSettlements[itemId];
             synthSwapper = address(pstts.ss);
             synthKey = pstts.synthKey;
         }
@@ -149,64 +158,75 @@ contract Bridge is Ownable {
         return EXCHANGER.maxSecsLeftInWaitingPeriod(synthSwapper, synthKey);
     }
 
-    function settled(uint256 queueId) external view returns (bool) {
-        require(queueId < settlementLength, "queueId is not recognized");
-        return
-            pendingSynthSettlement[queueId].settled ||
-            pendingSynthToTokenSettlement[queueId].settled;
-    }
-
-    function _getCurrencyKeyFromProxy(address proxyAddress)
-        internal
+    function settled(uint256 itemId)
+        external
         view
-        returns (bytes32)
+        checkItemId(itemId)
+        returns (bool)
     {
-        return ISynth(Proxy(proxyAddress).target()).currencyKey();
+        return
+            pendingSynthSettlements[itemId].settled ||
+            pendingSynthToTokenSettlements[itemId].settled;
     }
 
-    function settle(uint256 queueId) external {
-        _settle(queueId);
-    }
+    function settle(uint256 itemId) external checkItemId(itemId) {
+        SynthSwapper synthSwapper = pendingSynthSettlements[itemId].ss;
 
-    function _settle(uint256 queueId) internal {
-        require(queueId < settlementLength, "queueId is not recognized");
+        // Check if the given itemId is for pending synth or pending synth to token settlement
+        if (address(synthSwapper) != address(0)) {
+            PendingSynthSettlement memory pss = pendingSynthSettlements[itemId];
 
-        if (address(pendingSynthSettlement[queueId].ss) != address(0)) {
-            PendingSynthSettlement memory pss = pendingSynthSettlement[queueId];
+            // Ensure Synth is ready to settle
             require(
                 EXCHANGER.maxSecsLeftInWaitingPeriod(
-                    address(pss.ss),
+                    address(synthSwapper),
                     pss.synthKey
                 ) == 0
             );
-            EXCHANGER.settle(address(pss.ss), pss.synthKey);
+
+            // Settle synth
+            EXCHANGER.settle(address(synthSwapper), pss.synthKey);
             IERC20 synth =
                 IERC20(
                     Target(SYNTHETIX_RESOLVER.getSynth(pss.synthKey)).proxy()
                 );
-            pss.ss.withdraw(
+
+            // After settlement, withdraw the synth and send it to the recipient
+            synthSwapper.withdraw(
                 synth,
                 pss.recipient,
-                synth.balanceOf(address(pss.ss))
+                synth.balanceOf(address(synthSwapper))
             );
-            pendingSynthSettlement[queueId].settled = true;
+            pendingSynthSettlements[itemId].settled = true;
         } else {
+            // Since pendingSynthSettlements have an empty element at the given index, it implies
+            // the index belongs to pendingSynthToTokenSettlements
             PendingSynthToTokenSettlement memory pstts =
-                pendingSynthToTokenSettlement[queueId];
+                pendingSynthToTokenSettlements[itemId];
+            synthSwapper = pstts.ss;
+
+            // Ensure synth is ready to settle
             require(
                 EXCHANGER.maxSecsLeftInWaitingPeriod(
-                    address(pstts.ss),
+                    address(synthSwapper),
                     pstts.synthKey
                 ) == 0
             );
-            EXCHANGER.settle(address(pstts.ss), pstts.synthKey);
+
+            // Settle synth
+            EXCHANGER.settle(address(synthSwapper), pstts.synthKey);
             IERC20 synth =
                 IERC20(
                     Target(SYNTHETIX_RESOLVER.getSynth(pstts.synthKey)).proxy()
                 );
-            uint256 synthBalance = synth.balanceOf(address(pstts.ss));
-            pstts.ss.withdraw(synth, address(this), synthBalance);
+            uint256 synthBalance = synth.balanceOf(address(synthSwapper));
 
+            // Withdraw the synth to this contract.
+            synthSwapper.withdraw(synth, address(this), synthBalance);
+
+            // Try swapping the synth to the desired token via the stored swap pool contract
+            // If the external call succeeds, send the token to the recipient.
+            // If it reverts, send the settled synth to the reciepient instead.
             synth.approve(address(pstts.swap), synthBalance);
             try
                 pstts.swap.swap(
@@ -222,45 +242,32 @@ contract Bridge is Ownable {
             } catch {
                 synth.safeTransfer(pstts.recipient, synthBalance);
             }
-            pendingSynthToTokenSettlement[queueId].settled = true;
+            pendingSynthToTokenSettlements[itemId].settled = true;
         }
     }
 
-    function settleRange(uint256 min, uint256 max) external {
-        // Limit range to 25
-        require(max.sub(min) < 26, "Range must be lower than 26");
-
-        // Limit queuePos + range from exceeding queueSize
-        if (max > settlementLength) {
-            max = settlementLength;
-        }
-
-        // Iterate through queueData and call settle()
-        for (uint256 i = min; i < max; i++) {
-            _settle(i);
-        }
-    }
-
-    function _addToPendingSynthSettlementQueue(
-        PendingSynthSettlement memory pss
-    ) internal returns (uint256) {
+    // Adds pending synth settlement to the
+    function _addToPendingSynthSettlementList(PendingSynthSettlement memory pss)
+        internal
+        returns (uint256)
+    {
         require(
-            settlementLength < MAX_UINT256,
+            pendingSettlementsLength < MAX_UINT256,
             "settlementLength reached max size"
         );
-        pendingSynthSettlement[settlementLength] = pss;
-        return settlementLength++;
+        pendingSynthSettlements[pendingSettlementsLength] = pss;
+        return pendingSettlementsLength++;
     }
 
-    function _addToPendingSynthToTokenSettlementQueue(
+    function _addToPendingSynthToTokenSettlementList(
         PendingSynthToTokenSettlement memory pstts
     ) internal returns (uint256) {
         require(
-            settlementLength < MAX_UINT256,
+            pendingSettlementsLength < MAX_UINT256,
             "settlementLength reached max size"
         );
-        pendingSynthToTokenSettlement[settlementLength] = pstts;
-        return settlementLength++;
+        pendingSynthToTokenSettlements[pendingSettlementsLength] = pstts;
+        return pendingSettlementsLength++;
     }
 
     function calcTokenToSynth(
@@ -272,8 +279,7 @@ contract Bridge is Ownable {
         uint8 mediumSynthIndex = _getSynthIndex(swap);
         uint256 expectedMediumSynthAmount =
             swap.calculateSwap(tokenFromIndex, mediumSynthIndex, tokenInAmount);
-        bytes32 mediumSynthKey =
-            _getCurrencyKeyFromProxy(_getSynthAddress(swap));
+        bytes32 mediumSynthKey = _getSynthKey(swap);
 
         IExchangeRates exchangeRates =
             IExchangeRates(SYNTHETIX_RESOLVER.getAddress(EXCHANGE_RATES_NAME));
@@ -322,7 +328,7 @@ contract Bridge is Ownable {
         v.synthSwapper = new SynthSwapper();
         mediumSynth.transfer(address(v.synthSwapper), v.mediumSynthAmount);
 
-        // Swap synths
+        // Swap synths via Synthetix network
         v.destSynthAmount = v.synthSwapper.swapSynth(
             SYNTHETIX,
             _getSynthKey(swap),
@@ -331,8 +337,8 @@ contract Bridge is Ownable {
         );
         require(v.destSynthAmount >= minAmount, "Insufficient output");
 
-        // Add virtual synth to settle queue with a list of accounts to settle to
-        v.queueId = _addToPendingSynthSettlementQueue(
+        // Add the synthswapper to the pending settlement list
+        v.itemId = _addToPendingSynthSettlementList(
             PendingSynthSettlement(
                 v.synthSwapper,
                 synthOutKey,
@@ -348,10 +354,10 @@ contract Bridge is Ownable {
             v.tokenFrom,
             tokenInAmount,
             v.destSynthAmount,
-            v.queueId
+            v.itemId
         );
 
-        return (v.queueId);
+        return (v.itemId);
     }
 
     function calcSynthToToken(
@@ -419,9 +425,9 @@ contract Bridge is Ownable {
             v.mediumSynthKey
         );
 
-        // Add virtual token to settle queue with a list of accounts to settle to
-        uint256 queueId =
-            _addToPendingSynthToTokenSettlementQueue(
+        // Add the synthswapper to the pending synth to token settlement list
+        uint256 itemId =
+            _addToPendingSynthToTokenSettlementList(
                 PendingSynthToTokenSettlement(
                     v.synthSwapper,
                     v.mediumSynthKey,
@@ -440,10 +446,10 @@ contract Bridge is Ownable {
             synthFrom,
             synthInAmount,
             minAmount,
-            queueId
+            itemId
         );
 
-        return (queueId);
+        return (itemId);
     }
 
     function calcTokenToToken(
@@ -527,9 +533,9 @@ contract Bridge is Ownable {
             );
         }
 
-        // Add virtual token to settle queue with a list of accounts to settle to
-        uint256 queueId =
-            _addToPendingSynthToTokenSettlementQueue(
+        // Add the synthswapper to the pending synth to token settlement list
+        uint256 itemId =
+            _addToPendingSynthToTokenSettlementList(
                 PendingSynthToTokenSettlement(
                     v.synthSwapper,
                     v.secondSynthKey,
@@ -549,10 +555,10 @@ contract Bridge is Ownable {
             tokenToIndex,
             tokenFromAmount,
             minAmounts,
-            queueId
+            itemId
         );
 
-        return (queueId);
+        return (itemId);
     }
 
     // Management
@@ -565,14 +571,14 @@ contract Bridge is Ownable {
         // Ensure that at given `synthIndex`, there exists the synth with same currency key.
         IERC20 synth = swap.getToken(synthIndex);
         require(
-            _getCurrencyKeyFromProxy(address(synth)) == currencyKey,
+            ISynth(Proxy(address(synth)).target()).currencyKey() == currencyKey,
             "currencyKey does not match"
         );
         require(synthIndex < MAX_UINT8, "index is too large");
         synthIndexesPlusOne[address(swap)] = synthIndex + 1;
         synthAddresses[address(swap)] = address(synth);
         synthKeys[address(swap)] = currencyKey;
-        emit SynthIndex(address(swap), synthIndex, currencyKey);
+        emit SynthIndex(address(swap), synthIndex, currencyKey, address(synth));
     }
 
     function getSynthIndex(ISwap swap) external view returns (uint8) {
@@ -602,5 +608,9 @@ contract Bridge is Ownable {
         bytes32 synthKey = synthKeys[address(swap)];
         require(synthKey != 0x0, "synth key not found for given pool");
         return synthKey;
+    }
+
+    function updateExchangerCache() external {
+        EXCHANGER = IExchanger(SYNTHETIX_RESOLVER.getAddress(EXCHANGER_NAME));
     }
 }
