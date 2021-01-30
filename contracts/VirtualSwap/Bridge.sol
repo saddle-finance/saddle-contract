@@ -8,7 +8,6 @@ import "synthetix/contracts/interfaces/ISynthetix.sol";
 import "synthetix/contracts/interfaces/IVirtualSynth.sol";
 import "synthetix/contracts/interfaces/IExchanger.sol";
 import "synthetix/contracts/interfaces/IExchangeRates.sol";
-import "./VirtualTokenNFT.sol";
 import "../interfaces/IVirtualLike.sol";
 import "../interfaces/ISwap.sol";
 

@@ -19,9 +19,9 @@ import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { Bridge } from "../build/typechain/Bridge"
 import BridgeArtifact from "../build/artifacts/contracts/VirtualSwap/Bridge.sol/Bridge.json"
-import { GenericErc20 } from "../build/typechain/GenericErc20"
+import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
-import { LpToken } from "../build/typechain/LpToken"
+import { LPToken } from "../build/typechain/LPToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
@@ -51,14 +51,14 @@ describe("Virtual swap bridge", () => {
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
-  let wbtc: GenericErc20
-  let renbtc: GenericErc20
-  let sbtc: GenericErc20
-  let tbtc: GenericErc20
-  let susd: GenericErc20
-  let sdefi: GenericErc20
-  let usdc: GenericErc20
-  let btcSwapToken: LpToken
+  let wbtc: GenericERC20
+  let renbtc: GenericERC20
+  let sbtc: GenericERC20
+  let tbtc: GenericERC20
+  let susd: GenericERC20
+  let sdefi: GenericERC20
+  let usdc: GenericERC20
+  let btcSwapToken: LPToken
   let owner: Signer
   let user1: Signer
   let user2: Signer
@@ -169,7 +169,7 @@ describe("Virtual swap bridge", () => {
       const contract = (await ethers.getContractAt(
         GenericERC20Artifact.abi,
         v.address,
-      )) as GenericErc20
+      )) as GenericERC20
 
       await asyncForEach(v.holders, async (holder) => {
         await contract
@@ -249,7 +249,7 @@ describe("Virtual swap bridge", () => {
     btcSwapToken = (await ethers.getContractAt(
       LPTokenArtifact.abi,
       btcSwapStorage.lpToken,
-    )) as LpToken
+    )) as LPToken
 
     usdSwap = (await deployContractWithLibraries(
       owner,
@@ -287,7 +287,7 @@ describe("Virtual swap bridge", () => {
     // Approve token transfer to Swap for addling liquidity and to bridge for virtual swaps
     await asyncForEach(
       [tbtc, wbtc, renbtc, sbtc, susd, sdefi, usdc],
-      async (t: GenericErc20) => {
+      async (t: GenericERC20) => {
         await t.connect(user1).approve(btcSwap.address, MAX_UINT256)
         await t.connect(user1).approve(usdSwap.address, MAX_UINT256)
         await t.connect(user1).approve(bridge.address, MAX_UINT256)
