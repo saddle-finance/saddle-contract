@@ -1,14 +1,14 @@
-import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
+import { Allowlist } from "../../build/typechain/Allowlist"
+import AllowlistArtifact from "../../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { BigNumber } from "@ethersproject/bignumber"
-import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
-import { Swap } from "../build/typechain/Swap"
-import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
-import { SwapUtils } from "../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
+import { MathUtils } from "../../build/typechain/MathUtils"
+import MathUtilsArtifact from "../../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
+import { Swap } from "../../build/typechain/Swap"
+import SwapArtifact from "../../build/artifacts/contracts/Swap.sol/Swap.json"
+import { SwapUtils } from "../../build/typechain/SwapUtils"
+import SwapUtilsArtifact from "../../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import { deployContract } from "ethereum-waffle"
-import { deployContractWithLibraries } from "../test/testUtils"
+import { deployContractWithLibraries } from "../../test/testUtils"
 import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address"
 
@@ -32,7 +32,7 @@ const BTC_LP_TOKEN_SYMBOL = "saddleTWRenSBTC"
 const MULTISIG_ADDRESS = "0x3F8E527aF4e0c6e763e8f368AC679c44C45626aE"
 
 // To run this script and deploy the contracts on the mainnet:
-//    npx hardhat run deployment/swap-onchain.ts --network mainnet
+//    npx hardhat run deployment/onchain/swap-mainnet.ts --network mainnet
 //
 // To verify the source code on etherscan:
 //    npx hardhat verify --network mainnet DEPLOYED_CONTRACT_ADDRESS [arg0, arg1, ...]

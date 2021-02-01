@@ -1,25 +1,25 @@
-import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
+import { Allowlist } from "../../build/typechain/Allowlist"
+import AllowlistArtifact from "../../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { BigNumber } from "@ethersproject/bignumber"
-import { GenericERC20 } from "../build/typechain/GenericERC20"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
-import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
-import { Swap } from "../build/typechain/Swap"
-import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
-import { SwapUtils } from "../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
+import { GenericERC20 } from "../../build/typechain/GenericErc20"
+import GenericERC20Artifact from "../../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
+import { MathUtils } from "../../build/typechain/MathUtils"
+import MathUtilsArtifact from "../../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
+import { Swap } from "../../build/typechain/Swap"
+import SwapArtifact from "../../build/artifacts/contracts/Swap.sol/Swap.json"
+import { SwapUtils } from "../../build/typechain/SwapUtils"
+import SwapUtilsArtifact from "../../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import { Wallet } from "ethers"
 import { deployContract } from "ethereum-waffle"
-import { asyncForEach, deployContractWithLibraries } from "../test/testUtils"
+import { asyncForEach, deployContractWithLibraries } from "../../test/testUtils"
 import { ethers } from "hardhat"
-import merkleTreeData from "../test/exampleMerkleTree.json"
+import merkleTreeData from "../../test/exampleMerkleTree.json"
 
 // Test Values
-const INITIAL_A_VALUE = 50
-const SWAP_FEE = 1e7
+const INITIAL_A_VALUE = 200
+const SWAP_FEE = 4e6 // 4bps
 const ADMIN_FEE = 0
-const WITHDRAW_FEE = 5e7
+const WITHDRAW_FEE = 0
 const STABLECOIN_LP_TOKEN_NAME = "Stablecoin LP Token"
 const STABLECOIN_LP_TOKEN_SYMBOL = "SLPT"
 const BTC_LP_TOKEN_NAME = "BTC LP Token"
@@ -94,26 +94,28 @@ async function deploySwap(): Promise<void> {
   )) as GenericERC20
   await sbtcToken.deployed()
 
-  const tokens = [
-    daiToken,
-    usdcToken,
-    usdtToken,
-    susdToken,
-    tbtcToken,
-    wbtcToken,
-    renbtcToken,
-    sbtcToken,
-  ]
+  const usdTokens = [daiToken, usdcToken, usdtToken, susdToken]
+
+  const btcTokens = [tbtcToken, wbtcToken, renbtcToken, sbtcToken]
+
+  const tokens = usdTokens.concat(btcTokens)
 
   console.table(
     await Promise.all(tokens.map(async (t) => [await t.symbol(), t.address])),
   )
 
   await asyncForEach(addresses, async (address) => {
-    await asyncForEach(tokens, async (token) => {
+    await asyncForEach(usdTokens, async (token) => {
       const decimals = await token.decimals()
       // Stringifying numbers over 1e20 breaks BigNumber, so get creative
-      const amount = "1" + new Array(decimals + 5).fill(0).join("")
+      const amount = BigNumber.from(10).pow(decimals).mul(100000)
+      await token.mint(address, amount)
+    })
+
+    await asyncForEach(btcTokens, async (token) => {
+      const decimals = await token.decimals()
+      // Stringifying numbers over 1e20 breaks BigNumber, so get creative
+      const amount = BigNumber.from(10).pow(decimals)
       await token.mint(address, amount)
     })
   })
@@ -193,21 +195,21 @@ async function deploySwap(): Promise<void> {
   // update dev limits for stableSwap
   await allowlist.setPoolCap(
     stablecoinSwap.address,
-    BigNumber.from(10).pow(18).mul(1000),
+    BigNumber.from(10).pow(18).mul(5000000),
   )
   await allowlist.setPoolAccountLimit(
     stablecoinSwap.address,
-    BigNumber.from(10).pow(18).mul(1000),
+    BigNumber.from(10).pow(18).mul(100000),
   )
 
   // update dev limits for btcSwap
   await allowlist.setPoolCap(
     btcSwap.address,
-    BigNumber.from(10).pow(18).mul(1000),
+    BigNumber.from(10).pow(18).mul(300),
   )
   await allowlist.setPoolAccountLimit(
     btcSwap.address,
-    BigNumber.from(10).pow(18).mul(1000),
+    BigNumber.from(10).pow(18).mul(1),
   )
 
   await stablecoinSwap.deployed()
@@ -222,5 +224,7 @@ async function deploySwap(): Promise<void> {
 }
 
 deploySwap().then(() => {
-  console.log("Successfully deployed contracts locally...")
+  console.log(
+    "Successfully deployed contracts locally using the mainnet parameters...",
+  )
 })

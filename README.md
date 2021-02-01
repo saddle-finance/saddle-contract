@@ -37,8 +37,10 @@ $ npm run coverage
 
 ```bash
 $ npx hardhat node
-$ npx hardhat run --network localhost deployment/swap.ts
+$ npx hardhat run --network localhost deployment/hardhat/swap.ts
 ```
+
+`deployment/hardhat/swap-forkMainnet.ts` is also available for forking the mainnet contracts into the hardhat network.
 
 You can connect to this RPC server via `localhost:8545`.
 
