@@ -7,5 +7,9 @@ module.exports = {
   onIstanbulComplete: async function(config){
     shell.rm('-rf', './build/typechain'); // Clean up at the end
   },
-  skipFiles: ['helper/test/TestSwapReturnValues.sol', 'Timelock.sol']
+  skipFiles: ['helper/test/TestSwapReturnValues.sol', 'Timelock.sol'],
+  mocha: {
+    grep: "@skip-on-coverage", // Find everything with this tag
+    invert: true               // Run the grep's inverse set.
+  }
 }

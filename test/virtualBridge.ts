@@ -43,7 +43,7 @@ const SWAP_FEE = 4e6
 const LP_TOKEN_NAME = "Test LP Token Name"
 const LP_TOKEN_SYMBOL = "TESTLP"
 
-describe("Virtual swap bridge", () => {
+describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
   let signers: Array<Signer>
   let bridge: Bridge
   let btcSwap: Swap
