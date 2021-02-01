@@ -8,7 +8,6 @@ import "synthetix/contracts/interfaces/ISynthetix.sol";
 import "synthetix/contracts/interfaces/IVirtualSynth.sol";
 import "synthetix/contracts/interfaces/IExchanger.sol";
 import "synthetix/contracts/interfaces/IExchangeRates.sol";
-import "../interfaces/IVirtualLike.sol";
 import "../interfaces/ISwap.sol";
 
 import "hardhat/console.sol";
@@ -80,10 +79,11 @@ contract Bridge is Ownable {
     uint256 public pendingSettlementsLength;
 
     // MAPPINGS FOR STORING SYNTH INFO OF GIVEN POOL
-    // Maps swap address to its index + 1
+    // Maps swap address to its index of the supported synth + 1
     mapping(address => uint8) private synthIndexesPlusOne;
-    // Maps swap address to the synth address the swap pool contains
+    // Maps swap address to the address of the supported synth
     mapping(address => address) private synthAddresses;
+    // Maps swap address to the bytes32 key of the supported synth
     mapping(address => bytes32) private synthKeys;
 
     // Structs holding information about pending settlements
@@ -245,7 +245,7 @@ contract Bridge is Ownable {
         }
     }
 
-    // Adds pending synth settlement to the
+    // Add the given pending synth settlement struct to the list
     function _addToPendingSynthSettlementList(PendingSynthSettlement memory pss)
         internal
         returns (uint256)
@@ -258,6 +258,7 @@ contract Bridge is Ownable {
         return pendingSettlementsLength++;
     }
 
+    // Add the given pending synth to token settlement struct to the list
     function _addToPendingSynthToTokenSettlementList(
         PendingSynthToTokenSettlement memory pstts
     ) internal returns (uint256) {
@@ -346,7 +347,7 @@ contract Bridge is Ownable {
             )
         );
 
-        // Emit TokenToVSynth event with relevant data
+        // Emit TokenToSynth event with relevant data
         emit TokenToSynth(
             msg.sender,
             swap,
@@ -414,7 +415,7 @@ contract Bridge is Ownable {
             "synth is supported via normal swap"
         );
 
-        // Create new SynthSwapper contract then commit swap
+        // Create a new SynthSwapper contract then initiate a swap to the medium synth supported by the swap pool
         v.synthSwapper = new SynthSwapper();
         synthFrom.transfer(address(v.synthSwapper), synthInAmount);
         v.synthSwapper.swapSynth(
@@ -438,7 +439,7 @@ contract Bridge is Ownable {
                 )
             );
 
-        // Emit TokenToVSynth event with relevant data
+        // Emit SynthToToken event with relevant data
         emit SynthToToken(
             msg.sender,
             swap,
@@ -484,6 +485,7 @@ contract Bridge is Ownable {
         );
     }
 
+    // Swaps a token from one pool to one in another using the Synthetix network as the bridging exchanger
     function tokenToToken(
         ISwap[2] calldata swaps,
         uint8 tokenFromIndex,
@@ -546,7 +548,7 @@ contract Bridge is Ownable {
                 )
             );
 
-        // Emit TokenToVSynth event with relevant data
+        // Emit TokenToToken event with relevant data
         emit TokenToToken(
             msg.sender,
             swaps,
@@ -609,6 +611,8 @@ contract Bridge is Ownable {
         return synthKey;
     }
 
+    // When a new exchanger contract is deployed by the Synthetix team, we need to update the address stored
+    // in this contract.
     function updateExchangerCache() external {
         EXCHANGER = IExchanger(SYNTHETIX_RESOLVER.getAddress(EXCHANGER_NAME));
     }
