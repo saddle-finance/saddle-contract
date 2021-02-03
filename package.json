@@ -12,6 +12,7 @@
     "@eth-optimism/smock": "^0.2.1-alpha.0",
     "@openzeppelin/contracts": "3.3.0",
     "openzeppelin-contracts-sol-0.5": "npm:@openzeppelin/contracts@2.5.1",
+    "openzeppelin-contracts-3.4": "npm:@openzeppelin/contracts@3.4.0",
     "dotenv": "^8.2.0",
     "hardhat-typechain": "^0.3.4",
     "synthetix": "2.37.2"
