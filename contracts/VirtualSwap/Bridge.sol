@@ -58,11 +58,25 @@ contract Bridge is Ownable {
         uint256 itemId
     );
 
-    // Mainnet Synthetix contracts
+    // The addresses for all Synthetix contracts can be found in the below URL.
+    // https://docs.synthetix.io/addresses/#mainnet-contracts
+    //
+    // Since the Synthetix protocol is upgradable, we must use the proxy pairs of each contract such that
+    // the composability is not broken after the protocol upgrade.
+    //
+    // SYNTHETIX_RESOLVER points to `ReadProxyAddressResolver` (0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2).
+    // This contract is a read proxy of `AddressResolver` which is responsible for storing the addresses of the contracts
+    // used by the Synthetix protocol.
     IAddressResolver public constant SYNTHETIX_RESOLVER =
         IAddressResolver(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2);
+
+    // SYNTHETIX points to `ProxyERC20` (0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F).
+    // This contract is a proxy of `Synthetix` and is used to exchange synths.
     ISynthetix public constant SYNTHETIX =
         ISynthetix(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
+
+    // EXCHANGER points to `Exchanger`. There is no proxy pair for this contract so we need to update this variable
+    // when the protocol is upgraded. This contract is used to settle synths held by SynthSwapper.
     IExchanger public EXCHANGER;
 
     // CONSTANTS
@@ -198,7 +212,7 @@ contract Bridge is Ownable {
             );
             pendingSynthSettlements[itemId].settled = true;
         } else {
-            // Since pendingSynthSettlements have an empty element at the given index, it implies
+            // Since pendingSynthSettlements has an empty element at the given index, it implies
             // the index belongs to pendingSynthToTokenSettlements
             PendingSynthToTokenSettlement memory pstts =
                 pendingSynthToTokenSettlements[itemId];
@@ -403,17 +417,17 @@ contract Bridge is Ownable {
             recipient = msg.sender;
         }
 
-        // Recieve synth from the user
-        IERC20 synthFrom =
-            IERC20(Target(SYNTHETIX_RESOLVER.getSynth(synthInKey)).proxy());
-        synthFrom.safeTransferFrom(msg.sender, address(this), synthInAmount);
-
         v.mediumSynthKey = _getSynthKey(swap);
-        v.mediumSynthIndex = _getSynthIndex(swap);
         require(
             synthInKey != v.mediumSynthKey,
             "synth is supported via normal swap"
         );
+        v.mediumSynthIndex = _getSynthIndex(swap);
+
+        // Receive synth from the user
+        IERC20 synthFrom =
+            IERC20(Target(SYNTHETIX_RESOLVER.getSynth(synthInKey)).proxy());
+        synthFrom.safeTransferFrom(msg.sender, address(this), synthInAmount);
 
         // Create a new SynthSwapper contract then initiate a swap to the medium synth supported by the swap pool
         v.synthSwapper = new SynthSwapper();
@@ -485,7 +499,7 @@ contract Bridge is Ownable {
         );
     }
 
-    // Swaps a token from one pool to one in another using the Synthetix network as the bridging exchanger
+    // Swaps a token from one pool to one in another using the Synthetix network as the bridging exchange
     function tokenToToken(
         ISwap[2] calldata swaps,
         uint8 tokenFromIndex,
@@ -569,7 +583,7 @@ contract Bridge is Ownable {
         uint8 synthIndex,
         bytes32 currencyKey
     ) external {
-        // Ensure that at given `synthIndex`, there exists the synth with same currency key.
+        // Ensure the synth with the same currency key exists at the given `synthIndex`
         IERC20 synth = swap.getToken(synthIndex);
         require(
             ISynth(Proxy(address(synth)).target()).currencyKey() == currencyKey,

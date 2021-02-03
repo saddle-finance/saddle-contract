@@ -9,7 +9,8 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-
+    env:
+      ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
@@ -21,17 +22,14 @@ jobs:
     - uses: actions/setup-node@v2
       with:
         node-version: '12'
-    - uses: SpicyPizza/create-envfile@v1
-      with:
-        envkey_ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
-        file_name: .env
     - run: npm ci
     - run: npm run build --if-present
     - run: npm run lint
 
   test:
     runs-on: ubuntu-latest
-
+    env:
+      ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
@@ -43,17 +41,14 @@ jobs:
     - uses: actions/setup-node@v2
       with:
         node-version: '12'
-    - uses: SpicyPizza/create-envfile@v1
-      with:
-        envkey_ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
-        file_name: .env
     - run: npm ci
     - run: npm run build --if-present
     - run: npm test
 
   coverage:
     runs-on: ubuntu-latest
-
+    env:
+      ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
@@ -65,10 +60,6 @@ jobs:
     - uses: actions/setup-node@v2
       with:
         node-version: '12'
-    - uses: SpicyPizza/create-envfile@v1
-      with:
-        envkey_ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
-        file_name: .env
     - run: npm ci
     - run: npm run build --if-present
     - run: npm run coverage

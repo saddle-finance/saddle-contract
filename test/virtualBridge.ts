@@ -284,7 +284,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       BigNumber.from(10).pow(18 + 10),
     )
 
-    // Approve token transfer to Swap for addling liquidity and to bridge for virtual swaps
+    // Approve token transfer to Swap for adding liquidity and to Bridge for virtual swaps
     await asyncForEach(
       [tbtc, wbtc, renbtc, sbtc, susd, sdefi, usdc],
       async (t: GenericERC20) => {
@@ -620,7 +620,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           ZERO_ADDRESS,
         )
 
-      // On an actual network, front end should parse the logs to retrieve the queueId
+      // On an actual network, the front-end should parse the logs to retrieve the queueId
       expect(queueId).to.eq("0")
 
       expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
@@ -735,7 +735,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           ZERO_ADDRESS,
         )
 
-      // On an actual network, front end should parse the logs to retrieve the queueId
+      // On an actual network, the front-end should parse the logs to retrieve the queueId
       expect(queueId).to.eq("0")
 
       expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
