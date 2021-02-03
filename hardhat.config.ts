@@ -18,8 +18,7 @@ let config: HardhatUserConfig = {
       url: "http://127.0.0.1:8555",
     },
     mainnet: {
-      url:
-        "https://eth-mainnet.alchemyapi.io/v2/81vG7yyuGWiFN6Hzu47-MnCIVmSd5MpY",
+      url: process.env.ALCHEMY_API,
       gasPrice: 55 * 1000000000,
     },
   },
@@ -50,6 +49,9 @@ let config: HardhatUserConfig = {
   gasReporter: {
     currency: "USD",
     gasPrice: 21,
+  },
+  mocha: {
+    timeout: 200000,
   },
 }
 
