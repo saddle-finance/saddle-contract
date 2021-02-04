@@ -3,11 +3,13 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "openzeppelin-contracts-3.4/proxy/Clones.sol";
 import "synthetix/contracts/interfaces/IAddressResolver.sol";
 import "synthetix/contracts/interfaces/ISynthetix.sol";
 import "synthetix/contracts/interfaces/IVirtualSynth.sol";
 import "synthetix/contracts/interfaces/IExchanger.sol";
 import "synthetix/contracts/interfaces/IExchangeRates.sol";
+
 import "../interfaces/ISwap.sol";
 
 import "hardhat/console.sol";
@@ -70,11 +72,6 @@ contract Bridge is Ownable {
     IAddressResolver public constant SYNTHETIX_RESOLVER =
         IAddressResolver(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2);
 
-    // SYNTHETIX points to `ProxyERC20` (0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F).
-    // This contract is a proxy of `Synthetix` and is used to exchange synths.
-    ISynthetix public constant SYNTHETIX =
-        ISynthetix(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
-
     // EXCHANGER points to `Exchanger`. There is no proxy pair for this contract so we need to update this variable
     // when the protocol is upgraded. This contract is used to settle synths held by SynthSwapper.
     IExchanger public EXCHANGER;
@@ -84,12 +81,13 @@ contract Bridge is Ownable {
     uint8 public constant MAX_UINT8 = 2**8 - 1;
     bytes32 public constant EXCHANGE_RATES_NAME = "ExchangeRates";
     bytes32 public constant EXCHANGER_NAME = "Exchanger";
+    address public immutable SYNTH_SWAPPER_MASTER;
 
     // MAPPINGS FOR STORING PENDING SETTLEMENTS
-    // Two mappings never share the same key
+    // The below two mappings never share the same key.
+    mapping(uint256 => PendingSynthSettlement) public pendingSynthSettlements;
     mapping(uint256 => PendingSynthToTokenSettlement)
         public pendingSynthToTokenSettlements;
-    mapping(uint256 => PendingSynthSettlement) public pendingSynthSettlements;
     uint256 public pendingSettlementsLength;
 
     // MAPPINGS FOR STORING SYNTH INFO OF GIVEN POOL
@@ -141,6 +139,7 @@ contract Bridge is Ownable {
 
     constructor() public {
         EXCHANGER = IExchanger(SYNTHETIX_RESOLVER.getAddress(EXCHANGER_NAME));
+        SYNTH_SWAPPER_MASTER = address(new SynthSwapper());
     }
 
     modifier checkItemId(uint256 itemId) {
@@ -205,11 +204,7 @@ contract Bridge is Ownable {
                 );
 
             // After settlement, withdraw the synth and send it to the recipient
-            synthSwapper.withdraw(
-                synth,
-                pss.recipient,
-                synth.balanceOf(address(synthSwapper))
-            );
+            synthSwapper.withdrawAll(synth, pss.recipient);
             pendingSynthSettlements[itemId].settled = true;
         } else {
             // Since pendingSynthSettlements has an empty element at the given index, it implies
@@ -234,26 +229,21 @@ contract Bridge is Ownable {
                 );
             uint256 synthBalance = synth.balanceOf(address(synthSwapper));
 
-            // Withdraw the synth to this contract.
-            synthSwapper.withdraw(synth, address(this), synthBalance);
-
             // Try swapping the synth to the desired token via the stored swap pool contract
             // If the external call succeeds, send the token to the recipient.
-            // If it reverts, send the settled synth to the reciepient instead.
-            synth.approve(address(pstts.swap), synthBalance);
+            // If it reverts, send the settled synth to the recipient instead.
             try
-                pstts.swap.swap(
+                synthSwapper.swapSynthToToken(
+                    pstts.swap,
                     _getSynthIndex(pstts.swap),
                     pstts.tokenToIndex,
                     synthBalance,
                     pstts.minAmount,
-                    block.timestamp
+                    block.timestamp,
+                    pstts.recipient
                 )
-            returns (uint256 tokenToAmount) {
-                IERC20 tokenTo = pstts.swap.getToken(pstts.tokenToIndex);
-                tokenTo.safeTransfer(pstts.recipient, tokenToAmount);
-            } catch {
-                synth.safeTransfer(pstts.recipient, synthBalance);
+            {} catch {
+                synthSwapper.withdrawAll(synth, pstts.recipient);
             }
             pendingSynthToTokenSettlements[itemId].settled = true;
         }
@@ -339,12 +329,11 @@ contract Bridge is Ownable {
         );
 
         IERC20 mediumSynth = IERC20(_getSynthAddress(swap));
-        v.synthSwapper = new SynthSwapper();
+        v.synthSwapper = SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
         mediumSynth.transfer(address(v.synthSwapper), v.mediumSynthAmount);
 
         // Swap synths via Synthetix network
         v.destSynthAmount = v.synthSwapper.swapSynth(
-            SYNTHETIX,
             _getSynthKey(swap),
             v.mediumSynthAmount,
             synthOutKey
@@ -430,14 +419,9 @@ contract Bridge is Ownable {
         synthFrom.safeTransferFrom(msg.sender, address(this), synthInAmount);
 
         // Create a new SynthSwapper contract then initiate a swap to the medium synth supported by the swap pool
-        v.synthSwapper = new SynthSwapper();
+        v.synthSwapper = SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
         synthFrom.transfer(address(v.synthSwapper), synthInAmount);
-        v.synthSwapper.swapSynth(
-            SYNTHETIX,
-            synthInKey,
-            synthInAmount,
-            v.mediumSynthKey
-        );
+        v.synthSwapper.swapSynth(synthInKey, synthInAmount, v.mediumSynthKey);
 
         // Add the synthswapper to the pending synth to token settlement list
         uint256 itemId =
@@ -537,11 +521,10 @@ contract Bridge is Ownable {
 
         {
             IERC20 synthFrom = IERC20(_getSynthAddress(swap));
-            v.synthSwapper = new SynthSwapper();
+            v.synthSwapper = SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
             v.secondSynthKey = _getSynthKey(swaps[1]);
             synthFrom.transfer(address(v.synthSwapper), firstSynthAmount);
             v.synthSwapper.swapSynth(
-                SYNTHETIX,
                 _getSynthKey(swap),
                 firstSynthAmount,
                 v.secondSynthKey
