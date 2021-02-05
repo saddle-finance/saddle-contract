@@ -87,16 +87,10 @@ contract Bridge is Ownable, ERC721 {
     // MAPPINGS FOR STORING PENDING SETTLEMENTS
     // The below two mappings never share the same key.
     mapping(uint256 => PendingSynthSwap) public pendingSynthSwaps;
-    mapping(uint256 => PendingSynthToTokenSwap)
-        public pendingSynthToTokenSwaps;
+    mapping(uint256 => PendingSynthToTokenSwap) public pendingSynthToTokenSwaps;
     uint256 public pendingSwapsLength;
 
-    enum PendingSwapType {
-        Null,
-        TokenToSynth,
-        SynthToToken,
-        TokenToToken
-    }
+    enum PendingSwapType {Null, TokenToSynth, SynthToToken, TokenToToken}
     enum PendingSwapState {
         Waiting,
         ReadyToSettle,
@@ -105,7 +99,7 @@ contract Bridge is Ownable, ERC721 {
         Completed
     }
 
-    uint256 private PENDING_SETTLEMENT_STATE_LENGTH = 5;
+    uint8 private PENDING_SWAP_STATE_LENGTH = 5;
     mapping(uint256 => uint8) private pendingSwapTypeAndState;
 
     // MAPPINGS FOR STORING SYNTH INFO OF GIVEN POOL
@@ -151,7 +145,10 @@ contract Bridge is Ownable, ERC721 {
         bytes32 secondSynthKey;
     }
 
-    constructor (string memory name_, string memory symbol_) public ERC721(name_, symbol_) {
+    constructor(string memory name_, string memory symbol_)
+        public
+        ERC721(name_, symbol_)
+    {
         EXCHANGER = IExchanger(SYNTHETIX_RESOLVER.getAddress(EXCHANGER_NAME));
         SYNTH_SWAPPER_MASTER = address(new SynthSwapper());
     }
@@ -178,13 +175,33 @@ contract Bridge is Ownable, ERC721 {
         return EXCHANGER.maxSecsLeftInWaitingPeriod(synthSwapper, synthKey);
     }
 
-    function _getPendingSwapTypeAndState(uint256 itemId) internal view returns (PendingSwapType, PendingSwapState) {
-        uint8 typeAndState = pendingSwapTypeAndState[itemId];
-        return (PendingSwapType(typeAndState / 4), PendingSwapState(typeAndState % 4));
+    function getProxyAddressFromTargetSynthKey(bytes32 synthKey)
+        public
+        view
+        returns (IERC20)
+    {
+        return IERC20(Target(SYNTHETIX_RESOLVER.getSynth(synthKey)).proxy());
     }
 
-    function getPendingSwapTypeAndState(uint256 itemId) external view returns (PendingSwapType, PendingSwapState) {
-        (PendingSwapType swapType, PendingSwapState swapState) = _getPendingSwapTypeAndState(itemId);
+    function _getPendingSwapTypeAndState(uint256 itemId)
+        internal
+        view
+        returns (PendingSwapType, PendingSwapState)
+    {
+        uint8 typeAndState = pendingSwapTypeAndState[itemId];
+        return (
+            PendingSwapType(typeAndState / PENDING_SWAP_STATE_LENGTH),
+            PendingSwapState(typeAndState % PENDING_SWAP_STATE_LENGTH)
+        );
+    }
+
+    function getPendingSwapTypeAndState(uint256 itemId)
+        external
+        view
+        returns (PendingSwapType, PendingSwapState)
+    {
+        (PendingSwapType swapType, PendingSwapState swapState) =
+            _getPendingSwapTypeAndState(itemId);
         require(swapType != PendingSwapType.Null, "invalid itemId");
 
         SynthSwapper synthSwapper;
@@ -198,26 +215,41 @@ contract Bridge is Ownable, ERC721 {
             synthKey = pendingSynthToTokenSwaps[itemId].synthKey;
         }
 
-        if (swapState == PendingSwapState.Waiting && EXCHANGER.maxSecsLeftInWaitingPeriod(
-            address(synthSwapper),
-            synthKey
-        ) == 0) {
+        if (
+            swapState == PendingSwapState.Waiting &&
+            EXCHANGER.maxSecsLeftInWaitingPeriod(
+                address(synthSwapper),
+                synthKey
+            ) ==
+            0
+        ) {
             swapState = PendingSwapState.ReadyToSettle;
         }
         return (swapType, swapState);
     }
 
-
-    function _setPendingSwapType(uint256 itemId, PendingSwapType pendingSwapType) internal {
-        pendingSwapTypeAndState[itemId] = uint8(pendingSwapType) * 4;
+    function _setPendingSwapType(
+        uint256 itemId,
+        PendingSwapType pendingSwapType
+    ) internal {
+        pendingSwapTypeAndState[itemId] =
+            uint8(pendingSwapType) *
+            PENDING_SWAP_STATE_LENGTH;
     }
 
-    function _setPendingSwapState(uint256 itemId, PendingSwapState pendingSwapState) internal {
-        pendingSwapTypeAndState[itemId] = (pendingSwapTypeAndState[itemId] / 4) * 4 + uint8(pendingSwapState);
+    function _setPendingSwapState(
+        uint256 itemId,
+        PendingSwapState pendingSwapState
+    ) internal {
+        pendingSwapTypeAndState[itemId] =
+            (pendingSwapTypeAndState[itemId] / PENDING_SWAP_STATE_LENGTH) *
+            PENDING_SWAP_STATE_LENGTH +
+            uint8(pendingSwapState);
     }
 
     function settle(uint256 itemId) external {
-        (PendingSwapType swapType, PendingSwapState swapState) = _getPendingSwapTypeAndState(itemId);
+        (PendingSwapType swapType, PendingSwapState swapState) =
+            _getPendingSwapTypeAndState(itemId);
         require(swapType != PendingSwapType.Null, "invalid itemId");
 
         SynthSwapper synthSwapper = pendingSynthSwaps[itemId].ss;
@@ -228,7 +260,7 @@ contract Bridge is Ownable, ERC721 {
             synthKey = pendingSynthSwaps[itemId].synthKey;
         } else {
             synthSwapper = pendingSynthToTokenSwaps[itemId].ss;
-            synthKey =  pendingSynthToTokenSwaps[itemId].synthKey;
+            synthKey = pendingSynthToTokenSwaps[itemId].synthKey;
         }
 
         _settle(address(synthSwapper), synthKey);
@@ -240,10 +272,7 @@ contract Bridge is Ownable, ERC721 {
     // Settles the synth only.
     function _settle(address synthOwner, bytes32 synthKey) internal {
         require(
-            EXCHANGER.maxSecsLeftInWaitingPeriod(
-                synthOwner,
-                synthKey
-            ) == 0,
+            EXCHANGER.maxSecsLeftInWaitingPeriod(synthOwner, synthKey) == 0,
             "synth waiting period is ongoing"
         );
 
@@ -258,10 +287,7 @@ contract Bridge is Ownable, ERC721 {
         PendingSynthSwap memory pss = pendingSynthSwaps[itemId];
         _settle(address(pss.ss), pss.synthKey);
 
-        IERC20 synth =
-        IERC20(
-            Target(SYNTHETIX_RESOLVER.getSynth(pss.synthKey)).proxy()
-        );
+        IERC20 synth = getProxyAddressFromTargetSynthKey(pss.synthKey);
 
         // After settlement, withdraw the synth and send it to the recipient
         pss.ss.withdrawAll(synth, ownerOf(itemId));
@@ -271,21 +297,22 @@ contract Bridge is Ownable, ERC721 {
         _burn(itemId);
     }
 
-    function completeToToken(uint256 itemId, uint256 swapAmount, uint256 minAmount, uint256 deadline) external {
+    function completeToToken(
+        uint256 itemId,
+        uint256 swapAmount,
+        uint256 minAmount,
+        uint256 deadline
+    ) external {
         address nftOwner = ownerOf(itemId);
         require(msg.sender == nftOwner, "must own itemId");
 
         (PendingSwapType swapType, ) = _getPendingSwapTypeAndState(itemId);
         require(swapType > PendingSwapType.TokenToSynth, "invalid itemId");
 
-        PendingSynthToTokenSwap memory pstts =
-        pendingSynthToTokenSwaps[itemId];
+        PendingSynthToTokenSwap memory pstts = pendingSynthToTokenSwaps[itemId];
 
         _settle(address(pstts.ss), pstts.synthKey);
-        IERC20 synth =
-        IERC20(
-            Target(SYNTHETIX_RESOLVER.getSynth(pstts.synthKey)).proxy()
-        );
+        IERC20 synth = getProxyAddressFromTargetSynthKey(pstts.synthKey);
         uint256 synthBalance = synth.balanceOf(address(pstts.ss));
         // Try swapping the synth to the desired token via the stored swap pool contract
         // If the external call succeeds, send the token to the owner of token with itemId.
@@ -396,11 +423,9 @@ contract Bridge is Ownable, ERC721 {
 
         // Add the synthswapper to the pending settlement list
         v.itemId = _addToPendingSynthSwapList(
-            PendingSynthSwap(
-                v.synthSwapper,
-                synthOutKey
-            )
+            PendingSynthSwap(v.synthSwapper, synthOutKey)
         );
+        _setPendingSwapType(v.itemId, PendingSwapType.TokenToSynth);
 
         // Mint an ERC721 token that represents ownership of the pending synth settlement to msg.sender
         _mint(msg.sender, v.itemId);
@@ -464,8 +489,7 @@ contract Bridge is Ownable, ERC721 {
         v.mediumSynthIndex = _getSynthIndex(swap);
 
         // Receive synth from the user
-        IERC20 synthFrom =
-            IERC20(Target(SYNTHETIX_RESOLVER.getSynth(synthInKey)).proxy());
+        IERC20 synthFrom = getProxyAddressFromTargetSynthKey(synthInKey);
         synthFrom.safeTransferFrom(msg.sender, address(this), synthInAmount);
 
         // Create a new SynthSwapper contract then initiate a swap to the medium synth supported by the swap pool
@@ -484,6 +508,7 @@ contract Bridge is Ownable, ERC721 {
                     minAmount
                 )
             );
+        _setPendingSwapType(itemId, PendingSwapType.SynthToToken);
 
         // Mint an ERC721 token that represents ownership of the pending synth to token settlement to msg.sender
         _mint(msg.sender, itemId);
@@ -588,6 +613,8 @@ contract Bridge is Ownable, ERC721 {
                     minAmounts[1]
                 )
             );
+        _setPendingSwapType(itemId, PendingSwapType.TokenToToken);
+        _mint(msg.sender, itemId);
 
         // Emit TokenToToken event with relevant data
         emit TokenToToken(
