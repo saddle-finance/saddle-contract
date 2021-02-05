@@ -88,4 +88,4 @@ jobs:
         python-version: '3.x'
     - run: python -m pip install --upgrade pip
     - run: pip3 install slither-analyzer
-    - run: slither .
+    - run: slither . --exclude-informational --exclude-low --exclude-medium --exclude-optimization
