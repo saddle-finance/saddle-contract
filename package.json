@@ -33,7 +33,7 @@
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-prettier": "^3.3.1",
     "ethereum-waffle": "^3.2.2",
-    "ethers": "^5.0.20",
+    "ethers": "^5.0.29",
     "ethlint": "^1.2.5",
     "hardhat": "^2.0.8",
     "hardhat-gas-reporter": "^1.0.4",
