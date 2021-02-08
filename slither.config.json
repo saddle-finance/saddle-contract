@@ -1,5 +1,6 @@
 {
-  "buidler_cache_directory": "build/cache",
-  "compile_force_framework": "Buidler",
-  "filter_paths": "node_modules"
+  "compile_force_framework": "hardhat",
+  "filter_paths": "node_modules|TestSwapReturnValues.sol",
+  "hardhat_artifacts_directory": "build/artifacts",
+  "hardhat_cache_directory": "build/cache"
 }

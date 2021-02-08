@@ -51,3 +51,14 @@ $ npx solidity-docgen --templates=templates
 ```
 
 The output in the `docs` folder should be copied to the appropriate folder in the [saddle-docs repo](https://github.com/saddle-finance/saddle-docs/tree/master/solidity-docs).
+
+### Running Slither
+
+[Slither](https://github.com/crytic/slither) is a Solidity static analysis framework. To run it locally:
+
+```bash
+$ pip3 install slither-analyzer
+$ slither .
+```
+
+Slither is configured to run as a GitHub Action and error on any high findings.

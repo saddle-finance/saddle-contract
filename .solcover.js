@@ -8,7 +8,7 @@ module.exports = {
     shell.rm('-rf', './build/typechain'); // Clean up at the end
   },
   // TODO: remove VirtualSwap from skipFiles once coverage is added
-  skipFiles: ['helper/test/TestSwapReturnValues.sol', 'Timelock.sol', 'VirtualSwap/'],
+  skipFiles: ['helper/test/TestSwapReturnValues.sol', 'VirtualSwap/'],
   mocha: {
     grep: "@skip-on-coverage", // Find everything with this tag
     invert: true               // Run the grep's inverse set.
