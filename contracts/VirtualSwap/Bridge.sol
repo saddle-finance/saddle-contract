@@ -6,8 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "openzeppelin-contracts-3.4/proxy/Clones.sol";
 import "synthetix/contracts/interfaces/IAddressResolver.sol";
-import "synthetix/contracts/interfaces/ISynthetix.sol";
-import "synthetix/contracts/interfaces/IVirtualSynth.sol";
 import "synthetix/contracts/interfaces/IExchanger.sol";
 import "synthetix/contracts/interfaces/IExchangeRates.sol";
 
@@ -220,28 +218,6 @@ contract Bridge is Ownable, ERC721 {
             (pendingSwapTypeAndState[itemId] / PENDING_SWAP_STATE_LENGTH) *
             PENDING_SWAP_STATE_LENGTH +
             uint8(pendingSwapState);
-    }
-
-    function settle(uint256 itemId) external {
-        (PendingSwapType swapType, PendingSwapState swapState) =
-            _getPendingSwapTypeAndState(itemId);
-        require(swapType != PendingSwapType.Null, "invalid itemId");
-
-        SynthSwapper synthSwapper = pendingSynthSwaps[itemId].ss;
-        bytes32 synthKey;
-
-        // Check if the given itemId is for pending synth or pending synth to token settlement
-        if (swapType == PendingSwapType.TokenToSynth) {
-            synthKey = pendingSynthSwaps[itemId].synthKey;
-        } else {
-            synthSwapper = pendingSynthToTokenSwaps[itemId].ss;
-            synthKey = pendingSynthToTokenSwaps[itemId].synthKey;
-        }
-
-        _settle(address(synthSwapper), synthKey);
-        if (swapState == PendingSwapState.Waiting) {
-            _setPendingSwapState(itemId, PendingSwapState.Settled);
-        }
     }
 
     // Settles the synth only.
