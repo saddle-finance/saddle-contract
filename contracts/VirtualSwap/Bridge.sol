@@ -255,6 +255,25 @@ contract Bridge is Ownable, ERC721 {
         EXCHANGER.settle(synthOwner, synthKey);
     }
 
+    function withdraw(uint256 itemId, uint256 amount) external {
+        address nftOwner = ownerOf(itemId);
+        require(nftOwner == msg.sender, "not owner");
+        (PendingSwapType swapType, ) = _getPendingSwapTypeAndState(itemId);
+        require(swapType > PendingSwapType.TokenToSynth, "invalid itemId");
+        PendingSynthToTokenSwap memory pstts = pendingSynthToTokenSwaps[itemId];
+        _settle(address(pstts.ss), pstts.synthKey);
+
+        IERC20 synth = getProxyAddressFromTargetSynthKey(pstts.synthKey);
+        pstts.ss.withdraw(synth, nftOwner, amount);
+
+        if (synth.balanceOf(address(pstts.ss)) == 0) {
+            _burn(itemId);
+            _setPendingSwapState(itemId, PendingSwapState.Completed);
+        } else {
+            _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
+        }
+    }
+
     function completeToSynth(uint256 itemId) external {
         (PendingSwapType swapType, ) = _getPendingSwapTypeAndState(itemId);
         require(swapType == PendingSwapType.TokenToSynth, "invalid itemId");
@@ -265,7 +284,11 @@ contract Bridge is Ownable, ERC721 {
         IERC20 synth = getProxyAddressFromTargetSynthKey(pss.synthKey);
 
         // After settlement, withdraw the synth and send it to the recipient
-        pss.ss.withdrawAll(synth, ownerOf(itemId));
+        pss.ss.withdraw(
+            synth,
+            ownerOf(itemId),
+            synth.balanceOf(address(pss.ss))
+        );
 
         // Mark state as complete
         _setPendingSwapState(itemId, PendingSwapState.Completed);
@@ -308,7 +331,6 @@ contract Bridge is Ownable, ERC721 {
         uint256 synthBalance = synth.balanceOf(address(pstts.ss));
         // Try swapping the synth to the desired token via the stored swap pool contract
         // If the external call succeeds, send the token to the owner of token with itemId.
-        // If it reverts, send the settled synth to the recipient instead.
         pstts.ss.swapSynthToToken(
             pstts.swap,
             _getSynthIndex(pstts.swap),
@@ -320,8 +342,8 @@ contract Bridge is Ownable, ERC721 {
         );
 
         if (swapAmount == synthBalance) {
-            _setPendingSwapState(itemId, PendingSwapState.Completed);
             _burn(itemId);
+            _setPendingSwapState(itemId, PendingSwapState.Completed);
         } else {
             _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
         }
@@ -664,4 +686,6 @@ contract Bridge is Ownable, ERC721 {
     function updateExchangerCache() external {
         EXCHANGER = IExchanger(SYNTHETIX_RESOLVER.getAddress(EXCHANGER_NAME));
     }
+
+    fallback() external payable {}
 }

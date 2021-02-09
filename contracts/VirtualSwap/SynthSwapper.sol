@@ -59,17 +59,17 @@ contract SynthSwapper {
         tokenTo.transfer(recipient, tokenTo.balanceOf(address(this)));
     }
 
-    function withdrawAll(IERC20 token, address recipient) external {
-        withdraw(token, recipient, token.balanceOf(address(this)));
-        selfdestruct(bridge);
-    }
-
     function withdraw(
         IERC20 token,
         address recipient,
         uint256 withdrawAmount
-    ) public {
+    ) external {
         require(msg.sender == bridge, "is not bridge");
         token.transfer(recipient, withdrawAmount);
+    }
+
+    function destroy() external {
+        require(msg.sender == bridge, "is not bridge");
+        selfdestruct(bridge);
     }
 }
