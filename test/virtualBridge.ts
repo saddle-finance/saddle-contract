@@ -431,6 +431,22 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
     })
 
+    it("Reverts when minAmount is not reached", async () => {
+      const wbtcIndex = await btcSwap.getTokenIndex(wbtc.address)
+
+      await expect(
+        bridge
+          .connect(user1)
+          .tokenToSynth(
+            btcSwap.address,
+            wbtcIndex,
+            utils.formatBytes32String("sUSD"),
+            String(0.01e8),
+            MAX_UINT256,
+          ),
+      ).to.be.reverted
+    })
+
     it("Succeeds to swap wBTC -> sUSD then settle it", async () => {
       const wbtcIndex = await btcSwap.getTokenIndex(wbtc.address)
 
@@ -644,6 +660,22 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
     })
 
+    it("Reverts when minMediumSynthAmount is not reached", async () => {
+      const tbtcIndex = await btcSwap.getTokenIndex(tbtc.address)
+
+      await expect(
+        bridge
+          .connect(user1)
+          .synthToToken(
+            btcSwap.address,
+            utils.formatBytes32String("sUSD"),
+            tbtcIndex,
+            BigNumber.from(50000).mul(String(1e18)),
+            MAX_UINT256,
+          ),
+      ).to.be.reverted
+    })
+
     it("Succeeds to swap sUSD -> sBTC -> tBTC", async () => {
       const tbtcIndex = await btcSwap.getTokenIndex(tbtc.address)
 
@@ -796,6 +828,20 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         utils.formatBytes32String("sUSD"),
       )
       expect(await bridge.getSynthIndex(usdSwap.address)).to.eq(0)
+    })
+
+    it("Reverts when minMediumSynthAmount is not reached", async () => {
+      await expect(
+        bridge
+          .connect(user1)
+          .tokenToToken(
+            [btcSwap.address, usdSwap.address],
+            0,
+            1,
+            BigNumber.from(String(1e18)).mul(10),
+            MAX_UINT256,
+          ),
+      ).to.be.reverted
     })
 
     describe("Initiate a cross asset swap: tBTC -> sBTC -> sUSD -> USDC", async () => {

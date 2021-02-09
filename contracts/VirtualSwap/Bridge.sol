@@ -243,8 +243,8 @@ contract Bridge is Ownable, ERC721 {
         pstts.ss.withdraw(synth, nftOwner, amount);
 
         if (synth.balanceOf(address(pstts.ss)) == 0) {
-            _burn(itemId);
             _setPendingSwapState(itemId, PendingSwapState.Completed);
+            _burn(itemId);
         } else {
             _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
         }
@@ -318,8 +318,8 @@ contract Bridge is Ownable, ERC721 {
         );
 
         if (swapAmount == synthBalance) {
-            _burn(itemId);
             _setPendingSwapState(itemId, PendingSwapState.Completed);
+            _burn(itemId);
         } else {
             _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
         }
