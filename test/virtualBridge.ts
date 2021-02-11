@@ -11,7 +11,6 @@ import {
   revertToSnapshot,
   setTimestamp,
   takeSnapshot,
-  ZERO_ADDRESS,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -42,6 +41,27 @@ const INITIAL_A_VALUE = 50
 const SWAP_FEE = 4e6
 const LP_TOKEN_NAME = "Test LP Token Name"
 const LP_TOKEN_SYMBOL = "TESTLP"
+
+enum PendingSwapType {
+  Null,
+  TokenToSynth,
+  SynthToToken,
+  TokenToToken,
+}
+enum PendingSwapState {
+  Waiting,
+  ReadyToSettle,
+  Settled,
+  PartiallyCompleted,
+  Completed,
+}
+
+interface PendingSynthToTokenSwap {
+  ss: string
+  synthKey: string
+  swap: string
+  tokenToIndex: number
+}
 
 describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
   let signers: Array<Signer>
@@ -269,7 +289,10 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
     )) as Swap
 
     // Deploy Bridge contract
-    bridge = (await deployContract(owner, BridgeArtifact)) as Bridge
+    bridge = (await deployContract(owner, BridgeArtifact, [
+      "Saddle Cross-Asset Swap",
+      "SaddleSynthSwap",
+    ])) as Bridge
     await bridge.deployed()
 
     // Set deposit limits
@@ -408,7 +431,23 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
     })
 
-    it("Succeeds to swap wBTC -> vsUSD -> settled to sUSD", async () => {
+    it("Reverts when minAmount is not reached", async () => {
+      const wbtcIndex = await btcSwap.getTokenIndex(wbtc.address)
+
+      await expect(
+        bridge
+          .connect(user1)
+          .tokenToSynth(
+            btcSwap.address,
+            wbtcIndex,
+            utils.formatBytes32String("sUSD"),
+            String(0.01e8),
+            MAX_UINT256,
+          ),
+      ).to.be.reverted
+    })
+
+    it("Succeeds to swap wBTC -> sUSD then settle it", async () => {
       const wbtcIndex = await btcSwap.getTokenIndex(wbtc.address)
 
       // Calculate expected amounts
@@ -431,7 +470,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           utils.formatBytes32String("sUSD"),
           String(0.01e8),
           expectedReturnAmount.mul(99).div(100),
-          ZERO_ADDRESS,
         )
 
       await (
@@ -443,28 +481,42 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
             utils.formatBytes32String("sUSD"),
             String(0.01e8),
             expectedReturnAmount.mul(99).div(100),
-            ZERO_ADDRESS,
           )
       ).wait()
 
       const sUSDBalanceBefore = await susd.balanceOf(user1Address)
 
-      // Wait for settle period
+      // Wait until the settlement waiting period is over
       expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
+      let [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+        queueId,
+      )
+      expect(swapType).to.eq(PendingSwapType.TokenToSynth)
+      expect(swapState).to.eq(PendingSwapState.Waiting)
       await increaseTimestamp(360)
-      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
 
-      // Settle virtual synth
-      await (await bridge.settle(queueId)).wait()
+      // Check the state has changed to ReadyToSettle
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
+      ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(queueId)
+      expect(swapType).to.eq(PendingSwapType.TokenToSynth)
+      expect(swapState).to.eq(PendingSwapState.ReadyToSettle)
+
+      // Complete the pending transaction
+      await (await bridge.completeToSynth(queueId)).wait()
 
       // Check synth balance
       const sUSDBalanceAfter = await susd.balanceOf(user1Address)
       expect(sUSDBalanceAfter.sub(sUSDBalanceBefore)).to.eq(
         "338879921561737504823",
       )
+
+      // Check the state has changed to Completed
+      ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(queueId)
+      expect(swapType).to.eq(PendingSwapType.TokenToSynth)
+      expect(swapState).to.eq(PendingSwapState.Completed)
     })
 
-    it("Succeeds to swap wBTC -> vsDEFI -> settle to sDEFI", async () => {
+    it("Succeeds to swap wBTC -> sDEFI then settle it", async () => {
       const wbtcIndex = await btcSwap.getTokenIndex(wbtc.address)
 
       const expectedReturnAmount = await bridge.calcTokenToSynth(
@@ -487,7 +539,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           utils.formatBytes32String("sDEFI"),
           String(0.01e8),
           expectedReturnAmount.mul(99).div(100),
-          ZERO_ADDRESS,
         )
 
       await (
@@ -499,26 +550,41 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
             utils.formatBytes32String("sDEFI"),
             String(0.01e8),
             expectedReturnAmount.mul(99).div(100),
-            ZERO_ADDRESS,
           )
       ).wait()
 
       expect(queueId).to.eq("0")
 
-      // Wait for settle period
-      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
-      await increaseTimestamp(360)
-      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
       const sDEFIBalanceBefore = await sdefi.balanceOf(user1Address)
 
-      // Settle virtual synth
-      await (await bridge.settle(queueId)).wait()
+      // Wait until the settlement waiting period is over
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
+      let [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+        queueId,
+      )
+      expect(swapType).to.eq(PendingSwapType.TokenToSynth)
+      expect(swapState).to.eq(PendingSwapState.Waiting)
+      await increaseTimestamp(360)
+
+      // Check the state has changed to ReadyToSettle
+      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
+      ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(queueId)
+      expect(swapType).to.eq(PendingSwapType.TokenToSynth)
+      expect(swapState).to.eq(PendingSwapState.ReadyToSettle)
+
+      // Complete the pending transaction
+      await (await bridge.completeToSynth(queueId)).wait()
 
       // Check synth balance
       const sDEFIBalanceAfter = await sdefi.balanceOf(user1Address)
       expect(sDEFIBalanceAfter.sub(sDEFIBalanceBefore)).to.eq(
         "67033573058662666",
       )
+
+      // Check the state has changed to Completed
+      ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(queueId)
+      expect(swapType).to.eq(PendingSwapType.TokenToSynth)
+      expect(swapState).to.eq(PendingSwapState.Completed)
     })
 
     it("Reverts when minAmount is not reached", async () => {
@@ -532,7 +598,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
             utils.formatBytes32String("sUSD"),
             String(0.01e8),
             MAX_UINT256,
-            ZERO_ADDRESS,
           ),
       ).to.be.reverted
     })
@@ -550,27 +615,37 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
     })
 
     it("Succeeds to calculate sUSD -> tBTC", async () => {
-      const expectedVirtualTokenAmount = await bridge.calcSynthToToken(
+      const [
+        expectedMediumSynthAmount,
+        expectedTokenAmount,
+      ] = await bridge.calcSynthToToken(
         btcSwap.address,
         utils.formatBytes32String("sUSD"),
         await btcSwap.getTokenIndex(tbtc.address),
         BigNumber.from(50000).mul(String(1e18)),
       )
 
-      // 50000 sUSD -> 1.468897 tBTC
-      expect(expectedVirtualTokenAmount).to.eq("1468897441660230103")
+      // expected medium synth amount : 1.470427 sBTC
+      expect(expectedMediumSynthAmount).to.eq("1470427715128388590")
+      // expected final token amount: 1.468897 tBTC
+      expect(expectedTokenAmount).to.eq("1468897441660230103")
     })
 
     it("Succeeds to calculate sDEFI -> tBTC", async () => {
-      const expectedVirtualTokenAmount = await bridge.calcSynthToToken(
+      const [
+        expectedMediumSynthAmount,
+        expectedTokenAmount,
+      ] = await bridge.calcSynthToToken(
         btcSwap.address,
         utils.formatBytes32String("sDEFI"),
         await btcSwap.getTokenIndex(tbtc.address),
         BigNumber.from(15).mul(String(1e18)),
       )
 
-      // 15 sDEFI -> 2.211387 tBTC
-      expect(expectedVirtualTokenAmount).to.eq("2211387595574030393")
+      // expected medium synth amount : 2.214412 sBTC
+      expect(expectedMediumSynthAmount).to.eq("2214412068902910393")
+      // expected final token amount: 2.211387 tBTC
+      expect(expectedTokenAmount).to.eq("2211387595574030393")
     })
   })
 
@@ -585,18 +660,39 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(await bridge.getSynthIndex(btcSwap.address)).to.eq(3)
     })
 
-    it("Succeeds to swap sUSD -> vtBTC -> settle to tBTC", async () => {
+    it("Reverts when minMediumSynthAmount is not reached", async () => {
       const tbtcIndex = await btcSwap.getTokenIndex(tbtc.address)
 
-      const expectedVirtualTokenAmount = await bridge.calcSynthToToken(
+      await expect(
+        bridge
+          .connect(user1)
+          .synthToToken(
+            btcSwap.address,
+            utils.formatBytes32String("sUSD"),
+            tbtcIndex,
+            BigNumber.from(50000).mul(String(1e18)),
+            MAX_UINT256,
+          ),
+      ).to.be.reverted
+    })
+
+    it("Succeeds to swap sUSD -> sBTC -> tBTC", async () => {
+      const tbtcIndex = await btcSwap.getTokenIndex(tbtc.address)
+
+      const [
+        expectedMediumSynthAmount,
+        expectedTokenAmount,
+      ] = await bridge.calcSynthToToken(
         btcSwap.address,
         utils.formatBytes32String("sUSD"),
         tbtcIndex,
         BigNumber.from(50000).mul(String(1e18)),
       )
 
-      // 50000 sUSD -> 1.468897 tBTC
-      expect(expectedVirtualTokenAmount).to.eq("1468897441660230103")
+      // expected medium synth amount: 1.47042 sBTC
+      expect(expectedMediumSynthAmount).to.eq("1470427715128388590")
+      // expected final token amount: 1.468897 tBTC
+      expect(expectedTokenAmount).to.eq("1468897441660230103")
 
       const queueId = await bridge
         .connect(user1)
@@ -605,8 +701,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           utils.formatBytes32String("sUSD"),
           tbtcIndex,
           BigNumber.from(50000).mul(String(1e18)),
-          expectedVirtualTokenAmount.mul(99).div(100),
-          ZERO_ADDRESS,
+          expectedMediumSynthAmount.mul(99).div(100),
         )
 
       await bridge
@@ -616,22 +711,61 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           utils.formatBytes32String("sUSD"),
           tbtcIndex,
           BigNumber.from(50000).mul(String(1e18)),
-          expectedVirtualTokenAmount.mul(99).div(100),
-          ZERO_ADDRESS,
+          expectedMediumSynthAmount.mul(99).div(100),
         )
 
       // On an actual network, the front-end should parse the logs to retrieve the queueId
       expect(queueId).to.eq("0")
 
+      const tBTCBalanceBefore = await tbtc.balanceOf(user1Address)
+
+      // Wait until the settlement waiting period is over
       expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
+      let [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+        queueId,
+      )
+      expect(swapType).to.eq(PendingSwapType.SynthToToken)
+      expect(swapState).to.eq(PendingSwapState.Waiting)
       await increaseTimestamp(360)
+
+      // Check the state has changed
       expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
+      ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(queueId)
+      expect(swapType).to.eq(PendingSwapType.SynthToToken)
+      expect(swapState).to.eq(PendingSwapState.ReadyToSettle)
 
-      const tBTCAmountBefore = await tbtc.balanceOf(user1Address)
-      await bridge.settle(queueId)
-      const tBTCAmountAfter = await tbtc.balanceOf(user1Address)
+      // Retrieve relevant information from the pendingSynthToTokenSwap mapping
+      const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+        queueId,
+      )
+      const synth = (await ethers.getContractAt(
+        GenericERC20Artifact.abi,
+        await bridge.getProxyAddressFromTargetSynthKey(
+          pendingSynthToTokenSwap.synthKey,
+        ),
+      )) as GenericERC20
+      const maxAmount = await synth.balanceOf(pendingSynthToTokenSwap.ss)
 
-      expect(tBTCAmountAfter.sub(tBTCAmountBefore)).to.eq("1464493571116930502")
+      // Calculate minAmount
+      const minAmount = await bridge.calcCompleteToToken(queueId, maxAmount)
+
+      // Complete the swap using the stored minAmount
+      await (
+        await bridge
+          .connect(user1)
+          .completeToToken(queueId, maxAmount, minAmount, MAX_UINT256)
+      ).wait()
+
+      // Check the tBTC amount has increased
+      const tBTCBalanceAfter = await tbtc.balanceOf(user1Address)
+      expect(tBTCBalanceAfter.sub(tBTCBalanceBefore)).to.eq(
+        "1464493571116930502",
+      )
+
+      // Check the state has changed to Completed
+      ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(queueId)
+      expect(swapType).to.eq(PendingSwapType.SynthToToken)
+      expect(swapState).to.eq(PendingSwapState.Completed)
     })
   })
 
@@ -696,57 +830,290 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(await bridge.getSynthIndex(usdSwap.address)).to.eq(0)
     })
 
-    it("Succeeds to swap tBTC -> sBTC -> sUSD -> USDC", async () => {
-      const expectedTokenAmounts = await bridge.calcTokenToToken(
-        [btcSwap.address, usdSwap.address],
-        0,
-        1,
-        BigNumber.from(String(1e18)).mul(10),
-      )
+    it("Reverts when minMediumSynthAmount is not reached", async () => {
+      await expect(
+        bridge
+          .connect(user1)
+          .tokenToToken(
+            [btcSwap.address, usdSwap.address],
+            0,
+            1,
+            BigNumber.from(String(1e18)).mul(10),
+            MAX_UINT256,
+          ),
+      ).to.be.reverted
+    })
 
-      // 10 tBTC -> 337,768 USDC
-      expect(expectedTokenAmounts[1]).to.eq("337768257810")
-
-      const queueId = await bridge
-        .connect(user1)
-        .callStatic.tokenToToken(
+    describe("Initiate a cross asset swap: tBTC -> sBTC -> sUSD -> USDC", async () => {
+      let queueId: BigNumber
+      beforeEach(async () => {
+        const [
+          expectedMediumSynthAmount,
+          expectedTokenAmount,
+        ] = await bridge.calcTokenToToken(
           [btcSwap.address, usdSwap.address],
           0,
           1,
           BigNumber.from(String(1e18)).mul(10),
-          [
-            expectedTokenAmounts[0].mul(99).div(100),
-            expectedTokenAmounts[1].mul(99).div(100),
-          ],
-          ZERO_ADDRESS,
         )
 
-      await bridge
-        .connect(user1)
-        .tokenToToken(
-          [btcSwap.address, usdSwap.address],
-          0,
-          1,
-          BigNumber.from(String(1e18)).mul(10),
-          [
-            expectedTokenAmounts[0].mul(99).div(100),
-            expectedTokenAmounts[1].mul(99).div(100),
-          ],
-          ZERO_ADDRESS,
+        // expected medium synth amount: 338,353 sUSD
+        expect(expectedMediumSynthAmount).to.eq("338353754957020598075449")
+
+        // expected final token amount: 337,768 USDC
+        expect(expectedTokenAmount).to.eq("337768257810")
+
+        queueId = await bridge
+          .connect(user1)
+          .callStatic.tokenToToken(
+            [btcSwap.address, usdSwap.address],
+            0,
+            1,
+            BigNumber.from(String(1e18)).mul(10),
+            expectedMediumSynthAmount.mul(99).div(100),
+          )
+
+        await bridge
+          .connect(user1)
+          .tokenToToken(
+            [btcSwap.address, usdSwap.address],
+            0,
+            1,
+            BigNumber.from(String(1e18)).mul(10),
+            expectedMediumSynthAmount.mul(99).div(100),
+          )
+
+        // On an actual network, the front-end should parse the logs to retrieve the queueId
+        expect(queueId).to.eq("0")
+
+        // Wait until the settlement waiting period is over
+        expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
+        let [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+          queueId,
         )
+        expect(swapType).to.eq(PendingSwapType.TokenToToken)
+        expect(swapState).to.eq(PendingSwapState.Waiting)
+        await increaseTimestamp(360)
 
-      // On an actual network, the front-end should parse the logs to retrieve the queueId
-      expect(queueId).to.eq("0")
+        // Check the state has changed
+        expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
+        ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+          queueId,
+        )
+        expect(swapType).to.eq(PendingSwapType.TokenToToken)
+        expect(swapState).to.eq(PendingSwapState.ReadyToSettle)
+      })
 
-      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(360)
-      await increaseTimestamp(360)
-      expect(await bridge.maxSecsLeftInWaitingPeriod(queueId)).to.eq(0)
+      describe("completeToToken", async () => {
+        it("Succeeds with the full amount", async () => {
+          const usdcBalanceBefore = await usdc.balanceOf(user1Address)
 
-      const usdcAmountBefore = await usdc.balanceOf(user1Address)
-      await bridge.settle(queueId)
-      const usdcAmountAfter = await usdc.balanceOf(user1Address)
+          // Retrieve relevant information from the pendingSynthToTokenSwap mapping
+          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+            queueId,
+          )
+          const synth = (await ethers.getContractAt(
+            GenericERC20Artifact.abi,
+            await bridge.getProxyAddressFromTargetSynthKey(
+              pendingSynthToTokenSwap.synthKey,
+            ),
+          )) as GenericERC20
+          const maxAmount = await synth.balanceOf(pendingSynthToTokenSwap.ss)
+          expect(maxAmount).to.be.eq("337338693692149536281222")
 
-      expect(usdcAmountAfter.sub(usdcAmountBefore)).to.eq("336756309476")
+          // Calculate minAmount
+          const minAmount = await bridge.calcCompleteToToken(queueId, maxAmount)
+
+          // Complete the swap using the minAmount
+          await (
+            await bridge
+              .connect(user1)
+              .completeToToken(queueId, maxAmount, minAmount, MAX_UINT256)
+          ).wait()
+
+          // Check the USDC amount has increased
+          const usdcBalanceAfter = await usdc.balanceOf(user1Address)
+          expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.eq("336756309476")
+
+          // Check the state has changed to Completed
+          const [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+            queueId,
+          )
+          expect(swapType).to.eq(PendingSwapType.TokenToToken)
+          expect(swapState).to.eq(PendingSwapState.Completed)
+        })
+
+        it("Succeeds with partial amounts", async () => {
+          const usdcBalanceBefore = await usdc.balanceOf(user1Address)
+
+          // Calculate minAmount
+          const partialAmount = BigNumber.from(10).pow(18).mul("150000")
+          let minAmount = await bridge.calcCompleteToToken(
+            queueId,
+            partialAmount,
+          )
+
+          // Complete the swap using the minAmount
+          await bridge
+            .connect(user1)
+            .completeToToken(queueId, partialAmount, minAmount, MAX_UINT256)
+
+          // Check the USDC amount has increased
+          let usdcBalanceAfter = await usdc.balanceOf(user1Address)
+          expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.eq("149851775624")
+
+          // Check the state has changed to PartiallyCompleted
+          let [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+            queueId,
+          )
+          expect(swapType).to.eq(PendingSwapType.TokenToToken)
+          expect(swapState).to.eq(PendingSwapState.PartiallyCompleted)
+
+          // Swap the remaining synth to token
+          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+            queueId,
+          )
+          const synth = (await ethers.getContractAt(
+            GenericERC20Artifact.abi,
+            await bridge.getProxyAddressFromTargetSynthKey(
+              pendingSynthToTokenSwap.synthKey,
+            ),
+          )) as GenericERC20
+          const remainingAmount = await synth.balanceOf(
+            pendingSynthToTokenSwap.ss,
+          )
+          expect(remainingAmount).to.be.eq("187338693692149536281222")
+          minAmount = await bridge.calcCompleteToToken(queueId, remainingAmount)
+
+          // completeToToken with remaining balance
+          await bridge
+            .connect(user1)
+            .completeToToken(queueId, remainingAmount, minAmount, MAX_UINT256)
+
+          // Check the USDC amount has increased
+          usdcBalanceAfter = await usdc.balanceOf(user1Address)
+          expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.eq("336756356220")
+
+          // Check the state has changed to Completed
+          ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+            queueId,
+          )
+          expect(swapType).to.eq(PendingSwapType.TokenToToken)
+          expect(swapState).to.eq(PendingSwapState.Completed)
+        })
+
+        it("Reverts when not reached minAmount", async () => {
+          // Get the max amount of synth we can trade from
+          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+            queueId,
+          )
+          const synth = (await ethers.getContractAt(
+            GenericERC20Artifact.abi,
+            await bridge.getProxyAddressFromTargetSynthKey(
+              pendingSynthToTokenSwap.synthKey,
+            ),
+          )) as GenericERC20
+          const maxAmount = await synth.balanceOf(pendingSynthToTokenSwap.ss)
+          expect(maxAmount).to.be.eq("337338693692149536281222")
+
+          // Confirm the tx reverts when minAmount is not reached
+          await expect(
+            bridge
+              .connect(user1)
+              .completeToToken(queueId, maxAmount, MAX_UINT256, MAX_UINT256),
+          ).to.be.reverted
+        })
+      })
+
+      describe("withdraw", async () => {
+        it("Succeeds to withdraw the synth in full amount", async () => {
+          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+            queueId,
+          )
+          const synth = (await ethers.getContractAt(
+            GenericERC20Artifact.abi,
+            await bridge.getProxyAddressFromTargetSynthKey(
+              pendingSynthToTokenSwap.synthKey,
+            ),
+          )) as GenericERC20
+
+          const synthBalanceBefore = await synth.balanceOf(user1Address)
+          const maxSynthAmount = await synth.balanceOf(
+            pendingSynthToTokenSwap.ss,
+          )
+
+          // Withdraw the max amount
+          await bridge.connect(user1).withdraw(queueId, maxSynthAmount)
+
+          // Confirm the amount
+          const synthBalanceAfter = await synth.balanceOf(user1Address)
+          expect(synthBalanceAfter.sub(synthBalanceBefore)).to.be.eq(
+            "337338693692149536281222",
+          )
+
+          // Confirm the state
+          const [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+            queueId,
+          )
+          expect(swapType).to.eq(PendingSwapType.TokenToToken)
+          expect(swapState).to.eq(PendingSwapState.Completed)
+        })
+
+        it("Succeeds to withdraw in partial amounts", async () => {
+          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+            queueId,
+          )
+          const synth = (await ethers.getContractAt(
+            GenericERC20Artifact.abi,
+            await bridge.getProxyAddressFromTargetSynthKey(
+              pendingSynthToTokenSwap.synthKey,
+            ),
+          )) as GenericERC20
+
+          const synthBalanceBefore = await synth.balanceOf(user1Address)
+          const partialAmount = BigNumber.from(10).pow(18).mul("150000")
+
+          // Withdraw a partial amount
+          await bridge.connect(user1).withdraw(queueId, partialAmount)
+
+          // Confirm the amount
+          let synthBalanceAfter = await synth.balanceOf(user1Address)
+          expect(synthBalanceAfter.sub(synthBalanceBefore)).to.be.eq(
+            "150000000000000000000000",
+          )
+
+          // Confirm the state
+          let [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+            queueId,
+          )
+          expect(swapType).to.eq(PendingSwapType.TokenToToken)
+          expect(swapState).to.eq(PendingSwapState.PartiallyCompleted)
+
+          // Withdraw the max amount
+          const maxSynthAmount = await synth.balanceOf(
+            pendingSynthToTokenSwap.ss,
+          )
+          await bridge.connect(user1).withdraw(queueId, maxSynthAmount)
+
+          // Confirm the amount
+          synthBalanceAfter = await synth.balanceOf(user1Address)
+          expect(synthBalanceAfter.sub(synthBalanceBefore)).to.be.eq(
+            "337338693692149536281222",
+          )
+
+          // Confirm the state
+          ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+            queueId,
+          )
+          expect(swapType).to.eq(PendingSwapType.TokenToToken)
+          expect(swapState).to.eq(PendingSwapState.Completed)
+        })
+
+        it("Reverts when trying to withdraw more than the synth balance", async () => {
+          await expect(bridge.connect(user1).withdraw(queueId, MAX_UINT256)).to
+            .be.reverted
+        })
+      })
     })
   })
 })
