@@ -3,7 +3,6 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "openzeppelin-contracts-3.4/proxy/Clones.sol";
 import "synthetix/contracts/interfaces/IAddressResolver.sol";
 import "synthetix/contracts/interfaces/IExchanger.sol";
@@ -39,7 +38,7 @@ contract Target {
  * In the cases of pending `synthToToken` or `tokenToToken` swaps, the owners of the pending swaps can also choose
  * to withdraw the bridging synthetic assets instead of completing the swap.
  */
-contract Bridge is Ownable, ERC721 {
+contract Bridge is ERC721 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -374,6 +373,7 @@ contract Bridge is Ownable, ERC721 {
         // If the external call succeeds, send the token to the owner of token with itemId.
         pstts.ss.swapSynthToToken(
             pstts.swap,
+            synth,
             getSynthIndex(pstts.swap),
             pstts.tokenToIndex,
             swapAmount,
