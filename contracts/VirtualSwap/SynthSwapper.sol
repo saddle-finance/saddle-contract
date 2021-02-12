@@ -67,9 +67,4 @@ contract SynthSwapper {
         require(msg.sender == bridge, "is not bridge");
         token.transfer(recipient, withdrawAmount);
     }
-
-    function destroy() external {
-        require(msg.sender == bridge, "is not bridge");
-        selfdestruct(bridge);
-    }
 }

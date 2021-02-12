@@ -51,7 +51,6 @@ enum PendingSwapType {
 enum PendingSwapState {
   Waiting,
   ReadyToSettle,
-  Settled,
   PartiallyCompleted,
   Completed,
 }

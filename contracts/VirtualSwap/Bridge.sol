@@ -89,20 +89,27 @@ contract Bridge is Ownable, ERC721 {
     IExchanger public exchanger;
 
     // CONSTANTS
+
+    // Available types of cross-asset swaps
     enum PendingSwapType {Null, TokenToSynth, SynthToToken, TokenToToken}
+
+    // Waiting - The cross-asset swap has been initiated but the settlement period is not over.
+    // ReadyToSettle - The settlement period is over and the pending swap is ready to be completed.
+    // PartiallyCompleted - Only a partial amount of the synths have been swapped or withdrawn.
+    // Completed - All of the synths have been swapped or withdrawn. No more actions can be done.
     enum PendingSwapState {
         Waiting,
         ReadyToSettle,
-        Settled,
         PartiallyCompleted,
         Completed
     }
+
     uint256 public constant MAX_UINT256 = 2**256 - 1;
     uint8 public constant MAX_UINT8 = 2**8 - 1;
     bytes32 public constant EXCHANGE_RATES_NAME = "ExchangeRates";
     bytes32 public constant EXCHANGER_NAME = "Exchanger";
+    uint8 private constant PENDING_SWAP_STATE_LENGTH = 4;
     address public immutable SYNTH_SWAPPER_MASTER;
-    uint8 private constant PENDING_SWAP_STATE_LENGTH = 5;
 
     // MAPPINGS FOR STORING PENDING SETTLEMENTS
     // The below two mappings never share the same key.
@@ -794,6 +801,4 @@ contract Bridge is Ownable, ERC721 {
     function updateExchangerCache() public {
         exchanger = IExchanger(SYNTHETIX_RESOLVER.getAddress(EXCHANGER_NAME));
     }
-
-    fallback() external payable {}
 }
