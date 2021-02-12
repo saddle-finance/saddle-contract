@@ -284,14 +284,15 @@ contract Bridge is ERC721 {
         _settle(address(pstts.ss), pstts.synthKey);
 
         IERC20 synth = getProxyAddressFromTargetSynthKey(pstts.synthKey);
-        pstts.ss.withdraw(synth, nftOwner, amount);
 
-        if (synth.balanceOf(address(pstts.ss)) == 0) {
+        if (amount < synth.balanceOf(address(pstts.ss))) {
+            _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
+        } else {
             _setPendingSwapState(itemId, PendingSwapState.Completed);
             _burn(itemId);
-        } else {
-            _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
         }
+
+        pstts.ss.withdraw(synth, nftOwner, amount);
     }
 
     /**
@@ -307,17 +308,14 @@ contract Bridge is ERC721 {
         _settle(address(pss.ss), pss.synthKey);
 
         IERC20 synth = getProxyAddressFromTargetSynthKey(pss.synthKey);
-
-        // After settlement, withdraw the synth and send it to the recipient
-        pss.ss.withdraw(
-            synth,
-            ownerOf(itemId),
-            synth.balanceOf(address(pss.ss))
-        );
+        address nftOwner = ownerOf(itemId);
 
         // Mark state as complete
         _setPendingSwapState(itemId, PendingSwapState.Completed);
         _burn(itemId);
+
+        // After settlement, withdraw the synth and send it to the recipient
+        pss.ss.withdraw(synth, nftOwner, synth.balanceOf(address(pss.ss)));
     }
 
     /**
@@ -368,7 +366,14 @@ contract Bridge is ERC721 {
 
         _settle(address(pstts.ss), pstts.synthKey);
         IERC20 synth = getProxyAddressFromTargetSynthKey(pstts.synthKey);
-        uint256 synthBalance = synth.balanceOf(address(pstts.ss));
+
+        if (swapAmount < synth.balanceOf(address(pstts.ss))) {
+            _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
+        } else {
+            _setPendingSwapState(itemId, PendingSwapState.Completed);
+            _burn(itemId);
+        }
+
         // Try swapping the synth to the desired token via the stored swap pool contract
         // If the external call succeeds, send the token to the owner of token with itemId.
         pstts.ss.swapSynthToToken(
@@ -381,13 +386,6 @@ contract Bridge is ERC721 {
             deadline,
             nftOwner
         );
-
-        if (swapAmount == synthBalance) {
-            _setPendingSwapState(itemId, PendingSwapState.Completed);
-            _burn(itemId);
-        } else {
-            _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
-        }
     }
 
     // Add the given pending synth settlement struct to the list
@@ -462,37 +460,9 @@ contract Bridge is ERC721 {
         uint256 tokenInAmount,
         uint256 minAmount
     ) external returns (uint256) {
-        // Transfer token from msg.sender
-        IERC20 tokenFrom = swap.getToken(tokenFromIndex); // revert when token not found in swap pool
-        tokenFrom.safeTransferFrom(msg.sender, address(this), tokenInAmount);
-        tokenInAmount = tokenFrom.balanceOf(address(this));
-        tokenFrom.approve(address(swap), tokenInAmount);
-
-        uint256 mediumSynthAmount =
-            swap.swap(
-                tokenFromIndex,
-                getSynthIndex(swap),
-                tokenInAmount,
-                0,
-                block.timestamp
-            );
-
+        // Create a SynthSwapper clone
         SynthSwapper synthSwapper =
             SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
-        IERC20(getSynthAddress(swap)).transfer(
-            address(synthSwapper),
-            mediumSynthAmount
-        );
-
-        // Swap synths via Synthetix network
-        require(
-            synthSwapper.swapSynth(
-                getSynthKey(swap),
-                mediumSynthAmount,
-                synthOutKey
-            ) >= minAmount,
-            "minAmount not reached"
-        );
 
         // Add the synthswapper to the pending settlement list
         uint256 itemId =
@@ -503,6 +473,36 @@ contract Bridge is ERC721 {
 
         // Mint an ERC721 token that represents ownership of the pending synth settlement to msg.sender
         _mint(msg.sender, itemId);
+
+        // Transfer token from msg.sender
+        IERC20 tokenFrom = swap.getToken(tokenFromIndex); // revert when token not found in swap pool
+        tokenFrom.safeTransferFrom(msg.sender, address(this), tokenInAmount);
+        tokenInAmount = tokenFrom.balanceOf(address(this));
+        tokenFrom.approve(address(swap), tokenInAmount);
+
+        // Swap the synth to the medium synth
+        uint256 mediumSynthAmount =
+            swap.swap(
+                tokenFromIndex,
+                getSynthIndex(swap),
+                tokenInAmount,
+                0,
+                block.timestamp
+            );
+
+        // Swap synths via Synthetix network
+        IERC20(getSynthAddress(swap)).safeTransfer(
+            address(synthSwapper),
+            mediumSynthAmount
+        );
+        require(
+            synthSwapper.swapSynth(
+                getSynthKey(swap),
+                mediumSynthAmount,
+                synthOutKey
+            ) >= minAmount,
+            "minAmount not reached"
+        );
 
         // Emit TokenToSynth event with relevant data
         emit TokenToSynth(msg.sender, swap, tokenFrom, tokenInAmount, itemId);
@@ -573,19 +573,9 @@ contract Bridge is ERC721 {
             "synth is supported via normal swap"
         );
 
-        // Receive synth from the user
-        IERC20 synthFrom = getProxyAddressFromTargetSynthKey(synthInKey);
-        synthFrom.safeTransferFrom(msg.sender, address(this), synthInAmount);
-
-        // Create a new SynthSwapper contract then initiate a swap to the medium synth supported by the swap pool
+        // Create a SynthSwapper clone
         SynthSwapper synthSwapper =
             SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
-        synthFrom.transfer(address(synthSwapper), synthInAmount);
-        require(
-            synthSwapper.swapSynth(synthInKey, synthInAmount, mediumSynthKey) >=
-                minMediumSynthAmount,
-            "minMediumSynthAmount not reached"
-        );
 
         // Add the synthswapper to the pending synth to token settlement list
         uint256 itemId =
@@ -601,6 +591,16 @@ contract Bridge is ERC721 {
 
         // Mint an ERC721 token that represents ownership of the pending synth to token settlement to msg.sender
         _mint(msg.sender, itemId);
+
+        // Receive synth from the user and swap it to another synth
+        IERC20 synthFrom = getProxyAddressFromTargetSynthKey(synthInKey);
+        synthFrom.safeTransferFrom(msg.sender, address(this), synthInAmount);
+        synthFrom.safeTransfer(address(synthSwapper), synthInAmount);
+        require(
+            synthSwapper.swapSynth(synthInKey, synthInAmount, mediumSynthKey) >=
+                minMediumSynthAmount,
+            "minMediumSynthAmount not reached"
+        );
 
         // Emit SynthToToken event with relevant data
         emit SynthToToken(msg.sender, swap, synthFrom, synthInAmount, itemId);
@@ -669,6 +669,26 @@ contract Bridge is ERC721 {
         uint256 tokenFromAmount,
         uint256 minMediumSynthAmount
     ) external returns (uint256) {
+        // Create a SynthSwapper clone
+        SynthSwapper synthSwapper =
+            SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
+        bytes32 mediumSynthKey = getSynthKey(swaps[1]);
+
+        // Add the synthswapper to the pending synth to token settlement list
+        uint256 itemId =
+            _addToPendingSynthToTokenSwapList(
+                PendingSynthToTokenSwap(
+                    synthSwapper,
+                    mediumSynthKey,
+                    swaps[1],
+                    tokenToIndex
+                )
+            );
+        _setPendingSwapType(itemId, PendingSwapType.TokenToToken);
+
+        // Mint an ERC721 token that represents ownership of the pending swap to msg.sender
+        _mint(msg.sender, itemId);
+
         // Receive token from the user
         ISwap swap = swaps[0];
         {
@@ -690,11 +710,11 @@ contract Bridge is ERC721 {
                 block.timestamp
             );
 
-        IERC20 synthFrom = IERC20(getSynthAddress(swap));
-        SynthSwapper synthSwapper =
-            SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
-        bytes32 mediumSynthKey = getSynthKey(swaps[1]);
-        synthFrom.transfer(address(synthSwapper), firstSynthAmount);
+        // Swap the synth to another synth
+        IERC20(getSynthAddress(swap)).safeTransfer(
+            address(synthSwapper),
+            firstSynthAmount
+        );
         require(
             synthSwapper.swapSynth(
                 getSynthKey(swap),
@@ -703,19 +723,6 @@ contract Bridge is ERC721 {
             ) >= minMediumSynthAmount,
             "minMediumSynthAmount not reached"
         );
-
-        // Add the synthswapper to the pending synth to token settlement list
-        uint256 itemId =
-            _addToPendingSynthToTokenSwapList(
-                PendingSynthToTokenSwap(
-                    synthSwapper,
-                    mediumSynthKey,
-                    swaps[1],
-                    tokenToIndex
-                )
-            );
-        _setPendingSwapType(itemId, PendingSwapType.TokenToToken);
-        _mint(msg.sender, itemId);
 
         // Emit TokenToToken event with relevant data
         emit TokenToToken(
