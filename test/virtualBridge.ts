@@ -51,7 +51,6 @@ enum PendingSwapType {
 enum PendingSwapState {
   Waiting,
   ReadyToSettle,
-  Settled,
   PartiallyCompleted,
   Completed,
 }
@@ -289,10 +288,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
     )) as Swap
 
     // Deploy Bridge contract
-    bridge = (await deployContract(owner, BridgeArtifact, [
-      "Saddle Cross-Asset Swap",
-      "SaddleSynthSwap",
-    ])) as Bridge
+    bridge = (await deployContract(owner, BridgeArtifact)) as Bridge
     await bridge.deployed()
 
     // Set deposit limits
