@@ -13,8 +13,6 @@ The contracts are compiled with [Hardhat](https://hardhat.org/getting-started/),
 $ npm i
 ```
 
-The Optimism toolchain requires Node v10, install [volta](https://docs.volta.sh/guide/getting-started) to automatically manage this dependency.
-
 ## Usage
 
 ### Build
@@ -64,3 +62,12 @@ $ slither .
 ```
 
 Slither is configured to run as a GitHub Action and error on any high findings.
+
+### Running on Optimism
+
+The Optimism toolchain requires Node v10, install [volta](https://docs.volta.sh/guide/getting-started) to automatically manage this dependency.
+
+The OpenZeppelin dependencies contain some opcodes that have been removed, so we must run with this flag so the compiler replaces the errors with warnings:
+```bash
+$ __DANGEROUS_OVM_IGNORE_ERRORS__=true npm run test
+```
