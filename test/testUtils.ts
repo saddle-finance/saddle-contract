@@ -130,6 +130,7 @@ export async function setNextTimestamp(timestamp: number): Promise<any> {
 
   switch (chainId) {
     case 31337: // buidler evm
+    case 420: // ovm
       return ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
     case 1337: // ganache
     default:

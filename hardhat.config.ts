@@ -1,4 +1,5 @@
 import "@nomiclabs/hardhat-ethers"
+import "@eth-optimism/plugins/hardhat/compiler"
 import "@nomiclabs/hardhat-waffle"
 import "@nomiclabs/hardhat-web3"
 import "@nomiclabs/hardhat-etherscan"
@@ -53,6 +54,9 @@ let config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 200000,
+  },
+  ovm: {
+    solcVersion: "0.6.12",
   },
 }
 
