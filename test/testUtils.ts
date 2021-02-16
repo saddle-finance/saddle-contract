@@ -1,12 +1,11 @@
-import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
+import { BigNumber, Bytes, ContractFactory, Signer, providers } from "ethers"
+import { ethers, network } from "hardhat"
 
 import { Artifact } from "hardhat/types"
+import { BytesLike } from "@ethersproject/bytes"
 import { Contract } from "@ethersproject/contracts"
 import { ERC20 } from "../build/typechain/ERC20"
 import { Swap } from "../build/typechain/Swap"
-import { ethers, network } from "hardhat"
-import { BytesLike } from "@ethersproject/bytes"
-
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
@@ -131,6 +130,7 @@ export async function setNextTimestamp(timestamp: number): Promise<any> {
 
   switch (chainId) {
     case 31337: // buidler evm
+    case 420: // ovm
       return ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
     case 1337: // ganache
     default:

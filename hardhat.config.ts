@@ -1,12 +1,13 @@
-import { HardhatUserConfig } from "hardhat/config"
-
 import "@nomiclabs/hardhat-ethers"
+import "@eth-optimism/plugins/hardhat/compiler"
 import "@nomiclabs/hardhat-waffle"
 import "@nomiclabs/hardhat-web3"
 import "@nomiclabs/hardhat-etherscan"
 import "hardhat-gas-reporter"
 import "solidity-coverage"
 import "hardhat-typechain"
+
+import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -52,6 +53,9 @@ let config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 200000,
+  },
+  ovm: {
+    solcVersion: "0.6.12",
   },
 }
 

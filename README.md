@@ -13,6 +13,8 @@ The contracts are compiled with [Hardhat](https://hardhat.org/getting-started/),
 $ npm i
 ```
 
+The Optimism toolchain requires Node v10, install [volta](https://docs.volta.sh/guide/getting-started) to automatically manage this dependency.
+
 ## Usage
 
 ### Build
