@@ -1,10 +1,10 @@
 import { Signer, Wallet } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { LPToken } from "../build/typechain/LPToken"
+import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import chai from "chai"
-import { ethers } from "hardhat"
+import { l2ethers as ethers } from 'hardhat'
 
 chai.use(solidity)
 const { expect } = chai

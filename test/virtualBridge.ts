@@ -11,7 +11,7 @@ import {
   setTimestamp,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
-import { deployments, ethers, network } from "hardhat"
+import { deployments, l2ethers as ethers, network } from 'hardhat'
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"

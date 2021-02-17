@@ -5,7 +5,7 @@ import {
   getTestMerkleRoot,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
-import { deployments, ethers } from "hardhat"
+import { deployments, l2ethers as ethers } from "hardhat"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
