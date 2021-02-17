@@ -1,5 +1,6 @@
-import { BigNumber, Signer, utils, Wallet } from "ethers"
+import { BigNumber, Signer, Wallet, utils } from "ethers"
 import {
+  MAX_UINT256,
   asyncForEach,
   deployContractWithLibraries,
   getTestMerkleProof,
@@ -7,12 +8,12 @@ import {
   getUserTokenBalances,
   impersonateAccount,
   increaseTimestamp,
-  MAX_UINT256,
   revertToSnapshot,
   setTimestamp,
   takeSnapshot,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
+import { l2ethers as ethers, network } from 'hardhat'
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
@@ -29,8 +30,6 @@ import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
-import { ethers, network } from "hardhat"
-
 import dotenv from "dotenv"
 
 dotenv.config()

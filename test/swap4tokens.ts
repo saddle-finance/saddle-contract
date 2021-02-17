@@ -1,16 +1,16 @@
 import { BigNumber, Signer, Wallet } from "ethers"
 import {
   MAX_UINT256,
+  TIME,
+  asyncForEach,
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
-  getUserTokenBalance,
-  asyncForEach,
-  getUserTokenBalances,
-  TIME,
-  setTimestamp,
   getPoolBalances,
   getTestMerkleProof,
   getTestMerkleRoot,
+  getUserTokenBalance,
+  getUserTokenBalances,
+  setTimestamp,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -27,7 +27,7 @@ import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
-import { ethers } from "hardhat"
+import { l2ethers as ethers } from 'hardhat'
 
 chai.use(solidity)
 const { expect } = chai

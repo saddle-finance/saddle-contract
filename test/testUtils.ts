@@ -1,5 +1,5 @@
 import { BigNumber, Bytes, ContractFactory, Signer, providers } from "ethers"
-import { ethers, network } from "hardhat"
+import { l2ethers as ethers, network } from 'hardhat'
 
 import { Artifact } from "hardhat/types"
 import { BytesLike } from "@ethersproject/bytes"

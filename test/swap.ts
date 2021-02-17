@@ -17,10 +17,10 @@ import { deployContract, solidity } from "ethereum-waffle"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
+import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
@@ -30,7 +30,7 @@ import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUt
 import { TestSwapReturnValues } from "../build/typechain/TestSwapReturnValues"
 import TestSwapReturnValuesArtifact from "../build/artifacts/contracts/helper/test/TestSwapReturnValues.sol/TestSwapReturnValues.json"
 import chai from "chai"
-import { ethers } from "hardhat"
+import { l2ethers as ethers } from 'hardhat'
 
 chai.use(solidity)
 const { expect } = chai

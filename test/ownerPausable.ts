@@ -1,10 +1,10 @@
-import { ethers } from "hardhat"
-import { Wallet, Signer } from "ethers"
-import chai from "chai"
+import { Signer, Wallet } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import OwnerPausableArtifact from "../build/artifacts/contracts/OwnerPausable.sol/OwnerPausable.json"
 import { OwnerPausable } from "../build/typechain/OwnerPausable"
+import OwnerPausableArtifact from "../build/artifacts/contracts/OwnerPausable.sol/OwnerPausable.json"
+import chai from "chai"
+import { l2ethers as ethers } from 'hardhat'
 
 chai.use(solidity)
 const { expect } = chai

@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@eth-optimism/ovm-toolchain": "0.0.2-alpha.2",
-    "@eth-optimism/plugins": "0.0.11",
+    "@eth-optimism/plugins": "0.0.12",
     "@eth-optimism/solc": "^0.6.12-alpha.1",
     "@nomiclabs/hardhat-ethers": "^2.0.1",
     "@nomiclabs/hardhat-etherscan": "^2.1.1",
@@ -61,7 +61,7 @@
     "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/*.ts",
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "lint:fix:sol": "prettier --write 'contracts/**/*.sol' && solhint 'contracts/**/*.sol' --fix",
-    "build": "hardhat compile && hardhat typechain && tsc",
+    "build": "hardhat compile",
     "test": "hardhat test",
     "coverage": "hardhat coverage --temp ./build/artifacts",
     "prepare": "npm run build"

@@ -1,13 +1,13 @@
 import { Signer, Wallet } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import { IERC20 as IERC20 } from "../build/typechain/IERC20"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
+import { IERC20 } from "../build/typechain/IERC20"
 import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
 import StakeableTokenWrapperArtifact from "../build/artifacts/contracts/StakeableTokenWrapper.sol/StakeableTokenWrapper.json"
 import chai from "chai"
-import { ethers } from "hardhat"
+import { l2ethers as ethers } from 'hardhat'
 
 chai.use(solidity)
 const { expect } = chai

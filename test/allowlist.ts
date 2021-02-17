@@ -1,17 +1,16 @@
-import { ethers } from "hardhat"
-import { Signer } from "ethers"
-import chai from "chai"
-import { deployContract, solidity } from "ethereum-waffle"
-
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
-import { Allowlist } from "../build/typechain/Allowlist"
-
 import {
+  ZERO_ADDRESS,
   asyncForEach,
   getTestMerkleAllowedAccounts,
   getTestMerkleRoot,
-  ZERO_ADDRESS,
 } from "./testUtils"
+import { deployContract, solidity } from "ethereum-waffle"
+
+import { Allowlist } from "../build/typechain/Allowlist"
+import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
+import { Signer } from "ethers"
+import chai from "chai"
+import { l2ethers as ethers } from 'hardhat'
 import { formatBytes32String } from "ethers/lib/utils"
 
 chai.use(solidity)
