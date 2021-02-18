@@ -138,8 +138,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
             _a,
             _fee,
             _adminFee,
-            _withdrawFee,
-            true
+            _withdrawFee
         );
         // Initialize variables related to guarding the initial deposits
         require(
@@ -147,6 +146,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
             "Allowlist check failed"
         );
         allowlist = _allowlist;
+        guarded = true;
     }
 
     function initialize(
@@ -157,8 +157,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee,
-        bool _guarded
+        uint256 _withdrawFee
     ) public initializer {
         __OwnerPausable_init();
         __ReentrancyGuard_init();
@@ -225,9 +224,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         swapStorage.swapFee = _fee;
         swapStorage.adminFee = _adminFee;
         swapStorage.defaultWithdrawFee = _withdrawFee;
-
-        // Initialize variables related to guarding the initial deposits
-        guarded = _guarded;
     }
 
     /*** MODIFIERS ***/

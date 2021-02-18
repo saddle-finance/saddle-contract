@@ -6,9 +6,7 @@ import "./interfaces/ISwap.sol";
 import "hardhat/console.sol";
 
 contract SwapDeployer is Ownable {
-
-    constructor() public Ownable() {
-    }
+    constructor() public Ownable() {}
 
     function deploy(
         address swapAddress,
@@ -30,8 +28,7 @@ contract SwapDeployer is Ownable {
             _a,
             _fee,
             _adminFee,
-            _withdrawFee,
-            false
+            _withdrawFee
         );
         Ownable(swapClone).transferOwnership(owner());
         return swapClone;

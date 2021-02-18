@@ -52,8 +52,7 @@ interface ISwap {
         uint256 a,
         uint256 fee,
         uint256 adminFee,
-        uint256 withdrawFee,
-        bool guarded
+        uint256 withdrawFee
     ) external;
 
     function swap(

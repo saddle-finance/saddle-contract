@@ -269,7 +269,9 @@ describe("Swap with 4 tokens", () => {
       expect(DAIAfter.sub(DAIBefore)).to.be.eq("998608238366733809")
 
       // Verify pool balance changes
-      expect(await swapClone.getTokenBalance(0)).to.be.eq("49001391761633266191")
+      expect(await swapClone.getTokenBalance(0)).to.be.eq(
+        "49001391761633266191",
+      )
     })
   })
 
@@ -309,7 +311,9 @@ describe("Swap with 4 tokens", () => {
       expect(expectedAmounts[3]).to.be.eq("248596651909606787")
 
       // Allow burn of swapToken
-      await swapToken.connect(user1).approve(swapClone.address, "999355335447632820")
+      await swapToken
+        .connect(user1)
+        .approve(swapClone.address, "999355335447632820")
       const beforeTokenBalances = await getUserTokenBalances(user1, TOKENS)
 
       // Withdraw user1's share via all tokens in proportion to pool's balances
@@ -494,7 +498,9 @@ describe("Swap with 4 tokens", () => {
 
             // Trade SUSD to USDC, taking advantage of the imbalance and change of A
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swapClone.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -570,7 +576,9 @@ describe("Swap with 4 tokens", () => {
 
             // Trade SUSD to USDC, taking advantage of the imbalance and sudden change of A
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swapClone.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -670,7 +678,9 @@ describe("Swap with 4 tokens", () => {
 
             // Trade SUSD to USDC, taking advantage of the imbalance and sudden change of A
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swapClone.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -746,7 +756,9 @@ describe("Swap with 4 tokens", () => {
 
             // Trade SUSD to USDC, taking advantage of the imbalance and sudden change of A
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swapClone.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -856,7 +868,9 @@ describe("Swap with 4 tokens", () => {
             expect(await swapClone.getAPrecise()).to.be.eq(4999)
 
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swapClone.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -931,7 +945,9 @@ describe("Swap with 4 tokens", () => {
             expect(await swapClone.getAPrecise()).to.be.eq(2500)
 
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swapClone.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -1033,7 +1049,9 @@ describe("Swap with 4 tokens", () => {
             expect(await swapClone.getAPrecise()).to.be.eq(4999)
 
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swapClone.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -1109,7 +1127,9 @@ describe("Swap with 4 tokens", () => {
             expect(await swapClone.getAPrecise()).to.be.eq(2500)
 
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swapClone.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
