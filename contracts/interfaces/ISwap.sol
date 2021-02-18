@@ -44,6 +44,18 @@ interface ISwap {
     ) external view returns (uint256 availableTokenAmount);
 
     // state modifying functions
+    function initialize(
+        IERC20[] memory pooledTokens,
+        uint8[] memory decimals,
+        string memory lpTokenName,
+        string memory lpTokenSymbol,
+        uint256 a,
+        uint256 fee,
+        uint256 adminFee,
+        uint256 withdrawFee,
+        bool guarded
+    ) external;
+
     function swap(
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,

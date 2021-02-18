@@ -4,8 +4,8 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "./OwnerPausable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "./OwnerPausableUpgradeable.sol";
 import "./SwapUtils.sol";
 import "./MathUtils.sol";
 import "./Allowlist.sol";
@@ -27,7 +27,7 @@ import "./Allowlist.sol";
  * @dev Most of the logic is stored as a library `SwapUtils` for the sake of reducing contract's
  * deployment size.
  */
-contract Swap is OwnerPausable, ReentrancyGuard {
+contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using MathUtils for uint256;
@@ -45,6 +45,9 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     // Boolean value that notates whether this pool is guarded or not. When isGuarded is true,
     // addLiquidity function will be restricted by limits defined in allowlist contract.
     bool private guarded = true;
+
+    // True if the contract is initialized.
+    bool private initialized = false;
 
     // Maps token address to an index in the pool. Used to prevent duplicate tokens in the pool.
     // getTokenIndex function also relies on this mapping to retrieve token index.
@@ -126,7 +129,39 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         uint256 _adminFee,
         uint256 _withdrawFee,
         IAllowlist _allowlist
-    ) public OwnerPausable() ReentrancyGuard() {
+    ) public {
+        initialize(
+            _pooledTokens,
+            decimals,
+            lpTokenName,
+            lpTokenSymbol,
+            _a,
+            _fee,
+            _adminFee,
+            _withdrawFee,
+            true
+        );
+        // Initialize variables related to guarding the initial deposits
+        require(
+            _allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e),
+            "Allowlist check failed"
+        );
+        allowlist = _allowlist;
+    }
+
+    function initialize(
+        IERC20[] memory _pooledTokens,
+        uint8[] memory decimals,
+        string memory lpTokenName,
+        string memory lpTokenSymbol,
+        uint256 _a,
+        uint256 _fee,
+        uint256 _adminFee,
+        uint256 _withdrawFee,
+        bool _guarded
+    ) public initializer {
+        __OwnerPausable_init();
+        __ReentrancyGuard_init();
         // Check _pooledTokens and precisions parameter
         require(_pooledTokens.length > 1, "_pooledTokens.length <= 1");
         require(_pooledTokens.length <= 32, "_pooledTokens.length > 32");
@@ -173,10 +208,6 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             _withdrawFee < SwapUtils.MAX_WITHDRAW_FEE,
             "_withdrawFee exceeds maximum"
         );
-        require(
-            _allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e),
-            "Allowlist check failed"
-        );
 
         // Initialize swapStorage struct
         swapStorage.lpToken = new LPToken(
@@ -196,8 +227,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         swapStorage.defaultWithdrawFee = _withdrawFee;
 
         // Initialize variables related to guarding the initial deposits
-        allowlist = _allowlist;
-        guarded = true;
+        guarded = _guarded;
     }
 
     /*** MODIFIERS ***/
