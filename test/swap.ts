@@ -31,10 +31,6 @@ import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUt
 import { TestSwapReturnValues } from "../build/typechain/TestSwapReturnValues"
 import TestSwapReturnValuesArtifact from "../build/artifacts/contracts/helper/test/TestSwapReturnValues.sol/TestSwapReturnValues.ovm.json"
 import chai from "chai"
-<<<<<<< HEAD
-=======
-import { l2ethers as ethers } from "hardhat"
->>>>>>> [WIP] Use OVM artifacts
 
 chai.use(solidity)
 const { expect } = chai
