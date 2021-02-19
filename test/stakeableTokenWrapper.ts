@@ -3,10 +3,10 @@ import { deployContract, solidity } from "ethereum-waffle"
 import { deployments, l2ethers as ethers } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.ovm.json"
 import { IERC20 } from "../build/typechain/IERC20"
 import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
-import StakeableTokenWrapperArtifact from "../build/artifacts/contracts/StakeableTokenWrapper.sol/StakeableTokenWrapper.json"
+import StakeableTokenWrapperArtifact from "../build/artifacts/contracts/StakeableTokenWrapper.sol/StakeableTokenWrapper.ovm.json"
 import chai from "chai"
 
 chai.use(solidity)

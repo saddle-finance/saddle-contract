@@ -2,9 +2,9 @@ import { Signer, Wallet, constants } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
 
 import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
+import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.ovm.json"
 import chai from "chai"
-import { l2ethers as ethers } from 'hardhat'
+import { l2ethers as ethers } from "hardhat"
 
 chai.use(solidity)
 const { expect } = chai
