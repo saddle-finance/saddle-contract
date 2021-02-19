@@ -129,7 +129,7 @@ describe("Swap with 4 tokens", () => {
 
     // Deploy SwapUtils with MathUtils library
     swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-      MathUtils: mathUtils.address,
+      "MathUtils.ovm": mathUtils.address,
     })) as SwapUtils
     await swapUtils.deployed()
 
@@ -137,7 +137,7 @@ describe("Swap with 4 tokens", () => {
     swap = (await deployContractWithLibraries(
       owner,
       SwapArtifact,
-      { SwapUtils: swapUtils.address },
+      { "SwapUtils.ovm": swapUtils.address },
       [
         [DAI.address, USDC.address, USDT.address, SUSD.address],
         [18, 6, 6, 18],

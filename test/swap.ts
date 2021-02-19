@@ -110,7 +110,7 @@ describe("Swap", async () => {
 
     // Deploy SwapUtils with MathUtils library
     swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-      MathUtils: mathUtils.address,
+      "MathUtils.ovm": mathUtils.address,
     })) as SwapUtils
     await swapUtils.deployed()
 
@@ -118,7 +118,7 @@ describe("Swap", async () => {
     swap = (await deployContractWithLibraries(
       owner,
       SwapArtifact,
-      { SwapUtils: swapUtils.address },
+      { "SwapUtils.ovm": swapUtils.address },
       [
         [firstToken.address, secondToken.address],
         [18, 18],
