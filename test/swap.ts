@@ -433,7 +433,6 @@ describe("Swap", async () => {
       ).to.be.revertedWith("Deadline not met")
     })
 
-<<<<<<< HEAD
     it("Emits addLiquidity event", async () => {
       const calculatedLPTokenAmount = await swap
         .connect(user1)
@@ -454,28 +453,6 @@ describe("Swap", async () => {
           ),
       ).to.emit(swap.connect(user1), "AddLiquidity")
     })
-=======
-    // it("Emits addLiquidity event", async () => {
-    //   const calculatedLPTokenAmount = await swap
-    //     .connect(user1)
-    //     .calculateTokenAmount(user1Address, [String(2e18), String(1e16)], true)
-
-    //   const calculatedLPTokenAmountWithSlippage = calculatedLPTokenAmount
-    //     .mul(999)
-    //     .div(1000)
-
-    //   expect(
-    //     swap
-    //       .connect(user1)
-    //       .addLiquidity(
-    //         [String(2e18), String(1e16)],
-    //         calculatedLPTokenAmountWithSlippage,
-    //         MAX_UINT256,
-    //         [],
-    //       ),
-    //   ).to.emit(swap.connect(user1), "AddLiquidity")
-    // })
->>>>>>> [WIP] Timestamp fixes and temporarily remove emit event tests
   })
 
   describe("removeLiquidity", () => {
@@ -2338,16 +2315,16 @@ describe("Swap", async () => {
 
       // Fee should linearly decay from 0.5% to 0% since the last deposit
       // (Fee is bit less than 0.5% because `swap.setDefaultWithdrawFee` is called one block after the last deposit)
-      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
-        49999958,
-      )
+      let currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
+      expect(currentFee).to.be.lte(49999958)
+      expect(currentFee).to.be.gte(49999937)
 
       // 2 weeks pass
       // Fee should be around 2.5e7
       await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
-      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
-        24999979,
-      )
+      currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
+      expect(currentFee).to.be.lte(24999979)
+      expect(currentFee).to.be.gte(24999937)
     })
 
     it("Increase withdraw fee from 0% to 0.5%, 2 weeks after last deposit", async () => {
@@ -2449,16 +2426,16 @@ describe("Swap", async () => {
       // Same math should apply as before but with base fee of 1%
       // ((1e18 * 0.5%) + (1e18 * 1%)) / 2e18 = 0.75%
       await swap.setDefaultWithdrawFee(String(1e8))
-      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
-        74999937,
-      )
+      let currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
+      expect(currentFee).to.be.lte(74999937)
+      expect(currentFee).to.be.gte(74999906)
 
       // 2 weeks pass
       // Fee should be around 2.5e7
       await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
-      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
-        37499968,
-      )
+      currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
+      expect(currentFee).to.be.lte(37499968)
+      expect(currentFee).to.be.gte(37499906)
     })
 
     it("Decrease withdraw fee from 0.5% to 0%", async () => {
@@ -2531,14 +2508,14 @@ describe("Swap", async () => {
       // Fee is decreased to 0.5%
       // Fee should decrease by half
       await swap.setDefaultWithdrawFee(String(5e7))
-      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
-        37499968,
-      )
+      const currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
+      expect(currentFee).to.be.gte(37499968)
+      expect(currentFee).to.be.lte(37499984)
 
       // 2 weeks pass
       await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
       expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
-        18749984,
+        18749968,
       )
 
       // 2 weeks pass. This is 4 weeks mark since last deposit. Fee should be 0.
@@ -2646,9 +2623,9 @@ describe("Swap", async () => {
       await swapToken.connect(user1).transfer(user2Address, String(1e18))
 
       // Verify user1's fee has not changed
-      expect(await swap.calculateCurrentWithdrawFee(user1Address)).to.eq(
-        BigNumber.from("41666614"),
-      )
+      const user1Fee = await swap.calculateCurrentWithdrawFee(user1Address)
+      expect(user1Fee).to.gte(BigNumber.from("41666614"))
+      expect(user1Fee).to.lte(BigNumber.from("41666632"))
 
       // Verify user2's fee is set to default value
       expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.eq(
@@ -2725,7 +2702,7 @@ describe("Swap", async () => {
 
       // call rampA(), changing A to 100 within a span of 14 days
       const endTimestamp =
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601
       await swap.rampA(100, endTimestamp)
 
       // +0 seconds since ramp A
@@ -2753,7 +2730,7 @@ describe("Swap", async () => {
 
       // call rampA()
       const endTimestamp =
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601
       await swap.rampA(25, endTimestamp)
 
       // +0 seconds since ramp A
@@ -2821,7 +2798,6 @@ describe("Swap", async () => {
   })
 
   describe("stopRampA", () => {
-<<<<<<< HEAD
     it("Emits StopRampA event", async () => {
       // call rampA()
       await swap.rampA(
@@ -2832,23 +2808,11 @@ describe("Swap", async () => {
       // Stop ramp
       expect(swap.stopRampA()).to.emit(swap, "StopRampA")
     })
-=======
-    // it("Emits StopRampA event", async () => {
-    //   // call rampA()
-    //   await swap.rampA(
-    //     100,
-    //     (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
-    //   )
-
-    //   // Stop ramp
-    //   expect(swap.stopRampA()).to.emit(swap, "StopRampA")
-    // })
->>>>>>> [WIP] Timestamp fixes and temporarily remove emit event tests
 
     it("Stop ramp succeeds", async () => {
       // call rampA()
       const endTimestamp =
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 100
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601
       await swap.rampA(100, endTimestamp)
 
       // set timestamp to +100000 seconds
@@ -2872,7 +2836,7 @@ describe("Swap", async () => {
     it("Reverts with 'Ramp is already stopped'", async () => {
       // call rampA()
       const endTimestamp =
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 100
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601
       await swap.rampA(100, endTimestamp)
 
       // set timestamp to +10000 seconds
@@ -2909,7 +2873,7 @@ describe("Swap", async () => {
       // Start ramp
       await swap.rampA(
         100,
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601,
       )
 
       // Malicious miner skips 900 seconds
@@ -2941,7 +2905,7 @@ describe("Swap", async () => {
       // Start ramp
       await swap.rampA(
         25,
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601,
       )
 
       // Malicious miner skips 900 seconds
