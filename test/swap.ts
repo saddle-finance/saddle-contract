@@ -2424,7 +2424,7 @@ describe("Swap", async () => {
       // Fee should be around 2.5e7
       await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
       currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
-      expect(currentFee).to.be.lte(37499968)
+      expect(currentFee).to.be.lte(37499953)
       expect(currentFee).to.be.gte(37499906)
     })
 
@@ -2499,7 +2499,7 @@ describe("Swap", async () => {
       // Fee should decrease by half
       await swap.setDefaultWithdrawFee(String(5e7))
       const currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
-      expect(currentFee).to.be.gte(37499968)
+      expect(currentFee).to.be.gte(37499953)
       expect(currentFee).to.be.lte(37499984)
 
       // 2 weeks pass
