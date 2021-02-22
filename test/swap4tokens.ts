@@ -338,7 +338,7 @@ describe("Swap with 4 tokens", () => {
       // Start ramp
       await swap.rampA(
         100,
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601,
       )
 
       // +0 seconds since ramp A
@@ -374,7 +374,7 @@ describe("Swap with 4 tokens", () => {
       // Start ramp
       await swap.rampA(
         25,
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601,
       )
 
       // +0 seconds since ramp A
@@ -433,7 +433,7 @@ describe("Swap with 4 tokens", () => {
         // Start ramp upwards
         await swap.rampA(
           100,
-          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 10,
+          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601,
         )
         expect(await swap.getAPrecise()).to.be.eq(5000)
 
@@ -548,7 +548,7 @@ describe("Swap with 4 tokens", () => {
 
             // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
-              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 10,
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 601,
             )
 
             // Verify A has changed upwards
@@ -724,7 +724,7 @@ describe("Swap with 4 tokens", () => {
 
             // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
-              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 10,
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 601,
             )
 
             // Verify A has changed upwards
@@ -797,7 +797,7 @@ describe("Swap with 4 tokens", () => {
         // Start ramp downwards
         await swap.rampA(
           25,
-          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 10,
+          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 601,
         )
         expect(await swap.getAPrecise()).to.be.eq(5000)
 
@@ -911,7 +911,7 @@ describe("Swap with 4 tokens", () => {
 
             // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
-              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 10,
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 601,
             )
 
             // Verify A has changed downwards
@@ -1089,7 +1089,7 @@ describe("Swap with 4 tokens", () => {
 
             // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
-              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 10,
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 601,
             )
 
             // Verify A has changed downwards

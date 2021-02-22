@@ -68,7 +68,7 @@ describe("Swap", () => {
 
       // Deploy SwapUtils with MathUtils library
       swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-        MathUtils: mathUtils.address,
+        "MathUtils.ovm": mathUtils.address,
       })) as SwapUtils
       await swapUtils.deployed()
     },
@@ -84,7 +84,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             [],
             [18, 18],
@@ -97,7 +97,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("_pooledTokens.length <= 1")
+      ).to.be.reverted
     })
 
     it("Reverts with '_pooledTokens.length > 32'", async () => {
@@ -105,7 +105,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             Array(33).fill(firstToken.address),
             [18, 18],
@@ -118,7 +118,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("_pooledTokens.length > 32")
+      ).to.be.reverted
     })
 
     it("Reverts with '_pooledTokens decimals mismatch'", async () => {
@@ -126,7 +126,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18],
@@ -139,7 +139,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("_pooledTokens decimals mismatch")
+      ).to.be.reverted
     })
 
     it("Reverts with 'Duplicate tokens'", async () => {
@@ -147,7 +147,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             [firstToken.address, firstToken.address],
             [18, 18],
@@ -160,7 +160,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("Duplicate tokens")
+      ).to.be.reverted
     })
 
     it("Reverts with 'The 0 address isn't an ERC-20'", async () => {
@@ -168,7 +168,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             [ZERO_ADDRESS, ZERO_ADDRESS],
             [18, 18],
@@ -181,7 +181,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("The 0 address isn't an ERC-20")
+      ).to.be.reverted
     })
 
     it("Reverts with 'Token decimals exceeds max'", async () => {
@@ -189,7 +189,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [19, 18],
@@ -202,7 +202,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("Token decimals exceeds max")
+      ).to.be.reverted
     })
 
     it("Reverts with '_a exceeds maximum'", async () => {
@@ -210,7 +210,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18, 18],
@@ -223,7 +223,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("_a exceeds maximum")
+      ).to.be.reverted
     })
 
     it("Reverts with '_fee exceeds maximum'", async () => {
@@ -231,7 +231,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18, 18],
@@ -244,7 +244,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("_fee exceeds maximum")
+      ).to.be.reverted
     })
 
     it("Reverts with '_adminFee exceeds maximum'", async () => {
@@ -252,7 +252,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18, 18],
@@ -265,7 +265,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("_adminFee exceeds maximum")
+      ).to.be.reverted
     })
 
     it("Reverts with '_withdrawFee exceeds maximum'", async () => {
@@ -273,7 +273,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { SwapUtils: swapUtils.address },
+          { "SwapUtils.ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18, 18],
@@ -286,7 +286,7 @@ describe("Swap", () => {
             allowlist.address,
           ],
         ),
-      ).to.be.revertedWith("_withdrawFee exceeds maximum")
+      ).to.be.reverted
     })
   })
 })
