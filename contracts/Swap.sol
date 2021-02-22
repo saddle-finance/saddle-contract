@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "./OwnerPausableUpgradeable.sol";
 import "./SwapUtils.sol";
 import "./MathUtils.sol";
-import "./Allowlist.sol";
 
 /**
  * @title Swap - A StableSwap implementation in solidity.
@@ -36,15 +35,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     // Struct storing data responsible for automatic market maker functionalities. In order to
     // access this data, this contract uses SwapUtils library. For more details, see SwapUtils.sol
     SwapUtils.Swap public swapStorage;
-
-    // Address to allowlist contract that holds information about maximum totaly supply of lp tokens
-    // and maximum mintable amount per user address. As this is immutable, this will become a constant
-    // after initialization.
-    IAllowlist private immutable allowlist;
-
-    // Boolean value that notates whether this pool is guarded or not. When isGuarded is true,
-    // addLiquidity function will be restricted by limits defined in allowlist contract.
-    bool private guarded = true;
 
     // True if the contract is initialized.
     bool private initialized = false;
@@ -117,7 +107,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
      * @param _withdrawFee default withdrawFee to be initialized with
-     * @param _allowlist address of allowlist contract for guarded launch
      */
     constructor(
         IERC20[] memory _pooledTokens,
@@ -127,8 +116,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee,
-        IAllowlist _allowlist
+        uint256 _withdrawFee
     ) public {
         initialize(
             _pooledTokens,
@@ -140,13 +128,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
             _adminFee,
             _withdrawFee
         );
-        // Initialize variables related to guarding the initial deposits
-        require(
-            _allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e),
-            "Allowlist check failed"
-        );
-        allowlist = _allowlist;
-        guarded = true;
     }
 
     function initialize(
@@ -196,7 +177,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
-        // Check _a, _fee, _adminFee, _withdrawFee, _allowlist parameters
+        // Check _a, _fee, _adminFee, _withdrawFee parameters
         require(_a < SwapUtils.MAX_A, "_a exceeds maximum");
         require(_fee < SwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
         require(
@@ -280,14 +261,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
             "Token does not exist"
         );
         return index;
-    }
-
-    /**
-     * @notice Reads and returns the address of the allowlist that is set during deployment of this contract
-     * @return the address of the allowlist contract casted to the IAllowlist interface
-     */
-    function getAllowlist() external view returns (IAllowlist) {
-        return allowlist;
     }
 
     /**
@@ -445,24 +418,17 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Add liquidity to the pool with given amounts during guarded launch phase. Only users
-     * with valid address and proof can successfully call this function. When this function is called
-     * after the guarded release phase is over, the merkleProof is ignored.
+     * @notice Add liquidity to the pool with the given amounts of tokens
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
      * @param deadline latest timestamp to accept this transaction
-     * @param merkleProof data generated when constructing the allowlist merkle tree. Users can
-     * get this data off chain. Even if the address is in the allowlist, users must include
-     * a valid proof for this call to succeed. If the pool is no longer in the guarded release phase,
-     * this parameter is ignored.
      * @return amount of LP token user minted and received
      */
     function addLiquidity(
         uint256[] calldata amounts,
         uint256 minToMint,
-        uint256 deadline,
-        bytes32[] calldata merkleProof
+        uint256 deadline
     )
         external
         nonReentrant
@@ -470,7 +436,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         deadlineCheck(deadline)
         returns (uint256)
     {
-        return swapStorage.addLiquidity(amounts, minToMint, merkleProof);
+        return swapStorage.addLiquidity(amounts, minToMint);
     }
 
     /**
@@ -612,20 +578,5 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      */
     function stopRampA() external onlyOwner {
         swapStorage.stopRampA();
-    }
-
-    /**
-     * @notice Disables the guarded launch phase, removing any limits on deposit amounts and addresses
-     */
-    function disableGuard() external onlyOwner {
-        guarded = false;
-    }
-
-    /**
-     * @notice Reads and returns current guarded status of the pool
-     * @return guarded_ boolean value indicating whether the deposits should be guarded
-     */
-    function isGuarded() external view returns (bool) {
-        return guarded;
     }
 }

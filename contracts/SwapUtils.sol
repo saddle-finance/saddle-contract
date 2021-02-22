@@ -853,15 +853,13 @@ library SwapUtils {
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
-     * @param merkleProof bytes32 array that will be used to prove the existence of the caller's address in the list of
      * allowed addresses. If the pool is not in the guarded launch phase, this parameter will be ignored.
      * @return amount of LP token user received
      */
     function addLiquidity(
         Swap storage self,
         uint256[] memory amounts,
-        uint256 minToMint,
-        bytes32[] calldata merkleProof
+        uint256 minToMint
     ) external returns (uint256) {
         require(
             amounts.length == self.pooledTokens.length,
@@ -938,7 +936,7 @@ library SwapUtils {
         require(toMint >= minToMint, "Couldn't mint min requested");
 
         // mint the user's LP tokens
-        self.lpToken.mint(msg.sender, toMint, merkleProof);
+        self.lpToken.mint(msg.sender, toMint);
 
         emit AddLiquidity(
             msg.sender,
