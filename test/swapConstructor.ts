@@ -3,8 +3,6 @@ import { ZERO_ADDRESS, deployContractWithLibraries } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
-import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { MathUtils } from "../build/typechain/MathUtils"
@@ -13,14 +11,12 @@ import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
-import merkleTreeData from "../test/exampleMerkleTree.json"
 
 chai.use(solidity)
 const { expect } = chai
 
 describe("Swap", () => {
   let signers: Array<Signer>
-  let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
   let firstToken: GenericERC20
@@ -52,13 +48,6 @@ describe("Swap", () => {
         GenericERC20Artifact,
         ["Second Token", "SECOND", "18"],
       )) as GenericERC20
-
-      // Deploy Allowlist
-      allowlist = (await deployContract(
-        signers[0] as Wallet,
-        AllowlistArtifact,
-        [merkleTreeData.merkleRoot],
-      )) as Allowlist
 
       // Deploy MathUtils
       mathUtils = (await deployContract(
@@ -94,7 +83,6 @@ describe("Swap", () => {
             SWAP_FEE,
             0,
             0,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("_pooledTokens.length <= 1")
@@ -115,7 +103,6 @@ describe("Swap", () => {
             SWAP_FEE,
             0,
             0,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("_pooledTokens.length > 32")
@@ -136,7 +123,6 @@ describe("Swap", () => {
             SWAP_FEE,
             0,
             0,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("_pooledTokens decimals mismatch")
@@ -157,7 +143,6 @@ describe("Swap", () => {
             SWAP_FEE,
             0,
             0,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("Duplicate tokens")
@@ -178,7 +163,6 @@ describe("Swap", () => {
             SWAP_FEE,
             0,
             0,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("The 0 address isn't an ERC-20")
@@ -199,7 +183,6 @@ describe("Swap", () => {
             SWAP_FEE,
             0,
             0,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("Token decimals exceeds max")
@@ -220,7 +203,6 @@ describe("Swap", () => {
             SWAP_FEE,
             0,
             0,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("_a exceeds maximum")
@@ -241,7 +223,6 @@ describe("Swap", () => {
             10e8 + 1,
             0,
             0,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("_fee exceeds maximum")
@@ -262,7 +243,6 @@ describe("Swap", () => {
             SWAP_FEE,
             10e10 + 1,
             0,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("_adminFee exceeds maximum")
@@ -283,7 +263,6 @@ describe("Swap", () => {
             SWAP_FEE,
             0,
             10e8 + 1,
-            allowlist.address,
           ],
         ),
       ).to.be.revertedWith("_withdrawFee exceeds maximum")

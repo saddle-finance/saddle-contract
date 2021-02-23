@@ -19,9 +19,6 @@ contract LPToken is ERC20Burnable, Ownable {
     // they receive a proportionate amount of this LPToken.
     ISwap public swap;
 
-    // Maps user account to total number of LPToken minted by them. Used to limit minting during guarded release phase
-    mapping(address => uint256) public mintedAmounts;
-
     /**
      * @notice Deploys LPToken contract with given name, symbol, and decimals
      * @dev the caller of this constructor will become the owner of this contract
@@ -39,16 +36,12 @@ contract LPToken is ERC20Burnable, Ownable {
     }
 
     /**
-     * @notice Mints the given amount of LPToken to the recipient. During the guarded release phase, the total supply
-     * and the maximum number of the tokens that a single account can mint are limited.
+     * @notice Mints the given amount of LPToken to the recipient.
      * @dev only owner can call this mint function
      * @param recipient address of account to receive the tokens
      * @param amount amount of tokens to mint
      */
-    function mint(
-        address recipient,
-        uint256 amount
-    ) external onlyOwner {
+    function mint(address recipient, uint256 amount) external onlyOwner {
         require(amount != 0, "amount == 0");
         _mint(recipient, amount);
     }

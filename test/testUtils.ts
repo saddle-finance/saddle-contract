@@ -141,6 +141,10 @@ export async function setTimestamp(timestamp: number): Promise<any> {
   return ethers.provider.send("evm_mine", [timestamp])
 }
 
+export async function forceAdvanceOneBlock(): Promise<any> {
+  return ethers.provider.send("evm_mine", [])
+}
+
 export async function increaseTimestamp(timestampDelta: number): Promise<any> {
   await ethers.provider.send("evm_increaseTime", [timestampDelta])
   return ethers.provider.send("evm_mine", [])

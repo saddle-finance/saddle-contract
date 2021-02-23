@@ -6,8 +6,6 @@ import {
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
   getPoolBalances,
-  getTestMerkleProof,
-  getTestMerkleRoot,
   getUserTokenBalance,
   getUserTokenBalances,
   setTimestamp,
@@ -15,8 +13,6 @@ import {
 import { deployContract, solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
-import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
@@ -35,7 +31,6 @@ const { expect } = chai
 describe("Swap with 4 tokens", () => {
   let signers: Array<Signer>
   let swap: Swap
-  let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
   let DAI: GenericERC20
@@ -119,13 +114,6 @@ describe("Swap with 4 tokens", () => {
         },
       )
 
-      // Deploy Allowlist
-      allowlist = (await deployContract(
-        signers[0] as Wallet,
-        AllowlistArtifact,
-        [getTestMerkleRoot()],
-      )) as Allowlist
-
       // Deploy MathUtils
       mathUtils = (await deployContract(
         signers[0] as Wallet,
@@ -152,7 +140,6 @@ describe("Swap with 4 tokens", () => {
           SWAP_FEE,
           0,
           0,
-          allowlist.address,
         ],
       )) as Swap
       await swap.deployed()
@@ -166,16 +153,6 @@ describe("Swap with 4 tokens", () => {
         swapStorage.lpToken,
       )) as LPToken
 
-      // Set deposit limits
-      allowlist.setPoolCap(
-        swap.address,
-        BigNumber.from(10).pow(18).mul(6000000),
-      )
-      allowlist.setPoolAccountLimit(
-        swap.address,
-        BigNumber.from(10).pow(18).mul(1000000),
-      )
-
       await asyncForEach([owner, user1, user2, attacker], async (signer) => {
         await DAI.connect(signer).approve(swap.address, MAX_UINT256)
         await USDC.connect(signer).approve(swap.address, MAX_UINT256)
@@ -188,10 +165,7 @@ describe("Swap with 4 tokens", () => {
         [String(50e18), String(50e6), String(50e6), String(50e18)],
         0,
         MAX_UINT256,
-        getTestMerkleProof(ownerAddress),
       )
-
-      await swap.disableGuard()
 
       expect(await swap.getTokenBalance(0)).to.be.eq(String(50e18))
       expect(await swap.getTokenBalance(1)).to.be.eq(String(50e6))
@@ -223,7 +197,6 @@ describe("Swap with 4 tokens", () => {
           [String(1e18), 0, 0, 0],
           calcTokenAmount.mul(99).div(100),
           (await getCurrentBlockTimestamp()) + 60,
-          [],
         )
 
       // Verify swapToken balance
@@ -276,7 +249,6 @@ describe("Swap with 4 tokens", () => {
           [String(1e18), 0, 0, 0],
           calcTokenAmount.mul(99).div(100),
           (await getCurrentBlockTimestamp()) + 60,
-          [],
         )
 
       // Verify swapToken balance
@@ -333,7 +305,7 @@ describe("Swap with 4 tokens", () => {
       // We expect virtual price to increase as A increases
       await swap
         .connect(user1)
-        .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256, [])
+        .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256)
 
       // Start ramp
       await swap.rampA(
@@ -369,7 +341,7 @@ describe("Swap with 4 tokens", () => {
       // We expect virtual price to decrease as A decreases
       await swap
         .connect(user1)
-        .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256, [])
+        .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256)
 
       // Start ramp
       await swap.rampA(
@@ -616,7 +588,6 @@ describe("Swap with 4 tokens", () => {
                 [0, 0, 0, String(50e18)],
                 0,
                 (await getCurrentBlockTimestamp()) + 60,
-                [],
               )
 
             // Check current pool balances
@@ -981,7 +952,6 @@ describe("Swap with 4 tokens", () => {
                 [0, 0, 0, String(50e18)],
                 0,
                 (await getCurrentBlockTimestamp()) + 60,
-                [],
               )
 
             // Check current pool balances
