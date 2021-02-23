@@ -2428,7 +2428,7 @@ describe("Swap", async () => {
       await swap.setDefaultWithdrawFee(String(1e8))
       let currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
       expect(currentFee).to.be.lte(74999937)
-      expect(currentFee).to.be.gte(74999906)
+      expect(currentFee).to.be.gte(74999875)
 
       // 2 weeks pass
       // Fee should be around 2.5e7
@@ -2508,15 +2508,15 @@ describe("Swap", async () => {
       // Fee is decreased to 0.5%
       // Fee should decrease by half
       await swap.setDefaultWithdrawFee(String(5e7))
-      const currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
+      let currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
       expect(currentFee).to.be.gte(37499953)
       expect(currentFee).to.be.lte(37499984)
 
       // 2 weeks pass
       await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
-      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.be.eq(
-        18749968,
-      )
+      currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
+      expect(currentFee).to.be.gte(18749953)
+      expect(currentFee).to.be.lte(18749968)
 
       // 2 weeks pass. This is 4 weeks mark since last deposit. Fee should be 0.
       await setTimestamp((await getCurrentBlockTimestamp()) + TIME.WEEKS * 2)
@@ -2624,7 +2624,7 @@ describe("Swap", async () => {
 
       // Verify user1's fee has not changed
       const user1Fee = await swap.calculateCurrentWithdrawFee(user1Address)
-      expect(user1Fee).to.gte(BigNumber.from("41666614"))
+      expect(user1Fee).to.gte(BigNumber.from("41666597"))
       expect(user1Fee).to.lte(BigNumber.from("41666632"))
 
       // Verify user2's fee is set to default value
