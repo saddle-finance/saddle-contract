@@ -47,29 +47,6 @@ jobs:
     - run: npm run build --if-present
     - run: npm test
 
-  coverage:
-    runs-on: ubuntu-latest
-    env:
-      ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
-      __DANGEROUS_OVM_IGNORE_ERRORS__: true
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '12'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm run coverage
-    - uses: codecov/codecov-action@v1
-      with:
-        token: "3b7adf3a-9056-42a8-a508-2b43d60a4402"
-
   slither:
     runs-on: ubuntu-latest
     env:
