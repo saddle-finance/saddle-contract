@@ -254,8 +254,18 @@ describe("Swap", async () => {
       await expect(
         swap
           .connect(user1)
-          .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256),
+          .addLiquidity([String(2e18), String(3e18)], 0, MAX_UINT256),
       ).to.be.reverted
+
+      // unpause
+      await swap.unpause()
+
+      await swap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(3e18)], 0, MAX_UINT256)
+
+      const actualPoolTokenAmount = await swapToken.balanceOf(user1Address)
+      expect(actualPoolTokenAmount).to.eq(BigNumber.from("3991672211258372957"))
     })
 
     it("Reverts with 'Amounts must match pooled tokens'", async () => {
