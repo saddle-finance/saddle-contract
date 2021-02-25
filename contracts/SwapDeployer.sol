@@ -6,6 +6,12 @@ import "./interfaces/ISwap.sol";
 import "hardhat/console.sol";
 
 contract SwapDeployer is Ownable {
+    event NewSwapPool(
+        address indexed deployer,
+        address swapAddress,
+        IERC20[] pooledTokens
+    );
+
     constructor() public Ownable() {}
 
     function deploy(
@@ -31,6 +37,7 @@ contract SwapDeployer is Ownable {
             _withdrawFee
         );
         Ownable(swapClone).transferOwnership(owner());
+        emit NewSwapPool(msg.sender, swapClone, _pooledTokens);
         return swapClone;
     }
 }
