@@ -9,6 +9,7 @@ import "./OwnerPausable.sol";
 import "./SwapUtils.sol";
 import "./MathUtils.sol";
 import "./Allowlist.sol";
+import "./interfaces/IFlashLoanReceiver.sol";
 
 /**
  * @title Swap - A StableSwap implementation in solidity.
@@ -86,6 +87,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         uint256[] fees,
         uint256 invariant,
         uint256 lpTokenSupply
+    );
+    event FlashLoan(
+        address indexed receiver,
+        uint8 tokenIndex,
+        uint256 amount,
+        uint256 amountFee,
+        uint256 protocolFee
     );
     event NewAdminFee(uint256 newAdminFee);
     event NewSwapFee(uint256 newSwapFee);
@@ -516,6 +524,59 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         returns (uint256)
     {
         return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
+    }
+
+    function flashloan(
+        address receiver,
+        uint8 tokenIndex,
+        uint256 amount,
+        bytes memory params
+    ) external nonReentrant {
+        IERC20 token = swapStorage.pooledTokens[tokenIndex];
+        uint256 availableLiquidityBefore = swapStorage.balances[tokenIndex];
+        uint256 adminBalanceBefore =
+            token.balanceOf(address(this)).sub(availableLiquidityBefore);
+        require(
+            amount > 0 && availableLiquidityBefore >= amount,
+            "invalid amount param"
+        );
+
+        uint256 totalFeeBips = 1000; // 1%
+        uint256 protocolFeeBips = 50000; // 50%
+
+        // Calculate the additional amount of tokens the pool should end up with
+        uint256 amountFee = amount.mul(totalFeeBips).div(10000);
+        // Calculate the portion of the fee that will go to the protocol
+        uint256 protocolFee = amountFee.mul(protocolFeeBips).div(10000);
+        require(
+            amountFee > 0 && protocolFee > 0,
+            "The requested amount is too small for a flashLoan."
+        );
+
+        // Transfer the requested amount of tokens
+        token.safeTransfer(receiver, amount);
+
+        // Execute callback function on receiver
+        IFlashLoanReceiver receiver = IFlashLoanReceiver(receiver);
+        receiver.executeOperation(amount, amountFee, params);
+
+        uint256 availableLiquidityAfter =
+            token.balanceOf(address(this)).sub(adminBalanceBefore);
+        require(
+            availableLiquidityAfter == availableLiquidityBefore.add(amountFee),
+            "flashloan fee is not met"
+        );
+
+        swapStorage.balances[tokenIndex] = availableLiquidityBefore
+            .add(amountFee)
+            .sub(protocolFee);
+        emit FlashLoan(
+            address(receiver),
+            tokenIndex,
+            amount,
+            amountFee,
+            protocolFee
+        );
     }
 
     /*** ADMIN FUNCTIONS ***/
