@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@eth-optimism/ovm-toolchain": "0.0.2-alpha.2",
-    "@eth-optimism/plugins": "0.0.12",
+    "@eth-optimism/plugins": "0.0.16",
     "@eth-optimism/solc": "^0.6.12-alpha.1",
     "@nomiclabs/hardhat-ethers": "^2.0.1",
     "@nomiclabs/hardhat-etherscan": "^2.1.1",

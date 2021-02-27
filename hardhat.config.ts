@@ -23,6 +23,11 @@ let config: HardhatUserConfig = {
       url: process.env.ALCHEMY_API,
       gasPrice: 55 * 1000000000,
     },
+    localhost: {
+      gas: 12e6,
+      blockGasLimit: 12e6,
+      url: "http://localhost:8545",
+    },
   },
   paths: {
     artifacts: "./build/artifacts",
