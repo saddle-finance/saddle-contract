@@ -37,7 +37,7 @@
     "ethlint": "^1.2.5",
     "hardhat": "^2.0.11",
     "hardhat-gas-reporter": "^1.0.4",
-    "husky": "^5.1.0",
+    "husky": "^5.1.2",
     "lint-staged": "^10.5.4",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.5",
