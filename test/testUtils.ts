@@ -1,12 +1,11 @@
-import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
+import { BigNumber, Bytes, ContractFactory, Signer, providers } from "ethers"
+import { ethers, network } from "hardhat"
 
 import { Artifact } from "hardhat/types"
+import { BytesLike } from "@ethersproject/bytes"
 import { Contract } from "@ethersproject/contracts"
 import { ERC20 } from "../build/typechain/ERC20"
 import { Swap } from "../build/typechain/Swap"
-import { ethers, network } from "hardhat"
-import { BytesLike } from "@ethersproject/bytes"
-
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
@@ -147,18 +146,9 @@ export async function increaseTimestamp(timestampDelta: number): Promise<any> {
   return ethers.provider.send("evm_mine", [])
 }
 
-export async function takeSnapshot(): Promise<number> {
-  return await ethers.provider.send("evm_snapshot", [])
-}
-
-export async function revertToSnapshot(id: number): Promise<any> {
-  return await ethers.provider.send("evm_revert", [id])
-}
-
 export async function getCurrentBlockTimestamp(): Promise<number> {
-  return (
-    await ethers.provider.getBlock(await ethers.provider.getBlockNumber())
-  ).timestamp
+  const block = await ethers.provider.getBlock("latest")
+  return block.timestamp
 }
 
 export async function impersonateAccount(
