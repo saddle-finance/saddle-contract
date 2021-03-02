@@ -78,6 +78,13 @@ interface ISwap {
         uint256 deadline
     ) external returns (uint256);
 
+    function flashLoan(
+        address receiver,
+        IERC20 token,
+        uint256 amount,
+        bytes memory params
+    ) external;
+
     // withdraw fee update function
     function updateUserWithdrawFee(address recipient, uint256 transferAmount)
         external;

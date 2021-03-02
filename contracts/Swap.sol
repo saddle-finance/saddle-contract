@@ -255,7 +255,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param tokenAddress address of the token
      * @return the index of the given token address
      */
-    function getTokenIndex(address tokenAddress) external view returns (uint8) {
+    function getTokenIndex(address tokenAddress) public view returns (uint8) {
         uint8 index = tokenIndexes[tokenAddress];
         require(
             address(getToken(index)) == tokenAddress,
@@ -526,13 +526,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
 
-    function flashloan(
+    function flashLoan(
         address receiver,
-        uint8 tokenIndex,
+        IERC20 token,
         uint256 amount,
         bytes memory params
     ) external nonReentrant {
-        IERC20 token = swapStorage.pooledTokens[tokenIndex];
+        uint8 tokenIndex = getTokenIndex(address(token));
         uint256 availableLiquidityBefore = swapStorage.balances[tokenIndex];
         uint256 adminBalanceBefore =
             token.balanceOf(address(this)).sub(availableLiquidityBefore);
@@ -558,7 +558,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
 
         // Execute callback function on receiver
         IFlashLoanReceiver receiver = IFlashLoanReceiver(receiver);
-        receiver.executeOperation(amount, amountFee, params);
+        receiver.executeOperation(
+            address(this),
+            address(token),
+            amount,
+            amountFee,
+            params
+        );
 
         uint256 availableLiquidityAfter =
             token.balanceOf(address(this)).sub(adminBalanceBefore);
