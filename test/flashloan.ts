@@ -24,7 +24,7 @@ import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
-import { ethers } from "hardhat"
+import { deployments, ethers } from "hardhat"
 import { formatBytes32String } from "ethers/lib/utils"
 
 chai.use(solidity)
@@ -66,136 +66,150 @@ describe("Swap Flashloan", () => {
   const LP_TOKEN_SYMBOL = "TESTLP"
   const TOKENS: GenericERC20[] = []
 
+  const setupTest = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      await deployments.fixture() // ensure you start from a fresh deployments
+      TOKENS.length = 0
+      signers = await ethers.getSigners()
+      owner = signers[0]
+      user1 = signers[1]
+      user2 = signers[2]
+      attacker = signers[10]
+      ownerAddress = await owner.getAddress()
+      user1Address = await user1.getAddress()
+      user2Address = await user2.getAddress()
+
+      // Deploy dummy tokens
+      DAI = (await deployContract(owner as Wallet, GenericERC20Artifact, [
+        "DAI",
+        "DAI",
+        "18",
+      ])) as GenericERC20
+
+      USDC = (await deployContract(owner as Wallet, GenericERC20Artifact, [
+        "USDC",
+        "USDC",
+        "6",
+      ])) as GenericERC20
+
+      USDT = (await deployContract(owner as Wallet, GenericERC20Artifact, [
+        "USDT",
+        "USDT",
+        "6",
+      ])) as GenericERC20
+
+      SUSD = (await deployContract(owner as Wallet, GenericERC20Artifact, [
+        "SUSD",
+        "SUSD",
+        "18",
+      ])) as GenericERC20
+
+      TOKENS.push(DAI, USDC, USDT, SUSD)
+
+      // Mint dummy tokens
+      await asyncForEach(
+        [ownerAddress, user1Address, user2Address, await attacker.getAddress()],
+        async (address) => {
+          await DAI.mint(address, String(1e20))
+          await USDC.mint(address, String(1e8))
+          await USDT.mint(address, String(1e8))
+          await SUSD.mint(address, String(1e20))
+        },
+      )
+
+      // Deploy Allowlist
+      allowlist = (await deployContract(
+        signers[0] as Wallet,
+        AllowlistArtifact,
+        [getTestMerkleRoot()],
+      )) as Allowlist
+
+      // Deploy MathUtils
+      mathUtils = (await deployContract(
+        signers[0] as Wallet,
+        MathUtilsArtifact,
+      )) as MathUtils
+
+      // Deploy SwapUtils with MathUtils library
+      swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
+        MathUtils: mathUtils.address,
+      })) as SwapUtils
+      await swapUtils.deployed()
+
+      // Deploy Swap with SwapUtils library
+      swap = (await deployContractWithLibraries(
+        owner,
+        SwapArtifact,
+        { SwapUtils: swapUtils.address },
+        [
+          [DAI.address, USDC.address, USDT.address, SUSD.address],
+          [18, 6, 6, 18],
+          LP_TOKEN_NAME,
+          LP_TOKEN_SYMBOL,
+          INITIAL_A_VALUE,
+          SWAP_FEE,
+          0,
+          0,
+          allowlist.address,
+        ],
+      )) as Swap
+      await swap.deployed()
+
+      expect(await swap.getVirtualPrice()).to.be.eq(0)
+
+      swapStorage = await swap.swapStorage()
+
+      swapToken = (await ethers.getContractAt(
+        LPTokenArtifact.abi,
+        swapStorage.lpToken,
+      )) as LPToken
+
+      // Set deposit limits
+      allowlist.setPoolCap(
+        swap.address,
+        BigNumber.from(10).pow(18).mul(6000000),
+      )
+      allowlist.setPoolAccountLimit(
+        swap.address,
+        BigNumber.from(10).pow(18).mul(1000000),
+      )
+
+      await asyncForEach([owner, user1, user2, attacker], async (signer) => {
+        await DAI.connect(signer).approve(swap.address, MAX_UINT256)
+        await USDC.connect(signer).approve(swap.address, MAX_UINT256)
+        await USDT.connect(signer).approve(swap.address, MAX_UINT256)
+        await SUSD.connect(signer).approve(swap.address, MAX_UINT256)
+      })
+
+      // Populate the pool with initial liquidity
+      await swap.addLiquidity(
+        [String(50e18), String(50e6), String(50e6), String(50e18)],
+        0,
+        MAX_UINT256,
+        getTestMerkleProof(ownerAddress),
+      )
+
+      await swap.disableGuard()
+
+      expect(await swap.getTokenBalance(0)).to.be.eq(String(50e18))
+      expect(await swap.getTokenBalance(1)).to.be.eq(String(50e6))
+      expect(await swap.getTokenBalance(2)).to.be.eq(String(50e6))
+      expect(await swap.getTokenBalance(3)).to.be.eq(String(50e18))
+      expect(await getUserTokenBalance(owner, swapToken)).to.be.eq(
+        String(200e18),
+      )
+
+      // Deploy MathUtils
+      flashLoanExample = (await deployContract(
+        signers[0] as Wallet,
+        FlashLoanBorrowerExampleArtifact,
+      )) as FlashLoanBorrowerExample
+      await flashLoanExample.deployed()
+    },
+  )
+
   beforeEach(async () => {
-    TOKENS.length = 0
-    signers = await ethers.getSigners()
-    owner = signers[0]
-    user1 = signers[1]
-    user2 = signers[2]
-    attacker = signers[10]
-    ownerAddress = await owner.getAddress()
-    user1Address = await user1.getAddress()
-    user2Address = await user2.getAddress()
-
-    // Deploy dummy tokens
-    DAI = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "DAI",
-      "DAI",
-      "18",
-    ])) as GenericERC20
-
-    USDC = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "USDC",
-      "USDC",
-      "6",
-    ])) as GenericERC20
-
-    USDT = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "USDT",
-      "USDT",
-      "6",
-    ])) as GenericERC20
-
-    SUSD = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "SUSD",
-      "SUSD",
-      "18",
-    ])) as GenericERC20
-
-    TOKENS.push(DAI, USDC, USDT, SUSD)
-
-    // Mint dummy tokens
-    await asyncForEach(
-      [ownerAddress, user1Address, user2Address, await attacker.getAddress()],
-      async (address) => {
-        await DAI.mint(address, String(1e20))
-        await USDC.mint(address, String(1e8))
-        await USDT.mint(address, String(1e8))
-        await SUSD.mint(address, String(1e20))
-      },
-    )
-
-    // Deploy Allowlist
-    allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
-      getTestMerkleRoot(),
-    ])) as Allowlist
-
-    // Deploy MathUtils
-    mathUtils = (await deployContract(
-      signers[0] as Wallet,
-      MathUtilsArtifact,
-    )) as MathUtils
-
-    // Deploy SwapUtils with MathUtils library
-    swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-      MathUtils: mathUtils.address,
-    })) as SwapUtils
-    await swapUtils.deployed()
-
-    // Deploy Swap with SwapUtils library
-    swap = (await deployContractWithLibraries(
-      owner,
-      SwapArtifact,
-      { SwapUtils: swapUtils.address },
-      [
-        [DAI.address, USDC.address, USDT.address, SUSD.address],
-        [18, 6, 6, 18],
-        LP_TOKEN_NAME,
-        LP_TOKEN_SYMBOL,
-        INITIAL_A_VALUE,
-        SWAP_FEE,
-        0,
-        0,
-        allowlist.address,
-      ],
-    )) as Swap
-    await swap.deployed()
-
-    expect(await swap.getVirtualPrice()).to.be.eq(0)
-
-    swapStorage = await swap.swapStorage()
-
-    swapToken = (await ethers.getContractAt(
-      LPTokenArtifact.abi,
-      swapStorage.lpToken,
-    )) as LPToken
-
-    // Set deposit limits
-    allowlist.setPoolCap(swap.address, BigNumber.from(10).pow(18).mul(6000000))
-    allowlist.setPoolAccountLimit(
-      swap.address,
-      BigNumber.from(10).pow(18).mul(1000000),
-    )
-
-    await asyncForEach([owner, user1, user2, attacker], async (signer) => {
-      await DAI.connect(signer).approve(swap.address, MAX_UINT256)
-      await USDC.connect(signer).approve(swap.address, MAX_UINT256)
-      await USDT.connect(signer).approve(swap.address, MAX_UINT256)
-      await SUSD.connect(signer).approve(swap.address, MAX_UINT256)
-    })
-
-    // Populate the pool with initial liquidity
-    await swap.addLiquidity(
-      [String(50e18), String(50e6), String(50e6), String(50e18)],
-      0,
-      MAX_UINT256,
-      getTestMerkleProof(ownerAddress),
-    )
-
-    await swap.disableGuard()
-
-    expect(await swap.getTokenBalance(0)).to.be.eq(String(50e18))
-    expect(await swap.getTokenBalance(1)).to.be.eq(String(50e6))
-    expect(await swap.getTokenBalance(2)).to.be.eq(String(50e6))
-    expect(await swap.getTokenBalance(3)).to.be.eq(String(50e18))
-    expect(await getUserTokenBalance(owner, swapToken)).to.be.eq(String(200e18))
-
-    // Deploy MathUtils
-    flashLoanExample = (await deployContract(
-      signers[0] as Wallet,
-      FlashLoanBorrowerExampleArtifact,
-    )) as FlashLoanBorrowerExample
-    await flashLoanExample.deployed()
+    await setupTest()
   })
 
   const flashLoanAmount = BigNumber.from(1e6)
@@ -222,7 +236,6 @@ describe("Swap Flashloan", () => {
     // Since the contract is empty, we need to give the contract some USDC to have enough to pay off the fee
     expect(await swap.getTokenBalance(1)).to.eq("50000000")
     await USDC.connect(user1).transfer(flashLoanExample.address, flashLoanFee)
-    console.log(formatBytes32String("reentrancy"))
     await expect(
       flashLoanExample.flashLoan(
         swap.address,
