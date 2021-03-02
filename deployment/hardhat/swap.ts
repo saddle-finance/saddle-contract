@@ -166,6 +166,7 @@ async function deploySwap(): Promise<void> {
     ],
   )) as Swap
   await stablecoinSwap.deployed()
+  await stablecoinSwap.disableGuard()
 
   const btcSwap = (await deployContractWithLibraries(
     owner,
@@ -189,6 +190,7 @@ async function deploySwap(): Promise<void> {
     ],
   )) as Swap
   await btcSwap.deployed()
+  await btcSwap.disableGuard()
 
   // update dev limits for stableSwap
   await allowlist.setPoolCap(
