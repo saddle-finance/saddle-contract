@@ -1,18 +1,18 @@
 import { Signer, Wallet } from "ethers"
 import { ZERO_ADDRESS, deployContractWithLibraries } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
+import { deployments, ethers } from "hardhat"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
-import { ethers } from "hardhat"
 import merkleTreeData from "../test/exampleMerkleTree.json"
 
 chai.use(solidity)
@@ -33,39 +33,49 @@ describe("Swap", () => {
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
 
+  const setupTest = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      await deployments.fixture() // ensure you start from a fresh deployments
+
+      signers = await ethers.getSigners()
+      owner = signers[0]
+
+      // Deploy dummy tokens
+      firstToken = (await deployContract(
+        owner as Wallet,
+        GenericERC20Artifact,
+        ["First Token", "FIRST", "18"],
+      )) as GenericERC20
+
+      secondToken = (await deployContract(
+        owner as Wallet,
+        GenericERC20Artifact,
+        ["Second Token", "SECOND", "18"],
+      )) as GenericERC20
+
+      // Deploy Allowlist
+      allowlist = (await deployContract(
+        signers[0] as Wallet,
+        AllowlistArtifact,
+        [merkleTreeData.merkleRoot],
+      )) as Allowlist
+
+      // Deploy MathUtils
+      mathUtils = (await deployContract(
+        signers[0] as Wallet,
+        MathUtilsArtifact,
+      )) as MathUtils
+
+      // Deploy SwapUtils with MathUtils library
+      swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
+        MathUtils: mathUtils.address,
+      })) as SwapUtils
+      await swapUtils.deployed()
+    },
+  )
+
   beforeEach(async () => {
-    signers = await ethers.getSigners()
-    owner = signers[0]
-
-    // Deploy dummy tokens
-    firstToken = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "First Token",
-      "FIRST",
-      "18",
-    ])) as GenericERC20
-
-    secondToken = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "Second Token",
-      "SECOND",
-      "18",
-    ])) as GenericERC20
-
-    // Deploy Allowlist
-    allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
-      merkleTreeData.merkleRoot,
-    ])) as Allowlist
-
-    // Deploy MathUtils
-    mathUtils = (await deployContract(
-      signers[0] as Wallet,
-      MathUtilsArtifact,
-    )) as MathUtils
-
-    // Deploy SwapUtils with MathUtils library
-    swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-      MathUtils: mathUtils.address,
-    })) as SwapUtils
-    await swapUtils.deployed()
+    await setupTest()
   })
 
   describe("swapStorage#constructor", () => {

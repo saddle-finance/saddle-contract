@@ -1,17 +1,16 @@
-import { ethers } from "hardhat"
-import { Signer } from "ethers"
-import chai from "chai"
-import { deployContract, solidity } from "ethereum-waffle"
-
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
-import { Allowlist } from "../build/typechain/Allowlist"
-
 import {
+  ZERO_ADDRESS,
   asyncForEach,
   getTestMerkleAllowedAccounts,
   getTestMerkleRoot,
-  ZERO_ADDRESS,
 } from "./testUtils"
+import { deployContract, solidity } from "ethereum-waffle"
+import { deployments, ethers } from "hardhat"
+
+import { Allowlist } from "../build/typechain/Allowlist"
+import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
+import { Signer } from "ethers"
+import chai from "chai"
 import { formatBytes32String } from "ethers/lib/utils"
 
 chai.use(solidity)
@@ -27,13 +26,21 @@ describe("Allowlist", () => {
   let malActor: Signer
   let allowlist: Allowlist
 
+  const setupTest = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      await deployments.fixture() // ensure you start from a fresh deployments
+
+      signers = await ethers.getSigners()
+      owner = signers[0]
+      malActor = signers[10]
+      allowlist = (await deployContract(owner, AllowlistArtifact, [
+        getTestMerkleRoot(),
+      ])) as Allowlist
+    },
+  )
+
   beforeEach(async () => {
-    signers = await ethers.getSigners()
-    owner = signers[0]
-    malActor = signers[10]
-    allowlist = (await deployContract(owner, AllowlistArtifact, [
-      getTestMerkleRoot(),
-    ])) as Allowlist
+    await setupTest()
   })
 
   describe("setPoolCap, getPoolCap", () => {

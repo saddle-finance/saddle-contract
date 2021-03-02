@@ -14,13 +14,14 @@ import {
   setTimestamp,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
+import { deployments, ethers } from "hardhat"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
+import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
@@ -30,7 +31,6 @@ import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUt
 import { TestSwapReturnValues } from "../build/typechain/TestSwapReturnValues"
 import TestSwapReturnValuesArtifact from "../build/artifacts/contracts/helper/test/TestSwapReturnValues.sol/TestSwapReturnValues.json"
 import chai from "chai"
-import { ethers } from "hardhat"
 
 chai.use(solidity)
 const { expect } = chai
@@ -68,106 +68,116 @@ describe("Swap", async () => {
   const LP_TOKEN_SYMBOL = "TESTLP"
   const MERKLE_ROOT = getTestMerkleRoot()
 
+  const setupTest = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      await deployments.fixture() // ensure you start from a fresh deployments
+
+      signers = await ethers.getSigners()
+      owner = signers[0]
+      user1 = signers[1]
+      user2 = signers[2]
+      ownerAddress = await owner.getAddress()
+      user1Address = await user1.getAddress()
+      user2Address = await user2.getAddress()
+
+      // Deploy dummy tokens
+      firstToken = (await deployContract(
+        owner as Wallet,
+        GenericERC20Artifact,
+        ["First Token", "FIRST", "18"],
+      )) as GenericERC20
+
+      secondToken = (await deployContract(
+        owner as Wallet,
+        GenericERC20Artifact,
+        ["Second Token", "SECOND", "18"],
+      )) as GenericERC20
+
+      // Mint dummy tokens
+      await asyncForEach([owner, user1, user2], async (signer) => {
+        const address = await signer.getAddress()
+        await firstToken.mint(address, String(1e20))
+        await secondToken.mint(address, String(1e20))
+      })
+
+      // Deploy Allowlist
+      allowlist = (await deployContract(
+        signers[0] as Wallet,
+        AllowlistArtifact,
+        [MERKLE_ROOT],
+      )) as Allowlist
+
+      // Deploy MathUtils
+      mathUtils = (await deployContract(
+        signers[0] as Wallet,
+        MathUtilsArtifact,
+      )) as MathUtils
+
+      // Deploy SwapUtils with MathUtils library
+      swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
+        MathUtils: mathUtils.address,
+      })) as SwapUtils
+      await swapUtils.deployed()
+
+      // Deploy Swap with SwapUtils library
+      swap = (await deployContractWithLibraries(
+        owner,
+        SwapArtifact,
+        { SwapUtils: swapUtils.address },
+        [
+          [firstToken.address, secondToken.address],
+          [18, 18],
+          LP_TOKEN_NAME,
+          LP_TOKEN_SYMBOL,
+          INITIAL_A_VALUE,
+          SWAP_FEE,
+          0,
+          0,
+          allowlist.address,
+        ],
+      )) as Swap
+      await swap.deployed()
+
+      expect(await swap.getVirtualPrice()).to.be.eq(0)
+
+      swapStorage = await swap.swapStorage()
+
+      swapToken = (await ethers.getContractAt(
+        LPTokenArtifact.abi,
+        swapStorage.lpToken,
+      )) as LPToken
+
+      testSwapReturnValues = (await deployContract(
+        owner,
+        TestSwapReturnValuesArtifact,
+        [swap.address, swapToken.address, 2],
+      )) as TestSwapReturnValues
+      await testSwapReturnValues.deployed()
+
+      // Set deposit limits
+      await allowlist.setPoolCap(swap.address, String(6e20))
+      await allowlist.setPoolAccountLimit(swap.address, String(2e20))
+
+      await asyncForEach([owner, user1, user2], async (signer) => {
+        await firstToken.connect(signer).approve(swap.address, MAX_UINT256)
+        await secondToken.connect(signer).approve(swap.address, MAX_UINT256)
+        await swapToken.connect(signer).approve(swap.address, MAX_UINT256)
+      })
+
+      await swap.addLiquidity(
+        [String(1e18), String(1e18)],
+        0,
+        MAX_UINT256,
+        getTestMerkleProof(ownerAddress),
+      )
+
+      expect(await firstToken.balanceOf(swap.address)).to.eq(String(1e18))
+      expect(await secondToken.balanceOf(swap.address)).to.eq(String(1e18))
+    },
+  )
+
   beforeEach(async () => {
-    signers = await ethers.getSigners()
-    owner = signers[0]
-    user1 = signers[1]
-    user2 = signers[2]
-    ownerAddress = await owner.getAddress()
-    user1Address = await user1.getAddress()
-    user2Address = await user2.getAddress()
-
-    // Deploy dummy tokens
-    firstToken = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "First Token",
-      "FIRST",
-      "18",
-    ])) as GenericERC20
-
-    secondToken = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "Second Token",
-      "SECOND",
-      "18",
-    ])) as GenericERC20
-
-    // Mint dummy tokens
-    await asyncForEach([owner, user1, user2], async (signer) => {
-      const address = await signer.getAddress()
-      await firstToken.mint(address, String(1e20))
-      await secondToken.mint(address, String(1e20))
-    })
-
-    // Deploy Allowlist
-    allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
-      MERKLE_ROOT,
-    ])) as Allowlist
-
-    // Deploy MathUtils
-    mathUtils = (await deployContract(
-      signers[0] as Wallet,
-      MathUtilsArtifact,
-    )) as MathUtils
-
-    // Deploy SwapUtils with MathUtils library
-    swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-      MathUtils: mathUtils.address,
-    })) as SwapUtils
-    await swapUtils.deployed()
-
-    // Deploy Swap with SwapUtils library
-    swap = (await deployContractWithLibraries(
-      owner,
-      SwapArtifact,
-      { SwapUtils: swapUtils.address },
-      [
-        [firstToken.address, secondToken.address],
-        [18, 18],
-        LP_TOKEN_NAME,
-        LP_TOKEN_SYMBOL,
-        INITIAL_A_VALUE,
-        SWAP_FEE,
-        0,
-        0,
-        allowlist.address,
-      ],
-    )) as Swap
-    await swap.deployed()
-
-    expect(await swap.getVirtualPrice()).to.be.eq(0)
-
-    swapStorage = await swap.swapStorage()
-
-    swapToken = (await ethers.getContractAt(
-      LPTokenArtifact.abi,
-      swapStorage.lpToken,
-    )) as LPToken
-
-    testSwapReturnValues = (await deployContract(
-      owner,
-      TestSwapReturnValuesArtifact,
-      [swap.address, swapToken.address, 2],
-    )) as TestSwapReturnValues
-    await testSwapReturnValues.deployed()
-
-    // Set deposit limits
-    await allowlist.setPoolCap(swap.address, String(6e20))
-    await allowlist.setPoolAccountLimit(swap.address, String(2e20))
-
-    await asyncForEach([owner, user1, user2], async (signer) => {
-      await firstToken.connect(signer).approve(swap.address, MAX_UINT256)
-      await secondToken.connect(signer).approve(swap.address, MAX_UINT256)
-      await swapToken.connect(signer).approve(swap.address, MAX_UINT256)
-    })
-
-    await swap.addLiquidity(
-      [String(1e18), String(1e18)],
-      0,
-      MAX_UINT256,
-      getTestMerkleProof(ownerAddress),
-    )
-
-    expect(await firstToken.balanceOf(swap.address)).to.eq(String(1e18))
-    expect(await secondToken.balanceOf(swap.address)).to.eq(String(1e18))
+    await setupTest()
   })
 
   describe("swapStorage", () => {
@@ -2625,17 +2635,17 @@ describe("Swap", async () => {
       await setTimestamp((await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS)
 
       // Verify user2's fee decays as expected
-      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.eq(
-        BigNumber.from("25000000"),
-      )
+      let currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
+      expect(currentFee).to.lte(BigNumber.from("25000000"))
+      expect(currentFee).to.gte(BigNumber.from("24993778"))
 
       // Transfer more tokens to user2
       await swapToken.connect(user1).transfer(user2Address, String(1e18))
 
       // Verify user2's fee has updated with discounted rate
-      expect(await swap.calculateCurrentWithdrawFee(user2Address)).to.eq(
-        BigNumber.from("37499989"),
-      )
+      currentFee = await swap.calculateCurrentWithdrawFee(user2Address)
+      expect(currentFee).to.lte(BigNumber.from("37499989"))
+      expect(currentFee).to.gte(BigNumber.from("37497044"))
     })
   })
 
@@ -2792,7 +2802,7 @@ describe("Swap", async () => {
       // call rampA()
       await swap.rampA(
         100,
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 100,
       )
 
       // Stop ramp
@@ -2802,7 +2812,7 @@ describe("Swap", async () => {
     it("Stop ramp succeeds", async () => {
       // call rampA()
       const endTimestamp =
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 100
       await swap.rampA(100, endTimestamp)
 
       // set timestamp to +100000 seconds
@@ -2826,7 +2836,7 @@ describe("Swap", async () => {
     it("Reverts with 'Ramp is already stopped'", async () => {
       // call rampA()
       const endTimestamp =
-        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1
+        (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 100
       await swap.rampA(100, endTimestamp)
 
       // set timestamp to +10000 seconds
