@@ -1,7 +1,6 @@
 {
   "extends":  [
     "plugin:@typescript-eslint/recommended",
-    "eslint-config-keep",
     "prettier/@typescript-eslint",
     "plugin:prettier/recommended"
   ],
