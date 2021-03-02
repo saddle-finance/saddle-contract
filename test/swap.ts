@@ -442,7 +442,7 @@ describe("Swap", async () => {
         .mul(999)
         .div(1000)
 
-      expect(
+      await expect(
         swap
           .connect(user1)
           .addLiquidity(
