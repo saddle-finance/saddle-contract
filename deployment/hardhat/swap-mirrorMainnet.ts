@@ -212,6 +212,10 @@ async function deploySwap(): Promise<void> {
     BigNumber.from(10).pow(18).mul(1),
   )
 
+  // disable the guarded phase
+  await btcSwap.disableGuard()
+  await stablecoinSwap.disableGuard()
+
   await stablecoinSwap.deployed()
   const stablecoinLpToken = (await stablecoinSwap.swapStorage()).lpToken
   await btcSwap.deployed()
