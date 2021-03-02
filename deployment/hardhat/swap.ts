@@ -1,5 +1,3 @@
-import { asyncForEach, deployContractWithLibraries } from "../../test/testUtils"
-
 import { Allowlist } from "../../build/typechain/Allowlist"
 import AllowlistArtifact from "../../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { BigNumber } from "@ethersproject/bignumber"
@@ -13,6 +11,7 @@ import { SwapUtils } from "../../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import { Wallet } from "ethers"
 import { deployContract } from "ethereum-waffle"
+import { asyncForEach, deployContractWithLibraries } from "../../test/testUtils"
 import { ethers } from "hardhat"
 import merkleTreeData from "../../test/exampleMerkleTree.json"
 
