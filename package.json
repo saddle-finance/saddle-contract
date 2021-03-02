@@ -11,10 +11,10 @@
   "dependencies": {
     "@eth-optimism/smock": "^0.2.1-alpha.0",
     "@openzeppelin/contracts": "3.3.0",
-    "openzeppelin-contracts-sol-0.5": "npm:@openzeppelin/contracts@2.5.1",
-    "openzeppelin-contracts-3.4": "npm:@openzeppelin/contracts@3.4.0",
     "dotenv": "^8.2.0",
     "hardhat-typechain": "^0.3.5",
+    "openzeppelin-contracts-3.4": "npm:@openzeppelin/contracts@3.4.0",
+    "openzeppelin-contracts-sol-0.5": "npm:@openzeppelin/contracts@2.5.1",
     "synthetix": "2.39.2"
   },
   "devDependencies": {
@@ -29,11 +29,10 @@
     "@typescript-eslint/parser": "^2.24.0",
     "chai": "^4.3.0",
     "eslint": "^6.8.0",
-    "eslint-config-keep": "git+https://github.com/keep-network/eslint-config-keep.git#0.3.0",
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-prettier": "^3.3.1",
     "ethereum-waffle": "^3.2.2",
-    "ethers": "^5.0.20",
+    "ethers": "^5.0.31",
     "ethlint": "^1.2.5",
     "hardhat": "^2.0.11",
     "hardhat-gas-reporter": "^1.0.4",
@@ -58,7 +57,7 @@
     "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/*.ts",
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "lint:fix:sol": "prettier --write 'contracts/**/*.sol' && solhint 'contracts/**/*.sol' --fix",
-    "build": "hardhat compile && hardhat typechain && tsc",
+    "build": "hardhat compile",
     "test": "hardhat test",
     "coverage": "hardhat coverage --temp ./build/artifacts",
     "prepare": "npm run build"
