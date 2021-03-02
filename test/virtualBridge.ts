@@ -1,5 +1,6 @@
-import { BigNumber, Signer, utils, Wallet } from "ethers"
+import { BigNumber, Signer, Wallet, utils } from "ethers"
 import {
+  MAX_UINT256,
   asyncForEach,
   deployContractWithLibraries,
   getTestMerkleProof,
@@ -7,12 +8,10 @@ import {
   getUserTokenBalances,
   impersonateAccount,
   increaseTimestamp,
-  MAX_UINT256,
-  revertToSnapshot,
   setTimestamp,
-  takeSnapshot,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
+import { deployments, ethers, network } from "hardhat"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
@@ -29,8 +28,6 @@ import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
-import { ethers, network } from "hardhat"
-
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -81,7 +78,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
   let owner: Signer
   let user1: Signer
   let user2: Signer
-  let savedStateId = -1
   // eslint-disable-next-line no-unused-vars
   let ownerAddress: string
   // eslint-disable-next-line no-unused-vars
@@ -167,175 +163,182 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
     await setTimestamp(1609896169)
   })
 
+  const setupTest = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      await deployments.fixture() // ensure you start from a fresh deployments
+
+      signers = await ethers.getSigners()
+      owner = signers[0]
+      user1 = signers[1]
+      user2 = signers[2]
+      ownerAddress = await owner.getAddress()
+      user1Address = await user1.getAddress()
+      user2Address = await user2.getAddress()
+
+      // Take tokens from the holders by impersonating them
+      // eslint-disable-next-line no-unused-vars
+      for (const [k, v] of Object.entries(tokenList)) {
+        const contract = (await ethers.getContractAt(
+          GenericERC20Artifact.abi,
+          v.address,
+        )) as GenericERC20
+
+        await asyncForEach(v.holders, async (holder) => {
+          await contract
+            .connect(await impersonateAccount(holder))
+            .transfer(user1Address, await contract.balanceOf(holder))
+        })
+
+        v.contract = contract
+      }
+
+      tbtc = tokenList.tbtc.contract
+      wbtc = tokenList.wbtc.contract
+      renbtc = tokenList.renbtc.contract
+      sbtc = tokenList.sbtc.contract
+      susd = tokenList.susd.contract
+      sdefi = tokenList.sdefi.contract
+      usdc = tokenList.usdc.contract
+
+      const balances = await getUserTokenBalances(user1Address, [
+        tbtc,
+        wbtc,
+        renbtc,
+        sbtc,
+        susd,
+        usdc,
+      ])
+
+      expect(balances[0]).to.eq("72953806919870472431")
+      expect(balances[1]).to.eq("90380233073")
+      expect(balances[2]).to.eq("32765116441")
+      expect(balances[3]).to.eq("46220887120771774898")
+      expect(balances[4]).to.eq("6559142099847758949166311")
+      expect(balances[5]).to.eq("315600946507951")
+
+      // Deploy Allowlist
+      allowlist = (await deployContract(
+        signers[0] as Wallet,
+        AllowlistArtifact,
+        [getTestMerkleRoot()],
+      )) as Allowlist
+
+      // Deploy MathUtils
+      mathUtils = (await deployContract(
+        signers[0] as Wallet,
+        MathUtilsArtifact,
+      )) as MathUtils
+
+      // Deploy SwapUtils with MathUtils library
+      swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
+        MathUtils: mathUtils.address,
+      })) as SwapUtils
+      await swapUtils.deployed()
+
+      // Deploy Swap with SwapUtils library
+      btcSwap = (await deployContractWithLibraries(
+        owner,
+        SwapArtifact,
+        { SwapUtils: swapUtils.address },
+        [
+          [
+            tokenList.tbtc.address,
+            tokenList.wbtc.address,
+            tokenList.renbtc.address,
+            tokenList.sbtc.address,
+          ],
+          [18, 8, 8, 18],
+          LP_TOKEN_NAME,
+          LP_TOKEN_SYMBOL,
+          INITIAL_A_VALUE,
+          SWAP_FEE,
+          0,
+          0,
+          allowlist.address,
+        ],
+      )) as Swap
+      await btcSwap.deployed()
+      btcSwapStorage = await btcSwap.swapStorage()
+
+      btcSwapToken = (await ethers.getContractAt(
+        LPTokenArtifact.abi,
+        btcSwapStorage.lpToken,
+      )) as LPToken
+
+      usdSwap = (await deployContractWithLibraries(
+        owner,
+        SwapArtifact,
+        { SwapUtils: swapUtils.address },
+        [
+          [tokenList.susd.address, tokenList.usdc.address],
+          [18, 6],
+          LP_TOKEN_NAME,
+          LP_TOKEN_SYMBOL,
+          INITIAL_A_VALUE,
+          SWAP_FEE,
+          0,
+          0,
+          allowlist.address,
+        ],
+      )) as Swap
+
+      // Deploy Bridge contract
+      bridge = (await deployContract(owner, BridgeArtifact)) as Bridge
+      await bridge.deployed()
+
+      // Set deposit limits
+      await allowlist.setPoolCap(btcSwap.address, BigNumber.from(10).pow(24))
+      await allowlist.setPoolAccountLimit(
+        btcSwap.address,
+        BigNumber.from(10).pow(24),
+      )
+      await allowlist.setPoolCap(
+        usdSwap.address,
+        BigNumber.from(10).pow(18 + 10),
+      )
+      await allowlist.setPoolAccountLimit(
+        usdSwap.address,
+        BigNumber.from(10).pow(18 + 10),
+      )
+
+      // Approve token transfer to Swap for adding liquidity and to Bridge for virtual swaps
+      await asyncForEach(
+        [tbtc, wbtc, renbtc, sbtc, susd, sdefi, usdc],
+        async (t: GenericERC20) => {
+          await t.connect(user1).approve(btcSwap.address, MAX_UINT256)
+          await t.connect(user1).approve(usdSwap.address, MAX_UINT256)
+          await t.connect(user1).approve(bridge.address, MAX_UINT256)
+        },
+      )
+
+      // Add initial liquidity
+      await btcSwap
+        .connect(user1)
+        .addLiquidity(
+          [String(45e18), String(45e8), String(45e8), String(45e18)],
+          0,
+          MAX_UINT256,
+          getTestMerkleProof(user1Address),
+        )
+
+      await usdSwap
+        .connect(user1)
+        .addLiquidity(
+          [
+            BigNumber.from(String(1e18)).mul(5000000),
+            BigNumber.from(String(1e6)).mul(5000000),
+          ],
+          0,
+          MAX_UINT256,
+          getTestMerkleProof(user1Address),
+        )
+
+      expect(await btcSwapToken.balanceOf(user1Address)).to.eq(String(180e18))
+    },
+  )
+
   beforeEach(async () => {
-    // reset to snapshot
-    if (savedStateId > -1) {
-      await revertToSnapshot(savedStateId)
-    }
-    savedStateId = await takeSnapshot()
-
-    signers = await ethers.getSigners()
-    owner = signers[0]
-    user1 = signers[1]
-    user2 = signers[2]
-    ownerAddress = await owner.getAddress()
-    user1Address = await user1.getAddress()
-    user2Address = await user2.getAddress()
-
-    // Take tokens from the holders by impersonating them
-    // eslint-disable-next-line no-unused-vars
-    for (const [k, v] of Object.entries(tokenList)) {
-      const contract = (await ethers.getContractAt(
-        GenericERC20Artifact.abi,
-        v.address,
-      )) as GenericERC20
-
-      await asyncForEach(v.holders, async (holder) => {
-        await contract
-          .connect(await impersonateAccount(holder))
-          .transfer(user1Address, await contract.balanceOf(holder))
-      })
-
-      v.contract = contract
-    }
-
-    tbtc = tokenList.tbtc.contract
-    wbtc = tokenList.wbtc.contract
-    renbtc = tokenList.renbtc.contract
-    sbtc = tokenList.sbtc.contract
-    susd = tokenList.susd.contract
-    sdefi = tokenList.sdefi.contract
-    usdc = tokenList.usdc.contract
-
-    const balances = await getUserTokenBalances(user1Address, [
-      tbtc,
-      wbtc,
-      renbtc,
-      sbtc,
-      susd,
-      usdc,
-    ])
-
-    expect(balances[0]).to.eq("72953806919870472431")
-    expect(balances[1]).to.eq("90380233073")
-    expect(balances[2]).to.eq("32765116441")
-    expect(balances[3]).to.eq("46220887120771774898")
-    expect(balances[4]).to.eq("6559142099847758949166311")
-    expect(balances[5]).to.eq("315600946507951")
-
-    // Deploy Allowlist
-    allowlist = (await deployContract(signers[0] as Wallet, AllowlistArtifact, [
-      getTestMerkleRoot(),
-    ])) as Allowlist
-
-    // Deploy MathUtils
-    mathUtils = (await deployContract(
-      signers[0] as Wallet,
-      MathUtilsArtifact,
-    )) as MathUtils
-
-    // Deploy SwapUtils with MathUtils library
-    swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-      MathUtils: mathUtils.address,
-    })) as SwapUtils
-    await swapUtils.deployed()
-
-    // Deploy Swap with SwapUtils library
-    btcSwap = (await deployContractWithLibraries(
-      owner,
-      SwapArtifact,
-      { SwapUtils: swapUtils.address },
-      [
-        [
-          tokenList.tbtc.address,
-          tokenList.wbtc.address,
-          tokenList.renbtc.address,
-          tokenList.sbtc.address,
-        ],
-        [18, 8, 8, 18],
-        LP_TOKEN_NAME,
-        LP_TOKEN_SYMBOL,
-        INITIAL_A_VALUE,
-        SWAP_FEE,
-        0,
-        0,
-        allowlist.address,
-      ],
-    )) as Swap
-    await btcSwap.deployed()
-    btcSwapStorage = await btcSwap.swapStorage()
-
-    btcSwapToken = (await ethers.getContractAt(
-      LPTokenArtifact.abi,
-      btcSwapStorage.lpToken,
-    )) as LPToken
-
-    usdSwap = (await deployContractWithLibraries(
-      owner,
-      SwapArtifact,
-      { SwapUtils: swapUtils.address },
-      [
-        [tokenList.susd.address, tokenList.usdc.address],
-        [18, 6],
-        LP_TOKEN_NAME,
-        LP_TOKEN_SYMBOL,
-        INITIAL_A_VALUE,
-        SWAP_FEE,
-        0,
-        0,
-        allowlist.address,
-      ],
-    )) as Swap
-
-    // Deploy Bridge contract
-    bridge = (await deployContract(owner, BridgeArtifact)) as Bridge
-    await bridge.deployed()
-
-    // Set deposit limits
-    await allowlist.setPoolCap(btcSwap.address, BigNumber.from(10).pow(24))
-    await allowlist.setPoolAccountLimit(
-      btcSwap.address,
-      BigNumber.from(10).pow(24),
-    )
-    await allowlist.setPoolCap(usdSwap.address, BigNumber.from(10).pow(18 + 10))
-    await allowlist.setPoolAccountLimit(
-      usdSwap.address,
-      BigNumber.from(10).pow(18 + 10),
-    )
-
-    // Approve token transfer to Swap for adding liquidity and to Bridge for virtual swaps
-    await asyncForEach(
-      [tbtc, wbtc, renbtc, sbtc, susd, sdefi, usdc],
-      async (t: GenericERC20) => {
-        await t.connect(user1).approve(btcSwap.address, MAX_UINT256)
-        await t.connect(user1).approve(usdSwap.address, MAX_UINT256)
-        await t.connect(user1).approve(bridge.address, MAX_UINT256)
-      },
-    )
-
-    // Add initial liquidity
-    await btcSwap
-      .connect(user1)
-      .addLiquidity(
-        [String(45e18), String(45e8), String(45e8), String(45e18)],
-        0,
-        MAX_UINT256,
-        getTestMerkleProof(user1Address),
-      )
-
-    await usdSwap
-      .connect(user1)
-      .addLiquidity(
-        [
-          BigNumber.from(String(1e18)).mul(5000000),
-          BigNumber.from(String(1e6)).mul(5000000),
-        ],
-        0,
-        MAX_UINT256,
-        getTestMerkleProof(user1Address),
-      )
-
-    expect(await btcSwapToken.balanceOf(user1Address)).to.eq(String(180e18))
+    await setupTest()
   })
 
   describe("setSynthIndex", () => {

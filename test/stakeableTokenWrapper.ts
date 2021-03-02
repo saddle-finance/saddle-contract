@@ -1,13 +1,13 @@
 import { Signer, Wallet } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
+import { deployments, ethers } from "hardhat"
 
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import { IERC20 as IERC20 } from "../build/typechain/IERC20"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
+import { IERC20 } from "../build/typechain/IERC20"
 import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
 import StakeableTokenWrapperArtifact from "../build/artifacts/contracts/StakeableTokenWrapper.sol/StakeableTokenWrapper.json"
 import chai from "chai"
-import { ethers } from "hardhat"
 
 chai.use(solidity)
 const { expect } = chai
@@ -40,20 +40,28 @@ describe("StakeableTokenWrapper", () => {
     return [wrapperAsStaker, tokenAsStaker]
   }
 
+  const setupTest = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      await deployments.fixture() // ensure you start from a fresh deployments
+
+      signers = await ethers.getSigners()
+      basicToken = (await deployContract(
+        signers[0] as Wallet,
+        GenericERC20Artifact,
+        ["Basic Token", "BASIC", "18"],
+      )) as GenericERC20
+
+      await basicToken.mint(await signers[0].getAddress(), 10 ** 10)
+
+      await basicToken.transfer(await signers[1].getAddress(), 1000)
+      await basicToken.transfer(await signers[2].getAddress(), 10000)
+
+      tokenWrapper = (await deployWrapper(basicToken)) as StakeableTokenWrapper
+    },
+  )
+
   beforeEach(async () => {
-    signers = await ethers.getSigners()
-    basicToken = (await deployContract(
-      signers[0] as Wallet,
-      GenericERC20Artifact,
-      ["Basic Token", "BASIC", "18"],
-    )) as GenericERC20
-
-    await basicToken.mint(await signers[0].getAddress(), 10 ** 10)
-
-    await basicToken.transfer(await signers[1].getAddress(), 1000)
-    await basicToken.transfer(await signers[2].getAddress(), 10000)
-
-    tokenWrapper = (await deployWrapper(basicToken)) as StakeableTokenWrapper
+    await setupTest()
   })
 
   it("Reverts when staking 0", async () => {
