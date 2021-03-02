@@ -25,6 +25,7 @@ import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
 import { ethers } from "hardhat"
+import { formatBytes32String } from "ethers/lib/utils"
 
 chai.use(solidity)
 const { expect } = chai
@@ -199,21 +200,35 @@ describe("Swap Flashloan", () => {
 
   describe("Empty flashloan", () => {
     const flashLoanAmount = BigNumber.from(1e6)
-    const flashLoanFee = flashLoanAmount.mul(1000).div(10000)
+    const flashLoanFee = flashLoanAmount.mul(100).div(10000)
 
     it("Reverts when the borrower does not have enough to pay back", async () => {
       await expect(
         flashLoanExample.flashLoan(swap.address, USDC.address, 1e6, []),
-      ).to.be.reverted
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance")
+    })
+
+    it("Reverts when flashloan debt is not paid", async () => {
+      await expect(
+        flashLoanExample.flashLoan(
+          swap.address,
+          USDC.address,
+          1e6,
+          formatBytes32String("dontRepayDebt"),
+        ),
+      ).to.be.revertedWith("flashloan fee is not met")
     })
 
     it("Empty flashloan succeeds", async () => {
       // Since the contract is empty, we need to give the contract some USDC to have enough to pay off the fee
+      expect(await swap.getTokenBalance(1)).to.eq("50000000")
       await USDC.connect(user1).transfer(flashLoanExample.address, flashLoanFee)
       await flashLoanExample.flashLoan(swap.address, USDC.address, 1e6, [])
 
       // Check the borrower contract paid off the balance
       expect(await USDC.balanceOf(flashLoanExample.address)).to.eq(0)
+      expect(await swap.getVirtualPrice()).to.eq("1000024999981618719")
+      expect(await swap.getTokenBalance(1)).to.eq("50005000")
     })
   })
 })

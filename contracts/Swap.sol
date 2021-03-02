@@ -534,15 +534,15 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     ) external nonReentrant {
         uint8 tokenIndex = getTokenIndex(address(token));
         uint256 availableLiquidityBefore = swapStorage.balances[tokenIndex];
-        uint256 adminBalanceBefore =
+        uint256 protocolBalanceBefore =
             token.balanceOf(address(this)).sub(availableLiquidityBefore);
         require(
             amount > 0 && availableLiquidityBefore >= amount,
             "invalid amount param"
         );
 
-        uint256 totalFeeBips = 1000; // 1%
-        uint256 protocolFeeBips = 50000; // 50%
+        uint256 totalFeeBips = 100; // 1%
+        uint256 protocolFeeBips = 5000; // 50%
 
         // Calculate the additional amount of tokens the pool should end up with
         uint256 amountFee = amount.mul(totalFeeBips).div(10000);
@@ -567,7 +567,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         );
 
         uint256 availableLiquidityAfter =
-            token.balanceOf(address(this)).sub(adminBalanceBefore);
+            token.balanceOf(address(this)).sub(protocolBalanceBefore);
         require(
             availableLiquidityAfter == availableLiquidityBefore.add(amountFee),
             "flashloan fee is not met"
