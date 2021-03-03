@@ -103,9 +103,9 @@ contract SwapFlashLoan is Swap {
         bytes memory params
     ) external nonReentrant {
         uint8 tokenIndex = getTokenIndex(address(token));
-        uint256 availableLiquidityBefore = swapStorage.balances[tokenIndex];
+        uint256 availableLiquidityBefore = token.balanceOf(address(this));
         uint256 protocolBalanceBefore =
-            token.balanceOf(address(this)).sub(availableLiquidityBefore);
+            availableLiquidityBefore.sub(swapStorage.balances[tokenIndex]);
         require(
             amount > 0 && availableLiquidityBefore >= amount,
             "invalid amount"
@@ -125,8 +125,7 @@ contract SwapFlashLoan is Swap {
         token.safeTransfer(receiver, amount);
 
         // Execute callback function on receiver
-        IFlashLoanReceiver receiver = IFlashLoanReceiver(receiver);
-        receiver.executeOperation(
+        IFlashLoanReceiver(receiver).executeOperation(
             address(this),
             address(token),
             amount,
@@ -141,16 +140,10 @@ contract SwapFlashLoan is Swap {
             "flashloan fee is not met"
         );
 
-        swapStorage.balances[tokenIndex] = availableLiquidityBefore
-            .add(amountFee)
-            .sub(protocolFee);
-        emit FlashLoan(
-            address(receiver),
-            tokenIndex,
-            amount,
-            amountFee,
+        swapStorage.balances[tokenIndex] = availableLiquidityAfter.sub(
             protocolFee
         );
+        emit FlashLoan(receiver, tokenIndex, amount, amountFee, protocolFee);
     }
 
     /*** ADMIN FUNCTIONS ***/
