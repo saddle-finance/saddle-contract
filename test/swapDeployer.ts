@@ -9,6 +9,7 @@ import {
   TIME,
   setTimestamp,
   getPoolBalances,
+  forceAdvanceOneBlock,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
@@ -25,7 +26,7 @@ import SwapDeployerArtifact from "../build/artifacts/contracts/SwapDeployer.sol/
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
-import { ethers } from "hardhat"
+import { deployments, ethers } from "hardhat"
 
 chai.use(solidity)
 const { expect } = chai
@@ -66,147 +67,155 @@ describe("Swap with 4 tokens", () => {
   const LP_TOKEN_SYMBOL = "TESTLP"
   const TOKENS: GenericERC20[] = []
 
-  beforeEach(async () => {
-    TOKENS.length = 0
-    signers = await ethers.getSigners()
-    owner = signers[0]
-    user1 = signers[1]
-    user2 = signers[2]
-    attacker = signers[10]
-    ownerAddress = await owner.getAddress()
-    user1Address = await user1.getAddress()
-    user2Address = await user2.getAddress()
+  const setupTest = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      TOKENS.length = 0
+      signers = await ethers.getSigners()
+      owner = signers[0]
+      user1 = signers[1]
+      user2 = signers[2]
+      attacker = signers[10]
+      ownerAddress = await owner.getAddress()
+      user1Address = await user1.getAddress()
+      user2Address = await user2.getAddress()
 
-    // Deploy dummy tokens
-    DAI = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "DAI",
-      "DAI",
-      "18",
-    ])) as GenericERC20
+      // Deploy dummy tokens
+      DAI = (await deployContract(owner as Wallet, GenericERC20Artifact, [
+        "DAI",
+        "DAI",
+        "18",
+      ])) as GenericERC20
 
-    USDC = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "USDC",
-      "USDC",
-      "6",
-    ])) as GenericERC20
+      USDC = (await deployContract(owner as Wallet, GenericERC20Artifact, [
+        "USDC",
+        "USDC",
+        "6",
+      ])) as GenericERC20
 
-    USDT = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "USDT",
-      "USDT",
-      "6",
-    ])) as GenericERC20
+      USDT = (await deployContract(owner as Wallet, GenericERC20Artifact, [
+        "USDT",
+        "USDT",
+        "6",
+      ])) as GenericERC20
 
-    SUSD = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-      "SUSD",
-      "SUSD",
-      "18",
-    ])) as GenericERC20
+      SUSD = (await deployContract(owner as Wallet, GenericERC20Artifact, [
+        "SUSD",
+        "SUSD",
+        "18",
+      ])) as GenericERC20
 
-    TOKENS.push(DAI, USDC, USDT, SUSD)
+      TOKENS.push(DAI, USDC, USDT, SUSD)
 
-    // Mint dummy tokens
-    await asyncForEach(
-      [ownerAddress, user1Address, user2Address, await attacker.getAddress()],
-      async (address) => {
-        await DAI.mint(address, String(1e20))
-        await USDC.mint(address, String(1e8))
-        await USDT.mint(address, String(1e8))
-        await SUSD.mint(address, String(1e20))
-      },
-    )
+      // Mint dummy tokens
+      await asyncForEach(
+        [ownerAddress, user1Address, user2Address, await attacker.getAddress()],
+        async (address) => {
+          await DAI.mint(address, String(1e20))
+          await USDC.mint(address, String(1e8))
+          await USDT.mint(address, String(1e8))
+          await SUSD.mint(address, String(1e20))
+        },
+      )
 
-    // Deploy MathUtils
-    mathUtils = (await deployContract(
-      signers[0] as Wallet,
-      MathUtilsArtifact,
-    )) as MathUtils
+      // Deploy MathUtils
+      mathUtils = (await deployContract(
+        signers[0] as Wallet,
+        MathUtilsArtifact,
+      )) as MathUtils
 
-    // Deploy SwapUtils with MathUtils library
-    swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-      MathUtils: mathUtils.address,
-    })) as SwapUtils
-    await swapUtils.deployed()
+      // Deploy SwapUtils with MathUtils library
+      swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
+        MathUtils: mathUtils.address,
+      })) as SwapUtils
+      await swapUtils.deployed()
 
-    // Deploy Swap with SwapUtils library
-    swap = (await deployContractWithLibraries(
-      owner,
-      SwapArtifact,
-      { SwapUtils: swapUtils.address },
-      [
-        [DAI.address, USDC.address],
-        [18, 6],
+      // Deploy Swap with SwapUtils library
+      swap = (await deployContractWithLibraries(
+        owner,
+        SwapArtifact,
+        { SwapUtils: swapUtils.address },
+        [
+          [DAI.address, USDC.address],
+          [18, 6],
+          LP_TOKEN_NAME,
+          LP_TOKEN_SYMBOL,
+          INITIAL_A_VALUE,
+          SWAP_FEE,
+          0,
+          0,
+        ],
+      )) as Swap
+      await swap.deployed()
+
+      swapDeployer = (await deployContract(
+        owner,
+        SwapDeployerArtifact,
+      )) as SwapDeployer
+
+      const swapCloneAddress = await swapDeployer.callStatic.deploy(
+        swap.address,
+        [DAI.address, USDC.address, USDT.address, SUSD.address],
+        [18, 6, 6, 18],
         LP_TOKEN_NAME,
         LP_TOKEN_SYMBOL,
         INITIAL_A_VALUE,
         SWAP_FEE,
         0,
         0,
-      ],
-    )) as Swap
-    await swap.deployed()
+      )
 
-    swapDeployer = (await deployContract(
-      owner,
-      SwapDeployerArtifact,
-    )) as SwapDeployer
+      await swapDeployer.deploy(
+        swap.address,
+        [DAI.address, USDC.address, USDT.address, SUSD.address],
+        [18, 6, 6, 18],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        0,
+        0,
+      )
 
-    const swapCloneAddress = await swapDeployer.callStatic.deploy(
-      swap.address,
-      [DAI.address, USDC.address, USDT.address, SUSD.address],
-      [18, 6, 6, 18],
-      LP_TOKEN_NAME,
-      LP_TOKEN_SYMBOL,
-      INITIAL_A_VALUE,
-      SWAP_FEE,
-      0,
-      0,
-    )
+      swapClone = (await ethers.getContractAt(
+        SwapArtifact.abi,
+        swapCloneAddress,
+      )) as Swap
 
-    await swapDeployer.deploy(
-      swap.address,
-      [DAI.address, USDC.address, USDT.address, SUSD.address],
-      [18, 6, 6, 18],
-      LP_TOKEN_NAME,
-      LP_TOKEN_SYMBOL,
-      INITIAL_A_VALUE,
-      SWAP_FEE,
-      0,
-      0,
-    )
+      expect(await swapClone.getVirtualPrice()).to.be.eq(0)
 
-    swapClone = (await ethers.getContractAt(
-      SwapArtifact.abi,
-      swapCloneAddress,
-    )) as Swap
+      swapStorage = await swapClone.swapStorage()
 
-    expect(await swapClone.getVirtualPrice()).to.be.eq(0)
+      swapToken = (await ethers.getContractAt(
+        LPTokenArtifact.abi,
+        swapStorage.lpToken,
+      )) as LPToken
 
-    swapStorage = await swapClone.swapStorage()
+      await asyncForEach([owner, user1, user2, attacker], async (signer) => {
+        await DAI.connect(signer).approve(swapClone.address, MAX_UINT256)
+        await USDC.connect(signer).approve(swapClone.address, MAX_UINT256)
+        await USDT.connect(signer).approve(swapClone.address, MAX_UINT256)
+        await SUSD.connect(signer).approve(swapClone.address, MAX_UINT256)
+      })
 
-    swapToken = (await ethers.getContractAt(
-      LPTokenArtifact.abi,
-      swapStorage.lpToken,
-    )) as LPToken
+      // Populate the pool with initial liquidity
+      await swapClone.addLiquidity(
+        [String(50e18), String(50e6), String(50e6), String(50e18)],
+        0,
+        MAX_UINT256,
+      )
 
-    await asyncForEach([owner, user1, user2, attacker], async (signer) => {
-      await DAI.connect(signer).approve(swapClone.address, MAX_UINT256)
-      await USDC.connect(signer).approve(swapClone.address, MAX_UINT256)
-      await USDT.connect(signer).approve(swapClone.address, MAX_UINT256)
-      await SUSD.connect(signer).approve(swapClone.address, MAX_UINT256)
-    })
+      expect(await swapClone.getTokenBalance(0)).to.be.eq(String(50e18))
+      expect(await swapClone.getTokenBalance(1)).to.be.eq(String(50e6))
+      expect(await swapClone.getTokenBalance(2)).to.be.eq(String(50e6))
+      expect(await swapClone.getTokenBalance(3)).to.be.eq(String(50e18))
+      expect(await getUserTokenBalance(owner, swapToken)).to.be.eq(
+        String(200e18),
+      )
+    },
+  )
 
-    // Populate the pool with initial liquidity
-    await swapClone.addLiquidity(
-      [String(50e18), String(50e6), String(50e6), String(50e18)],
-      0,
-      MAX_UINT256,
-    )
-
-    expect(await swapClone.getTokenBalance(0)).to.be.eq(String(50e18))
-    expect(await swapClone.getTokenBalance(1)).to.be.eq(String(50e6))
-    expect(await swapClone.getTokenBalance(2)).to.be.eq(String(50e6))
-    expect(await swapClone.getTokenBalance(3)).to.be.eq(String(50e18))
-    expect(await getUserTokenBalance(owner, swapToken)).to.be.eq(String(200e18))
+  beforeEach(async () => {
+    await setupTest()
   })
 
   describe("addLiquidity", () => {
@@ -330,6 +339,9 @@ describe("Swap with 4 tokens", () => {
   })
 
   describe("Check for timestamp manipulations", () => {
+    beforeEach(async () => {
+      await forceAdvanceOneBlock()
+    })
     it("Check for maximum differences in A and virtual price when increasing", async () => {
       // Create imbalanced pool to measure virtual price change
       // Number of tokens are in 2:1:1:1 ratio
