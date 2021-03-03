@@ -85,6 +85,17 @@ contract SwapFlashLoan is Swap {
 
     /*** STATE MODIFYING FUNCTIONS ***/
 
+    /**
+     * @notice Borrow the specified token from this pool for this transaction only. This function will call
+     * `IFlashLoanReceiver(receiver).executeOperation` and the `receiver` must return the full amount of the token
+     * and the associated fee by the end of the callback transaction. If the conditions are not met, this call
+     * is reverted.
+     * @param receiver the address of the receiver of the token. This address must implement the IFlashLoanReceiver
+     * interface and the callback function `executeOperation`.
+     * @param token the protocol fee in bps to be applied on the total flash loan fee
+     * @param amount the total amount to borrow in this transaction
+     * @param params optional data to pass along to the callback function
+     */
     function flashLoan(
         address receiver,
         IERC20 token,
@@ -97,7 +108,7 @@ contract SwapFlashLoan is Swap {
             token.balanceOf(address(this)).sub(availableLiquidityBefore);
         require(
             amount > 0 && availableLiquidityBefore >= amount,
-            "invalid amount param"
+            "invalid amount"
         );
 
         // Calculate the additional amount of tokens the pool should end up with
@@ -107,7 +118,7 @@ contract SwapFlashLoan is Swap {
             amountFee.mul(flashLoanProtocolFeeBips).div(10000);
         require(
             amountFee > 0,
-            "The requested amount is too small for a flashLoan."
+            "The requested amount is too small for a flashLoan"
         );
 
         // Transfer the requested amount of tokens

@@ -9,6 +9,10 @@ import "hardhat/console.sol";
 contract FlashLoanBorrowerExample is IFlashLoanReceiver {
     using SafeMath for uint256;
 
+    // Typical executeOperation function should do the 3 following actions
+    // 1. Check if the flashLoan was successful
+    // 2. Do actions with the borrowed tokens
+    // 3. Repay the debt to the `pool`
     function executeOperation(
         address pool,
         address token,
@@ -16,13 +20,15 @@ contract FlashLoanBorrowerExample is IFlashLoanReceiver {
         uint256 fee,
         bytes calldata params
     ) external override {
-        require(IERC20(token).balanceOf(address(this)) >= amount);
+        // 1. Check if the flashLoan was valid
+        require(
+            IERC20(token).balanceOf(address(this)) >= amount,
+            "flashloan is broken?"
+        );
 
-        // Simulate flashloan actions
+        // 2. Do actions with the borrowed token
         bytes32 paramsHash = keccak256(params);
-
         if (paramsHash == keccak256(bytes("dontRepayDebt"))) {
-            // Exit flashloan without paying the debt
             return;
         } else if (paramsHash == keccak256(bytes("reentrancy_addLiquidity"))) {
             ISwap(pool).addLiquidity(
@@ -43,7 +49,7 @@ contract FlashLoanBorrowerExample is IFlashLoanReceiver {
             ISwap(pool).removeLiquidityOneToken(1e18, 0, 1e18, now);
         }
 
-        // Payback debt
+        // 3. Payback debt
         uint256 totalDebt = amount.add(fee);
         IERC20(token).transfer(pool, totalDebt);
     }
