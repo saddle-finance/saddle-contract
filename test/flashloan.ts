@@ -19,20 +19,20 @@ import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { FlashLoanBorrowerExample } from "../build/typechain/FlashLoanBorrowerExample"
 import FlashLoanBorrowerExampleArtifact from "../build/artifacts/contracts/helper/FlashLoanBorrowerExample.sol/FlashLoanBorrowerExample.json"
-import { Swap } from "../build/typechain/Swap"
-import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
+import { SwapFlashLoan } from "../build/typechain/SwapFlashLoan"
+import SwapFlashLoanArtifact from "../build/artifacts/contracts/SwapFlashLoan.sol/SwapFlashLoan.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
 import { deployments, ethers } from "hardhat"
-import { formatBytes32String, solidityPack } from "ethers/lib/utils"
+import { solidityPack } from "ethers/lib/utils"
 
 chai.use(solidity)
 const { expect } = chai
 
 describe("Swap Flashloan", () => {
   let signers: Array<Signer>
-  let swap: Swap
+  let swapFlashLoan: SwapFlashLoan
   let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
@@ -137,9 +137,9 @@ describe("Swap Flashloan", () => {
       await swapUtils.deployed()
 
       // Deploy Swap with SwapUtils library
-      swap = (await deployContractWithLibraries(
+      swapFlashLoan = (await deployContractWithLibraries(
         owner,
-        SwapArtifact,
+        SwapFlashLoanArtifact,
         { SwapUtils: swapUtils.address },
         [
           [DAI.address, USDC.address, USDT.address, SUSD.address],
@@ -152,12 +152,12 @@ describe("Swap Flashloan", () => {
           0,
           allowlist.address,
         ],
-      )) as Swap
-      await swap.deployed()
+      )) as SwapFlashLoan
+      await swapFlashLoan.deployed()
 
-      expect(await swap.getVirtualPrice()).to.be.eq(0)
+      expect(await swapFlashLoan.getVirtualPrice()).to.be.eq(0)
 
-      swapStorage = await swap.swapStorage()
+      swapStorage = await swapFlashLoan.swapStorage()
 
       swapToken = (await ethers.getContractAt(
         LPTokenArtifact.abi,
@@ -166,35 +166,35 @@ describe("Swap Flashloan", () => {
 
       // Set deposit limits
       allowlist.setPoolCap(
-        swap.address,
+        swapFlashLoan.address,
         BigNumber.from(10).pow(18).mul(6000000),
       )
       allowlist.setPoolAccountLimit(
-        swap.address,
+        swapFlashLoan.address,
         BigNumber.from(10).pow(18).mul(1000000),
       )
 
       await asyncForEach([owner, user1, user2, attacker], async (signer) => {
-        await DAI.connect(signer).approve(swap.address, MAX_UINT256)
-        await USDC.connect(signer).approve(swap.address, MAX_UINT256)
-        await USDT.connect(signer).approve(swap.address, MAX_UINT256)
-        await SUSD.connect(signer).approve(swap.address, MAX_UINT256)
+        await DAI.connect(signer).approve(swapFlashLoan.address, MAX_UINT256)
+        await USDC.connect(signer).approve(swapFlashLoan.address, MAX_UINT256)
+        await USDT.connect(signer).approve(swapFlashLoan.address, MAX_UINT256)
+        await SUSD.connect(signer).approve(swapFlashLoan.address, MAX_UINT256)
       })
 
       // Populate the pool with initial liquidity
-      await swap.addLiquidity(
+      await swapFlashLoan.addLiquidity(
         [String(50e18), String(50e6), String(50e6), String(50e18)],
         0,
         MAX_UINT256,
         getTestMerkleProof(ownerAddress),
       )
 
-      await swap.disableGuard()
+      await swapFlashLoan.disableGuard()
 
-      expect(await swap.getTokenBalance(0)).to.be.eq(String(50e18))
-      expect(await swap.getTokenBalance(1)).to.be.eq(String(50e6))
-      expect(await swap.getTokenBalance(2)).to.be.eq(String(50e6))
-      expect(await swap.getTokenBalance(3)).to.be.eq(String(50e18))
+      expect(await swapFlashLoan.getTokenBalance(0)).to.be.eq(String(50e18))
+      expect(await swapFlashLoan.getTokenBalance(1)).to.be.eq(String(50e6))
+      expect(await swapFlashLoan.getTokenBalance(2)).to.be.eq(String(50e6))
+      expect(await swapFlashLoan.getTokenBalance(3)).to.be.eq(String(50e18))
       expect(await getUserTokenBalance(owner, swapToken)).to.be.eq(
         String(200e18),
       )
@@ -212,19 +212,16 @@ describe("Swap Flashloan", () => {
     await setupTest()
   })
 
-  const flashLoanAmount = BigNumber.from(1e6)
-  const flashLoanFee = flashLoanAmount.mul(100).div(10000)
-
   it("Reverts when the borrower does not have enough to pay back", async () => {
     await expect(
-      flashLoanExample.flashLoan(swap.address, USDC.address, 1e6, []),
+      flashLoanExample.flashLoan(swapFlashLoan.address, USDC.address, 1e6, []),
     ).to.be.revertedWith("ERC20: transfer amount exceeds balance")
   })
 
   it("Reverts when flashloan debt is not paid", async () => {
     await expect(
       flashLoanExample.flashLoan(
-        swap.address,
+        swapFlashLoan.address,
         USDC.address,
         1e6,
         solidityPack(["string"], ["dontRepayDebt"]),
@@ -235,7 +232,7 @@ describe("Swap Flashloan", () => {
   it("Reverts when calling re-entering swap contract via `addLiquidity`", async () => {
     await expect(
       flashLoanExample.flashLoan(
-        swap.address,
+        swapFlashLoan.address,
         USDC.address,
         1e6,
         solidityPack(["string"], ["reentrancy_addLiquidity"]),
@@ -246,7 +243,7 @@ describe("Swap Flashloan", () => {
   it("Reverts when calling re-entering swap contract via `swap`", async () => {
     await expect(
       flashLoanExample.flashLoan(
-        swap.address,
+        swapFlashLoan.address,
         USDC.address,
         1e6,
         solidityPack(["string"], ["reentrancy_swap"]),
@@ -257,7 +254,7 @@ describe("Swap Flashloan", () => {
   it("Reverts when calling re-entering swap contract via `removeLiquidity`", async () => {
     await expect(
       flashLoanExample.flashLoan(
-        swap.address,
+        swapFlashLoan.address,
         USDC.address,
         1e6,
         solidityPack(["string"], ["reentrancy_removeLiquidity"]),
@@ -268,7 +265,7 @@ describe("Swap Flashloan", () => {
   it("Reverts when calling re-entering swap contract via `removeLiquidityOneToken`", async () => {
     await expect(
       flashLoanExample.flashLoan(
-        swap.address,
+        swapFlashLoan.address,
         USDC.address,
         1e6,
         solidityPack(["string"], ["reentrancy_removeLiquidityOneToken"]),
@@ -277,16 +274,76 @@ describe("Swap Flashloan", () => {
   })
 
   it("Succeeds when fee is paid off", async () => {
+    const flashLoanAmount = BigNumber.from(1e6)
+    const flashLoanFee = flashLoanAmount
+      .mul(await swapFlashLoan.flashLoanFeeBips())
+      .div(10000)
+
+    // Check the initial balance and the virtual price
+    expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000000000000000000")
+    expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50000000")
+
     // Since the contract is empty, we need to give the contract some USDC to have enough to pay off the fee
-    expect(await swap.getTokenBalance(1)).to.eq("50000000")
     await USDC.connect(user1).transfer(flashLoanExample.address, flashLoanFee)
     await expect(
-      flashLoanExample.flashLoan(swap.address, USDC.address, 1e6, []),
-    ).to.emit(swap, "FlashLoan")
+      flashLoanExample.flashLoan(swapFlashLoan.address, USDC.address, 1e6, []),
+    ).to.emit(swapFlashLoan, "FlashLoan")
 
     // Check the borrower contract paid off the balance
     expect(await USDC.balanceOf(flashLoanExample.address)).to.eq(0)
-    expect(await swap.getVirtualPrice()).to.eq("1000024999981618719")
-    expect(await swap.getTokenBalance(1)).to.eq("50005000")
+    expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000024999981618719")
+    expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50005000")
+    expect(await swapFlashLoan.getAdminBalance(1)).to.eq("5000")
+  })
+
+  describe("setFlashLoanFees", () => {
+    it("Reverts when called by non-owner", async () => {
+      await expect(
+        swapFlashLoan.connect(user1).setFlashLoanFees(100, 5000),
+      ).to.be.revertedWith("Ownable: caller is not the owner")
+    })
+
+    it("Reverts when fees are not in the range", async () => {
+      await expect(swapFlashLoan.setFlashLoanFees(0, 5000)).to.be.revertedWith(
+        "fees are not in valid range",
+      )
+      await expect(
+        swapFlashLoan.setFlashLoanFees(100000, 5000),
+      ).to.be.revertedWith("fees are not in valid range")
+      await expect(
+        swapFlashLoan.setFlashLoanFees(100, 100000),
+      ).to.be.revertedWith("fees are not in valid range")
+      await expect(
+        swapFlashLoan.setFlashLoanFees(100000, 100000),
+      ).to.be.revertedWith("fees are not in valid range")
+    })
+
+    it("Succeeds when fees are in the valid range", async () => {
+      await swapFlashLoan.setFlashLoanFees(50, 100)
+      expect(await swapFlashLoan.flashLoanFeeBips()).to.eq(50)
+      expect(await swapFlashLoan.flashLoanProtocolFeeBips()).to.eq(100)
+
+      const flashLoanAmount = BigNumber.from(1e6)
+      const flashLoanFee = flashLoanAmount.mul(50).div(10000)
+
+      // Check the initial balance and the virtual price
+      expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000000000000000000")
+      expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50000000")
+
+      // Since the contract is empty, we need to give the contract some USDC to have enough to pay off the fee
+      await USDC.connect(user1).transfer(flashLoanExample.address, flashLoanFee)
+      await flashLoanExample.flashLoan(
+        swapFlashLoan.address,
+        USDC.address,
+        1e6,
+        [],
+      )
+
+      // Check the borrower contract paid off the balance
+      expect(await USDC.balanceOf(flashLoanExample.address)).to.eq(0)
+      expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000024749981984496")
+      expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50004950")
+      expect(await swapFlashLoan.getAdminBalance(1)).to.eq("50")
+    })
   })
 })

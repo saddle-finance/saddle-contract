@@ -9,6 +9,7 @@ import "./OwnerPausable.sol";
 import "./SwapUtils.sol";
 import "./MathUtils.sol";
 import "./Allowlist.sol";
+import "./interfaces/IFlashLoanReceiver.sol";
 
 /**
  * @title Swap - A StableSwap implementation in solidity.
@@ -27,7 +28,7 @@ import "./Allowlist.sol";
  * @dev Most of the logic is stored as a library `SwapUtils` for the sake of reducing contract's
  * deployment size.
  */
-contract Swap is OwnerPausable, ReentrancyGuard {
+contract SwapFlashLoan is OwnerPausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using MathUtils for uint256;
@@ -49,6 +50,11 @@ contract Swap is OwnerPausable, ReentrancyGuard {
     // Maps token address to an index in the pool. Used to prevent duplicate tokens in the pool.
     // getTokenIndex function also relies on this mapping to retrieve token index.
     mapping(address => uint8) private tokenIndexes;
+
+    // Fee parameters used to calculate fees for flashloans.
+    uint256 public flashLoanFeeBips;
+    uint256 public flashLoanProtocolFeeBips;
+    uint256 constant MAX_BPS = 10000;
 
     /*** EVENTS ***/
 
@@ -86,6 +92,13 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         uint256[] fees,
         uint256 invariant,
         uint256 lpTokenSupply
+    );
+    event FlashLoan(
+        address indexed receiver,
+        uint8 tokenIndex,
+        uint256 amount,
+        uint256 amountFee,
+        uint256 protocolFee
     );
     event NewAdminFee(uint256 newAdminFee);
     event NewSwapFee(uint256 newSwapFee);
@@ -198,6 +211,9 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         // Initialize variables related to guarding the initial deposits
         allowlist = _allowlist;
         guarded = true;
+
+        flashLoanFeeBips = 100; // 100bps
+        flashLoanProtocolFeeBips = 5000; // 5000bps
     }
 
     /*** MODIFIERS ***/
@@ -247,7 +263,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param tokenAddress address of the token
      * @return the index of the given token address
      */
-    function getTokenIndex(address tokenAddress) external view returns (uint8) {
+    function getTokenIndex(address tokenAddress) public view returns (uint8) {
         uint8 index = tokenIndexes[tokenAddress];
         require(
             address(getToken(index)) == tokenAddress,
@@ -518,6 +534,63 @@ contract Swap is OwnerPausable, ReentrancyGuard {
         return swapStorage.removeLiquidityImbalance(amounts, maxBurnAmount);
     }
 
+    function flashLoan(
+        address receiver,
+        IERC20 token,
+        uint256 amount,
+        bytes memory params
+    ) external nonReentrant {
+        uint8 tokenIndex = getTokenIndex(address(token));
+        uint256 availableLiquidityBefore = swapStorage.balances[tokenIndex];
+        uint256 protocolBalanceBefore =
+            token.balanceOf(address(this)).sub(availableLiquidityBefore);
+        require(
+            amount > 0 && availableLiquidityBefore >= amount,
+            "invalid amount param"
+        );
+
+        // Calculate the additional amount of tokens the pool should end up with
+        uint256 amountFee = amount.mul(flashLoanFeeBips).div(10000);
+        // Calculate the portion of the fee that will go to the protocol
+        uint256 protocolFee =
+            amountFee.mul(flashLoanProtocolFeeBips).div(10000);
+        require(
+            amountFee > 0,
+            "The requested amount is too small for a flashLoan."
+        );
+
+        // Transfer the requested amount of tokens
+        token.safeTransfer(receiver, amount);
+
+        // Execute callback function on receiver
+        IFlashLoanReceiver receiver = IFlashLoanReceiver(receiver);
+        receiver.executeOperation(
+            address(this),
+            address(token),
+            amount,
+            amountFee,
+            params
+        );
+
+        uint256 availableLiquidityAfter =
+            token.balanceOf(address(this)).sub(protocolBalanceBefore);
+        require(
+            availableLiquidityAfter == availableLiquidityBefore.add(amountFee),
+            "flashloan fee is not met"
+        );
+
+        swapStorage.balances[tokenIndex] = availableLiquidityBefore
+            .add(amountFee)
+            .sub(protocolFee);
+        emit FlashLoan(
+            address(receiver),
+            tokenIndex,
+            amount,
+            amountFee,
+            protocolFee
+        );
+    }
+
     /*** ADMIN FUNCTIONS ***/
 
     /**
@@ -536,6 +609,25 @@ contract Swap is OwnerPausable, ReentrancyGuard {
             "Only callable by pool token"
         );
         swapStorage.updateUserWithdrawFee(recipient, transferAmount);
+    }
+
+    /**
+     * @notice Updates the flash loan fee parameters. This function can only be called by the owner.
+     * @param newFlashLoanFeeBips the total fee in bps to be applied on future flash loans
+     * @param newFlashLoanProtocolFeeBips the protocol fee in bps to be applied on the total flash loan fee
+     */
+    function setFlashLoanFees(
+        uint256 newFlashLoanFeeBips,
+        uint256 newFlashLoanProtocolFeeBips
+    ) external onlyOwner {
+        require(
+            newFlashLoanFeeBips > 0 &&
+                newFlashLoanFeeBips <= MAX_BPS &&
+                newFlashLoanProtocolFeeBips <= MAX_BPS,
+            "fees are not in valid range"
+        );
+        flashLoanFeeBips = newFlashLoanFeeBips;
+        flashLoanProtocolFeeBips = newFlashLoanProtocolFeeBips;
     }
 
     /**
