@@ -25,7 +25,7 @@ import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
 import { deployments, ethers } from "hardhat"
-import { formatBytes32String } from "ethers/lib/utils"
+import { formatBytes32String, solidityPack } from "ethers/lib/utils"
 
 chai.use(solidity)
 const { expect } = chai
@@ -227,30 +227,62 @@ describe("Swap Flashloan", () => {
         swap.address,
         USDC.address,
         1e6,
-        formatBytes32String("dontRepayDebt"),
+        solidityPack(["string"], ["dontRepayDebt"]),
       ),
     ).to.be.revertedWith("flashloan fee is not met")
   })
 
-  it("Reverts when attempting reentrancy to Swap contract", async () => {
-    // Since the contract is empty, we need to give the contract some USDC to have enough to pay off the fee
-    expect(await swap.getTokenBalance(1)).to.eq("50000000")
-    await USDC.connect(user1).transfer(flashLoanExample.address, flashLoanFee)
+  it("Reverts when calling re-entering swap contract via `addLiquidity`", async () => {
     await expect(
       flashLoanExample.flashLoan(
         swap.address,
         USDC.address,
         1e6,
-        formatBytes32String("reentrancy"),
+        solidityPack(["string"], ["reentrancy_addLiquidity"]),
       ),
     ).to.be.revertedWith("ReentrancyGuard: reentrant call")
   })
 
-  it("Empty flashloan succeeds", async () => {
+  it("Reverts when calling re-entering swap contract via `swap`", async () => {
+    await expect(
+      flashLoanExample.flashLoan(
+        swap.address,
+        USDC.address,
+        1e6,
+        solidityPack(["string"], ["reentrancy_swap"]),
+      ),
+    ).to.be.revertedWith("ReentrancyGuard: reentrant call")
+  })
+
+  it("Reverts when calling re-entering swap contract via `removeLiquidity`", async () => {
+    await expect(
+      flashLoanExample.flashLoan(
+        swap.address,
+        USDC.address,
+        1e6,
+        solidityPack(["string"], ["reentrancy_removeLiquidity"]),
+      ),
+    ).to.be.revertedWith("ReentrancyGuard: reentrant call")
+  })
+
+  it("Reverts when calling re-entering swap contract via `removeLiquidityOneToken`", async () => {
+    await expect(
+      flashLoanExample.flashLoan(
+        swap.address,
+        USDC.address,
+        1e6,
+        solidityPack(["string"], ["reentrancy_removeLiquidityOneToken"]),
+      ),
+    ).to.be.revertedWith("ReentrancyGuard: reentrant call")
+  })
+
+  it("Succeeds when fee is paid off", async () => {
     // Since the contract is empty, we need to give the contract some USDC to have enough to pay off the fee
     expect(await swap.getTokenBalance(1)).to.eq("50000000")
     await USDC.connect(user1).transfer(flashLoanExample.address, flashLoanFee)
-    await flashLoanExample.flashLoan(swap.address, USDC.address, 1e6, [])
+    await expect(
+      flashLoanExample.flashLoan(swap.address, USDC.address, 1e6, []),
+    ).to.emit(swap, "FlashLoan")
 
     // Check the borrower contract paid off the balance
     expect(await USDC.balanceOf(flashLoanExample.address)).to.eq(0)
