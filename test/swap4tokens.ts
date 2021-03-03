@@ -16,17 +16,17 @@ import { deployContract, solidity } from "ethereum-waffle"
 import { deployments, l2ethers as ethers } from "hardhat"
 
 import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.ovm.json"
+import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist-ovm.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.ovm.json"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20-ovm.json"
 import { LPToken } from "../build/typechain/LPToken"
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.ovm.json"
+import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken-ovm.json"
 import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.ovm.json"
+import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils-ovm.json"
 import { Swap } from "../build/typechain/Swap"
-import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.ovm.json"
+import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap-ovm.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.ovm.json"
+import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils-ovm.json"
 import chai from "chai"
 
 chai.use(solidity)
@@ -134,7 +134,7 @@ describe("Swap with 4 tokens", () => {
 
       // Deploy SwapUtils with MathUtils library
       swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-        MathUtils: mathUtils.address,
+        "MathUtils-ovm": mathUtils.address,
       })) as SwapUtils
       await swapUtils.deployed()
 
@@ -142,7 +142,7 @@ describe("Swap with 4 tokens", () => {
       swap = (await deployContractWithLibraries(
         owner,
         SwapArtifact,
-        { SwapUtils: swapUtils.address },
+        { "SwapUtils-ovm": swapUtils.address },
         [
           [DAI.address, USDC.address, USDT.address, SUSD.address],
           [18, 6, 6, 18],
