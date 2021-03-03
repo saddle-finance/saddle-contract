@@ -3,14 +3,14 @@ import { ZERO_ADDRESS, deployContractWithLibraries } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
 import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.ovm.json"
+import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist-ovm.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.ovm.json"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20-ovm.json"
 import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.ovm.json"
-import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.ovm.json"
+import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils-ovm.json"
+import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap-ovm.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.ovm.json"
+import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils-ovm.json"
 import chai from "chai"
 import { l2ethers as ethers } from "hardhat"
 import merkleTreeData from "../test/exampleMerkleTree.json"
@@ -63,7 +63,7 @@ describe("Swap", () => {
 
     // Deploy SwapUtils with MathUtils library
     swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-      "MathUtils.ovm": mathUtils.address,
+      "MathUtils-ovm": mathUtils.address,
     })) as SwapUtils
     await swapUtils.deployed()
   })
@@ -74,7 +74,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             [],
             [18, 18],
@@ -95,7 +95,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             Array(33).fill(firstToken.address),
             [18, 18],
@@ -116,7 +116,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18],
@@ -137,7 +137,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             [firstToken.address, firstToken.address],
             [18, 18],
@@ -158,7 +158,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             [ZERO_ADDRESS, ZERO_ADDRESS],
             [18, 18],
@@ -179,7 +179,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [19, 18],
@@ -200,7 +200,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18, 18],
@@ -221,7 +221,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18, 18],
@@ -242,7 +242,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18, 18],
@@ -263,7 +263,7 @@ describe("Swap", () => {
         deployContractWithLibraries(
           owner,
           SwapArtifact,
-          { "SwapUtils.ovm": swapUtils.address },
+          { "SwapUtils-ovm": swapUtils.address },
           [
             [firstToken.address, secondToken.address],
             [18, 18],

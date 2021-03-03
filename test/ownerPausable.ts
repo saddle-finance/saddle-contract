@@ -2,7 +2,7 @@ import { Signer, Wallet } from "ethers"
 import { deployContract, solidity } from "ethereum-waffle"
 
 import { OwnerPausable } from "../build/typechain/OwnerPausable"
-import OwnerPausableArtifact from "../build/artifacts/contracts/OwnerPausable.sol/OwnerPausable.ovm.json"
+import OwnerPausableArtifact from "../build/artifacts/contracts/OwnerPausable.sol/OwnerPausable-ovm.json"
 import chai from "chai"
 import { l2ethers as ethers } from "hardhat"
 

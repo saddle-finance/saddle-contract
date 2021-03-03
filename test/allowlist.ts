@@ -7,7 +7,7 @@ import {
 import { deployContract, solidity } from "ethereum-waffle"
 
 import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.ovm.json"
+import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist-ovm.json"
 import { Signer } from "ethers"
 import chai from "chai"
 import { l2ethers as ethers } from "hardhat"
