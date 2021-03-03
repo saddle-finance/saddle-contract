@@ -3,7 +3,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/IFlashLoanReceiver.sol";
-import "../interfaces/ISwap.sol";
+import "../interfaces/ISwapFlashLoan.sol";
 import "hardhat/console.sol";
 
 contract FlashLoanBorrowerExample is IFlashLoanReceiver {
@@ -31,22 +31,22 @@ contract FlashLoanBorrowerExample is IFlashLoanReceiver {
         if (paramsHash == keccak256(bytes("dontRepayDebt"))) {
             return;
         } else if (paramsHash == keccak256(bytes("reentrancy_addLiquidity"))) {
-            ISwap(pool).addLiquidity(
+            ISwapFlashLoan(pool).addLiquidity(
                 new uint256[](0),
                 0,
                 now,
                 new bytes32[](0)
             );
         } else if (paramsHash == keccak256(bytes("reentrancy_swap"))) {
-            ISwap(pool).swap(1, 0, 1e6, 0, now);
+            ISwapFlashLoan(pool).swap(1, 0, 1e6, 0, now);
         } else if (
             paramsHash == keccak256(bytes("reentrancy_removeLiquidity"))
         ) {
-            ISwap(pool).removeLiquidity(1e18, new uint256[](0), now);
+            ISwapFlashLoan(pool).removeLiquidity(1e18, new uint256[](0), now);
         } else if (
             paramsHash == keccak256(bytes("reentrancy_removeLiquidityOneToken"))
         ) {
-            ISwap(pool).removeLiquidityOneToken(1e18, 0, 1e18, now);
+            ISwapFlashLoan(pool).removeLiquidityOneToken(1e18, 0, 1e18, now);
         }
 
         // 3. Payback debt
@@ -55,7 +55,7 @@ contract FlashLoanBorrowerExample is IFlashLoanReceiver {
     }
 
     function flashLoan(
-        ISwap swap,
+        ISwapFlashLoan swap,
         IERC20 token,
         uint256 amount,
         bytes memory params
