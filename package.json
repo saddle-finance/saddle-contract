@@ -34,7 +34,7 @@
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.0.31",
     "ethlint": "^1.2.5",
-    "hardhat": "^2.0.11",
+    "hardhat": "^2.1.0",
     "hardhat-deploy": "^0.7.0-beta.46",
     "hardhat-gas-reporter": "^1.0.4",
     "husky": "^5.1.3",
