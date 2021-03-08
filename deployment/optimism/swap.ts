@@ -1,16 +1,16 @@
 import { asyncForEach, deployContractWithLibraries } from "../../test/testUtils"
 
 import { Allowlist } from "../../build/typechain/Allowlist"
-import AllowlistArtifact from "../../build/artifacts/contracts/Allowlist.sol/Allowlist.ovm.json"
+import AllowlistArtifact from "../../build/artifacts/contracts/Allowlist.sol/Allowlist-ovm.json"
 import { BigNumber } from "@ethersproject/bignumber"
 import { GenericERC20 } from "../../build/typechain/GenericErc20"
-import GenericERC20Artifact from "../../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.ovm.json"
+import GenericERC20Artifact from "../../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20-ovm.json"
 import { MathUtils } from "../../build/typechain/MathUtils"
-import MathUtilsArtifact from "../../build/artifacts/contracts/MathUtils.sol/MathUtils.ovm.json"
+import MathUtilsArtifact from "../../build/artifacts/contracts/MathUtils.sol/MathUtils-ovm.json"
 import { Swap } from "../../build/typechain/Swap"
-import SwapArtifact from "../../build/artifacts/contracts/Swap.sol/Swap.ovm.json"
+import SwapArtifact from "../../build/artifacts/contracts/Swap.sol/Swap-ovm.json"
 import { SwapUtils } from "../../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../../build/artifacts/contracts/SwapUtils.sol/SwapUtils.ovm.json"
+import SwapUtilsArtifact from "../../build/artifacts/contracts/SwapUtils.sol/SwapUtils-ovm.json"
 import { Wallet } from "ethers"
 import { deployContract } from "ethereum-waffle"
 import { ethers } from "hardhat"
@@ -105,7 +105,7 @@ async function deploySwap(): Promise<void> {
     MathUtilsArtifact,
   )) as MathUtils
   await mathUtils.deployed()
-  console.log(" > Deployed MathUtils")
+  console.log(` > Deployed MathUtils: ${mathUtils.address}`)
   console.log(
     "deployed bytecode:",
     await ethers.provider.getCode(mathUtils.address),
@@ -116,11 +116,11 @@ async function deploySwap(): Promise<void> {
     owner,
     SwapUtilsArtifact,
     {
-      "MathUtils.ovm": mathUtils.address,
+      "MathUtils-ovm": mathUtils.address,
     },
   )) as SwapUtils
   await swapUtils.deployed()
-  console.log(" > Deployed SwapUtils")
+  console.log(` > Deployed SwapUtils: ${swapUtils.address}`)
   console.log(
     "deployed bytecode:",
     await ethers.provider.getCode(swapUtils.address),
@@ -130,7 +130,7 @@ async function deploySwap(): Promise<void> {
   const btcSwap = (await deployContractWithLibraries(
     owner,
     SwapArtifact,
-    { "SwapUtils.ovm": swapUtils.address },
+    { "SwapUtils-ovm": swapUtils.address },
     [
       [
         tbtcToken.address,
