@@ -192,6 +192,10 @@ async function deploySwap(): Promise<void> {
   )) as Swap
   await btcSwap.deployed()
 
+  // Disable Guard
+  await btcSwap.disableGuard()
+  await stablecoinSwap.disableGuard()
+
   // update dev limits for stableSwap
   await allowlist.setPoolCap(
     stablecoinSwap.address,
