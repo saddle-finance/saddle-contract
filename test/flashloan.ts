@@ -276,7 +276,7 @@ describe("Swap Flashloan", () => {
   it("Succeeds when fee is paid off", async () => {
     const flashLoanAmount = BigNumber.from(1e6)
     const flashLoanFee = flashLoanAmount
-      .mul(await swapFlashLoan.flashLoanFeeBips())
+      .mul(await swapFlashLoan.flashLoanFeeBPS())
       .div(10000)
 
     // Check the initial balance and the virtual price
@@ -320,8 +320,8 @@ describe("Swap Flashloan", () => {
 
     it("Succeeds when fees are in the valid range", async () => {
       await swapFlashLoan.setFlashLoanFees(50, 100)
-      expect(await swapFlashLoan.flashLoanFeeBips()).to.eq(50)
-      expect(await swapFlashLoan.flashLoanProtocolFeeBips()).to.eq(100)
+      expect(await swapFlashLoan.flashLoanFeeBPS()).to.eq(50)
+      expect(await swapFlashLoan.protocolFeeShareBPS()).to.eq(100)
 
       const flashLoanAmount = BigNumber.from(1e6)
       const flashLoanFee = flashLoanAmount.mul(50).div(10000)

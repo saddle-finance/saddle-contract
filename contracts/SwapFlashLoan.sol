@@ -23,10 +23,14 @@ import "./interfaces/IFlashLoanReceiver.sol";
  * deployment size.
  */
 contract SwapFlashLoan is Swap {
-    // Fee parameters used to calculate fees for flashloans.
-    uint256 public flashLoanFeeBips;
-    uint256 public flashLoanProtocolFeeBips;
-    uint256 constant MAX_BPS = 10000;
+    // Total fee that is charged on all flashloans in BPS. Borrowers must repay the amount plus the flash loan fee.
+    // This fee is split between the protocol and the pool.
+    uint256 public flashLoanFeeBPS;
+    // Share of the flash loan fee that goes to the protocol in BPS. A portion of each flash loan fee is allocated
+    // to the protocol rather than the pool.
+    uint256 public protocolFeeShareBPS;
+    // Max BPS for limiting flash loan fee settings.
+    uint256 public constant MAX_BPS = 10000;
 
     /*** EVENTS ***/
     event FlashLoan(
@@ -79,8 +83,8 @@ contract SwapFlashLoan is Swap {
             _allowlist
         )
     {
-        flashLoanFeeBips = 100; // 100bps
-        flashLoanProtocolFeeBips = 5000; // 5000bps
+        flashLoanFeeBPS = 100; // 100bps
+        protocolFeeShareBPS = 5000; // 5000bps
     }
 
     /*** STATE MODIFYING FUNCTIONS ***/
@@ -112,14 +116,10 @@ contract SwapFlashLoan is Swap {
         );
 
         // Calculate the additional amount of tokens the pool should end up with
-        uint256 amountFee = amount.mul(flashLoanFeeBips).div(10000);
+        uint256 amountFee = amount.mul(flashLoanFeeBPS).div(10000);
         // Calculate the portion of the fee that will go to the protocol
-        uint256 protocolFee =
-            amountFee.mul(flashLoanProtocolFeeBips).div(10000);
-        require(
-            amountFee > 0,
-            "The requested amount is too small for a flashLoan"
-        );
+        uint256 protocolFee = amountFee.mul(protocolFeeShareBPS).div(10000);
+        require(amountFee > 0, "amount is small for a flashLoan");
 
         // Transfer the requested amount of tokens
         token.safeTransfer(receiver, amount);
@@ -136,8 +136,8 @@ contract SwapFlashLoan is Swap {
         uint256 availableLiquidityAfter =
             token.balanceOf(address(this)).sub(protocolBalanceBefore);
         require(
-            availableLiquidityAfter == availableLiquidityBefore.add(amountFee),
-            "flashloan fee is not met"
+            availableLiquidityAfter >= availableLiquidityBefore.add(amountFee),
+            "flashLoan fee is not met"
         );
 
         swapStorage.balances[tokenIndex] = availableLiquidityAfter.sub(
@@ -150,20 +150,20 @@ contract SwapFlashLoan is Swap {
 
     /**
      * @notice Updates the flash loan fee parameters. This function can only be called by the owner.
-     * @param newFlashLoanFeeBips the total fee in bps to be applied on future flash loans
-     * @param newFlashLoanProtocolFeeBips the protocol fee in bps to be applied on the total flash loan fee
+     * @param newFlashLoanFeeBPS the total fee in bps to be applied on future flash loans
+     * @param newProtocolFeeShareBPS the protocol fee in bps to be applied on the total flash loan fee
      */
     function setFlashLoanFees(
-        uint256 newFlashLoanFeeBips,
-        uint256 newFlashLoanProtocolFeeBips
+        uint256 newFlashLoanFeeBPS,
+        uint256 newProtocolFeeShareBPS
     ) external onlyOwner {
         require(
-            newFlashLoanFeeBips > 0 &&
-                newFlashLoanFeeBips <= MAX_BPS &&
-                newFlashLoanProtocolFeeBips <= MAX_BPS,
+            newFlashLoanFeeBPS > 0 &&
+                newFlashLoanFeeBPS <= MAX_BPS &&
+                newProtocolFeeShareBPS <= MAX_BPS,
             "fees are not in valid range"
         );
-        flashLoanFeeBips = newFlashLoanFeeBips;
-        flashLoanProtocolFeeBips = newFlashLoanProtocolFeeBips;
+        flashLoanFeeBPS = newFlashLoanFeeBPS;
+        protocolFeeShareBPS = newProtocolFeeShareBPS;
     }
 }
