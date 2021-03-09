@@ -226,7 +226,7 @@ describe("Swap Flashloan", () => {
         1e6,
         solidityPack(["string"], ["dontRepayDebt"]),
       ),
-    ).to.be.revertedWith("flashloan fee is not met")
+    ).to.be.revertedWith("flashLoan fee is not met")
   })
 
   it("Reverts when calling re-entering swap contract via `addLiquidity`", async () => {
