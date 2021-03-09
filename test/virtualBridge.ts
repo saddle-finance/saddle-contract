@@ -224,27 +224,25 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       await swapUtils.deployed()
 
       // Deploy Swap with SwapUtils library
-      btcSwap = (await deployContractWithLibraries(
-        owner,
-        SwapArtifact,
-        { SwapUtils: swapUtils.address },
-        [
-          [
-            tokenList.tbtc.address,
-            tokenList.wbtc.address,
-            tokenList.renbtc.address,
-            tokenList.sbtc.address,
-          ],
-          [18, 8, 8, 18],
-          LP_TOKEN_NAME,
-          LP_TOKEN_SYMBOL,
-          INITIAL_A_VALUE,
-          SWAP_FEE,
-          0,
-          0,
-        ],
-      )) as Swap
+      btcSwap = (await deployContractWithLibraries(owner, SwapArtifact, {
+        SwapUtils: swapUtils.address,
+      })) as Swap
       await btcSwap.deployed()
+      await btcSwap.initialize(
+        [
+          tokenList.tbtc.address,
+          tokenList.wbtc.address,
+          tokenList.renbtc.address,
+          tokenList.sbtc.address,
+        ],
+        [18, 8, 8, 18],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        0,
+        0,
+      )
       btcSwapStorage = await btcSwap.swapStorage()
 
       btcSwapToken = (await ethers.getContractAt(
@@ -252,21 +250,20 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         btcSwapStorage.lpToken,
       )) as LPToken
 
-      usdSwap = (await deployContractWithLibraries(
-        owner,
-        SwapArtifact,
-        { SwapUtils: swapUtils.address },
-        [
-          [tokenList.susd.address, tokenList.usdc.address],
-          [18, 6],
-          LP_TOKEN_NAME,
-          LP_TOKEN_SYMBOL,
-          INITIAL_A_VALUE,
-          SWAP_FEE,
-          0,
-          0,
-        ],
-      )) as Swap
+      usdSwap = (await deployContractWithLibraries(owner, SwapArtifact, {
+        SwapUtils: swapUtils.address,
+      })) as Swap
+      await usdSwap.deployed()
+      await usdSwap.initialize(
+        [tokenList.susd.address, tokenList.usdc.address],
+        [18, 6],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        0,
+        0,
+      )
 
       // Deploy Bridge contract
       bridge = (await deployContract(owner, BridgeArtifact)) as Bridge

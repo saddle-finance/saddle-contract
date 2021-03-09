@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "openzeppelin-contracts-3.4/proxy/Clones.sol";
 import "./interfaces/ISwap.sol";
-import "hardhat/console.sol";
 
 contract SwapDeployer is Ownable {
     event NewSwapPool(

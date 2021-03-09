@@ -127,22 +127,21 @@ describe("Swap with 4 tokens", () => {
       await swapUtils.deployed()
 
       // Deploy Swap with SwapUtils library
-      swap = (await deployContractWithLibraries(
-        owner,
-        SwapArtifact,
-        { SwapUtils: swapUtils.address },
-        [
-          [DAI.address, USDC.address, USDT.address, SUSD.address],
-          [18, 6, 6, 18],
-          LP_TOKEN_NAME,
-          LP_TOKEN_SYMBOL,
-          INITIAL_A_VALUE,
-          SWAP_FEE,
-          0,
-          0,
-        ],
-      )) as Swap
+      swap = (await deployContractWithLibraries(owner, SwapArtifact, {
+        SwapUtils: swapUtils.address,
+      })) as Swap
       await swap.deployed()
+
+      await swap.initialize(
+        [DAI.address, USDC.address, USDT.address, SUSD.address],
+        [18, 6, 6, 18],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        0,
+        0,
+      )
 
       expect(await swap.getVirtualPrice()).to.be.eq(0)
 

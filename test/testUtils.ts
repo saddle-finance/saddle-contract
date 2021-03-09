@@ -133,21 +133,25 @@ export async function setNextTimestamp(timestamp: number): Promise<any> {
       return ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
     case 1337: // ganache
     default:
-      return ethers.provider.send("evm_mine", [timestamp])
+      return setTimestamp(timestamp)
   }
 }
 
 export async function setTimestamp(timestamp: number): Promise<any> {
-  return ethers.provider.send("evm_mine", [timestamp])
+  return forceAdvanceOneBlock(timestamp)
 }
 
-export async function forceAdvanceOneBlock(): Promise<any> {
-  return ethers.provider.send("evm_mine", [])
+export async function forceAdvanceOneBlock(timestamp?: number): Promise<any> {
+  const params = []
+  if (timestamp) {
+    params.push(timestamp)
+  }
+  return ethers.provider.send("evm_mine", params)
 }
 
 export async function increaseTimestamp(timestampDelta: number): Promise<any> {
   await ethers.provider.send("evm_increaseTime", [timestampDelta])
-  return ethers.provider.send("evm_mine", [])
+  return forceAdvanceOneBlock()
 }
 
 export async function getCurrentBlockTimestamp(): Promise<number> {
