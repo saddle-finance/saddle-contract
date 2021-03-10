@@ -2,15 +2,20 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { CHAIN_ID } from "../utils/network"
 import { MULTISIG_ADDRESS } from "../utils/accounts"
+import path from "path"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
   const { deploy, execute, getOrNull, log, read } = deployments
   const { deployer } = await getNamedAccounts()
 
-  const currentChain = await getChainId()
-  const contractsToTransferOwnership = ["Allowlist", "SaddleBTCPool"]
+  const contractsToTransferOwnership = [
+    "Allowlist",
+    "SaddleBTCPool",
+    "SaddleUSDPool",
+  ]
 
+  const currentChain = await getChainId()
   if (currentChain == CHAIN_ID.MAINNET) {
     for (const contract of contractsToTransferOwnership) {
       // Check current owner
@@ -39,8 +44,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log(`"${contract}" is owned by unrecognized address: ${currentOwner}`)
       }
     }
+  } else {
+    log(`deployment is not on mainnet. skipping ${path.basename(__filename)}`)
   }
 }
 export default func
 func.tags = ["TransferOwnership"]
-func.dependencies = ["Allowlist", "BTCPool"]
+func.dependencies = ["Allowlist", "BTCPool", "USDPool"]

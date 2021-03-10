@@ -45,25 +45,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const lpTokenAddress = (await read("SaddleBTCPool", "swapStorage")).lpToken
   log(`BTC pool LP Token at ${lpTokenAddress}`)
-
-  const currentOwner = await read("SaddleBTCPool", "owner")
-  const isBTCPoolGuarded = await read("SaddleBTCPool", "isGuarded")
-
-  // Disable the guarded phase launch
-  if (isBTCPoolGuarded) {
-    if (currentOwner == deployer) {
-      log(`disabling BTC pool guard from deployer ${deployer}`)
-      await execute(
-        "SaddleBTCPool",
-        { from: deployer, log: true },
-        "disableGuard",
-      )
-    } else {
-      log(`cannot disable BTC pool guard. owner is set to ${currentOwner}`)
-    }
-  } else {
-    log(`btc pool guard is already disabled`)
-  }
 }
 export default func
 func.tags = ["BTCPool"]

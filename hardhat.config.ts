@@ -76,4 +76,13 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
   }
 }
 
+if (process.env.FORK_MAINNET && config.networks) {
+  config.networks.hardhat = {
+    forking: {
+      url: process.env.ALCHEMY_API ? process.env.ALCHEMY_API : "",
+    },
+    chainId: 1,
+  }
+}
+
 export default config

@@ -65,6 +65,9 @@
     "build": "hardhat compile",
     "test": "hardhat test",
     "coverage": "hardhat coverage --temp ./build/artifacts",
+    "deploy" : "hardhat deploy",
+    "start": "hardhat node",
+    "fork": "export FORK_MAINNET=true && hardhat node --fork-deployments mainnet --as-network localhost && unset FORK_MAINNET",
     "prepare": "npm run build"
   },
   "husky": {
