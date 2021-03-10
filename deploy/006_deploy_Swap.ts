@@ -4,8 +4,8 @@ import { CHAIN_ID } from "../utils/network"
 import { MULTISIG_ADDRESS } from "../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
-  const { deploy, execute, get, getOrNull, log, read } = deployments
+  const { deployments, getNamedAccounts } = hre
+  const { deploy, get } = deployments
   const { deployer } = await getNamedAccounts()
 
   await deploy("Swap", {

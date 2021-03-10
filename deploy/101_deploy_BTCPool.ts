@@ -2,8 +2,8 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
-  const { deploy, execute, get, getOrNull, log, read, save } = deployments
+  const { deployments, getNamedAccounts } = hre
+  const { deploy, get, log, read, save } = deployments
   const { deployer } = await getNamedAccounts()
 
   // Constructor arguments

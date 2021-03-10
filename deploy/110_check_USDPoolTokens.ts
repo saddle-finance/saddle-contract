@@ -8,8 +8,8 @@ const BTC_TOKENS_ARGS: { [token: string]: any[] } = {
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
-  const { deploy, execute, get, getOrNull, log, read } = deployments
+  const { deployments, getNamedAccounts } = hre
+  const { deploy } = deployments
   const { deployer } = await getNamedAccounts()
 
   for (const token in BTC_TOKENS_ARGS) {
