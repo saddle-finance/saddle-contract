@@ -3,7 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
-  const { deploy, execute, get, getOrNull, log, read } = deployments
+  const { deploy, execute, get, getOrNull, log, read, save } = deployments
   const { deployer } = await getNamedAccounts()
 
   // Constructor arguments
@@ -45,6 +45,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const lpTokenAddress = (await read("SaddleBTCPool", "swapStorage")).lpToken
   log(`BTC pool LP Token at ${lpTokenAddress}`)
+
+  await save("SaddleBTCPoolLPToken", {
+    abi: (await get("TBTC")).abi, // Generic ERC20 ABI
+    address: lpTokenAddress,
+  })
 }
 export default func
 func.tags = ["BTCPool"]
