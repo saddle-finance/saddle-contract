@@ -247,7 +247,7 @@ contract Swap is OwnerPausable, ReentrancyGuard {
      * @param tokenAddress address of the token
      * @return the index of the given token address
      */
-    function getTokenIndex(address tokenAddress) external view returns (uint8) {
+    function getTokenIndex(address tokenAddress) public view returns (uint8) {
         uint8 index = tokenIndexes[tokenAddress];
         require(
             address(getToken(index)) == tokenAddress,
