@@ -4,13 +4,9 @@ import {
   deployContractWithLibraries,
   getUserTokenBalance,
   asyncForEach,
-  getTestMerkleProof,
-  getTestMerkleRoot,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 
-import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
@@ -33,7 +29,6 @@ const { expect } = chai
 describe("Swap Flashloan", () => {
   let signers: Array<Signer>
   let swapFlashLoan: SwapFlashLoan
-  let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
   let flashLoanExample: FlashLoanBorrowerExample
@@ -117,13 +112,6 @@ describe("Swap Flashloan", () => {
         },
       )
 
-      // Deploy Allowlist
-      allowlist = (await deployContract(
-        signers[0] as Wallet,
-        AllowlistArtifact,
-        [getTestMerkleRoot()],
-      )) as Allowlist
-
       // Deploy MathUtils
       mathUtils = (await deployContract(
         signers[0] as Wallet,
@@ -141,19 +129,19 @@ describe("Swap Flashloan", () => {
         owner,
         SwapFlashLoanArtifact,
         { SwapUtils: swapUtils.address },
-        [
-          [DAI.address, USDC.address, USDT.address, SUSD.address],
-          [18, 6, 6, 18],
-          LP_TOKEN_NAME,
-          LP_TOKEN_SYMBOL,
-          INITIAL_A_VALUE,
-          SWAP_FEE,
-          0,
-          0,
-          allowlist.address,
-        ],
       )) as SwapFlashLoan
       await swapFlashLoan.deployed()
+
+      await swapFlashLoan.initialize(
+        [DAI.address, USDC.address, USDT.address, SUSD.address],
+        [18, 6, 6, 18],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        0,
+        0,
+      )
 
       expect(await swapFlashLoan.getVirtualPrice()).to.be.eq(0)
 
@@ -163,16 +151,6 @@ describe("Swap Flashloan", () => {
         LPTokenArtifact.abi,
         swapStorage.lpToken,
       )) as LPToken
-
-      // Set deposit limits
-      allowlist.setPoolCap(
-        swapFlashLoan.address,
-        BigNumber.from(10).pow(18).mul(6000000),
-      )
-      allowlist.setPoolAccountLimit(
-        swapFlashLoan.address,
-        BigNumber.from(10).pow(18).mul(1000000),
-      )
 
       await asyncForEach([owner, user1, user2, attacker], async (signer) => {
         await DAI.connect(signer).approve(swapFlashLoan.address, MAX_UINT256)
@@ -186,10 +164,7 @@ describe("Swap Flashloan", () => {
         [String(50e18), String(50e6), String(50e6), String(50e18)],
         0,
         MAX_UINT256,
-        getTestMerkleProof(ownerAddress),
       )
-
-      await swapFlashLoan.disableGuard()
 
       expect(await swapFlashLoan.getTokenBalance(0)).to.be.eq(String(50e18))
       expect(await swapFlashLoan.getTokenBalance(1)).to.be.eq(String(50e6))

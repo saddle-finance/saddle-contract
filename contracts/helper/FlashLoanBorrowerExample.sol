@@ -36,8 +36,7 @@ contract FlashLoanBorrowerExample is IFlashLoanReceiver {
             ISwapFlashLoan(pool).addLiquidity(
                 new uint256[](0),
                 0,
-                now,
-                new bytes32[](0)
+                block.timestamp
             );
         } else if (paramsHash == keccak256(bytes("reentrancy_swap"))) {
             ISwapFlashLoan(pool).swap(1, 0, 1e6, 0, now);

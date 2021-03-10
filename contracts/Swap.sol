@@ -117,7 +117,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _fee,
         uint256 _adminFee,
         uint256 _withdrawFee
-    ) public initializer {
+    ) public virtual initializer {
         __OwnerPausable_init();
         __ReentrancyGuard_init();
         // Check _pooledTokens and precisions parameter
