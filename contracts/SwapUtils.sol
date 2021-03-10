@@ -853,15 +853,13 @@ library SwapUtils {
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
-     * @param merkleProof bytes32 array that will be used to prove the existence of the caller's address in the list of
      * allowed addresses. If the pool is not in the guarded launch phase, this parameter will be ignored.
      * @return amount of LP token user received
      */
     function addLiquidity(
         Swap storage self,
         uint256[] memory amounts,
-        uint256 minToMint,
-        bytes32[] calldata merkleProof
+        uint256 minToMint
     ) external returns (uint256) {
         require(
             amounts.length == self.pooledTokens.length,
@@ -872,15 +870,16 @@ library SwapUtils {
 
         // current state
         AddLiquidityInfo memory v = AddLiquidityInfo(0, 0, 0, 0);
+        uint256 totalSupply = self.lpToken.totalSupply();
 
-        if (self.lpToken.totalSupply() != 0) {
+        if (totalSupply != 0) {
             v.d0 = getD(self);
         }
         uint256[] memory newBalances = self.balances;
 
         for (uint256 i = 0; i < self.pooledTokens.length; i++) {
             require(
-                self.lpToken.totalSupply() != 0 || amounts[i] > 0,
+                totalSupply != 0 || amounts[i] > 0,
                 "Must supply all tokens in pool"
             );
 
@@ -910,7 +909,7 @@ library SwapUtils {
 
         // updated to reflect fees and calculate the user's LP tokens
         v.d2 = v.d1;
-        if (self.lpToken.totalSupply() != 0) {
+        if (totalSupply != 0) {
             uint256 feePerToken = _feePerToken(self);
             for (uint256 i = 0; i < self.pooledTokens.length; i++) {
                 uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
@@ -929,23 +928,23 @@ library SwapUtils {
         }
 
         uint256 toMint;
-        if (self.lpToken.totalSupply() == 0) {
+        if (totalSupply == 0) {
             toMint = v.d1;
         } else {
-            toMint = v.d2.sub(v.d0).mul(self.lpToken.totalSupply()).div(v.d0);
+            toMint = v.d2.sub(v.d0).mul(totalSupply).div(v.d0);
         }
 
         require(toMint >= minToMint, "Couldn't mint min requested");
 
         // mint the user's LP tokens
-        self.lpToken.mint(msg.sender, toMint, merkleProof);
+        self.lpToken.mint(msg.sender, toMint);
 
         emit AddLiquidity(
             msg.sender,
             amounts,
             fees,
             v.d1,
-            self.lpToken.totalSupply()
+            totalSupply.add(toMint)
         );
 
         return toMint;

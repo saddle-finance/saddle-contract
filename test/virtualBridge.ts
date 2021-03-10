@@ -3,8 +3,6 @@ import {
   MAX_UINT256,
   asyncForEach,
   deployContractWithLibraries,
-  getTestMerkleProof,
-  getTestMerkleRoot,
   getUserTokenBalances,
   impersonateAccount,
   increaseTimestamp,
@@ -13,8 +11,6 @@ import {
 import { deployContract, solidity } from "ethereum-waffle"
 import { deployments, ethers, network } from "hardhat"
 
-import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/Allowlist.sol/Allowlist.json"
 import { Bridge } from "../build/typechain/Bridge"
 import BridgeArtifact from "../build/artifacts/contracts/VirtualSwap/Bridge.sol/Bridge.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
@@ -64,7 +60,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
   let bridge: Bridge
   let btcSwap: Swap
   let usdSwap: Swap
-  let allowlist: Allowlist
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
   let wbtc: GenericERC20
@@ -216,13 +211,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(balances[4]).to.eq("6559142099847758949166311")
       expect(balances[5]).to.eq("315600946507951")
 
-      // Deploy Allowlist
-      allowlist = (await deployContract(
-        signers[0] as Wallet,
-        AllowlistArtifact,
-        [getTestMerkleRoot()],
-      )) as Allowlist
-
       // Deploy MathUtils
       mathUtils = (await deployContract(
         signers[0] as Wallet,
@@ -236,28 +224,25 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       await swapUtils.deployed()
 
       // Deploy Swap with SwapUtils library
-      btcSwap = (await deployContractWithLibraries(
-        owner,
-        SwapArtifact,
-        { SwapUtils: swapUtils.address },
-        [
-          [
-            tokenList.tbtc.address,
-            tokenList.wbtc.address,
-            tokenList.renbtc.address,
-            tokenList.sbtc.address,
-          ],
-          [18, 8, 8, 18],
-          LP_TOKEN_NAME,
-          LP_TOKEN_SYMBOL,
-          INITIAL_A_VALUE,
-          SWAP_FEE,
-          0,
-          0,
-          allowlist.address,
-        ],
-      )) as Swap
+      btcSwap = (await deployContractWithLibraries(owner, SwapArtifact, {
+        SwapUtils: swapUtils.address,
+      })) as Swap
       await btcSwap.deployed()
+      await btcSwap.initialize(
+        [
+          tokenList.tbtc.address,
+          tokenList.wbtc.address,
+          tokenList.renbtc.address,
+          tokenList.sbtc.address,
+        ],
+        [18, 8, 8, 18],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        0,
+        0,
+      )
       btcSwapStorage = await btcSwap.swapStorage()
 
       btcSwapToken = (await ethers.getContractAt(
@@ -265,41 +250,24 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         btcSwapStorage.lpToken,
       )) as LPToken
 
-      usdSwap = (await deployContractWithLibraries(
-        owner,
-        SwapArtifact,
-        { SwapUtils: swapUtils.address },
-        [
-          [tokenList.susd.address, tokenList.usdc.address],
-          [18, 6],
-          LP_TOKEN_NAME,
-          LP_TOKEN_SYMBOL,
-          INITIAL_A_VALUE,
-          SWAP_FEE,
-          0,
-          0,
-          allowlist.address,
-        ],
-      )) as Swap
+      usdSwap = (await deployContractWithLibraries(owner, SwapArtifact, {
+        SwapUtils: swapUtils.address,
+      })) as Swap
+      await usdSwap.deployed()
+      await usdSwap.initialize(
+        [tokenList.susd.address, tokenList.usdc.address],
+        [18, 6],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        0,
+        0,
+      )
 
       // Deploy Bridge contract
       bridge = (await deployContract(owner, BridgeArtifact)) as Bridge
       await bridge.deployed()
-
-      // Set deposit limits
-      await allowlist.setPoolCap(btcSwap.address, BigNumber.from(10).pow(24))
-      await allowlist.setPoolAccountLimit(
-        btcSwap.address,
-        BigNumber.from(10).pow(24),
-      )
-      await allowlist.setPoolCap(
-        usdSwap.address,
-        BigNumber.from(10).pow(18 + 10),
-      )
-      await allowlist.setPoolAccountLimit(
-        usdSwap.address,
-        BigNumber.from(10).pow(18 + 10),
-      )
 
       // Approve token transfer to Swap for adding liquidity and to Bridge for virtual swaps
       await asyncForEach(
@@ -318,7 +286,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           [String(45e18), String(45e8), String(45e8), String(45e18)],
           0,
           MAX_UINT256,
-          getTestMerkleProof(user1Address),
         )
 
       await usdSwap
@@ -330,7 +297,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           ],
           0,
           MAX_UINT256,
-          getTestMerkleProof(user1Address),
         )
 
       expect(await btcSwapToken.balanceOf(user1Address)).to.eq(String(180e18))

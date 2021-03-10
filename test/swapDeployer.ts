@@ -1,17 +1,17 @@
 import { BigNumber, Signer, Wallet } from "ethers"
 import {
   MAX_UINT256,
-  TIME,
-  asyncForEach,
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
-  getPoolBalances,
   getUserTokenBalance,
+  asyncForEach,
   getUserTokenBalances,
+  TIME,
   setTimestamp,
+  getPoolBalances,
+  forceAdvanceOneBlock,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
-import { deployments, ethers } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
@@ -21,9 +21,12 @@ import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
+import { SwapDeployer } from "../build/typechain/SwapDeployer"
+import SwapDeployerArtifact from "../build/artifacts/contracts/SwapDeployer.sol/SwapDeployer.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
+import { deployments, ethers } from "hardhat"
 
 chai.use(solidity)
 const { expect } = chai
@@ -31,6 +34,8 @@ const { expect } = chai
 describe("Swap with 4 tokens", () => {
   let signers: Array<Signer>
   let swap: Swap
+  let swapClone: Swap
+  let swapDeployer: SwapDeployer
   let mathUtils: MathUtils
   let swapUtils: SwapUtils
   let DAI: GenericERC20
@@ -64,8 +69,6 @@ describe("Swap with 4 tokens", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
-
       TOKENS.length = 0
       signers = await ethers.getSigners()
       owner = signers[0]
@@ -132,7 +135,13 @@ describe("Swap with 4 tokens", () => {
       })) as Swap
       await swap.deployed()
 
-      await swap.initialize(
+      swapDeployer = (await deployContract(
+        owner,
+        SwapDeployerArtifact,
+      )) as SwapDeployer
+
+      const swapCloneAddress = await swapDeployer.callStatic.deploy(
+        swap.address,
         [DAI.address, USDC.address, USDT.address, SUSD.address],
         [18, 6, 6, 18],
         LP_TOKEN_NAME,
@@ -143,9 +152,26 @@ describe("Swap with 4 tokens", () => {
         0,
       )
 
-      expect(await swap.getVirtualPrice()).to.be.eq(0)
+      await swapDeployer.deploy(
+        swap.address,
+        [DAI.address, USDC.address, USDT.address, SUSD.address],
+        [18, 6, 6, 18],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        0,
+        0,
+      )
 
-      swapStorage = await swap.swapStorage()
+      swapClone = (await ethers.getContractAt(
+        SwapArtifact.abi,
+        swapCloneAddress,
+      )) as Swap
+
+      expect(await swapClone.getVirtualPrice()).to.be.eq(0)
+
+      swapStorage = await swapClone.swapStorage()
 
       swapToken = (await ethers.getContractAt(
         LPTokenArtifact.abi,
@@ -153,23 +179,23 @@ describe("Swap with 4 tokens", () => {
       )) as LPToken
 
       await asyncForEach([owner, user1, user2, attacker], async (signer) => {
-        await DAI.connect(signer).approve(swap.address, MAX_UINT256)
-        await USDC.connect(signer).approve(swap.address, MAX_UINT256)
-        await USDT.connect(signer).approve(swap.address, MAX_UINT256)
-        await SUSD.connect(signer).approve(swap.address, MAX_UINT256)
+        await DAI.connect(signer).approve(swapClone.address, MAX_UINT256)
+        await USDC.connect(signer).approve(swapClone.address, MAX_UINT256)
+        await USDT.connect(signer).approve(swapClone.address, MAX_UINT256)
+        await SUSD.connect(signer).approve(swapClone.address, MAX_UINT256)
       })
 
       // Populate the pool with initial liquidity
-      await swap.addLiquidity(
+      await swapClone.addLiquidity(
         [String(50e18), String(50e6), String(50e6), String(50e18)],
         0,
         MAX_UINT256,
       )
 
-      expect(await swap.getTokenBalance(0)).to.be.eq(String(50e18))
-      expect(await swap.getTokenBalance(1)).to.be.eq(String(50e6))
-      expect(await swap.getTokenBalance(2)).to.be.eq(String(50e6))
-      expect(await swap.getTokenBalance(3)).to.be.eq(String(50e18))
+      expect(await swapClone.getTokenBalance(0)).to.be.eq(String(50e18))
+      expect(await swapClone.getTokenBalance(1)).to.be.eq(String(50e6))
+      expect(await swapClone.getTokenBalance(2)).to.be.eq(String(50e6))
+      expect(await swapClone.getTokenBalance(3)).to.be.eq(String(50e18))
       expect(await getUserTokenBalance(owner, swapToken)).to.be.eq(
         String(200e18),
       )
@@ -182,7 +208,7 @@ describe("Swap with 4 tokens", () => {
 
   describe("addLiquidity", () => {
     it("Add liquidity succeeds with pool with 4 tokens", async () => {
-      const calcTokenAmount = await swap.calculateTokenAmount(
+      const calcTokenAmount = await swapClone.calculateTokenAmount(
         user1Address,
         [String(1e18), 0, 0, 0],
         true,
@@ -190,7 +216,7 @@ describe("Swap with 4 tokens", () => {
       expect(calcTokenAmount).to.be.eq("999854620735777893")
 
       // Add liquidity as user1
-      await swap
+      await swapClone
         .connect(user1)
         .addLiquidity(
           [String(1e18), 0, 0, 0],
@@ -207,13 +233,12 @@ describe("Swap with 4 tokens", () => {
 
   describe("swap", () => {
     it("Swap works between tokens with different decimals", async () => {
-      const calcTokenAmount = await swap
+      const calcTokenAmount = await swapClone
         .connect(user1)
         .calculateSwap(2, 0, String(1e6))
       expect(calcTokenAmount).to.be.eq("998608238366733809")
       const DAIBefore = await getUserTokenBalance(user1, DAI)
-      await USDT.connect(user1).approve(swap.address, String(1e6))
-      await swap
+      await swapClone
         .connect(user1)
         .swap(
           2,
@@ -228,13 +253,15 @@ describe("Swap with 4 tokens", () => {
       expect(DAIAfter.sub(DAIBefore)).to.be.eq("998608238366733809")
 
       // Verify pool balance changes
-      expect(await swap.getTokenBalance(0)).to.be.eq("49001391761633266191")
+      expect(await swapClone.getTokenBalance(0)).to.be.eq(
+        "49001391761633266191",
+      )
     })
   })
 
   describe("removeLiquidity", () => {
     it("Remove Liquidity succeeds", async () => {
-      const calcTokenAmount = await swap.calculateTokenAmount(
+      const calcTokenAmount = await swapClone.calculateTokenAmount(
         user1Address,
         [String(1e18), 0, 0, 0],
         true,
@@ -242,7 +269,7 @@ describe("Swap with 4 tokens", () => {
       expect(calcTokenAmount).to.be.eq("999854620735777893")
 
       // Add liquidity (1e18 DAI) as user1
-      await swap
+      await swapClone
         .connect(user1)
         .addLiquidity(
           [String(1e18), 0, 0, 0],
@@ -256,7 +283,7 @@ describe("Swap with 4 tokens", () => {
       )
 
       // Calculate expected amounts of tokens user1 will receive
-      const expectedAmounts = await swap.calculateRemoveLiquidity(
+      const expectedAmounts = await swapClone.calculateRemoveLiquidity(
         user1Address,
         "999355335447632820",
       )
@@ -267,11 +294,13 @@ describe("Swap with 4 tokens", () => {
       expect(expectedAmounts[3]).to.be.eq("248596651909606787")
 
       // Allow burn of swapToken
-      await swapToken.connect(user1).approve(swap.address, "999355335447632820")
+      await swapToken
+        .connect(user1)
+        .approve(swapClone.address, "999355335447632820")
       const beforeTokenBalances = await getUserTokenBalances(user1, TOKENS)
 
       // Withdraw user1's share via all tokens in proportion to pool's balances
-      await swap
+      await swapClone
         .connect(user1)
         .removeLiquidity(
           "999355335447632820",
@@ -298,32 +327,35 @@ describe("Swap with 4 tokens", () => {
   })
 
   describe("Check for timestamp manipulations", () => {
+    beforeEach(async () => {
+      await forceAdvanceOneBlock()
+    })
     it("Check for maximum differences in A and virtual price when increasing", async () => {
       // Create imbalanced pool to measure virtual price change
       // Number of tokens are in 2:1:1:1 ratio
       // We expect virtual price to increase as A increases
-      await swap
+      await swapClone
         .connect(user1)
         .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256)
 
       // Start ramp
-      await swap.rampA(
+      await swapClone.rampA(
         100,
         (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
       )
 
       // +0 seconds since ramp A
-      expect(await swap.getA()).to.be.eq(50)
-      expect(await swap.getAPrecise()).to.be.eq(5000)
-      expect(await swap.getVirtualPrice()).to.be.eq("1000166120891616093")
+      expect(await swapClone.getA()).to.be.eq(50)
+      expect(await swapClone.getAPrecise()).to.be.eq(5000)
+      expect(await swapClone.getVirtualPrice()).to.be.eq("1000166120891616093")
 
       // Malicious miner skips 900 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 900)
 
       // +900 seconds since ramp A
-      expect(await swap.getA()).to.be.eq(50)
-      expect(await swap.getAPrecise()).to.be.eq(5003)
-      expect(await swap.getVirtualPrice()).to.be.eq("1000168045277768276")
+      expect(await swapClone.getA()).to.be.eq(50)
+      expect(await swapClone.getAPrecise()).to.be.eq(5003)
+      expect(await swapClone.getVirtualPrice()).to.be.eq("1000168045277768276")
 
       // Max change of A between two blocks
       // 5003 / 5000
@@ -338,28 +370,28 @@ describe("Swap with 4 tokens", () => {
       // Create imbalanced pool to measure virtual price change
       // Number of tokens are in 2:1:1:1 ratio
       // We expect virtual price to decrease as A decreases
-      await swap
+      await swapClone
         .connect(user1)
         .addLiquidity([String(1e20), 0, 0, 0], 0, MAX_UINT256)
 
       // Start ramp
-      await swap.rampA(
+      await swapClone.rampA(
         25,
         (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
       )
 
       // +0 seconds since ramp A
-      expect(await swap.getA()).to.be.eq(50)
-      expect(await swap.getAPrecise()).to.be.eq(5000)
-      expect(await swap.getVirtualPrice()).to.be.eq("1000166120891616093")
+      expect(await swapClone.getA()).to.be.eq(50)
+      expect(await swapClone.getAPrecise()).to.be.eq(5000)
+      expect(await swapClone.getVirtualPrice()).to.be.eq("1000166120891616093")
 
       // Malicious miner skips 900 seconds
       await setTimestamp((await getCurrentBlockTimestamp()) + 900)
 
       // +900 seconds since ramp A
-      expect(await swap.getA()).to.be.eq(49)
-      expect(await swap.getAPrecise()).to.be.eq(4999)
-      expect(await swap.getVirtualPrice()).to.be.eq("1000165478934301535")
+      expect(await swapClone.getA()).to.be.eq(49)
+      expect(await swapClone.getAPrecise()).to.be.eq(4999)
+      expect(await swapClone.getVirtualPrice()).to.be.eq("1000165478934301535")
 
       // Max change of A between two blocks
       // 4999 / 5000
@@ -402,14 +434,14 @@ describe("Swap with 4 tokens", () => {
         expect(initialAttackerBalances[3]).to.be.eq(String(1e20))
 
         // Start ramp upwards
-        await swap.rampA(
+        await swapClone.rampA(
           100,
-          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 10,
+          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
         )
-        expect(await swap.getAPrecise()).to.be.eq(5000)
+        expect(await swapClone.getAPrecise()).to.be.eq(5000)
 
         // Check current pool balances
-        initialPoolBalances = await getPoolBalances(swap, 4)
+        initialPoolBalances = await getPoolBalances(swapClone, 4)
         expect(initialPoolBalances[0]).to.be.eq(String(50e18))
         expect(initialPoolBalances[1]).to.be.eq(String(50e6))
         expect(initialPoolBalances[2]).to.be.eq(String(50e6))
@@ -425,7 +457,7 @@ describe("Swap with 4 tokens", () => {
 
           it("Attack fails with 900 seconds between blocks", async () => {
             // Swap 16e6 of USDC to SUSD, causing massive imbalance in the pool
-            await swap
+            await swapClone
               .connect(attacker)
               .swap(1, 3, String(16e6), 0, MAX_UINT256)
             const SUSDOutput = (await getUserTokenBalance(attacker, SUSD)).sub(
@@ -438,8 +470,8 @@ describe("Swap with 4 tokens", () => {
             // Pool is imbalanced! Now trades from SUSD -> USDC may be profitable in small sizes
             // USDC balance in the pool : 66e6
             // SUSD balance in the pool : 34.13e18
-            expect(await swap.getTokenBalance(1)).to.be.eq(String(66e6))
-            expect(await swap.getTokenBalance(3)).to.be.eq(
+            expect(await swapClone.getTokenBalance(1)).to.be.eq(String(66e6))
+            expect(await swapClone.getTokenBalance(3)).to.be.eq(
               "34126363338064619373",
             )
 
@@ -448,11 +480,13 @@ describe("Swap with 4 tokens", () => {
 
             // Verify A has changed upwards
             // 5000 -> 5003 (0.06%)
-            expect(await swap.getAPrecise()).to.be.eq(5003)
+            expect(await swapClone.getAPrecise()).to.be.eq(5003)
 
             // Trade SUSD to USDC, taking advantage of the imbalance and change of A
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swap.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -480,7 +514,7 @@ describe("Swap with 4 tokens", () => {
             // Attacker lost 3.209e4 USDC (0.201% of initial deposit)
 
             // Check for pool balance changes
-            const finalPoolBalances = await getPoolBalances(swap, 4)
+            const finalPoolBalances = await getPoolBalances(swapClone, 4)
 
             expect(finalPoolBalances[1]).to.be.gt(initialPoolBalances[1])
             expect(finalPoolBalances[3]).to.be.eq(initialPoolBalances[3])
@@ -499,7 +533,7 @@ describe("Swap with 4 tokens", () => {
             // Purpose of this test case is to mimic rapid ramp up of A.
 
             // Swap 16e6 of USDC to SUSD, causing massive imbalance in the pool
-            await swap
+            await swapClone
               .connect(attacker)
               .swap(1, 3, String(16e6), 0, MAX_UINT256)
             const SUSDOutput = (await getUserTokenBalance(attacker, SUSD)).sub(
@@ -512,23 +546,25 @@ describe("Swap with 4 tokens", () => {
             // Pool is imbalanced! Now trades from SUSD -> USDC may be profitable in small sizes
             // USDC balance in the pool : 66e6
             // SUSD balance in the pool : 34.13e18
-            expect(await swap.getTokenBalance(1)).to.be.eq(String(66e6))
-            expect(await swap.getTokenBalance(3)).to.be.eq(
+            expect(await swapClone.getTokenBalance(1)).to.be.eq(String(66e6))
+            expect(await swapClone.getTokenBalance(3)).to.be.eq(
               "34126363338064619373",
             )
 
             // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
-              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 10,
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
             )
 
             // Verify A has changed upwards
             // 5000 -> 10000 (100%)
-            expect(await swap.getAPrecise()).to.be.eq(10000)
+            expect(await swapClone.getAPrecise()).to.be.eq(10000)
 
             // Trade SUSD to USDC, taking advantage of the imbalance and sudden change of A
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swap.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -556,7 +592,7 @@ describe("Swap with 4 tokens", () => {
             // Attacker lost 8.65e4 USDC (0.54% of initial deposit)
 
             // Check for pool balance changes
-            const finalPoolBalances = await getPoolBalances(swap, 4)
+            const finalPoolBalances = await getPoolBalances(swapClone, 4)
 
             expect(finalPoolBalances[1]).to.be.gt(initialPoolBalances[1])
             expect(finalPoolBalances[3]).to.be.eq(initialPoolBalances[3])
@@ -581,7 +617,7 @@ describe("Swap with 4 tokens", () => {
 
           beforeEach(async () => {
             // Set up pool to be imbalanced prior to the attack
-            await swap
+            await swapClone
               .connect(user2)
               .addLiquidity(
                 [0, 0, 0, String(50e18)],
@@ -590,7 +626,7 @@ describe("Swap with 4 tokens", () => {
               )
 
             // Check current pool balances
-            initialPoolBalances = await getPoolBalances(swap, 4)
+            initialPoolBalances = await getPoolBalances(swapClone, 4)
             expect(initialPoolBalances[0]).to.be.eq(String(50e18))
             expect(initialPoolBalances[1]).to.be.eq(String(50e6))
             expect(initialPoolBalances[2]).to.be.eq(String(50e6))
@@ -599,7 +635,7 @@ describe("Swap with 4 tokens", () => {
 
           it("Attack fails with 900 seconds between blocks", async () => {
             // Swapping 25e6 of USDC to SUSD, resolving imbalance in the pool
-            await swap
+            await swapClone
               .connect(attacker)
               .swap(1, 3, String(25e6), 0, MAX_UINT256)
             const SUSDOutput = (await getUserTokenBalance(attacker, SUSD)).sub(
@@ -613,8 +649,8 @@ describe("Swap with 4 tokens", () => {
             // Pool is now almost balanced!
             // USDC balance in the pool : 75.00e6
             // SUSD balance in the pool : 74.86e18
-            expect(await swap.getTokenBalance(1)).to.be.eq(String(75e6))
-            expect(await swap.getTokenBalance(3)).to.be.eq(
+            expect(await swapClone.getTokenBalance(1)).to.be.eq(String(75e6))
+            expect(await swapClone.getTokenBalance(3)).to.be.eq(
               "74859519956589418582",
             )
 
@@ -623,11 +659,13 @@ describe("Swap with 4 tokens", () => {
 
             // Verify A has changed upwards
             // 5000 -> 5003 (0.06%)
-            expect(await swap.getAPrecise()).to.be.eq(5003)
+            expect(await swapClone.getAPrecise()).to.be.eq(5003)
 
             // Trade SUSD to USDC, taking advantage of the imbalance and sudden change of A
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swap.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -655,7 +693,7 @@ describe("Swap with 4 tokens", () => {
             // Attacker lost 4.982e4 USDC (0.199% of initial attack deposit)
 
             // Check for pool balance changes
-            const finalPoolBalances = await getPoolBalances(swap, 4)
+            const finalPoolBalances = await getPoolBalances(swapClone, 4)
 
             expect(finalPoolBalances[1]).to.be.gt(initialPoolBalances[1])
             expect(finalPoolBalances[3]).to.be.eq(initialPoolBalances[3])
@@ -674,7 +712,7 @@ describe("Swap with 4 tokens", () => {
             // Purpose of this test case is to mimic rapid ramp up of A.
 
             // Swap 25e6 of USDC to SUSD, resolving the imbalance in the pool
-            await swap
+            await swapClone
               .connect(attacker)
               .swap(1, 3, String(25e6), 0, MAX_UINT256)
             const SUSDOutput = (await getUserTokenBalance(attacker, SUSD)).sub(
@@ -687,23 +725,25 @@ describe("Swap with 4 tokens", () => {
             // Pool is now almost balanced!
             // USDC balance in the pool : 75.00e6
             // SUSD balance in the pool : 74.86e18
-            expect(await swap.getTokenBalance(1)).to.be.eq(String(75e6))
-            expect(await swap.getTokenBalance(3)).to.be.eq(
+            expect(await swapClone.getTokenBalance(1)).to.be.eq(String(75e6))
+            expect(await swapClone.getTokenBalance(3)).to.be.eq(
               "74859519956589418582",
             )
 
             // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
-              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 10,
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
             )
 
             // Verify A has changed upwards
             // 5000 -> 10000 (100%)
-            expect(await swap.getAPrecise()).to.be.eq(10000)
+            expect(await swapClone.getAPrecise()).to.be.eq(10000)
 
             // Trade SUSD to USDC, taking advantage of the imbalance and sudden change of A
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swap.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -732,7 +772,7 @@ describe("Swap with 4 tokens", () => {
             // Attacker gained 3.139e4 USDC (0.12556% of attack deposit)
 
             // Check for pool balance changes
-            const finalPoolBalances = await getPoolBalances(swap, 4)
+            const finalPoolBalances = await getPoolBalances(swapClone, 4)
 
             expect(finalPoolBalances[1]).to.be.lt(initialPoolBalances[1])
             expect(finalPoolBalances[3]).to.be.eq(initialPoolBalances[3])
@@ -765,14 +805,14 @@ describe("Swap with 4 tokens", () => {
         expect(initialAttackerBalances[3]).to.be.eq(String(1e20))
 
         // Start ramp downwards
-        await swap.rampA(
+        await swapClone.rampA(
           25,
-          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 10,
+          (await getCurrentBlockTimestamp()) + 14 * TIME.DAYS + 1,
         )
-        expect(await swap.getAPrecise()).to.be.eq(5000)
+        expect(await swapClone.getAPrecise()).to.be.eq(5000)
 
         // Check current pool balances
-        initialPoolBalances = await getPoolBalances(swap, 4)
+        initialPoolBalances = await getPoolBalances(swapClone, 4)
         expect(initialPoolBalances[0]).to.be.eq(String(50e18))
         expect(initialPoolBalances[1]).to.be.eq(String(50e6))
         expect(initialPoolBalances[2]).to.be.eq(String(50e6))
@@ -788,7 +828,7 @@ describe("Swap with 4 tokens", () => {
 
           it("Attack fails with 900 seconds between blocks", async () => {
             // Swap 16e6 of USDC to SUSD, causing massive imbalance in the pool
-            await swap
+            await swapClone
               .connect(attacker)
               .swap(1, 3, String(16e6), 0, MAX_UINT256)
             const SUSDOutput = (await getUserTokenBalance(attacker, SUSD)).sub(
@@ -801,8 +841,8 @@ describe("Swap with 4 tokens", () => {
             // Pool is imbalanced! Now trades from SUSD -> USDC may be profitable in small sizes
             // USDC balance in the pool : 66e6
             // SUSD balance in the pool : 34.13e18
-            expect(await swap.getTokenBalance(1)).to.be.eq(String(66e6))
-            expect(await swap.getTokenBalance(3)).to.be.eq(
+            expect(await swapClone.getTokenBalance(1)).to.be.eq(String(66e6))
+            expect(await swapClone.getTokenBalance(3)).to.be.eq(
               "34126363338064619373",
             )
 
@@ -810,10 +850,12 @@ describe("Swap with 4 tokens", () => {
             await setTimestamp((await getCurrentBlockTimestamp()) + 900)
 
             // Verify A has changed downwards
-            expect(await swap.getAPrecise()).to.be.eq(4999)
+            expect(await swapClone.getAPrecise()).to.be.eq(4999)
 
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swap.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -842,7 +884,7 @@ describe("Swap with 4 tokens", () => {
             // Attacker lost 3.2e4 USDC (0.2% of initial deposit)
 
             // Check for pool balance changes
-            const finalPoolBalances = await getPoolBalances(swap, 4)
+            const finalPoolBalances = await getPoolBalances(swapClone, 4)
 
             expect(finalPoolBalances[1]).to.be.gt(initialPoolBalances[1])
             expect(finalPoolBalances[3]).to.be.eq(initialPoolBalances[3])
@@ -861,7 +903,7 @@ describe("Swap with 4 tokens", () => {
             // Purpose of this test is to show how dangerous rapid A ramp is.
 
             // Swap 16e6 USDC to sUSD, causing imbalance in the pool
-            await swap
+            await swapClone
               .connect(attacker)
               .swap(1, 3, String(16e6), 0, MAX_UINT256)
             const SUSDOutput = (await getUserTokenBalance(attacker, SUSD)).sub(
@@ -874,21 +916,23 @@ describe("Swap with 4 tokens", () => {
             // Pool is imbalanced! Now trades from SUSD -> USDC may be profitable in small sizes
             // USDC balance in the pool : 66e6
             // SUSD balance in the pool : 34.13e18
-            expect(await swap.getTokenBalance(1)).to.be.eq(String(66e6))
-            expect(await swap.getTokenBalance(3)).to.be.eq(
+            expect(await swapClone.getTokenBalance(1)).to.be.eq(String(66e6))
+            expect(await swapClone.getTokenBalance(3)).to.be.eq(
               "34126363338064619373",
             )
 
             // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
-              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 10,
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
             )
 
             // Verify A has changed downwards
-            expect(await swap.getAPrecise()).to.be.eq(2500)
+            expect(await swapClone.getAPrecise()).to.be.eq(2500)
 
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swap.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -917,7 +961,7 @@ describe("Swap with 4 tokens", () => {
             // Attacker gained 7.34e4 USDC (0.45875% of initial deposit)
 
             // Check for pool balance changes
-            const finalPoolBalances = await getPoolBalances(swap, 4)
+            const finalPoolBalances = await getPoolBalances(swapClone, 4)
 
             expect(finalPoolBalances[1]).to.be.lt(initialPoolBalances[1])
             expect(finalPoolBalances[3]).to.be.eq(initialPoolBalances[3])
@@ -945,7 +989,7 @@ describe("Swap with 4 tokens", () => {
 
           beforeEach(async () => {
             // Set up pool to be imbalanced prior to the attack
-            await swap
+            await swapClone
               .connect(user2)
               .addLiquidity(
                 [0, 0, 0, String(50e18)],
@@ -954,7 +998,7 @@ describe("Swap with 4 tokens", () => {
               )
 
             // Check current pool balances
-            initialPoolBalances = await getPoolBalances(swap, 4)
+            initialPoolBalances = await getPoolBalances(swapClone, 4)
             expect(initialPoolBalances[0]).to.be.eq(String(50e18))
             expect(initialPoolBalances[1]).to.be.eq(String(50e6))
             expect(initialPoolBalances[2]).to.be.eq(String(50e6))
@@ -963,7 +1007,7 @@ describe("Swap with 4 tokens", () => {
 
           it("Attack fails with 900 seconds between blocks", async () => {
             // Swap 25e6 of USDC to SUSD, resolving imbalance in the pool
-            await swap
+            await swapClone
               .connect(attacker)
               .swap(1, 3, String(25e6), 0, MAX_UINT256)
             const SUSDOutput = (await getUserTokenBalance(attacker, SUSD)).sub(
@@ -977,8 +1021,8 @@ describe("Swap with 4 tokens", () => {
             // Pool is now almost balanced!
             // USDC balance in the pool : 75.00e6
             // SUSD balance in the pool : 74.86e18
-            expect(await swap.getTokenBalance(1)).to.be.eq(String(75e6))
-            expect(await swap.getTokenBalance(3)).to.be.eq(
+            expect(await swapClone.getTokenBalance(1)).to.be.eq(String(75e6))
+            expect(await swapClone.getTokenBalance(3)).to.be.eq(
               "74859519956589418582",
             )
 
@@ -986,10 +1030,12 @@ describe("Swap with 4 tokens", () => {
             await setTimestamp((await getCurrentBlockTimestamp()) + 900)
 
             // Verify A has changed downwards
-            expect(await swap.getAPrecise()).to.be.eq(4999)
+            expect(await swapClone.getAPrecise()).to.be.eq(4999)
 
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swap.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -1018,7 +1064,7 @@ describe("Swap with 4 tokens", () => {
             // Attacker lost 4.995e4 USDC (0.2% of initial deposit)
 
             // Check for pool balance changes
-            const finalPoolBalances = await getPoolBalances(swap, 4)
+            const finalPoolBalances = await getPoolBalances(swapClone, 4)
 
             expect(finalPoolBalances[1]).to.be.gt(initialPoolBalances[1])
             expect(finalPoolBalances[3]).to.be.eq(initialPoolBalances[3])
@@ -1037,7 +1083,7 @@ describe("Swap with 4 tokens", () => {
             // Purpose of this test case is to mimic rapid ramp down of A.
 
             // Swap 25e6 of USDC to SUSD, resolving imbalance in the pool
-            await swap
+            await swapClone
               .connect(attacker)
               .swap(1, 3, String(25e6), 0, MAX_UINT256)
             const SUSDOutput = (await getUserTokenBalance(attacker, SUSD)).sub(
@@ -1051,21 +1097,23 @@ describe("Swap with 4 tokens", () => {
             // Pool is now almost balanced!
             // USDC balance in the pool : 75.00e6
             // SUSD balance in the pool : 74.86e18
-            expect(await swap.getTokenBalance(1)).to.be.eq(String(75e6))
-            expect(await swap.getTokenBalance(3)).to.be.eq(
+            expect(await swapClone.getTokenBalance(1)).to.be.eq(String(75e6))
+            expect(await swapClone.getTokenBalance(3)).to.be.eq(
               "74859519956589418582",
             )
 
             // Assume no other transactions occur during the 2 weeks ramp period
             await setTimestamp(
-              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS + 10,
+              (await getCurrentBlockTimestamp()) + 2 * TIME.WEEKS,
             )
 
             // Verify A has changed downwards
-            expect(await swap.getAPrecise()).to.be.eq(2500)
+            expect(await swapClone.getAPrecise()).to.be.eq(2500)
 
             const balanceBefore = await getUserTokenBalance(attacker, USDC)
-            await swap.connect(attacker).swap(3, 1, SUSDOutput, 0, MAX_UINT256)
+            await swapClone
+              .connect(attacker)
+              .swap(3, 1, SUSDOutput, 0, MAX_UINT256)
             const USDCOutput = (await getUserTokenBalance(attacker, USDC)).sub(
               balanceBefore,
             )
@@ -1095,7 +1143,7 @@ describe("Swap with 4 tokens", () => {
             // Attacker lost 2.05e5 USDC (0.820624% of initial deposit)
 
             // Check for pool balance changes
-            const finalPoolBalances = await getPoolBalances(swap, 4)
+            const finalPoolBalances = await getPoolBalances(swapClone, 4)
 
             expect(finalPoolBalances[1]).to.be.gt(initialPoolBalances[1])
             expect(finalPoolBalances[3]).to.be.eq(initialPoolBalances[3])
