@@ -3,7 +3,3 @@ export const CHAIN_ID = {
   KOVAN: "42",
   HARDHAT: "31337",
 }
-
-export default {
-  CHAIN_ID: CHAIN_ID,
-}
