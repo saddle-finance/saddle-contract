@@ -12,10 +12,7 @@ module.exports = {
   skipFiles: [
     'helper/test/TestSwapReturnValues.sol',
     'VirtualSwap/',
-    'LPTokenGuarded.sol',
-    'OwnerPausable.sol',
-    'SwapGuarded.sol',
-    'SwapUtilsGuarded.sol'
+    'guarded/'
   ],
   mocha: {
     grep: "@skip-on-coverage", // Find everything with this tag

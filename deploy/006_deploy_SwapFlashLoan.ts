@@ -14,6 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     libraries: {
       SwapUtils: (await get("SwapUtils")).address,
     },
+    skipIfAlreadyDeployed: true,
   })
 }
 export default func

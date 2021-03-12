@@ -11,6 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await deploy("SwapDeployer", {
     from: deployer,
     log: true,
+    skipIfAlreadyDeployed: true,
   })
 
   const currentOwner = await read("SwapDeployer", "owner")

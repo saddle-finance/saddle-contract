@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./OwnerPausable.sol";
 import "./SwapUtilsGuarded.sol";
-import "./MathUtils.sol";
+import "../MathUtils.sol";
 import "./Allowlist.sol";
 
 /**

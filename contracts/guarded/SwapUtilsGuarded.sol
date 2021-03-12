@@ -6,7 +6,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./LPTokenGuarded.sol";
-import "./MathUtils.sol";
+import "../MathUtils.sol";
 
 /**
  * @title SwapUtils library

@@ -6,7 +6,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./interfaces/ISwap.sol";
+import "../interfaces/ISwapGuarded.sol";
 
 /**
  * @title Liquidity Provider Token
@@ -18,7 +18,7 @@ contract LPTokenGuarded is ERC20Burnable, Ownable {
 
     // Address of the swap contract that owns this LP token. When a user adds liquidity to the swap contract,
     // they receive a proportionate amount of this LPToken.
-    ISwap public swap;
+    ISwapGuarded public swap;
 
     // Maps user account to total number of LPToken minted by them. Used to limit minting during guarded release phase
     mapping(address => uint256) public mintedAmounts;
@@ -36,7 +36,7 @@ contract LPTokenGuarded is ERC20Burnable, Ownable {
         uint8 decimals_
     ) public ERC20(name_, symbol_) {
         _setupDecimals(decimals_);
-        swap = ISwap(_msgSender());
+        swap = ISwapGuarded(_msgSender());
     }
 
     /**
