@@ -31,6 +31,7 @@
     "chai": "^4.3.3",
     "eslint": "^7.21.0",
     "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-json": "^2.1.2",
     "eslint-plugin-prettier": "^3.3.1",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.0.31",
@@ -53,15 +54,20 @@
     "typescript": "^4.2.3"
   },
   "scripts": {
-    "lint": "npm run lint:ts && npm run lint:sol",
-    "lint:fix": "npm run lint:fix:ts && npm run lint:fix:sol",
-    "lint:ts": "eslint --ext ts ${npm_package_config_eslintPaths} && prettier --list-different test/*.ts",
-    "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/*.ts",
+    "lint": "npm run lint:ts && npm run lint:sol && npm run lint:json",
+    "lint:fix": "npm run lint:fix:ts && npm run lint:fix:sol && npm run lint:fix:json",
+    "lint:ts": "eslint --ext ts ${npm_package_config_eslintPaths} && prettier --list-different test/**/*.ts deploy/**/*.ts",
+    "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/**/*.ts deploy/**/*.ts",
+    "lint:json": "eslint --ext ts ${npm_package_config_eslintPaths} && prettier --list-different deployments/**/*.json",
+    "lint:fix:json": "eslint --ext json --fix ${npm_package_config_eslintPaths} && prettier --write deployments/**/*.json",
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "lint:fix:sol": "prettier --write 'contracts/**/*.sol' && solhint 'contracts/**/*.sol' --fix",
     "build": "hardhat compile",
     "test": "hardhat test",
     "coverage": "hardhat coverage --temp ./build/artifacts",
+    "deploy" : "hardhat deploy",
+    "start": "hardhat node",
+    "fork": "export FORK_MAINNET=true && hardhat node --fork-deployments mainnet --as-network localhost ; unset FORK_MAINNET",
     "prepare": "npm run build"
   },
   "husky": {

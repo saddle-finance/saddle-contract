@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
-// https://etherscan.io/address/0x4f6a43ad7cba042606decaca730d4ce0a57ac62e#code
-
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./OwnerPausable.sol";
-import "./SwapUtils.sol";
-import "./MathUtils.sol";
-import "../../Allowlist.sol";
+import "./SwapUtilsGuarded.sol";
+import "../MathUtils.sol";
+import "./Allowlist.sol";
 
 /**
  * @title Swap - A StableSwap implementation in solidity.
@@ -32,11 +30,11 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using MathUtils for uint256;
-    using SwapUtils for SwapUtils.Swap;
+    using SwapUtilsGuarded for SwapUtilsGuarded.Swap;
 
     // Struct storing data responsible for automatic market maker functionalities. In order to
-    // access this data, this contract uses SwapUtils library. For more details, see SwapUtils.sol
-    SwapUtils.Swap public swapStorage;
+    // access this data, this contract uses SwapUtils library. For more details, see SwapUtilsGuarded.sol
+    SwapUtilsGuarded.Swap public swapStorage;
 
     // Address to allowlist contract that holds information about maximum totaly supply of lp tokens
     // and maximum mintable amount per user address. As this is immutable, this will become a constant
@@ -152,26 +150,26 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
                 "The 0 address isn't an ERC-20"
             );
             require(
-                decimals[i] <= SwapUtils.POOL_PRECISION_DECIMALS,
+                decimals[i] <= SwapUtilsGuarded.POOL_PRECISION_DECIMALS,
                 "Token decimals exceeds max"
             );
             precisionMultipliers[i] =
                 10 **
-                    uint256(SwapUtils.POOL_PRECISION_DECIMALS).sub(
+                    uint256(SwapUtilsGuarded.POOL_PRECISION_DECIMALS).sub(
                         uint256(decimals[i])
                     );
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
         // Check _a, _fee, _adminFee, _withdrawFee, _allowlist parameters
-        require(_a < SwapUtils.MAX_A, "_a exceeds maximum");
-        require(_fee < SwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
+        require(_a < SwapUtilsGuarded.MAX_A, "_a exceeds maximum");
+        require(_fee < SwapUtilsGuarded.MAX_SWAP_FEE, "_fee exceeds maximum");
         require(
-            _adminFee < SwapUtils.MAX_ADMIN_FEE,
+            _adminFee < SwapUtilsGuarded.MAX_ADMIN_FEE,
             "_adminFee exceeds maximum"
         );
         require(
-            _withdrawFee < SwapUtils.MAX_WITHDRAW_FEE,
+            _withdrawFee < SwapUtilsGuarded.MAX_WITHDRAW_FEE,
             "_withdrawFee exceeds maximum"
         );
         require(
@@ -180,16 +178,16 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
         );
 
         // Initialize swapStorage struct
-        swapStorage.lpToken = new LPToken(
+        swapStorage.lpToken = new LPTokenGuarded(
             lpTokenName,
             lpTokenSymbol,
-            SwapUtils.POOL_PRECISION_DECIMALS
+            SwapUtilsGuarded.POOL_PRECISION_DECIMALS
         );
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisionMultipliers;
         swapStorage.balances = new uint256[](_pooledTokens.length);
-        swapStorage.initialA = _a.mul(SwapUtils.A_PRECISION);
-        swapStorage.futureA = _a.mul(SwapUtils.A_PRECISION);
+        swapStorage.initialA = _a.mul(SwapUtilsGuarded.A_PRECISION);
+        swapStorage.futureA = _a.mul(SwapUtilsGuarded.A_PRECISION);
         swapStorage.initialATime = 0;
         swapStorage.futureATime = 0;
         swapStorage.swapFee = _fee;
