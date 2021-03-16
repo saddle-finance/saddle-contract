@@ -3,7 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { CHAIN_ID } from "../utils/network"
 import { BigNumber } from "ethers"
 
-const BTC_TOKENS_ARGS: { [token: string]: any[] } = {
+const USD_TOKENS_ARGS: { [token: string]: any[] } = {
   DAI: ["Dai Stablecoin", "DAI", "18"],
   USDC: ["USD Coin", "USDC", "6"],
   USDT: ["Tether USD", "USDT", "6"],
@@ -14,17 +14,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, execute } = deployments
   const { deployer } = await getNamedAccounts()
 
-  for (const token in BTC_TOKENS_ARGS) {
+  for (const token in USD_TOKENS_ARGS) {
     await deploy(token, {
       from: deployer,
       log: true,
       contract: "GenericERC20",
-      args: BTC_TOKENS_ARGS[token],
+      args: USD_TOKENS_ARGS[token],
       skipIfAlreadyDeployed: true,
     })
     // If it's on hardhat, mint test tokens
     if ((await getChainId()) == CHAIN_ID.HARDHAT) {
-      const decimals = BTC_TOKENS_ARGS[token][2]
+      const decimals = USD_TOKENS_ARGS[token][2]
       await execute(
         token,
         { from: deployer, log: true },
