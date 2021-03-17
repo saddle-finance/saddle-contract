@@ -303,6 +303,8 @@ contract Bridge is ERC721 {
      * @param itemId ERC721 token ID representing a pending `tokenToSynth` swap
      */
     function completeToSynth(uint256 itemId) external {
+        address nftOwner = ownerOf(itemId);
+        require(nftOwner == msg.sender, "not owner");
         (PendingSwapType swapType, ) = _getPendingSwapTypeAndState(itemId);
         require(swapType == PendingSwapType.TokenToSynth, "invalid itemId");
 
@@ -310,7 +312,6 @@ contract Bridge is ERC721 {
         _settle(address(pss.ss), pss.synthKey);
 
         IERC20 synth = getProxyAddressFromTargetSynthKey(pss.synthKey);
-        address nftOwner = ownerOf(itemId);
 
         // Mark state as complete
         _setPendingSwapState(itemId, PendingSwapState.Completed);
