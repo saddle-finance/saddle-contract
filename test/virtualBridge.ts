@@ -48,8 +48,8 @@ enum PendingSwapState {
   Completed,
 }
 
-interface PendingSynthToTokenSwap {
-  ss: string
+interface PendingToTokenSwap {
+  swapper: string
   synthKey: string
   swap: string
   tokenToIndex: number
@@ -699,17 +699,17 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(swapType).to.eq(PendingSwapType.SynthToToken)
       expect(swapState).to.eq(PendingSwapState.ReadyToSettle)
 
-      // Retrieve relevant information from the pendingSynthToTokenSwap mapping
-      const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+      // Retrieve relevant information from the pendingToTokenSwap mapping
+      const pendingToTokenSwap: PendingToTokenSwap = await bridge.pendingToTokenSwaps(
         queueId,
       )
       const synth = (await ethers.getContractAt(
         GenericERC20Artifact.abi,
         await bridge.getProxyAddressFromTargetSynthKey(
-          pendingSynthToTokenSwap.synthKey,
+          pendingToTokenSwap.synthKey,
         ),
       )) as GenericERC20
-      const maxAmount = await synth.balanceOf(pendingSynthToTokenSwap.ss)
+      const maxAmount = await synth.balanceOf(pendingToTokenSwap.swapper)
 
       // Calculate minAmount
       const minAmount = await bridge.calcCompleteToToken(queueId, maxAmount)
@@ -873,17 +873,17 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         it("Succeeds with the full amount", async () => {
           const usdcBalanceBefore = await usdc.balanceOf(user1Address)
 
-          // Retrieve relevant information from the pendingSynthToTokenSwap mapping
-          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+          // Retrieve relevant information from the pendingToTokenSwap mapping
+          const pendingToTokenSwap: PendingToTokenSwap = await bridge.pendingToTokenSwaps(
             queueId,
           )
           const synth = (await ethers.getContractAt(
             GenericERC20Artifact.abi,
             await bridge.getProxyAddressFromTargetSynthKey(
-              pendingSynthToTokenSwap.synthKey,
+              pendingToTokenSwap.synthKey,
             ),
           )) as GenericERC20
-          const maxAmount = await synth.balanceOf(pendingSynthToTokenSwap.ss)
+          const maxAmount = await synth.balanceOf(pendingToTokenSwap.swapper)
           expect(maxAmount).to.be.eq("337338693692149536281222")
 
           // Calculate minAmount
@@ -933,17 +933,17 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           expect(swapState).to.eq(PendingSwapState.PartiallyCompleted)
 
           // Swap the remaining synth to token
-          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+          const pendingToTokenSwap: PendingToTokenSwap = await bridge.pendingToTokenSwaps(
             queueId,
           )
           const synth = (await ethers.getContractAt(
             GenericERC20Artifact.abi,
             await bridge.getProxyAddressFromTargetSynthKey(
-              pendingSynthToTokenSwap.synthKey,
+              pendingToTokenSwap.synthKey,
             ),
           )) as GenericERC20
           const remainingAmount = await synth.balanceOf(
-            pendingSynthToTokenSwap.ss,
+            pendingToTokenSwap.swapper,
           )
           expect(remainingAmount).to.be.eq("187338693692149536281222")
           minAmount = await bridge.calcCompleteToToken(queueId, remainingAmount)
@@ -965,16 +965,16 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
 
         it("Reverts when not reached minAmount", async () => {
           // Get the max amount of synth we can trade from
-          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+          const pendingToTokenSwap: PendingToTokenSwap = await bridge.pendingToTokenSwaps(
             queueId,
           )
           const synth = (await ethers.getContractAt(
             GenericERC20Artifact.abi,
             await bridge.getProxyAddressFromTargetSynthKey(
-              pendingSynthToTokenSwap.synthKey,
+              pendingToTokenSwap.synthKey,
             ),
           )) as GenericERC20
-          const maxAmount = await synth.balanceOf(pendingSynthToTokenSwap.ss)
+          const maxAmount = await synth.balanceOf(pendingToTokenSwap.swapper)
           expect(maxAmount).to.be.eq("337338693692149536281222")
 
           // Confirm the tx reverts when minAmount is not reached
@@ -988,19 +988,19 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
 
       describe("withdraw", async () => {
         it("Succeeds to withdraw the synth in full amount", async () => {
-          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+          const pendingToTokenSwap: PendingToTokenSwap = await bridge.pendingToTokenSwaps(
             queueId,
           )
           const synth = (await ethers.getContractAt(
             GenericERC20Artifact.abi,
             await bridge.getProxyAddressFromTargetSynthKey(
-              pendingSynthToTokenSwap.synthKey,
+              pendingToTokenSwap.synthKey,
             ),
           )) as GenericERC20
 
           const synthBalanceBefore = await synth.balanceOf(user1Address)
           const maxSynthAmount = await synth.balanceOf(
-            pendingSynthToTokenSwap.ss,
+            pendingToTokenSwap.swapper,
           )
 
           // Withdraw the max amount
@@ -1019,13 +1019,13 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         })
 
         it("Succeeds to withdraw in partial amounts", async () => {
-          const pendingSynthToTokenSwap: PendingSynthToTokenSwap = await bridge.pendingSynthToTokenSwaps(
+          const pendingToTokenSwap: PendingToTokenSwap = await bridge.pendingToTokenSwaps(
             queueId,
           )
           const synth = (await ethers.getContractAt(
             GenericERC20Artifact.abi,
             await bridge.getProxyAddressFromTargetSynthKey(
-              pendingSynthToTokenSwap.synthKey,
+              pendingToTokenSwap.synthKey,
             ),
           )) as GenericERC20
 
@@ -1050,7 +1050,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
 
           // Withdraw the max amount
           const maxSynthAmount = await synth.balanceOf(
-            pendingSynthToTokenSwap.ss,
+            pendingToTokenSwap.swapper,
           )
           await bridge.connect(user1).withdraw(queueId, maxSynthAmount)
 
