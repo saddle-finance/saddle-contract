@@ -159,10 +159,10 @@ async function deploySwap(): Promise<void> {
   // await btcSwap.disableGuard()
   // console.log(" > Disabled guard")
 
-  // const btcLpToken = (await btcSwap.swapStorage()).lpToken
-
   console.log(`Tokenized BTC swap address: ${btcSwap.address}`)
-  // console.log(`Tokenized BTC swap token address: ${btcLpToken}`)
+
+  const btcLpToken = (await btcSwap.swapStorage()).lpToken
+  console.log(`Tokenized BTC swap token address: ${btcLpToken}`)
 }
 
 deploySwap().then(() => {

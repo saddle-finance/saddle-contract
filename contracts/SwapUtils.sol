@@ -1041,48 +1041,48 @@ library SwapUtils {
      * @param minAmount the minimum amount to withdraw, otherwise revert
      * @return amount chosen token that user received
      */
-    function removeLiquidityOneToken(
-        Swap storage self,
-        uint256 tokenAmount,
-        uint8 tokenIndex,
-        uint256 minAmount
-    ) external returns (uint256) {
-        uint256 totalSupply = self.lpToken.totalSupply();
-        uint256 numTokens = self.pooledTokens.length;
-        require(
-            tokenAmount <= self.lpToken.balanceOf(msg.sender),
-            ">LP.balanceOf"
-        );
-        require(tokenIndex < numTokens, "Token not found");
+    // function removeLiquidityOneToken(
+    //     Swap storage self,
+    //     uint256 tokenAmount,
+    //     uint8 tokenIndex,
+    //     uint256 minAmount
+    // ) external returns (uint256) {
+    //     uint256 totalSupply = self.lpToken.totalSupply();
+    //     uint256 numTokens = self.pooledTokens.length;
+    //     require(
+    //         tokenAmount <= self.lpToken.balanceOf(msg.sender),
+    //         ">LP.balanceOf"
+    //     );
+    //     require(tokenIndex < numTokens, "Token not found");
 
-        uint256 dyFee;
-        uint256 dy;
+    //     uint256 dyFee;
+    //     uint256 dy;
 
-        (dy, dyFee) = calculateWithdrawOneToken(
-            self,
-            msg.sender,
-            tokenAmount,
-            tokenIndex
-        );
+    //     (dy, dyFee) = calculateWithdrawOneToken(
+    //         self,
+    //         msg.sender,
+    //         tokenAmount,
+    //         tokenIndex
+    //     );
 
-        require(dy >= minAmount, "dy < minAmount");
+    //     require(dy >= minAmount, "dy < minAmount");
 
-        self.balances[tokenIndex] = self.balances[tokenIndex].sub(
-            dy.add(dyFee.mul(self.adminFee).div(FEE_DENOMINATOR))
-        );
-        self.lpToken.burnFrom(msg.sender, tokenAmount);
-        self.pooledTokens[tokenIndex].safeTransfer(msg.sender, dy);
+    //     self.balances[tokenIndex] = self.balances[tokenIndex].sub(
+    //         dy.add(dyFee.mul(self.adminFee).div(FEE_DENOMINATOR))
+    //     );
+    //     self.lpToken.burnFrom(msg.sender, tokenAmount);
+    //     self.pooledTokens[tokenIndex].safeTransfer(msg.sender, dy);
 
-        emit RemoveLiquidityOne(
-            msg.sender,
-            tokenAmount,
-            totalSupply,
-            tokenIndex,
-            dy
-        );
+    //     emit RemoveLiquidityOne(
+    //         msg.sender,
+    //         tokenAmount,
+    //         totalSupply,
+    //         tokenIndex,
+    //         dy
+    //     );
 
-        return dy;
-    }
+    //     return dy;
+    // }
 
     /**
      * @notice Remove liquidity from the pool, weighted differently than the
@@ -1094,76 +1094,76 @@ library SwapUtils {
      * remove liquidity. Useful as a front-running mitigation.
      * @return actual amount of LP tokens burned in the withdrawal
      */
-    function removeLiquidityImbalance(
-        Swap storage self,
-        uint256[] memory amounts,
-        uint256 maxBurnAmount
-    ) public returns (uint256) {
-        require(
-            amounts.length == self.pooledTokens.length,
-            "Amounts should match pool tokens"
-        );
-        require(
-            maxBurnAmount <= self.lpToken.balanceOf(msg.sender) &&
-                maxBurnAmount != 0,
-            ">LP.balanceOf"
-        );
+    // function removeLiquidityImbalance(
+    //     Swap storage self,
+    //     uint256[] memory amounts,
+    //     uint256 maxBurnAmount
+    // ) public returns (uint256) {
+    //     require(
+    //         amounts.length == self.pooledTokens.length,
+    //         "Amounts should match pool tokens"
+    //     );
+    //     require(
+    //         maxBurnAmount <= self.lpToken.balanceOf(msg.sender) &&
+    //             maxBurnAmount != 0,
+    //         ">LP.balanceOf"
+    //     );
 
-        RemoveLiquidityImbalanceInfo memory v =
-            RemoveLiquidityImbalanceInfo(0, 0, 0, 0);
+    //     RemoveLiquidityImbalanceInfo memory v =
+    //         RemoveLiquidityImbalanceInfo(0, 0, 0, 0);
 
-        uint256 tokenSupply = self.lpToken.totalSupply();
-        uint256 feePerToken = _feePerToken(self);
+    //     uint256 tokenSupply = self.lpToken.totalSupply();
+    //     uint256 feePerToken = _feePerToken(self);
 
-        uint256[] memory balances1 = self.balances;
+    //     uint256[] memory balances1 = self.balances;
 
-        v.preciseA = _getAPrecise(self);
-        v.d0 = getD(_xp(self), v.preciseA);
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            balances1[i] = balances1[i].sub(
-                amounts[i],
-                "Cannot withdraw more than available"
-            );
-        }
-        v.d1 = getD(_xp(self, balances1), v.preciseA);
-        uint256[] memory fees = new uint256[](self.pooledTokens.length);
+    //     v.preciseA = _getAPrecise(self);
+    //     v.d0 = getD(_xp(self), v.preciseA);
+    //     for (uint256 i = 0; i < self.pooledTokens.length; i++) {
+    //         balances1[i] = balances1[i].sub(
+    //             amounts[i],
+    //             "Cannot withdraw more than available"
+    //         );
+    //     }
+    //     v.d1 = getD(_xp(self, balances1), v.preciseA);
+    //     uint256[] memory fees = new uint256[](self.pooledTokens.length);
 
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
-            uint256 difference = idealBalance.difference(balances1[i]);
-            fees[i] = feePerToken.mul(difference).div(FEE_DENOMINATOR);
-            self.balances[i] = balances1[i].sub(
-                fees[i].mul(self.adminFee).div(FEE_DENOMINATOR)
-            );
-            balances1[i] = balances1[i].sub(fees[i]);
-        }
+    //     for (uint256 i = 0; i < self.pooledTokens.length; i++) {
+    //         uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
+    //         uint256 difference = idealBalance.difference(balances1[i]);
+    //         fees[i] = feePerToken.mul(difference).div(FEE_DENOMINATOR);
+    //         self.balances[i] = balances1[i].sub(
+    //             fees[i].mul(self.adminFee).div(FEE_DENOMINATOR)
+    //         );
+    //         balances1[i] = balances1[i].sub(fees[i]);
+    //     }
 
-        v.d2 = getD(_xp(self, balances1), v.preciseA);
+    //     v.d2 = getD(_xp(self, balances1), v.preciseA);
 
-        uint256 tokenAmount = v.d0.sub(v.d2).mul(tokenSupply).div(v.d0);
-        require(tokenAmount != 0, "Burnt amount cannot be zero");
-        tokenAmount = tokenAmount.add(1).mul(FEE_DENOMINATOR).div(
-            FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender))
-        );
+    //     uint256 tokenAmount = v.d0.sub(v.d2).mul(tokenSupply).div(v.d0);
+    //     require(tokenAmount != 0, "Burnt amount cannot be zero");
+    //     tokenAmount = tokenAmount.add(1).mul(FEE_DENOMINATOR).div(
+    //         FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender))
+    //     );
 
-        require(tokenAmount <= maxBurnAmount, "tokenAmount > maxBurnAmount");
+    //     require(tokenAmount <= maxBurnAmount, "tokenAmount > maxBurnAmount");
 
-        self.lpToken.burnFrom(msg.sender, tokenAmount);
+    //     self.lpToken.burnFrom(msg.sender, tokenAmount);
 
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            self.pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
-        }
+    //     for (uint256 i = 0; i < self.pooledTokens.length; i++) {
+    //         self.pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
+    //     }
 
-        emit RemoveLiquidityImbalance(
-            msg.sender,
-            amounts,
-            fees,
-            v.d1,
-            tokenSupply.sub(tokenAmount)
-        );
+    //     emit RemoveLiquidityImbalance(
+    //         msg.sender,
+    //         amounts,
+    //         fees,
+    //         v.d1,
+    //         tokenSupply.sub(tokenAmount)
+    //     );
 
-        return tokenAmount;
-    }
+    //     return tokenAmount;
+    // }
 
     /**
      * @notice withdraw all admin fees to a given address
@@ -1187,12 +1187,12 @@ library SwapUtils {
      * @param self Swap struct to update
      * @param newAdminFee new admin fee to be applied on future transactions
      */
-    function setAdminFee(Swap storage self, uint256 newAdminFee) external {
-        require(newAdminFee <= MAX_ADMIN_FEE, "Fee is too high");
-        self.adminFee = newAdminFee;
+    // function setAdminFee(Swap storage self, uint256 newAdminFee) external {
+    //     require(newAdminFee <= MAX_ADMIN_FEE, "Fee is too high");
+    //     self.adminFee = newAdminFee;
 
-        emit NewAdminFee(newAdminFee);
-    }
+    //     emit NewAdminFee(newAdminFee);
+    // }
 
     /**
      * @notice update the swap fee
@@ -1200,26 +1200,26 @@ library SwapUtils {
      * @param self Swap struct to update
      * @param newSwapFee new swap fee to be applied on future transactions
      */
-    function setSwapFee(Swap storage self, uint256 newSwapFee) external {
-        require(newSwapFee <= MAX_SWAP_FEE, "Fee is too high");
-        self.swapFee = newSwapFee;
+    // function setSwapFee(Swap storage self, uint256 newSwapFee) external {
+    //     require(newSwapFee <= MAX_SWAP_FEE, "Fee is too high");
+    //     self.swapFee = newSwapFee;
 
-        emit NewSwapFee(newSwapFee);
-    }
+    //     emit NewSwapFee(newSwapFee);
+    // }
 
     /**
      * @notice update the default withdraw fee. This also affects deposits made in the past as well.
      * @param self Swap struct to update
      * @param newWithdrawFee new withdraw fee to be applied
      */
-    function setDefaultWithdrawFee(Swap storage self, uint256 newWithdrawFee)
-        external
-    {
-        require(newWithdrawFee <= MAX_WITHDRAW_FEE, "Fee is too high");
-        self.defaultWithdrawFee = newWithdrawFee;
+    // function setDefaultWithdrawFee(Swap storage self, uint256 newWithdrawFee)
+    //     external
+    // {
+    //     require(newWithdrawFee <= MAX_WITHDRAW_FEE, "Fee is too high");
+    //     self.defaultWithdrawFee = newWithdrawFee;
 
-        emit NewWithdrawFee(newWithdrawFee);
-    }
+    //     emit NewWithdrawFee(newWithdrawFee);
+    // }
 
     /**
      * @notice Start ramping up or down A parameter towards given futureA_ and futureTime_
@@ -1229,66 +1229,66 @@ library SwapUtils {
      * @param futureA_ the new A to ramp towards
      * @param futureTime_ timestamp when the new A should be reached
      */
-    function rampA(
-        Swap storage self,
-        uint256 futureA_,
-        uint256 futureTime_
-    ) external {
-        require(
-            block.timestamp >= self.initialATime.add(1 days),
-            "Wait 1 day before starting ramp"
-        );
-        require(
-            futureTime_ >= block.timestamp.add(MIN_RAMP_TIME),
-            "Insufficient ramp time"
-        );
-        require(
-            futureA_ > 0 && futureA_ < MAX_A,
-            "futureA_ must be > 0 and < MAX_A"
-        );
+    // function rampA(
+    //     Swap storage self,
+    //     uint256 futureA_,
+    //     uint256 futureTime_
+    // ) external {
+    //     require(
+    //         block.timestamp >= self.initialATime.add(1 days),
+    //         "Wait 1 day before starting ramp"
+    //     );
+    //     require(
+    //         futureTime_ >= block.timestamp.add(MIN_RAMP_TIME),
+    //         "Insufficient ramp time"
+    //     );
+    //     require(
+    //         futureA_ > 0 && futureA_ < MAX_A,
+    //         "futureA_ must be > 0 and < MAX_A"
+    //     );
 
-        uint256 initialAPrecise = _getAPrecise(self);
-        uint256 futureAPrecise = futureA_.mul(A_PRECISION);
+    //     uint256 initialAPrecise = _getAPrecise(self);
+    //     uint256 futureAPrecise = futureA_.mul(A_PRECISION);
 
-        if (futureAPrecise < initialAPrecise) {
-            require(
-                futureAPrecise.mul(MAX_A_CHANGE) >= initialAPrecise,
-                "futureA_ is too small"
-            );
-        } else {
-            require(
-                futureAPrecise <= initialAPrecise.mul(MAX_A_CHANGE),
-                "futureA_ is too large"
-            );
-        }
+    //     if (futureAPrecise < initialAPrecise) {
+    //         require(
+    //             futureAPrecise.mul(MAX_A_CHANGE) >= initialAPrecise,
+    //             "futureA_ is too small"
+    //         );
+    //     } else {
+    //         require(
+    //             futureAPrecise <= initialAPrecise.mul(MAX_A_CHANGE),
+    //             "futureA_ is too large"
+    //         );
+    //     }
 
-        self.initialA = initialAPrecise;
-        self.futureA = futureAPrecise;
-        self.initialATime = block.timestamp;
-        self.futureATime = futureTime_;
+    //     self.initialA = initialAPrecise;
+    //     self.futureA = futureAPrecise;
+    //     self.initialATime = block.timestamp;
+    //     self.futureATime = futureTime_;
 
-        emit RampA(
-            initialAPrecise,
-            futureAPrecise,
-            block.timestamp,
-            futureTime_
-        );
-    }
+    //     emit RampA(
+    //         initialAPrecise,
+    //         futureAPrecise,
+    //         block.timestamp,
+    //         futureTime_
+    //     );
+    // }
 
     /**
      * @notice Stops ramping A immediately. Once this function is called, rampA()
      * cannot be called for another 24 hours
      * @param self Swap struct to update
      */
-    function stopRampA(Swap storage self) external {
-        require(self.futureATime > block.timestamp, "Ramp is already stopped");
-        uint256 currentA = _getAPrecise(self);
+    // function stopRampA(Swap storage self) external {
+    //     require(self.futureATime > block.timestamp, "Ramp is already stopped");
+    //     uint256 currentA = _getAPrecise(self);
 
-        self.initialA = currentA;
-        self.futureA = currentA;
-        self.initialATime = block.timestamp;
-        self.futureATime = block.timestamp;
+    //     self.initialA = currentA;
+    //     self.futureA = currentA;
+    //     self.initialATime = block.timestamp;
+    //     self.futureATime = block.timestamp;
 
-        emit StopRampA(currentA, block.timestamp);
-    }
+    //     emit StopRampA(currentA, block.timestamp);
+    // }
 }
