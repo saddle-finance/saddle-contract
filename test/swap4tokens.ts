@@ -1,4 +1,10 @@
-import { BigNumber, Signer, Wallet } from "ethers"
+import {
+  BigNumber,
+  getDefaultProvider,
+  Signer,
+  UnsignedTransaction,
+  Wallet,
+} from "ethers"
 import {
   MAX_UINT256,
   TIME,
@@ -180,10 +186,10 @@ describe("Swap with 4 tokens", () => {
       [String(50e18), String(50e6), String(50e6), String(50e18)],
       0,
       MAX_UINT256,
-      getTestMerkleProof(ownerAddress),
+      [],
     )
 
-    await swap.disableGuard()
+    // await swap.disableGuard()
 
     expect(await swap.getTokenBalance(0)).to.be.eq(String(50e18))
     expect(await swap.getTokenBalance(1)).to.be.eq(String(50e6))

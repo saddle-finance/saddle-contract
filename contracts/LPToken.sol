@@ -59,24 +59,24 @@ contract LPToken is ERC20Burnable, Ownable {
         //      allowlist contract. If the account has been already verified, merkleProof is ignored.
         //   2. Limit the total number of this LPToken minted to recipient as defined by the allowlist contract.
         //   3. Limit the total supply of this LPToken as defined by the allowlist contract.
-        if (swap.isGuarded()) {
-            IAllowlist allowlist = swap.getAllowlist();
-            require(
-                allowlist.verifyAddress(recipient, merkleProof),
-                "Invalid merkle proof"
-            );
-            uint256 totalMinted = mintedAmounts[recipient].add(amount);
-            require(
-                totalMinted <= allowlist.getPoolAccountLimit(address(swap)),
-                "account deposit limit"
-            );
-            require(
-                totalSupply().add(amount) <=
-                    allowlist.getPoolCap(address(swap)),
-                "pool total supply limit"
-            );
-            mintedAmounts[recipient] = totalMinted;
-        }
+        //        if (swap.isGuarded()) {
+        //            IAllowlist allowlist = swap.getAllowlist();
+        //            require(
+        //                allowlist.verifyAddress(recipient, merkleProof),
+        //                "Invalid merkle proof"
+        //            );
+        //            uint256 totalMinted = mintedAmounts[recipient].add(amount);
+        //            require(
+        //                totalMinted <= allowlist.getPoolAccountLimit(address(swap)),
+        //                "account deposit limit"
+        //            );
+        //            require(
+        //                totalSupply().add(amount) <=
+        //                    allowlist.getPoolCap(address(swap)),
+        //                "pool total supply limit"
+        //            );
+        //            mintedAmounts[recipient] = totalMinted;
+        //        }
         _mint(recipient, amount);
     }
 
@@ -90,6 +90,6 @@ contract LPToken is ERC20Burnable, Ownable {
         uint256 amount
     ) internal override(ERC20) {
         super._beforeTokenTransfer(from, to, amount);
-        swap.updateUserWithdrawFee(to, amount);
+        // swap.updateUserWithdrawFee(to, amount);
     }
 }
