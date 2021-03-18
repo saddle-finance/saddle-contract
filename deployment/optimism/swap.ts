@@ -64,10 +64,6 @@ async function deploySwap(): Promise<void> {
   )) as GenericERC20
   await sbtcToken.deployed()
   console.log(" > Deployed sBTC")
-  console.log(
-    "deployed bytecode:",
-    await ethers.provider.getCode(sbtcToken.address),
-  )
 
   const tokens = [tbtcToken, wbtcToken, renbtcToken, sbtcToken]
 
@@ -94,10 +90,6 @@ async function deploySwap(): Promise<void> {
   )) as Allowlist
   await allowlist.deployed()
   console.log(" > Deployed Allowlist")
-  console.log(
-    "deployed bytecode:",
-    await ethers.provider.getCode(allowlist.address),
-  )
 
   // Deploy MathUtils
   const mathUtils = (await deployContract(
@@ -106,10 +98,6 @@ async function deploySwap(): Promise<void> {
   )) as MathUtils
   await mathUtils.deployed()
   console.log(` > Deployed MathUtils: ${mathUtils.address}`)
-  console.log(
-    "deployed bytecode:",
-    await ethers.provider.getCode(mathUtils.address),
-  )
 
   // Deploy SwapUtils with MathUtils library
   const swapUtils = (await deployContractWithLibraries(
