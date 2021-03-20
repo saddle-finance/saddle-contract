@@ -52,25 +52,43 @@ contract Bridge is ERC721 {
     );
     event TokenToSynth(
         address indexed requester,
+        uint256 indexed itemId,
         ISwap swapPool,
-        IERC20 tokenFrom,
+        uint8 tokenFromIndex,
         uint256 tokenFromInAmount,
-        uint256 itemId
+        bytes32 synthToKey
     );
     event SynthToToken(
         address indexed requester,
+        uint256 indexed itemId,
         ISwap swapPool,
-        IERC20 synthFrom,
+        bytes32 synthFromKey,
         uint256 synthFromInAmount,
-        uint256 itemId
+        uint8 tokenToIndex
     );
     event TokenToToken(
         address indexed requester,
+        uint256 indexed itemId,
         ISwap[2] swapPools,
         uint8 tokenFromIndex,
-        uint8 tokenToIndex,
         uint256 tokenFromAmount,
-        uint256 itemId
+        uint8 tokenToIndex
+    );
+    event Settle(
+        address indexed requester,
+        uint256 indexed itemId,
+        IERC20 settleFrom,
+        uint256 settleFromAmount,
+        IERC20 settleTo,
+        uint256 settleToAmount,
+        bool isFinal
+    );
+    event Withdraw(
+        address indexed requester,
+        uint256 indexed itemId,
+        IERC20 synth,
+        uint256 synthAmount,
+        bool isFinal
     );
 
     // The addresses for all Synthetix contracts can be found in the below URL.
@@ -185,7 +203,7 @@ contract Bridge is ERC721 {
             tokenTo = synth;
         } else {
             PendingToTokenSwap memory pendingToTokenSwap =
-            pendingToTokenSwaps[itemId];
+                pendingToTokenSwaps[itemId];
             synthSwapper = pendingToTokenSwap.swapper;
             synthKey = pendingToTokenSwap.synthKey;
             synth = address(getProxyAddressFromTargetSynthKey(synthKey));
@@ -247,6 +265,7 @@ contract Bridge is ERC721 {
             amount,
             shouldDestroy
         );
+        emit Withdraw(msg.sender, itemId, synth, amount, shouldDestroy);
     }
 
     /**
@@ -278,10 +297,22 @@ contract Bridge is ERC721 {
         delete pendingSwapType[itemId];
 
         // After settlement, withdraw the synth and send it to the recipient
+        uint256 synthBalance =
+            synth.balanceOf(address(pendingToSynthSwap.swapper));
         pendingToSynthSwap.swapper.withdraw(
             synth,
             nftOwner,
-            synth.balanceOf(address(pendingToSynthSwap.swapper)),
+            synthBalance,
+            true
+        );
+
+        emit Settle(
+            msg.sender,
+            itemId,
+            synth,
+            synthBalance,
+            synth,
+            synthBalance,
             true
         );
     }
@@ -346,7 +377,9 @@ contract Bridge is ERC721 {
             getProxyAddressFromTargetSynthKey(pendingToTokenSwap.synthKey);
         bool shouldDestroyClone;
 
-        if (swapAmount >= synth.balanceOf(address(pendingToTokenSwap.swapper))) {
+        if (
+            swapAmount >= synth.balanceOf(address(pendingToTokenSwap.swapper))
+        ) {
             _burn(itemId);
             delete pendingToTokenSwaps[itemId];
             delete pendingSwapType[itemId];
@@ -355,15 +388,29 @@ contract Bridge is ERC721 {
 
         // Try swapping the synth to the desired token via the stored swap pool contract
         // If the external call succeeds, send the token to the owner of token with itemId.
-        pendingToTokenSwap.swapper.swapSynthToToken(
-            pendingToTokenSwap.swap,
+        (IERC20 tokenTo, uint256 amountOut) =
+            pendingToTokenSwap.swapper.swapSynthToToken(
+                pendingToTokenSwap.swap,
+                synth,
+                getSynthIndex(pendingToTokenSwap.swap),
+                pendingToTokenSwap.tokenToIndex,
+                swapAmount,
+                minAmount,
+                deadline,
+                nftOwner
+            );
+
+        if (shouldDestroyClone) {
+            pendingToTokenSwap.swapper.destroy();
+        }
+
+        emit Settle(
+            msg.sender,
+            itemId,
             synth,
-            getSynthIndex(pendingToTokenSwap.swap),
-            pendingToTokenSwap.tokenToIndex,
             swapAmount,
-            minAmount,
-            deadline,
-            nftOwner,
+            tokenTo,
+            amountOut,
             shouldDestroyClone
         );
     }
@@ -485,7 +532,14 @@ contract Bridge is ERC721 {
         );
 
         // Emit TokenToSynth event with relevant data
-        emit TokenToSynth(msg.sender, swap, tokenFrom, tokenInAmount, itemId);
+        emit TokenToSynth(
+            msg.sender,
+            itemId,
+            swap,
+            tokenFromIndex,
+            tokenInAmount,
+            synthOutKey
+        );
 
         return (itemId);
     }
@@ -584,7 +638,14 @@ contract Bridge is ERC721 {
         );
 
         // Emit SynthToToken event with relevant data
-        emit SynthToToken(msg.sender, swap, synthFrom, synthInAmount, itemId);
+        emit SynthToToken(
+            msg.sender,
+            itemId,
+            swap,
+            synthInKey,
+            synthInAmount,
+            tokenToIndex
+        );
 
         return (itemId);
     }
@@ -709,11 +770,11 @@ contract Bridge is ERC721 {
         // Emit TokenToToken event with relevant data
         emit TokenToToken(
             msg.sender,
+            itemId,
             swaps,
             tokenFromIndex,
-            tokenToIndex,
             tokenFromAmount,
-            itemId
+            tokenToIndex
         );
 
         return (itemId);
