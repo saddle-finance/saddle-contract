@@ -467,7 +467,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(swapState).to.eq(PendingSwapState.ReadyToSettle)
 
       // Complete the pending transaction
-      await (await bridge.completeToSynth(queueId)).wait()
+      await (await bridge.connect(user1).completeToSynth(queueId)).wait()
 
       // Check synth balance
       const sUSDBalanceAfter = await susd.balanceOf(user1Address)
@@ -538,7 +538,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(swapState).to.eq(PendingSwapState.ReadyToSettle)
 
       // Complete the pending transaction
-      await (await bridge.completeToSynth(queueId)).wait()
+      await (await bridge.connect(user1).completeToSynth(queueId)).wait()
 
       // Check synth balance
       const sDEFIBalanceAfter = await sdefi.balanceOf(user1Address)
