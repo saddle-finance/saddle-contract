@@ -530,7 +530,7 @@ contract Bridge is ERC721 {
 
     /**
      * @notice Calculates the expected amount of the desired token the caller will receive after completing
-     * a `TokenToSynth` swap with the given parameters. This calculation does not consider the settlement periods or
+     * a `SynthToToken` swap with the given parameters. This calculation does not consider the settlement periods or
      * any potential changes of the `swap` pool composition.
      * @param swap the address of a Saddle pool to use to swap the given token to a bridging synth
      * @param synthInKey the currency key of the synth to swap from
