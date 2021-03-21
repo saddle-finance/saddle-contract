@@ -273,7 +273,7 @@ contract Bridge is ERC721 {
     /**
      * @notice Settles and withdraws the synthetic asset without swapping it to a token in a Saddle pool. Only the owner
      * of the ERC721 token of `itemId` can call this function. Reverts if the given `itemId` does not represent a
-     * `synthToToken` or a `tokenToSynth` swap.
+     * `synthToToken` or a `tokenToToken` swap.
      * @param itemId ID of the pending swap
      * @param amount the amount of the synth to withdraw
      */
