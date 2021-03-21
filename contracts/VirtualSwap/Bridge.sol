@@ -368,6 +368,7 @@ contract Bridge is ERC721 {
         uint256 minAmount,
         uint256 deadline
     ) external {
+        require(swapAmount != 0, "amount must be greater than 0");
         address nftOwner = ownerOf(itemId);
         require(msg.sender == nftOwner, "must own itemId");
 
@@ -476,6 +477,7 @@ contract Bridge is ERC721 {
         uint256 tokenInAmount,
         uint256 minAmount
     ) external returns (uint256) {
+        require(tokenInAmount != 0, "amount must be greater than 0");
         // Create a SynthSwapper clone
         SynthSwapper synthSwapper =
             SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
@@ -583,6 +585,7 @@ contract Bridge is ERC721 {
         uint256 synthInAmount,
         uint256 minMediumSynthAmount
     ) external returns (uint256) {
+        require(synthInAmount != 0, "amount must be greater than 0");
         bytes32 mediumSynthKey = getSynthKey(swap);
         require(
             synthInKey != mediumSynthKey,
@@ -686,6 +689,7 @@ contract Bridge is ERC721 {
         uint256 minMediumSynthAmount
     ) external returns (uint256) {
         // Create a SynthSwapper clone
+        require(tokenFromAmount != 0, "amount must be greater than 0");
         SynthSwapper synthSwapper =
             SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
         bytes32 mediumSynthKey = getSynthKey(swaps[1]);
