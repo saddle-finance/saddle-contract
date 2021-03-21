@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 
 import "synthetix/contracts/interfaces/ISynthetix.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/ISwap.sol";
 
 /**
@@ -13,6 +13,8 @@ import "../interfaces/ISwap.sol";
  * any cross-asset swaps.
  */
 contract SynthSwapper {
+    using SafeERC20 for IERC20;
+
     address payable immutable owner;
     // SYNTHETIX points to `ProxyERC20` (0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F).
     // This contract is a proxy of `Synthetix` and is used to exchange synths.
@@ -86,7 +88,7 @@ contract SynthSwapper {
             deadline
         );
         IERC20 tokenTo = swap.getToken(tokenToIndex);
-        tokenTo.transfer(recipient, tokenTo.balanceOf(address(this)));
+        tokenTo.safeTransfer(recipient, tokenTo.balanceOf(address(this)));
         if (shouldDestroy) {
             selfdestruct(msg.sender);
         }
@@ -106,7 +108,7 @@ contract SynthSwapper {
         bool shouldDestroy
     ) external {
         require(msg.sender == owner, "is not owner");
-        token.transfer(recipient, withdrawAmount);
+        token.safeTransfer(recipient, withdrawAmount);
         if (shouldDestroy) {
             selfdestruct(msg.sender);
         }
