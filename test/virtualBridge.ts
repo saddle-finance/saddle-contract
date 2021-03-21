@@ -476,9 +476,9 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       )
 
       // Check the state has changed to Completed
-      ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(queueId)
-      expect(swapType).to.eq(PendingSwapType.TokenToSynth)
-      expect(swapState).to.eq(PendingSwapState.Completed)
+      await expect(
+        bridge.getPendingSwapTypeAndState(queueId),
+      ).to.be.revertedWith("invalid itemId")
     })
 
     it("Succeeds to swap wBTC -> sDEFI then settle it", async () => {
@@ -546,10 +546,10 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         "67033573058662666",
       )
 
-      // Check the state has changed to Completed
-      ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(queueId)
-      expect(swapType).to.eq(PendingSwapType.TokenToSynth)
-      expect(swapState).to.eq(PendingSwapState.Completed)
+      // Check the state has changed
+      await expect(
+        bridge.getPendingSwapTypeAndState(queueId),
+      ).to.be.revertedWith("invalid itemId")
     })
 
     it("Reverts when minAmount is not reached", async () => {
@@ -727,10 +727,10 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         "1464493571116930502",
       )
 
-      // Check the state has changed to Completed
-      ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(queueId)
-      expect(swapType).to.eq(PendingSwapType.SynthToToken)
-      expect(swapState).to.eq(PendingSwapState.Completed)
+      // Check the state has changed
+      await expect(
+        bridge.getPendingSwapTypeAndState(queueId),
+      ).to.be.revertedWith("invalid itemId")
     })
   })
 
@@ -900,12 +900,10 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           const usdcBalanceAfter = await usdc.balanceOf(user1Address)
           expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.eq("336756309476")
 
-          // Check the state has changed to Completed
-          const [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
-            queueId,
-          )
-          expect(swapType).to.eq(PendingSwapType.TokenToToken)
-          expect(swapState).to.eq(PendingSwapState.Completed)
+          // Check the state has changed
+          await expect(
+            bridge.getPendingSwapTypeAndState(queueId),
+          ).to.be.revertedWith("invalid itemId")
         })
 
         it("Succeeds with partial amounts", async () => {
@@ -928,7 +926,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.eq("149851775624")
 
           // Check the state has changed to PartiallyCompleted
-          let [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+          const [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
             queueId,
           )
           expect(swapType).to.eq(PendingSwapType.TokenToToken)
@@ -959,12 +957,10 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           usdcBalanceAfter = await usdc.balanceOf(user1Address)
           expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.eq("336756356220")
 
-          // Check the state has changed to Completed
-          ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(
-            queueId,
-          )
-          expect(swapType).to.eq(PendingSwapType.TokenToToken)
-          expect(swapState).to.eq(PendingSwapState.Completed)
+          // Check the state has changed
+          await expect(
+            bridge.getPendingSwapTypeAndState(queueId),
+          ).to.be.revertedWith("invalid itemId")
         })
 
         it("Reverts when not reached minAmount", async () => {
@@ -1017,11 +1013,9 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           )
 
           // Confirm the state
-          const [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
-            queueId,
-          )
-          expect(swapType).to.eq(PendingSwapType.TokenToToken)
-          expect(swapState).to.eq(PendingSwapState.Completed)
+          await expect(
+            bridge.getPendingSwapTypeAndState(queueId),
+          ).to.be.revertedWith("invalid itemId")
         })
 
         it("Succeeds to withdraw in partial amounts", async () => {
@@ -1048,7 +1042,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           )
 
           // Confirm the state
-          let [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
+          const [swapType, swapState] = await bridge.getPendingSwapTypeAndState(
             queueId,
           )
           expect(swapType).to.eq(PendingSwapType.TokenToToken)
@@ -1067,11 +1061,9 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           )
 
           // Confirm the state
-          ;[swapType, swapState] = await bridge.getPendingSwapTypeAndState(
-            queueId,
-          )
-          expect(swapType).to.eq(PendingSwapType.TokenToToken)
-          expect(swapState).to.eq(PendingSwapState.Completed)
+          await expect(
+            bridge.getPendingSwapTypeAndState(queueId),
+          ).to.be.revertedWith("invalid itemId")
         })
 
         it("Reverts when trying to withdraw more than the synth balance", async () => {
