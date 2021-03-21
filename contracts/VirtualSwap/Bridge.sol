@@ -286,15 +286,18 @@ contract Bridge is ERC721 {
         _settle(address(pstts.ss), pstts.synthKey);
 
         IERC20 synth = getProxyAddressFromTargetSynthKey(pstts.synthKey);
+        bool shouldDestroy;
 
         if (amount < synth.balanceOf(address(pstts.ss))) {
             _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
         } else {
-            _setPendingSwapState(itemId, PendingSwapState.Completed);
             _burn(itemId);
+            delete pendingSynthToTokenSwaps[itemId];
+            delete pendingSwapTypeAndState[itemId];
+            shouldDestroy = true;
         }
 
-        pstts.ss.withdraw(synth, nftOwner, amount);
+        pstts.ss.withdraw(synth, nftOwner, amount, shouldDestroy);
     }
 
     /**
@@ -312,12 +315,18 @@ contract Bridge is ERC721 {
         IERC20 synth = getProxyAddressFromTargetSynthKey(pss.synthKey);
         address nftOwner = ownerOf(itemId);
 
-        // Mark state as complete
-        _setPendingSwapState(itemId, PendingSwapState.Completed);
+        // Burn the corresponding ERC721 token and delete storage for gas
         _burn(itemId);
+        delete pendingSynthToTokenSwaps[itemId];
+        delete pendingSwapTypeAndState[itemId];
 
         // After settlement, withdraw the synth and send it to the recipient
-        pss.ss.withdraw(synth, nftOwner, synth.balanceOf(address(pss.ss)));
+        pss.ss.withdraw(
+            synth,
+            nftOwner,
+            synth.balanceOf(address(pss.ss)),
+            true
+        );
     }
 
     /**
@@ -368,12 +377,15 @@ contract Bridge is ERC721 {
 
         _settle(address(pstts.ss), pstts.synthKey);
         IERC20 synth = getProxyAddressFromTargetSynthKey(pstts.synthKey);
+        bool shouldDestroyClone;
 
         if (swapAmount < synth.balanceOf(address(pstts.ss))) {
             _setPendingSwapState(itemId, PendingSwapState.PartiallyCompleted);
         } else {
-            _setPendingSwapState(itemId, PendingSwapState.Completed);
             _burn(itemId);
+            delete pendingSynthToTokenSwaps[itemId];
+            delete pendingSwapTypeAndState[itemId];
+            shouldDestroyClone = true;
         }
 
         // Try swapping the synth to the desired token via the stored swap pool contract
@@ -386,7 +398,8 @@ contract Bridge is ERC721 {
             swapAmount,
             minAmount,
             deadline,
-            nftOwner
+            nftOwner,
+            shouldDestroyClone
         );
     }
 
