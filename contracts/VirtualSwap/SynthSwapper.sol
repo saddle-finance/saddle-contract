@@ -65,7 +65,6 @@ contract SynthSwapper {
      * @param minAmount the min amount the user would like to receive, or revert.
      * @param deadline latest timestamp to accept this transaction
      * @param recipient the address of the recipient
-     * @param shouldDestroy whether this contract should be destroyed after this call
      */
     function swapSynthToToken(
         ISwap swap,
@@ -75,9 +74,8 @@ contract SynthSwapper {
         uint256 tokenFromAmount,
         uint256 minAmount,
         uint256 deadline,
-        address recipient,
-        bool shouldDestroy
-    ) external {
+        address recipient
+    ) external returns (IERC20, uint256) {
         require(msg.sender == owner, "is not owner");
         tokenFrom.approve(address(swap), tokenFromAmount);
         swap.swap(
@@ -88,10 +86,9 @@ contract SynthSwapper {
             deadline
         );
         IERC20 tokenTo = swap.getToken(tokenToIndex);
-        tokenTo.safeTransfer(recipient, tokenTo.balanceOf(address(this)));
-        if (shouldDestroy) {
-            selfdestruct(msg.sender);
-        }
+        uint256 balance = tokenTo.balanceOf(address(this));
+        tokenTo.safeTransfer(recipient, balance);
+        return (tokenTo, balance);
     }
 
     /**
@@ -110,7 +107,19 @@ contract SynthSwapper {
         require(msg.sender == owner, "is not owner");
         token.safeTransfer(recipient, withdrawAmount);
         if (shouldDestroy) {
-            selfdestruct(msg.sender);
+            _destroy();
         }
+    }
+
+    /**
+     * @notice Destroys this contract. Only owner can call this function.
+     */
+    function destroy() external {
+        require(msg.sender == owner, "is not owner");
+        _destroy();
+    }
+
+    function _destroy() internal {
+        selfdestruct(msg.sender);
     }
 }
