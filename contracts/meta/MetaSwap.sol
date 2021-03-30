@@ -120,7 +120,7 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _adminFee,
         uint256 _withdrawFee,
         ISwap baseSwap,
-        uint256 baseSwapTokensLength
+        uint8 baseSwapTokensLength
     ) public virtual initializer {
         __OwnerPausable_init();
         __ReentrancyGuard_init();
@@ -189,7 +189,7 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         swapStorage.defaultWithdrawFee = _withdrawFee;
         swapStorage.baseSwap = baseSwap;
         swapStorage.baseVirtualPrice = baseSwap.getVirtualPrice();
-        swapStorage.baseCacheUpdated = block.timestamp;
+        swapStorage.baseCacheLastUpdated = block.timestamp;
         IERC20[] memory tokens = new IERC20[](baseSwapTokensLength);
         for (uint8 i; i < baseSwapTokensLength; i++) {
             tokens[i] = IERC20(baseSwap.getToken(i));

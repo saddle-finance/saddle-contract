@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../LPToken.sol";
 import "../interfaces/ISwap.sol";
 import "../MathUtils.sol";
+import "hardhat/console.sol";
 
 /**
  * @title SwapUtils library
@@ -23,6 +24,13 @@ library MetaSwapUtils {
     /*** EVENTS ***/
 
     event TokenSwap(
+        address indexed buyer,
+        uint256 tokensSold,
+        uint256 tokensBought,
+        uint128 soldId,
+        uint128 boughtId
+    );
+    event TokenSwapUnderlying(
         address indexed buyer,
         uint256 tokensSold,
         uint256 tokensBought,
@@ -90,9 +98,10 @@ library MetaSwapUtils {
         uint256[] balances;
         mapping(address => uint256) depositTimestamp;
         mapping(address => uint256) withdrawFeeMultiplier;
+        // Meta-Swap related parameters
         ISwap baseSwap;
         uint256 baseVirtualPrice;
-        uint256 baseCacheUpdated;
+        uint256 baseCacheLastUpdated;
         IERC20[] baseTokens;
     }
 
@@ -123,6 +132,17 @@ library MetaSwapUtils {
         uint256 d2;
         uint256 preciseA;
         uint256 baseVirtualPrice;
+    }
+
+    struct SwapUnderlyingInfo {
+        uint256 x;
+        uint256 dx;
+        uint256 dy;
+        uint8 metaIndexFrom;
+        uint8 metaIndexTo;
+        uint256[] oldBalances;
+        IERC20 tokenFrom;
+        IERC20 tokenTo;
     }
 
     // the precision all pools tokens will be converted to
@@ -225,10 +245,12 @@ library MetaSwapUtils {
         internal
         returns (uint256)
     {
-        if (block.timestamp > self.baseCacheUpdated + BASE_CACHE_EXPIRE_TIME) {
+        if (
+            block.timestamp > self.baseCacheLastUpdated + BASE_CACHE_EXPIRE_TIME
+        ) {
             uint256 baseVirtualPrice = ISwap(self.baseSwap).getVirtualPrice();
             self.baseVirtualPrice = baseVirtualPrice;
-            self.baseCacheUpdated = block.timestamp;
+            self.baseCacheLastUpdated = block.timestamp;
             return baseVirtualPrice;
         } else {
             return self.baseVirtualPrice;
@@ -240,7 +262,9 @@ library MetaSwapUtils {
         view
         returns (uint256)
     {
-        if (block.timestamp > self.baseCacheUpdated + BASE_CACHE_EXPIRE_TIME) {
+        if (
+            block.timestamp > self.baseCacheLastUpdated + BASE_CACHE_EXPIRE_TIME
+        ) {
             return ISwap(self.baseSwap).getVirtualPrice();
         } else {
             return self.baseVirtualPrice;
@@ -451,7 +475,7 @@ library MetaSwapUtils {
      */
     function getD(uint256[] memory xp, uint256 a)
         internal
-        pure
+        view
         returns (uint256)
     {
         uint256 numTokens = xp.length;
@@ -519,7 +543,8 @@ library MetaSwapUtils {
         for (uint256 i = 0; i < numTokens; i++) {
             xp[i] = balances[i].mul(precisionMultipliers[i]);
         }
-        xp[numTokens] = xp[numTokens].mul(baseVirtualPrice).div(
+        uint256 baseLPTokenIndex = numTokens - 1;
+        xp[baseLPTokenIndex] = xp[baseLPTokenIndex].mul(baseVirtualPrice).div(
             BASE_VIRTUAL_PRICE_PRECISION
         );
         return xp;
@@ -708,38 +733,38 @@ library MetaSwapUtils {
         uint256 baseVirtualPrice = _getBaseVirtualPrice(self);
         uint256[] memory xp = _xp(self, baseVirtualPrice);
         ISwap baseSwap = self.baseSwap;
-        uint8 metaIndex = uint8(xp.length) - 1;
+        uint8 baseLPTokenIndex = uint8(xp.length) - 1;
 
         uint256 x;
-        if (tokenIndexFrom < metaIndex) {
+        if (tokenIndexFrom < baseLPTokenIndex) {
             x =
                 xp[tokenIndexFrom] +
                 dx *
                 self.tokenPrecisionMultipliers[tokenIndexFrom];
         } else {
             // tokenFrom is from the base pool
-            tokenIndexFrom = tokenIndexFrom - metaIndex;
-            if (tokenIndexTo < metaIndex) {
+            tokenIndexFrom = tokenIndexFrom - baseLPTokenIndex;
+            if (tokenIndexTo < baseLPTokenIndex) {
                 uint256[] memory baseInputs =
                     new uint256[](self.baseTokens.length);
                 baseInputs[tokenIndexFrom] = dx;
                 x = baseSwap.calculateTokenAmount(baseInputs, true).add(
-                    xp[metaIndex]
+                    xp[baseLPTokenIndex]
                 );
             } else {
                 // both from and to are from the base pool
                 return
                     ISwap(self.baseSwap).calculateSwap(
                         tokenIndexFrom,
-                        tokenIndexTo - metaIndex,
+                        tokenIndexTo - baseLPTokenIndex,
                         dx
                     );
             }
-            tokenIndexFrom = metaIndex;
+            tokenIndexFrom = baseLPTokenIndex;
         }
 
-        uint8 metaIndexTo = metaIndex;
-        if (tokenIndexTo < metaIndex) {
+        uint8 metaIndexTo = baseLPTokenIndex;
+        if (tokenIndexTo < baseLPTokenIndex) {
             metaIndexTo = tokenIndexTo;
         }
 
@@ -751,12 +776,12 @@ library MetaSwapUtils {
             dy = dy.sub(dyFee);
         }
 
-        if (tokenIndexTo < metaIndex) {
+        if (tokenIndexTo < baseLPTokenIndex) {
             dy = dy.div(self.tokenPrecisionMultipliers[metaIndexTo]);
         } else {
             dy = baseSwap.calculateRemoveLiquidityOneToken(
                 dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice),
-                tokenIndexTo - metaIndex
+                tokenIndexTo - baseLPTokenIndex
             );
         }
 
@@ -980,6 +1005,140 @@ library MetaSwapUtils {
         );
 
         return dy;
+    }
+
+    function swapUnderlying(
+        Swap storage self,
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx,
+        uint256 minDy
+    ) external returns (uint256) {
+        SwapUnderlyingInfo memory v =
+            SwapUnderlyingInfo(
+                0,
+                0,
+                0,
+                0,
+                0,
+                self.balances,
+                IERC20(address(0)),
+                IERC20(address(0))
+            );
+
+        uint256 baseVirtualPrice = _getBaseVirtualPrice(self);
+        uint8 baseLPTokenIndex = uint8(v.oldBalances.length) - 1;
+        ISwap baseSwap = self.baseSwap;
+
+        // Find the address of the token swapping from
+        if (tokenIndexFrom < baseLPTokenIndex) {
+            v.tokenFrom = self.pooledTokens[tokenIndexFrom];
+            v.metaIndexFrom = tokenIndexFrom;
+        } else {
+            v.tokenFrom = self.baseTokens[tokenIndexFrom - baseLPTokenIndex];
+            v.metaIndexFrom = baseLPTokenIndex;
+        }
+
+        // Find the address of the token swapping to
+        if (tokenIndexTo < baseLPTokenIndex) {
+            v.tokenTo = self.pooledTokens[tokenIndexFrom];
+            v.metaIndexTo = tokenIndexTo;
+        } else {
+            v.tokenTo = self.baseTokens[tokenIndexTo - baseLPTokenIndex];
+            v.metaIndexTo = baseLPTokenIndex;
+        }
+
+        v.tokenFrom.safeTransferFrom(msg.sender, address(this), dx);
+        v.dx = v.tokenFrom.balanceOf(address(this));
+
+        if (
+            tokenIndexFrom < baseLPTokenIndex || tokenIndexTo < baseLPTokenIndex
+        ) {
+            uint256[] memory xp = _xp(self, v.oldBalances, baseVirtualPrice);
+
+            if (tokenIndexFrom < baseLPTokenIndex) {
+                v.x =
+                    xp[tokenIndexFrom] +
+                    dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]);
+            } else {
+                // Swapping from an
+                uint256[] memory baseAmounts = new uint256[](baseLPTokenIndex);
+                baseAmounts[tokenIndexFrom - baseLPTokenIndex] = v.dx;
+                IERC20 baseLPToken = self.pooledTokens[baseLPTokenIndex];
+                v.x = baseLPToken.balanceOf(address(this));
+                // Add liquidity to the underlying swap contract
+                baseSwap.addLiquidity(baseAmounts, 0, block.timestamp);
+                // Now we have more of the base LP token
+                v.dx = baseLPToken.balanceOf(address(this)).sub(v.x);
+                v.x = v.dx.mul(baseVirtualPrice).div(
+                    BASE_VIRTUAL_PRICE_PRECISION
+                );
+                v.x = xp[baseLPTokenIndex].add(v.x);
+            }
+
+            uint256 dyFee;
+            {
+                uint256 y = getY(self, v.metaIndexFrom, v.metaIndexTo, v.x, xp);
+                v.dy = xp[v.metaIndexTo].sub(y).sub(1);
+                dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
+                v.dy = v.dy.sub(dyFee);
+            }
+
+            if (tokenIndexTo >= baseLPTokenIndex) {
+                v.dy = v.dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
+                    baseVirtualPrice
+                );
+            }
+            v.dy = v.dy.mul(self.tokenPrecisionMultipliers[v.metaIndexTo]);
+
+            {
+                uint256 dyAdminFee =
+                    dyFee.mul(self.adminFee).div(FEE_DENOMINATOR);
+                self.balances[v.metaIndexFrom] = v.oldBalances[v.metaIndexFrom]
+                    .add(v.dx);
+                self.balances[v.metaIndexTo] = v.oldBalances[v.metaIndexTo]
+                    .sub(v.dy)
+                    .sub(dyAdminFee);
+            }
+
+            if (tokenIndexTo >= baseLPTokenIndex) {
+                // tokenTo is from the base pool
+                // burn the LP token and withdraw the desired token from the base pool
+                uint256 oldBalance = v.tokenTo.balanceOf(address(this));
+                baseSwap.removeLiquidityOneToken(
+                    v.dy,
+                    tokenIndexTo - baseLPTokenIndex,
+                    0,
+                    block.timestamp
+                );
+                v.dy = v.tokenTo.balanceOf(address(this)) - oldBalance;
+            }
+
+            require(v.dy > minDy, "Swap didn't result in min tokens");
+        } else {
+            // Both tokens are from the base swap pool
+            v.dy = v.tokenTo.balanceOf(address(this));
+            baseSwap.swap(
+                tokenIndexFrom - baseLPTokenIndex,
+                tokenIndexTo - baseLPTokenIndex,
+                dx,
+                minDy,
+                block.timestamp
+            );
+            v.dy = v.tokenTo.balanceOf(address(this)).sub(v.dy);
+        }
+
+        v.tokenTo.safeTransfer(msg.sender, v.dy);
+
+        emit TokenSwapUnderlying(
+            msg.sender,
+            dx,
+            v.dy,
+            tokenIndexFrom,
+            tokenIndexTo
+        );
+
+        return v.dy;
     }
 
     /**
