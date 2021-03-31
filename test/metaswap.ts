@@ -160,18 +160,16 @@ describe("Meta-Swap", async () => {
         await usdc.connect(signer).approve(baseSwap.address, MAX_UINT256)
         await usdt.connect(signer).approve(baseSwap.address, MAX_UINT256)
         await baseLPToken.connect(signer).approve(metaSwap.address, MAX_UINT256)
+
+        // Add some liquidity to the base pool
+        await baseSwap
+          .connect(signer)
+          .addLiquidity(
+            [String(1e20), String(1e8), String(1e8)],
+            0,
+            MAX_UINT256,
+          )
       })
-
-      // Add liquidity to base swap pool
-      await baseSwap.addLiquidity(
-        [String(1e20), String(1e8), String(1e8)],
-        0,
-        MAX_UINT256,
-      )
-      await baseSwap
-        .connect(user1)
-        .addLiquidity([String(1e20), String(1e8), String(1e8)], 0, MAX_UINT256)
-
       // Initialize meta swap pool
       await metaSwap.initialize(
         [susd.address, baseLPToken.address],
@@ -397,13 +395,11 @@ describe("Meta-Swap", async () => {
     })
 
     it("Returns correct minted lpToken amount", async () => {
-      await susd.mint(testSwapReturnValues.address, String(1e20))
-      await baseLPToken.mint(testSwapReturnValues.address, String(1e20))
+      const mintedAmount = await metaSwap
+        .connect(user1)
+        .callStatic.addLiquidity([String(1e18), String(2e18)], 0, MAX_UINT256)
 
-      await testSwapReturnValues.test_addLiquidity(
-        [String(1e18), String(2e18)],
-        0,
-      )
+      expect(mintedAmount).to.eq("2997459774673651937")
     })
 
     it("Reverts when minToMint is not reached due to front running", async () => {
@@ -559,18 +555,17 @@ describe("Meta-Swap", async () => {
     })
 
     it("Returns correct amounts of received tokens", async () => {
-      await susd.mint(testSwapReturnValues.address, String(1e20))
-      await baseLPToken.mint(testSwapReturnValues.address, String(1e20))
+      const metaLPTokenBalance = await metaLPToken.balanceOf(ownerAddress)
 
-      await testSwapReturnValues.test_addLiquidity(
-        [String(1e18), String(2e18)],
-        0,
-      )
-      const tokenBalance = await metaLPToken.balanceOf(
-        testSwapReturnValues.address,
+      await metaLPToken.approve(metaSwap.address, MAX_UINT256)
+      const removedTokenAmounts = await metaSwap.callStatic.removeLiquidity(
+        metaLPTokenBalance,
+        [0, 0],
+        MAX_UINT256,
       )
 
-      await testSwapReturnValues.test_removeLiquidity(tokenBalance, [0, 0])
+      expect(removedTokenAmounts[0]).to.eq("1000000000000000000")
+      expect(removedTokenAmounts[1]).to.eq("1000000000000000000")
     })
 
     it("Reverts when user tries to burn more LP tokens than they own", async () => {
@@ -804,21 +799,24 @@ describe("Meta-Swap", async () => {
     })
 
     it("Returns correct amount of burned lpToken", async () => {
-      await susd.mint(testSwapReturnValues.address, String(1e20))
-      await baseLPToken.mint(testSwapReturnValues.address, String(1e20))
+      // User 1 adds liquidity
+      await metaSwap
+        .connect(user1)
+        .addLiquidity([String(2e18), String(1e16)], 0, MAX_UINT256)
+      const currentUser1Balance = await metaLPToken.balanceOf(user1Address)
 
-      await testSwapReturnValues.test_addLiquidity(
-        [String(1e18), String(2e18)],
-        0,
-      )
+      // User 1 removes liquidity
+      await metaLPToken.connect(user1).approve(metaSwap.address, MAX_UINT256)
 
-      const tokenBalance = await metaLPToken.balanceOf(
-        testSwapReturnValues.address,
-      )
-      await testSwapReturnValues.test_removeLiquidityImbalance(
-        [String(1e18), String(1e17)],
-        tokenBalance,
-      )
+      const burnedLPTokenAmount = await metaSwap
+        .connect(user1)
+        .callStatic.removeLiquidityImbalance(
+          [String(1e18), String(1e16)],
+          currentUser1Balance,
+          MAX_UINT256,
+        )
+
+      expect(burnedLPTokenAmount).eq("1000934178112841889")
     })
 
     it("Reverts when user tries to burn more LP tokens than they own", async () => {
@@ -1017,17 +1015,14 @@ describe("Meta-Swap", async () => {
     })
 
     it("Returns correct amount of received token", async () => {
-      await susd.mint(testSwapReturnValues.address, String(1e20))
-      await baseLPToken.mint(testSwapReturnValues.address, String(1e20))
-      await testSwapReturnValues.test_addLiquidity(
-        [String(1e18), String(2e18)],
+      await metaLPToken.approve(metaSwap.address, MAX_UINT256)
+      const removedTokenAmount = await metaSwap.callStatic.removeLiquidityOneToken(
+        String(1e18),
         0,
+        0,
+        MAX_UINT256,
       )
-      await testSwapReturnValues.test_removeLiquidityOneToken(
-        String(2e18),
-        0,
-        0,
-      )
+      expect(removedTokenAmount).to.eq("954404308901884931")
     })
 
     it("Reverts when user tries to burn more LP tokens than they own", async () => {
@@ -1258,13 +1253,14 @@ describe("Meta-Swap", async () => {
     })
 
     it("Returns correct amount of received token", async () => {
-      await susd.mint(testSwapReturnValues.address, String(1e20))
-      await baseLPToken.mint(testSwapReturnValues.address, String(1e20))
-      await testSwapReturnValues.test_addLiquidity(
-        [String(1e18), String(2e18)],
+      const swapReturnAmount = await metaSwap.callStatic.swap(
         0,
+        1,
+        String(1e18),
+        0,
+        MAX_UINT256,
       )
-      await testSwapReturnValues.test_swap(0, 1, String(1e18), 0)
+      expect(swapReturnAmount).to.eq("908591742545002306")
     })
 
     it("Reverts when block is mined after deadline", async () => {
@@ -2811,8 +2807,8 @@ describe("Meta-Swap", async () => {
           baseLPToken,
         ])
 
-        expect(initialAttackerBalances[0]).to.be.eq(String(1e20))
-        expect(initialAttackerBalances[1]).to.be.eq(String(1e20))
+        expect(initialAttackerBalances[0]).to.be.eq("100000000000000000000000")
+        expect(initialAttackerBalances[1]).to.be.eq(String(3e20))
 
         // Start ramp upwards
         await metaSwap.rampA(
@@ -3193,8 +3189,8 @@ describe("Meta-Swap", async () => {
           baseLPToken,
         ])
 
-        expect(initialAttackerBalances[0]).to.be.eq(String(1e20))
-        expect(initialAttackerBalances[1]).to.be.eq(String(1e20))
+        expect(initialAttackerBalances[0]).to.be.eq("100000000000000000000000")
+        expect(initialAttackerBalances[1]).to.be.eq(String(3e20))
 
         // Start ramp downwards
         await metaSwap.rampA(

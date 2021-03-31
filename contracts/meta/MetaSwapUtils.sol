@@ -475,7 +475,7 @@ library MetaSwapUtils {
      */
     function getD(uint256[] memory xp, uint256 a)
         internal
-        view
+        pure
         returns (uint256)
     {
         uint256 numTokens = xp.length;
