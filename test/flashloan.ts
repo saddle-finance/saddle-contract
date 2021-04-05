@@ -269,6 +269,17 @@ describe("Swap Flashloan", () => {
     expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000024999981618719")
     expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50005000")
     expect(await swapFlashLoan.getAdminBalance(1)).to.eq("5000")
+
+    // Try to do the flashloan again.
+    await USDC.connect(user1).transfer(flashLoanExample.address, flashLoanFee)
+    await expect(
+      flashLoanExample.flashLoan(swapFlashLoan.address, USDC.address, 1e6, []),
+    ).to.emit(swapFlashLoan, "FlashLoan")
+
+    expect(await USDC.balanceOf(flashLoanExample.address)).to.eq(0)
+    expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000049999926479164")
+    expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50010000")
+    expect(await swapFlashLoan.getAdminBalance(1)).to.eq("10000")
   })
 
   describe("setFlashLoanFees", () => {
