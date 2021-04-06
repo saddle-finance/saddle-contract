@@ -56,6 +56,13 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint128 soldId,
         uint128 boughtId
     );
+    event TokenSwapUnderlying(
+        address indexed buyer,
+        uint256 tokensSold,
+        uint256 tokensBought,
+        uint128 soldId,
+        uint128 boughtId
+    );
     event AddLiquidity(
         address indexed provider,
         uint256[] tokenAmounts,
@@ -190,12 +197,16 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         swapStorage.baseSwap = baseSwap;
         swapStorage.baseVirtualPrice = baseSwap.getVirtualPrice();
         swapStorage.baseCacheLastUpdated = block.timestamp;
-        IERC20[] memory tokens = new IERC20[](baseSwapTokensLength);
+        IERC20[] memory baseTokens = new IERC20[](baseSwapTokensLength);
         for (uint8 i; i < baseSwapTokensLength; i++) {
-            tokens[i] = IERC20(baseSwap.getToken(i));
-            require(tokens[i].approve(address(baseSwap), MAX_UINT256));
+            baseTokens[i] = IERC20(baseSwap.getToken(i));
+            baseTokens[i].approve(address(baseSwap), MAX_UINT256);
         }
-        swapStorage.baseTokens = tokens;
+        _pooledTokens[_pooledTokens.length - 1].approve(
+            address(baseSwap),
+            MAX_UINT256
+        );
+        swapStorage.baseTokens = baseTokens;
     }
 
     /*** MODIFIERS ***/
@@ -294,6 +305,27 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 dx
     ) external view returns (uint256) {
         return swapStorage.calculateSwap(tokenIndexFrom, tokenIndexTo, dx);
+    }
+
+    /**
+     * @notice Calculate amount of tokens you receive on swap
+     * @param tokenIndexFrom the token the user wants to sell
+     * @param tokenIndexTo the token the user wants to buy
+     * @param dx the amount of tokens the user wants to sell. If the token charges
+     * a fee on transfers, use the amount that gets transferred after the fee.
+     * @return amount of tokens the user will receive
+     */
+    function calculateSwapUnderlying(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx
+    ) external view returns (uint256) {
+        return
+            swapStorage.calculateSwapUnderlying(
+                tokenIndexFrom,
+                tokenIndexTo,
+                dx
+            );
     }
 
     /**
@@ -407,6 +439,31 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         returns (uint256)
     {
         return swapStorage.swap(tokenIndexFrom, tokenIndexTo, dx, minDy);
+    }
+
+    /**
+     * @notice Swap two tokens using this pool
+     * @param tokenIndexFrom the token the user wants to swap from
+     * @param tokenIndexTo the token the user wants to swap to
+     * @param dx the amount of tokens the user wants to swap from
+     * @param minDy the min amount the user would like to receive, or revert.
+     * @param deadline latest timestamp to accept this transaction
+     */
+    function swapUnderlying(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx,
+        uint256 minDy,
+        uint256 deadline
+    )
+        external
+        nonReentrant
+        whenNotPaused
+        deadlineCheck(deadline)
+        returns (uint256)
+    {
+        return
+            swapStorage.swapUnderlying(tokenIndexFrom, tokenIndexTo, dx, minDy);
     }
 
     /**

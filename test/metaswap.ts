@@ -1283,6 +1283,249 @@ describe("Meta-Swap", async () => {
     })
   })
 
+  describe("swapUnderlying", () => {
+    it("Reverts when contract is paused", async () => {
+      // Owner pauses the contract
+      await metaSwap.pause()
+
+      // User 1 try to initiate swap
+      await expect(
+        metaSwap
+          .connect(user1)
+          .swapUnderlying(0, 1, String(1e16), 0, MAX_UINT256),
+      ).to.be.reverted
+    })
+
+    it("Reverts with 'Token index out of range'", async () => {
+      await expect(
+        metaSwap.calculateSwapUnderlying(0, 9, String(1e17)),
+      ).to.be.revertedWith("Token index out of range")
+
+      await expect(
+        metaSwap.swapUnderlying(0, 9, String(1e17), 0, MAX_UINT256),
+      ).to.be.revertedWith("Token index out of range")
+    })
+
+    it("Succeeds with expected swap amounts - swap from 18 decimal token (meta) to 18 decimal token (base)", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await metaSwap.calculateSwapUnderlying(
+        0,
+        1,
+        String(1e17),
+      )
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99682616104034773"))
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getUserTokenBalances(user1, [susd, dai])
+
+      // User 1 successfully initiates swap
+      await metaSwap
+        .connect(user1)
+        .swapUnderlying(0, 1, String(1e17), calculatedSwapReturn, MAX_UINT256)
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getUserTokenBalances(user1, [susd, dai])
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e17)),
+      )
+      expect(tokenToBalanceAfter.sub(tokenToBalanceBefore)).to.eq(
+        calculatedSwapReturn,
+      )
+    })
+
+    it("Succeeds with expected swap amounts - swap from 6 decimal token (base) to 18 decimal token (meta)", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await metaSwap.calculateSwapUnderlying(
+        2,
+        0,
+        String(1e5),
+      )
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99702556568987205"))
+
+      // Calculating swapping from a base token to a meta level token
+      // does not account for base pool's swap fees
+      const minReturnWithNegativeSlippage = calculatedSwapReturn
+        .mul(999)
+        .div(1000)
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getUserTokenBalances(user1, [usdc, susd])
+
+      // User 1 successfully initiates swap
+      await metaSwap
+        .connect(user1)
+        .swapUnderlying(
+          2,
+          0,
+          String(1e5),
+          minReturnWithNegativeSlippage,
+          MAX_UINT256,
+        )
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getUserTokenBalances(user1, [usdc, susd])
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e5)),
+      )
+      expect(tokenToBalanceAfter.sub(tokenToBalanceBefore)).to.eq(
+        "99683651227847339",
+      )
+    })
+
+    it("Succeeds with expected swap amounts - swap from 18 decimal token (meta) to 6 decimal token (base)", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await metaSwap.calculateSwapUnderlying(
+        0,
+        2,
+        String(1e17),
+      )
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99682"))
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getUserTokenBalances(user1, [susd, usdc])
+
+      // User 1 successfully initiates swap
+      await metaSwap
+        .connect(user1)
+        .swapUnderlying(0, 2, String(1e17), calculatedSwapReturn, MAX_UINT256)
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getUserTokenBalances(user1, [susd, usdc])
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e17)),
+      )
+      expect(tokenToBalanceAfter.sub(tokenToBalanceBefore)).to.eq(
+        calculatedSwapReturn,
+      )
+    })
+
+    it("Reverts when minDy (minimum amount token to receive) is not reached due to front running", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await metaSwap.calculateSwapUnderlying(
+        0,
+        1,
+        String(1e17),
+      )
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99682616104034773"))
+
+      // User 2 swaps before User 1 does
+      await metaSwap
+        .connect(user2)
+        .swapUnderlying(0, 1, String(1e17), 0, MAX_UINT256)
+
+      // User 1 initiates swap
+      await expect(
+        metaSwap
+          .connect(user1)
+          .swapUnderlying(
+            0,
+            1,
+            String(1e17),
+            calculatedSwapReturn,
+            MAX_UINT256,
+          ),
+      ).to.be.reverted
+    })
+
+    it("Succeeds when using lower minDy even when transaction is front-ran", async () => {
+      // User 1 calculates how much token to receive with 1% slippage
+      const calculatedSwapReturn = await metaSwap.calculateSwapUnderlying(
+        0,
+        1,
+        String(1e17),
+      )
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99682616104034773"))
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getUserTokenBalances(user1, [susd, dai])
+
+      const calculatedSwapReturnWithNegativeSlippage = calculatedSwapReturn
+        .mul(99)
+        .div(100)
+
+      // User 2 swaps before User 1 does
+      await metaSwap.connect(user2).swap(0, 1, String(1e17), 0, MAX_UINT256)
+
+      // User 1 successfully initiates swap with 1% slippage from initial calculated amount
+      await metaSwap
+        .connect(user1)
+        .swapUnderlying(
+          0,
+          1,
+          String(1e17),
+          calculatedSwapReturnWithNegativeSlippage,
+          MAX_UINT256,
+        )
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getUserTokenBalances(user1, [susd, dai])
+
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e17)),
+      )
+
+      const actualReceivedAmount = tokenToBalanceAfter.sub(tokenToBalanceBefore)
+
+      expect(actualReceivedAmount).to.eq(BigNumber.from("99266340636749675"))
+      expect(actualReceivedAmount).to.gt(
+        calculatedSwapReturnWithNegativeSlippage,
+      )
+      expect(actualReceivedAmount).to.lt(calculatedSwapReturn)
+    })
+
+    it("Returns correct amount of received token", async () => {
+      const swapReturnAmount = await metaSwap.callStatic.swapUnderlying(
+        0,
+        1,
+        String(1e17),
+        0,
+        MAX_UINT256,
+      )
+      expect(swapReturnAmount).to.eq("99682616104034773")
+    })
+
+    it("Reverts when block is mined after deadline", async () => {
+      const currentTimestamp = await getCurrentBlockTimestamp()
+      await setNextTimestamp(currentTimestamp + 60 * 10)
+
+      // User 1 tries swapping with deadline of +5 minutes
+      await expect(
+        metaSwap
+          .connect(user1)
+          .swapUnderlying(0, 1, String(1e17), 0, currentTimestamp + 60 * 5),
+      ).to.be.revertedWith("Deadline not met")
+    })
+
+    it("Emits TokenSwap event", async () => {
+      // User 1 initiates swap
+      await expect(
+        metaSwap
+          .connect(user1)
+          .swapUnderlying(0, 1, String(1e17), 0, MAX_UINT256),
+      ).to.emit(metaSwap, "TokenSwapUnderlying")
+    })
+  })
+
   describe("getVirtualPrice", () => {
     it("Returns expected value after initial deposit", async () => {
       expect(await metaSwap.getVirtualPrice()).to.eq(
