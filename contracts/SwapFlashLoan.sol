@@ -78,8 +78,8 @@ contract SwapFlashLoan is Swap {
             _adminFee,
             _withdrawFee
         );
-        flashLoanFeeBPS = 100; // 100bps
-        protocolFeeShareBPS = 5000; // 5000bps
+        flashLoanFeeBPS = 10; // 10bps
+        protocolFeeShareBPS = 0; // 0bps
     }
 
     /*** STATE MODIFYING FUNCTIONS ***/
