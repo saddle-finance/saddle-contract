@@ -13,6 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "Allowlist",
     "SaddleBTCPool",
     "SaddleUSDPool",
+    "SaddleVETH2Pool",
   ]
 
   const currentChain = await getChainId()
