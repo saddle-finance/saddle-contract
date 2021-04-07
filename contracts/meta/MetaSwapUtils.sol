@@ -1086,8 +1086,9 @@ library MetaSwapUtils {
             v.metaIndexTo = baseLPTokenIndex;
         }
 
-        v.tokenFrom.safeTransferFrom(msg.sender, address(this), dx);
         v.dx = v.tokenFrom.balanceOf(address(this));
+        v.tokenFrom.safeTransferFrom(msg.sender, address(this), dx);
+        v.dx = v.tokenFrom.balanceOf(address(this)).sub(v.dx); // update dx in case of fee on transfer
 
         if (
             tokenIndexFrom < baseLPTokenIndex || tokenIndexTo < baseLPTokenIndex
@@ -1153,20 +1154,19 @@ library MetaSwapUtils {
                 );
                 v.dy = v.tokenTo.balanceOf(address(this)) - oldBalance;
             }
+            require(v.dy >= minDy, "Swap didn't result in min tokens");
         } else {
             // Both tokens are from the base swap pool
             v.dy = v.tokenTo.balanceOf(address(this));
             baseSwap.swap(
                 tokenIndexFrom - baseLPTokenIndex,
                 tokenIndexTo - baseLPTokenIndex,
-                dx,
+                v.dx,
                 minDy,
                 block.timestamp
             );
             v.dy = v.tokenTo.balanceOf(address(this)).sub(v.dy);
         }
-
-        require(v.dy >= minDy, "Swap didn't result in min tokens");
 
         v.tokenTo.safeTransfer(msg.sender, v.dy);
 
