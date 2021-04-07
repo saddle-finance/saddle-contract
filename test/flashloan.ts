@@ -174,12 +174,15 @@ describe("Swap Flashloan", () => {
         String(200e18),
       )
 
-      // Deploy MathUtils
+      // Deploy an example flash loan borrower contract
       flashLoanExample = (await deployContract(
         signers[0] as Wallet,
         FlashLoanBorrowerExampleArtifact,
       )) as FlashLoanBorrowerExample
       await flashLoanExample.deployed()
+
+      // Set fees to easier numbers for debugging
+      await swapFlashLoan.setFlashLoanFees(100, 5000)
     },
   )
 
@@ -310,6 +313,42 @@ describe("Swap Flashloan", () => {
       await expect(
         swapFlashLoan.setFlashLoanFees(100000, 100000),
       ).to.be.revertedWith("fees are not in valid range")
+    })
+
+    it("Succeeds when protocol fee bps is set to 0", async () => {
+      // Realistic flashloan fee
+      const newFlashLoanFeeBPS = 8
+      const newProtocolFeeBPS = 0
+
+      await swapFlashLoan.setFlashLoanFees(
+        newFlashLoanFeeBPS,
+        newProtocolFeeBPS,
+      )
+      expect(await swapFlashLoan.flashLoanFeeBPS()).to.eq(newFlashLoanFeeBPS)
+      expect(await swapFlashLoan.protocolFeeShareBPS()).to.eq(newProtocolFeeBPS)
+
+      const flashLoanAmount = BigNumber.from(1e6)
+      const flashLoanFee = flashLoanAmount.mul(newFlashLoanFeeBPS).div(10000)
+
+      // Check the initial balance and the virtual price
+      expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000000000000000000")
+      expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50000000")
+
+      // Since the contract is empty, we need to give the contract some USDC to have enough to pay off the fee
+      await USDC.connect(user1).transfer(flashLoanExample.address, flashLoanFee)
+      await flashLoanExample.flashLoan(
+        swapFlashLoan.address,
+        USDC.address,
+        1e6,
+        [],
+      )
+
+      // Check the borrower contract paid off the balance
+      expect(await USDC.balanceOf(flashLoanExample.address)).to.eq(0)
+      expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000003999999529416")
+      expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50000800")
+      expect(await swapFlashLoan.getAdminBalance(1)).to.eq("0")
+      expect(await USDC.balanceOf(swapFlashLoan.address)).to.eq("50000800")
     })
 
     it("Succeeds when fees are in the valid range", async () => {
