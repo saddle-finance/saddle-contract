@@ -265,10 +265,29 @@ describe("Swap Flashloan", () => {
     ).to.emit(swapFlashLoan, "FlashLoan")
 
     // Check the borrower contract paid off the balance
-    expect(await USDC.balanceOf(flashLoanExample.address)).to.eq(0)
     expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000024999981618719")
     expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50005000")
     expect(await swapFlashLoan.getAdminBalance(1)).to.eq("5000")
+    expect(await USDC.balanceOf(swapFlashLoan.address)).to.eq("50010000")
+
+    // Try to do the flashloan again.
+    await USDC.connect(user1).transfer(flashLoanExample.address, flashLoanFee)
+    await expect(
+      flashLoanExample.flashLoan(swapFlashLoan.address, USDC.address, 1e6, []),
+    ).to.emit(swapFlashLoan, "FlashLoan")
+
+    expect(await USDC.balanceOf(flashLoanExample.address)).to.eq(0)
+    expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000049999926479164")
+    expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50010000")
+    expect(await swapFlashLoan.getAdminBalance(1)).to.eq("10000")
+    expect(await USDC.balanceOf(swapFlashLoan.address)).to.eq("50020000")
+
+    // Try to withdraw the protocol fees
+    await swapFlashLoan.withdrawAdminFees()
+    expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000049999926479164")
+    expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50010000")
+    expect(await swapFlashLoan.getAdminBalance(1)).to.eq("0")
+    expect(await USDC.balanceOf(swapFlashLoan.address)).to.eq("50010000")
   })
 
   describe("setFlashLoanFees", () => {
@@ -294,12 +313,18 @@ describe("Swap Flashloan", () => {
     })
 
     it("Succeeds when fees are in the valid range", async () => {
-      await swapFlashLoan.setFlashLoanFees(50, 100)
-      expect(await swapFlashLoan.flashLoanFeeBPS()).to.eq(50)
-      expect(await swapFlashLoan.protocolFeeShareBPS()).to.eq(100)
+      const newFlashLoanFeeBPS = 50
+      const newProtocolFeeBPS = 100
+
+      await swapFlashLoan.setFlashLoanFees(
+        newFlashLoanFeeBPS,
+        newProtocolFeeBPS,
+      )
+      expect(await swapFlashLoan.flashLoanFeeBPS()).to.eq(newFlashLoanFeeBPS)
+      expect(await swapFlashLoan.protocolFeeShareBPS()).to.eq(newProtocolFeeBPS)
 
       const flashLoanAmount = BigNumber.from(1e6)
-      const flashLoanFee = flashLoanAmount.mul(50).div(10000)
+      const flashLoanFee = flashLoanAmount.mul(newFlashLoanFeeBPS).div(10000)
 
       // Check the initial balance and the virtual price
       expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000000000000000000")
@@ -319,6 +344,7 @@ describe("Swap Flashloan", () => {
       expect(await swapFlashLoan.getVirtualPrice()).to.eq("1000024749981984496")
       expect(await swapFlashLoan.getTokenBalance(1)).to.eq("50004950")
       expect(await swapFlashLoan.getAdminBalance(1)).to.eq("50")
+      expect(await USDC.balanceOf(swapFlashLoan.address)).to.eq("50005000")
     })
   })
 })
