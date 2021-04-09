@@ -40,37 +40,38 @@ contract MetaSwapDeposit is Initializable {
     function initialize(
         ISwap baseSwap_,
         IMetaSwap metaSwap_,
-        IERC20[] calldata baseTokens_,
-        IERC20[] calldata metaTokens_,
         IERC20 metaLPToken_
     ) external initializer {
         // Check and approve base level tokens to be deposited to the base swap contract
-        for (uint8 i = 0; i < baseTokens_.length; i++) {
-            IERC20 baseToken = baseTokens_[i];
-            require(IERC20(baseSwap_.getToken(i)) == baseToken);
-            baseToken.approve(address(baseSwap_), MAX_UINT256);
+        for (uint8 i = 0; i < 32; i++) {
+            try baseSwap_.getToken(i) returns (IERC20 token) {
+                baseTokens.push(token);
+                token.approve(address(baseSwap_), MAX_UINT256);
+            } catch {
+                break;
+            }
         }
 
         // Check and approve meta level tokens to be deposited to the meta swap contract
-        for (uint8 i = 0; i < metaTokens_.length; i++) {
-            IERC20 metaToken = metaTokens_[i];
-            require(IERC20(metaSwap_.getToken(i)) == metaToken);
-            metaToken.approve(address(metaSwap_), MAX_UINT256);
+        IERC20 baseLPToken;
+        for (uint8 i = 0; i < 32; i++) {
+            try metaSwap_.getToken(i) returns (IERC20 token) {
+                baseLPToken = token;
+                metaTokens.push(token);
+                token.approve(address(metaSwap_), MAX_UINT256);
+            } catch {
+                break;
+            }
         }
 
         // Approve base swap LP token to be burned by the base swap contract for withdrawing
-        metaTokens_[metaTokens_.length - 1].approve(
-            address(baseSwap_),
-            MAX_UINT256
-        );
+        baseLPToken.approve(address(baseSwap_), MAX_UINT256);
         // Approve meta swap LP token to be burned by the meta swap contract for withdrawing
-        metaLPToken.approve(address(metaSwap_), MAX_UINT256);
+        metaLPToken_.approve(address(metaSwap_), MAX_UINT256);
 
         // Initialize storage variables
         baseSwap = baseSwap_;
         metaSwap = metaSwap_;
-        baseTokens = baseTokens_;
-        metaTokens = metaTokens_;
         metaLPToken = metaLPToken_;
     }
 
@@ -99,17 +100,27 @@ contract MetaSwapDeposit is Initializable {
         {
             // Transfer base tokens from the caller and deposit to the base swap pool
             uint256[] memory baseAmounts = new uint256[](memBaseTokens.length);
-            for (uint8 i = 0; i < amounts.length; i++) {
+            bool shouldDepositBaseTokens;
+            for (uint8 i = 0; i < memBaseTokens.length; i++) {
                 IERC20 token = memBaseTokens[i];
                 uint256 depositAmount = amounts[baseLPTokenIndex + i];
-                token.safeTransferFrom(
-                    msg.sender,
-                    address(this),
-                    depositAmount
-                );
-                baseAmounts[i] = token.balanceOf(address(this)); // account for any fees on transfer
+                if (depositAmount > 0) {
+                    token.safeTransferFrom(
+                        msg.sender,
+                        address(this),
+                        depositAmount
+                    );
+                    baseAmounts[i] = token.balanceOf(address(this)); // account for any fees on transfer
+                    shouldDepositBaseTokens = true;
+                }
             }
-            baseLPTokenAmount = baseSwap.addLiquidity(baseAmounts, 0, deadline);
+            if (shouldDepositBaseTokens) {
+                baseLPTokenAmount = baseSwap.addLiquidity(
+                    baseAmounts,
+                    0,
+                    deadline
+                );
+            }
         }
 
         uint256 metaLPTokenAmount;
@@ -119,12 +130,14 @@ contract MetaSwapDeposit is Initializable {
             for (uint8 i = 0; i < baseLPTokenIndex; i++) {
                 IERC20 token = memMetaTokens[i];
                 uint256 depositAmount = amounts[i];
-                token.safeTransferFrom(
-                    msg.sender,
-                    address(this),
-                    depositAmount
-                );
-                metaAmounts[i] = token.balanceOf(address(this)); // account for any fees on transfer
+                if (depositAmount > 0) {
+                    token.safeTransferFrom(
+                        msg.sender,
+                        address(this),
+                        depositAmount
+                    );
+                    metaAmounts[i] = token.balanceOf(address(this)); // account for any fees on transfer
+                }
             }
             metaAmounts[baseLPTokenIndex] = baseLPTokenAmount;
             metaLPTokenAmount = metaSwap.addLiquidity(
@@ -157,20 +170,22 @@ contract MetaSwapDeposit is Initializable {
     ) external returns (uint256[] memory) {
         IERC20[] memory memBaseTokens = baseTokens;
         IERC20[] memory memMetaTokens = metaTokens;
+        uint256[] memory totalRemovedAmounts;
 
-        require(
-            minAmounts.length ==
-                memBaseTokens.length + memMetaTokens.length - 1,
-            "out of range"
-        );
-        uint256[] memory totalRemovedAmounts = new uint256[](minAmounts.length);
+        {
+            uint256 numOfAllTokens =
+                memBaseTokens.length + memMetaTokens.length - 1;
+            require(minAmounts.length == numOfAllTokens, "out of range");
+            totalRemovedAmounts = new uint256[](numOfAllTokens);
+        }
 
         // Transfer meta lp token from the caller to this
         metaLPToken.safeTransferFrom(msg.sender, address(this), amount);
 
+        uint256 baseLPTokenAmount;
         {
             // Remove liquidity from the meta swap pool
-            uint256[] memory metaRemovedAmounts;
+            uint256[] memory removedAmounts;
             uint256 baseLPTokenIndex = memMetaTokens.length - 1;
             {
                 uint256[] memory metaMinAmounts =
@@ -178,34 +193,38 @@ contract MetaSwapDeposit is Initializable {
                 for (uint8 i = 0; i < baseLPTokenIndex; i++) {
                     metaMinAmounts[i] = minAmounts[i];
                 }
-                metaRemovedAmounts = metaSwap.removeLiquidity(
+                removedAmounts = metaSwap.removeLiquidity(
                     amount,
                     metaMinAmounts,
                     deadline
                 );
             }
+
+            // Send the meta level tokens to the caller
             for (uint8 i = 0; i < baseLPTokenIndex; i++) {
-                totalRemovedAmounts[i] = metaRemovedAmounts[i];
+                totalRemovedAmounts[i] = removedAmounts[i];
+                memMetaTokens[i].safeTransfer(msg.sender, removedAmounts[i]);
             }
+            baseLPTokenAmount = removedAmounts[baseLPTokenIndex];
 
             // Remove liquidity from the base swap pool
-            uint256[] memory baseRemovedAmounts;
             {
                 uint256[] memory baseMinAmounts =
                     new uint256[](memBaseTokens.length);
                 for (uint8 i = 0; i < baseLPTokenIndex; i++) {
                     baseMinAmounts[i] = minAmounts[baseLPTokenIndex + i];
                 }
-                metaRemovedAmounts = baseSwap.removeLiquidity(
-                    amount,
+                removedAmounts = baseSwap.removeLiquidity(
+                    baseLPTokenAmount,
                     baseMinAmounts,
                     deadline
                 );
             }
-            for (uint8 i = 0; i < baseRemovedAmounts.length; i++) {
-                totalRemovedAmounts[baseLPTokenIndex + i] = baseRemovedAmounts[
-                    i
-                ];
+
+            // Send the base level tokens to the caller
+            for (uint8 i = 0; i < memBaseTokens.length; i++) {
+                totalRemovedAmounts[baseLPTokenIndex + i] = removedAmounts[i];
+                memBaseTokens[i].safeTransfer(msg.sender, removedAmounts[i]);
             }
         }
 
@@ -230,14 +249,17 @@ contract MetaSwapDeposit is Initializable {
         uint8 baseLPTokenIndex = uint8(metaTokens.length - 1);
         uint8 baseTokensLength = uint8(baseTokens.length);
 
+        metaLPToken.safeTransferFrom(msg.sender, address(this), tokenAmount);
+
+        IERC20 token;
         if (tokenIndex < baseLPTokenIndex) {
-            return
-                metaSwap.removeLiquidityOneToken(
-                    tokenAmount,
-                    tokenIndex,
-                    minAmount,
-                    deadline
-                );
+            metaSwap.removeLiquidityOneToken(
+                tokenAmount,
+                tokenIndex,
+                minAmount,
+                deadline
+            );
+            token = metaTokens[tokenIndex];
         } else if (tokenIndex < baseLPTokenIndex + baseTokensLength) {
             uint256 removedBaseLPTokenAmount =
                 metaSwap.removeLiquidityOneToken(
@@ -246,16 +268,21 @@ contract MetaSwapDeposit is Initializable {
                     0,
                     deadline
                 );
-            return
-                baseSwap.removeLiquidityOneToken(
-                    removedBaseLPTokenAmount,
-                    tokenIndex - baseLPTokenIndex,
-                    minAmount,
-                    deadline
-                );
+
+            baseSwap.removeLiquidityOneToken(
+                removedBaseLPTokenAmount,
+                tokenIndex - baseLPTokenIndex,
+                minAmount,
+                deadline
+            );
+            token = baseTokens[tokenIndex - baseLPTokenIndex];
         } else {
             revert("out of range");
         }
+
+        uint256 amountWithdrawn = token.balanceOf(address(this));
+        token.safeTransfer(msg.sender, amountWithdrawn);
+        return amountWithdrawn;
     }
 
     /**

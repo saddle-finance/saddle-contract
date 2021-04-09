@@ -23,14 +23,10 @@ import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
-import { SwapUtils } from "../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import { MetaSwap } from "../build/typechain/MetaSwap"
 import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
 import { MetaSwapUtils } from "../build/typechain/MetaSwapUtils"
 import MetaSwapUtilsArtifact from "../build/artifacts/contracts/meta/MetaSwapUtils.sol/MetaSwapUtils.json"
-import { TestSwapReturnValues } from "../build/typechain/TestSwapReturnValues"
-import TestSwapReturnValuesArtifact from "../build/artifacts/contracts/helper/test/TestSwapReturnValues.sol/TestSwapReturnValues.json"
 import chai from "chai"
 
 chai.use(solidity)
@@ -40,7 +36,6 @@ describe("Meta-Swap", async () => {
   let signers: Array<Signer>
   let baseSwap: Swap
   let metaSwap: MetaSwap
-  let testSwapReturnValues: TestSwapReturnValues
   let mathUtils: MathUtils
   let metaSwapUtils: MetaSwapUtils
   let susd: GenericERC20
@@ -170,6 +165,7 @@ describe("Meta-Swap", async () => {
             MAX_UINT256,
           )
       })
+
       // Initialize meta swap pool
       await metaSwap.initialize(
         [susd.address, baseLPToken.address],
