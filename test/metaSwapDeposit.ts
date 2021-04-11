@@ -128,10 +128,10 @@ describe("Meta-Swap", async () => {
         },
       )
 
-      // Deploy MathUtils
-      mathUtils = (await deployContract(
-        signers[0] as Wallet,
-        MathUtilsArtifact,
+      // Get MathUtils
+      mathUtils = (await ethers.getContractAt(
+        MathUtilsArtifact.abi,
+        (await get("MathUtils")).address,
       )) as MathUtils
 
       // Deploy SwapUtils with MathUtils library
@@ -411,6 +411,16 @@ describe("Meta-Swap", async () => {
       ).to.be.revertedWith("Deadline not met")
     })
 
+    it("Reverts when minAmounts array length is too big", async () => {
+      await expect(
+        metaSwapDeposit.removeLiquidity(
+          String(1e18),
+          [0, 0, 0, 0, 0],
+          MAX_UINT256,
+        ),
+      ).to.be.revertedWith("out of range")
+    })
+
     it("Succeeds with expected minAmounts", async () => {
       const minAmounts = await metaSwapDeposit.calculateRemoveLiquidity(
         ownerAddress,
@@ -481,6 +491,17 @@ describe("Meta-Swap", async () => {
           blockTimestamp - 100,
         ),
       ).to.be.revertedWith("Deadline not met")
+    })
+
+    it("Reverts when index is out of range", async () => {
+      await expect(
+        metaSwapDeposit.removeLiquidityOneToken(
+          String(1e18),
+          10,
+          0,
+          MAX_UINT256,
+        ),
+      ).to.be.revertedWith("out of range")
     })
 
     it("Succeeds when withdrawing via a meta level token", async () => {
@@ -568,6 +589,16 @@ describe("Meta-Swap", async () => {
           blockTimestamp - 100,
         ),
       ).to.be.revertedWith("Deadline not met")
+    })
+
+    it("Reverts when amounts array length is too big", async () => {
+      await expect(
+        metaSwapDeposit.removeLiquidityImbalance(
+          [String(1e18), String(1e18), String(0), String(0), String(0)],
+          String(2e18),
+          MAX_UINT256,
+        ),
+      ).to.be.revertedWith("out of range")
     })
 
     it("Reverts when slippage setting is 0%", async () => {

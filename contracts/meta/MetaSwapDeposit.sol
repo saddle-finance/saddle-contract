@@ -305,6 +305,12 @@ contract MetaSwapDeposit is Initializable {
         uint256[] memory metaAmounts = new uint256[](memMetaTokens.length);
         uint256[] memory baseAmounts = new uint256[](memBaseTokens.length);
 
+        {
+            uint256 numOfAllTokens =
+                memBaseTokens.length + memMetaTokens.length - 1;
+            require(amounts.length == numOfAllTokens, "out of range");
+        }
+
         RemoveLiquidityImbalanceInfo memory v =
             RemoveLiquidityImbalanceInfo(
                 baseSwap,
