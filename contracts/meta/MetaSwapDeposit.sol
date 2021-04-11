@@ -328,18 +328,29 @@ contract MetaSwapDeposit is Initializable {
 
         // Calculate how much base LP token we need to get the desired amount of underlying tokens
         if (v.withdrawFromBase) {
-            metaAmounts[v.baseLPTokenIndex] = v.baseSwap.calculateTokenAmount(
-                address(this),
-                baseAmounts,
-                false
-            );
+            metaAmounts[v.baseLPTokenIndex] = v
+                .baseSwap
+                .calculateTokenAmount(address(this), baseAmounts, false)
+                .mul(10005)
+                .div(10000);
         }
 
+        // Transfer meta swap LP token from the caller to this contract
+        v.metaLPToken.safeTransferFrom(
+            msg.sender,
+            address(this),
+            maxBurnAmount
+        );
+
         // Withdraw the paired meta level tokens and the base LP token from the meta swap pool
-        v.metaSwap.removeLiquidityImbalance(
-            metaAmounts,
-            maxBurnAmount,
-            deadline
+        uint256 burnedMetaLPTokenAmount =
+            v.metaSwap.removeLiquidityImbalance(
+                metaAmounts,
+                maxBurnAmount,
+                deadline
+            );
+        v.leftoverMetaLPTokenAmount = maxBurnAmount.sub(
+            burnedMetaLPTokenAmount
         );
 
         // If underlying tokens are desired, withdraw them from the base swap pool
@@ -358,10 +369,8 @@ contract MetaSwapDeposit is Initializable {
                 baseLPToken.balanceOf(address(this));
             if (leftoverBaseLPTokenAmount > 0) {
                 leftovers[v.baseLPTokenIndex] = leftoverBaseLPTokenAmount;
-                v.leftoverMetaLPTokenAmount = v.metaSwap.addLiquidity(
-                    leftovers,
-                    0,
-                    deadline
+                v.leftoverMetaLPTokenAmount = v.leftoverMetaLPTokenAmount.add(
+                    v.metaSwap.addLiquidity(leftovers, 0, deadline)
                 );
             }
         }

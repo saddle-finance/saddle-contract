@@ -547,5 +547,174 @@ describe("Meta-Swap", async () => {
         MAX_UINT256,
       )
     })
+
+    it("Reverts when maxBurnAmount is exceeded", async () => {
+      const maxBurnAmount = 1
+      await expect(
+        metaSwapDeposit.removeLiquidityImbalance(
+          [String(1e18), String(1e18), String(0), String(0)],
+          maxBurnAmount,
+          MAX_UINT256,
+        ),
+      ).to.be.revertedWith("tokenAmount > maxBurnAmount")
+    })
+
+    it("Reverts when deadline is not met", async () => {
+      const blockTimestamp = await getCurrentBlockTimestamp()
+      await expect(
+        metaSwapDeposit.removeLiquidityImbalance(
+          [String(1e18), String(1e18), String(0), String(0)],
+          String(2e18),
+          blockTimestamp - 100,
+        ),
+      ).to.be.revertedWith("Deadline not met")
+    })
+
+    it("Reverts when slippage setting is 0%", async () => {
+      // Due to the inaccuracy of swap fee calculation on imbalanced withdrawls, maxBurnAmount should always use a slippage
+      // setting that is at least 0.1% when withdrawing meta-level tokens and 0.2% when withdrawing base-level tokens.
+      const amounts = [String(1e18), String(0), String(0), String(0)]
+      const maxBurnAmount = await metaSwapDeposit.calculateTokenAmount(
+        ownerAddress,
+        amounts,
+        false,
+      )
+      await expect(
+        metaSwapDeposit.removeLiquidityImbalance(
+          amounts,
+          maxBurnAmount,
+          MAX_UINT256,
+        ),
+      ).to.be.revertedWith("tokenAmount > maxBurnAmount")
+    })
+
+    it("Succeeds when only withdrawing meta-level tokens", async () => {
+      const amounts = [String(1e18), String(0), String(0), String(0)]
+
+      // Apply 0.1% slippage
+      const maxBurnAmount = (
+        await metaSwapDeposit.calculateTokenAmount(ownerAddress, amounts, false)
+      )
+        .mul(1001)
+        .div(1000)
+      expect(maxBurnAmount).to.eq("1000850974361804682")
+
+      // Balances before the call
+      const tokens = [susd, dai, usdc, usdt, metaLPToken]
+      const balancesBefore = await getUserTokenBalances(ownerAddress, tokens)
+
+      // Perform the call
+      const returnValues = await metaSwapDeposit.callStatic.removeLiquidityImbalance(
+        amounts,
+        maxBurnAmount,
+        MAX_UINT256,
+      )
+      await metaSwapDeposit.removeLiquidityImbalance(
+        amounts,
+        maxBurnAmount,
+        MAX_UINT256,
+      )
+
+      // Balances after the call
+      const balancesAfter = await getUserTokenBalances(ownerAddress, tokens)
+
+      // The return value matches the amount of meta LP token burned
+      expect(returnValues).to.eq("1000346219159013725")
+      expect(balancesBefore[4].sub(balancesAfter[4])).to.eq(
+        "1000346219159013725",
+      )
+
+      // Check user's balances increased in desired amounts
+      expect(balancesAfter[0].sub(balancesBefore[0])).to.eq(amounts[0])
+      expect(balancesAfter[1].sub(balancesBefore[1])).to.eq(amounts[1])
+      expect(balancesAfter[2].sub(balancesBefore[2])).to.eq(amounts[2])
+      expect(balancesAfter[3].sub(balancesBefore[3])).to.eq(amounts[3])
+    })
+
+    it("Succeeds when only withdrawing base-level tokens", async () => {
+      const amounts = [String(0), String(1e18), String(1e6), String(0)]
+
+      // Apply 0.2% slippage
+      const maxBurnAmount = (
+        await metaSwapDeposit.calculateTokenAmount(ownerAddress, amounts, false)
+      )
+        .mul(1002)
+        .div(1000)
+      expect(maxBurnAmount).to.eq("2004575554630608590")
+
+      // Balances before the call
+      const tokens = [susd, dai, usdc, usdt, metaLPToken]
+      const balancesBefore = await getUserTokenBalances(ownerAddress, tokens)
+
+      // Perform the call
+      const returnValues = await metaSwapDeposit.callStatic.removeLiquidityImbalance(
+        amounts,
+        maxBurnAmount,
+        MAX_UINT256,
+      )
+      await metaSwapDeposit.removeLiquidityImbalance(
+        amounts,
+        maxBurnAmount,
+        MAX_UINT256,
+      )
+
+      // Balances after the call
+      const balancesAfter = await getUserTokenBalances(ownerAddress, tokens)
+
+      // The return value matches the amount of meta LP token burned
+      expect(returnValues).to.eq("2001783984441028029")
+      expect(balancesBefore[4].sub(balancesAfter[4])).to.eq(
+        "2001783984441028029",
+      )
+
+      // Check the user's balances increased in desired amounts
+      expect(balancesAfter[0].sub(balancesBefore[0])).to.eq(amounts[0])
+      expect(balancesAfter[1].sub(balancesBefore[1])).to.eq(amounts[1])
+      expect(balancesAfter[2].sub(balancesBefore[2])).to.eq(amounts[2])
+      expect(balancesAfter[3].sub(balancesBefore[3])).to.eq(amounts[3])
+    })
+
+    it("Succeeds when withdrawing both meta-level and base-level tokens", async () => {
+      const amounts = [String(1e18), String(0), String(1e6), String(1e6)]
+
+      // Apply 0.2% slippage
+      const maxBurnAmount = (
+        await metaSwapDeposit.calculateTokenAmount(ownerAddress, amounts, false)
+      )
+        .mul(1002)
+        .div(1000)
+      expect(maxBurnAmount).to.eq("3006248784691339641")
+
+      // Balances before the call
+      const tokens = [susd, dai, usdc, usdt, metaLPToken]
+      const balancesBefore = await getUserTokenBalances(ownerAddress, tokens)
+
+      // Perform the call
+      const returnValues = await metaSwapDeposit.callStatic.removeLiquidityImbalance(
+        amounts,
+        maxBurnAmount,
+        MAX_UINT256,
+      )
+      await metaSwapDeposit.removeLiquidityImbalance(
+        amounts,
+        maxBurnAmount,
+        MAX_UINT256,
+      )
+
+      // Balances after the call
+      const balancesAfter = await getUserTokenBalances(ownerAddress, tokens)
+
+      // The return value matches the amount of meta LP token burned
+      expect(returnValues).to.eq("3000964196014187933")
+      expect(balancesBefore[4].sub(balancesAfter[4])).to.eq(
+        "3000964196014187933",
+      )
+
+      // Check the user's balances increased in desired amounts
+      expect(balancesAfter[0].sub(balancesBefore[0])).to.eq(amounts[0])
+      expect(balancesAfter[1].sub(balancesBefore[1])).to.eq(amounts[1])
+      expect(balancesAfter[2].sub(balancesBefore[2])).to.eq(amounts[2])
+      expect(balancesAfter[3].sub(balancesBefore[3])).to.eq(amounts[3])
+    })
   })
 })
