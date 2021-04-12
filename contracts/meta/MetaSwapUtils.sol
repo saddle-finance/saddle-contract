@@ -65,13 +65,6 @@ library MetaSwapUtils {
     event NewAdminFee(uint256 newAdminFee);
     event NewSwapFee(uint256 newSwapFee);
     event NewWithdrawFee(uint256 newWithdrawFee);
-    event RampA(
-        uint256 oldA,
-        uint256 newA,
-        uint256 initialTime,
-        uint256 futureTime
-    );
-    event StopRampA(uint256 currentA, uint256 time);
 
     struct Swap {
         // variables around the ramp management of A,
@@ -115,21 +108,9 @@ library MetaSwapUtils {
         uint256 xpi;
     }
 
-    // Struct storing variables used in calculation in addLiquidity function
-    // to avoid stack too deep error
-    struct AddLiquidityInfo {
-        uint256 d0;
-        uint256 d1;
-        uint256 d2;
-        LPToken lpToken;
-        uint256 totalSupply;
-        uint256 preciseA;
-        uint256 baseVirtualPrice;
-    }
-
     // Struct storing variables used in calculation in removeLiquidityImbalance function
     // to avoid stack too deep error
-    struct RemoveLiquidityImbalanceInfo {
+    struct ManageLiquidityInfo {
         uint256 d0;
         uint256 d1;
         uint256 d2;
@@ -137,6 +118,8 @@ library MetaSwapUtils {
         uint256 totalSupply;
         uint256 preciseA;
         uint256 baseVirtualPrice;
+        uint256[] tokenPrecisionMultipliers;
+        uint256[] oldBalances;
     }
 
     struct SwapUnderlyingInfo {
@@ -184,11 +167,7 @@ library MetaSwapUtils {
     // Constant value used as max loop limit
     uint256 private constant MAX_LOOP_LIMIT = 256;
 
-    // Constant values used in ramping A calculations
     uint256 public constant A_PRECISION = 100;
-    uint256 public constant MAX_A = 10**6;
-    uint256 private constant MAX_A_CHANGE = 2;
-    uint256 private constant MIN_RAMP_TIME = 14 days;
 
     uint256 public constant BASE_CACHE_EXPIRE_TIME = 10 minutes;
     uint256 public constant BASE_VIRTUAL_PRICE_PRECISION = 10**18;
@@ -201,18 +180,8 @@ library MetaSwapUtils {
      * @param self Swap struct to read from
      * @return A parameter
      */
-    function getA(Swap storage self) external view returns (uint256) {
-        return _getA(self);
-    }
-
-    /**
-     * @notice Return A, the amplification coefficient * n * (n - 1)
-     * @dev See the StableSwap paper for details
-     * @param self Swap struct to read from
-     * @return A parameter
-     */
-    function _getA(Swap storage self) internal view returns (uint256) {
-        return _getAPrecise(self).div(A_PRECISION);
+    function getA(Swap storage self) public view returns (uint256) {
+        return getAPrecise(self).div(A_PRECISION);
     }
 
     /**
@@ -221,17 +190,7 @@ library MetaSwapUtils {
      * @param self Swap struct to read from
      * @return A parameter in its raw precision form
      */
-    function getAPrecise(Swap storage self) external view returns (uint256) {
-        return _getAPrecise(self);
-    }
-
-    /**
-     * @notice Calculates and returns A based on the ramp settings
-     * @dev See the StableSwap paper for details
-     * @param self Swap struct to read from
-     * @return A parameter in its raw precision form
-     */
-    function _getAPrecise(Swap storage self) internal view returns (uint256) {
+    function getAPrecise(Swap storage self) public view returns (uint256) {
         uint256 t1 = self.futureATime; // time when ramp is finished
         uint256 a1 = self.futureA; // final A value when ramp is finished
 
@@ -390,7 +349,7 @@ library MetaSwapUtils {
 
         CalculateWithdrawOneTokenDYInfo memory v =
             CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0, 0, 0);
-        v.preciseA = _getAPrecise(self);
+        v.preciseA = getAPrecise(self);
         v.d0 = getD(xp, v.preciseA);
         v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(totalSupply));
 
@@ -615,7 +574,7 @@ library MetaSwapUtils {
         returns (uint256)
     {
         uint256 d =
-            getD(_xp(self, _getBaseVirtualPrice(self)), _getAPrecise(self));
+            getD(_xp(self, _getBaseVirtualPrice(self)), getAPrecise(self));
         ERC20 lpToken = self.lpToken;
         uint256 supply = lpToken.totalSupply();
         if (supply != 0) {
@@ -654,7 +613,7 @@ library MetaSwapUtils {
             "Tokens must be in pool"
         );
 
-        uint256 a = _getAPrecise(self);
+        uint256 a = getAPrecise(self);
         uint256 d = getD(xp, a);
         uint256 c = d;
         uint256 s;
@@ -924,7 +883,7 @@ library MetaSwapUtils {
         uint256[] calldata amounts,
         bool deposit
     ) external view returns (uint256) {
-        uint256 a = _getAPrecise(self);
+        uint256 a = getAPrecise(self);
         uint256 baseVirtualPrice = _getBaseVirtualPrice(self);
         uint256[] memory balances1 = self.balances;
         uint256 numTokens = balances1.length;
@@ -1215,28 +1174,38 @@ library MetaSwapUtils {
     ) external returns (uint256) {
         IERC20[] memory pooledTokens = self.pooledTokens;
         require(
-            amounts.length == pooledTokens.length,
+            amounts.length == self.pooledTokens.length,
             "Amounts must match pooled tokens"
         );
 
         uint256[] memory fees = new uint256[](pooledTokens.length);
 
         // current state
-        AddLiquidityInfo memory v =
-            AddLiquidityInfo(
+        ManageLiquidityInfo memory v =
+            ManageLiquidityInfo(
                 0,
                 0,
                 0,
                 self.lpToken,
                 0,
-                _getAPrecise(self),
-                _getBaseVirtualPrice(self)
+                getAPrecise(self),
+                _updateBaseVirtualPrice(self),
+                self.tokenPrecisionMultipliers,
+                self.balances
             );
         v.totalSupply = v.lpToken.totalSupply();
-        uint256[] memory newBalances = self.balances;
+
+        uint256[] memory newBalances = v.oldBalances;
 
         if (v.totalSupply != 0) {
-            v.d0 = getD(_xp(self, newBalances, v.baseVirtualPrice), v.preciseA);
+            v.d0 = getD(
+                _xp(
+                    newBalances,
+                    v.tokenPrecisionMultipliers,
+                    v.baseVirtualPrice
+                ),
+                v.preciseA
+            );
         }
 
         for (uint256 i = 0; i < pooledTokens.length; i++) {
@@ -1265,7 +1234,10 @@ library MetaSwapUtils {
         }
 
         // invariant after change
-        v.d1 = getD(_xp(self, newBalances, v.baseVirtualPrice), v.preciseA);
+        v.d1 = getD(
+            _xp(newBalances, v.tokenPrecisionMultipliers, v.baseVirtualPrice),
+            v.preciseA
+        );
         require(v.d1 > v.d0, "D should increase");
 
         // updated to reflect fees and calculate the user's LP tokens
@@ -1284,7 +1256,14 @@ library MetaSwapUtils {
                 );
                 newBalances[i] = newBalances[i].sub(fees[i]);
             }
-            v.d2 = getD(_xp(self, newBalances, v.baseVirtualPrice), v.preciseA);
+            v.d2 = getD(
+                _xp(
+                    newBalances,
+                    v.tokenPrecisionMultipliers,
+                    v.baseVirtualPrice
+                ),
+                v.preciseA
+            );
             toMint = v.d2.sub(v.d0).mul(v.totalSupply).div(v.d0);
         } else {
             // the initial depositor doesn't pay fees
@@ -1468,13 +1447,22 @@ library MetaSwapUtils {
         uint256[] memory amounts,
         uint256 maxBurnAmount
     ) public returns (uint256) {
-        RemoveLiquidityImbalanceInfo memory v =
-            RemoveLiquidityImbalanceInfo(0, 0, 0, self.lpToken, 0, 0, 0);
+        ManageLiquidityInfo memory v =
+            ManageLiquidityInfo(
+                0,
+                0,
+                0,
+                self.lpToken,
+                0,
+                getAPrecise(self),
+                _updateBaseVirtualPrice(self),
+                self.tokenPrecisionMultipliers,
+                self.balances
+            );
         v.totalSupply = v.lpToken.totalSupply();
 
-        IERC20[] memory pooledTokens = self.pooledTokens;
         require(
-            amounts.length == pooledTokens.length,
+            amounts.length == v.oldBalances.length,
             "Amounts should match pool tokens"
         );
         require(
@@ -1484,24 +1472,32 @@ library MetaSwapUtils {
         );
 
         uint256 feePerToken = _feePerToken(self);
-        v.baseVirtualPrice = _updateBaseVirtualPrice(self);
 
-        uint256[] memory fees = new uint256[](pooledTokens.length);
+        uint256[] memory fees = new uint256[](v.oldBalances.length);
         {
-            uint256[] memory balances1 = self.balances;
+            uint256[] memory balances1 = new uint256[](v.oldBalances.length);
 
-            v.preciseA = _getAPrecise(self);
-            v.d0 = getD(_xp(self, balances1, v.baseVirtualPrice), v.preciseA);
-            for (uint256 i = 0; i < pooledTokens.length; i++) {
-                balances1[i] = balances1[i].sub(
+            v.d0 = getD(
+                _xp(
+                    v.oldBalances,
+                    v.tokenPrecisionMultipliers,
+                    v.baseVirtualPrice
+                ),
+                v.preciseA
+            );
+            for (uint256 i = 0; i < v.oldBalances.length; i++) {
+                balances1[i] = v.oldBalances[i].sub(
                     amounts[i],
                     "Cannot withdraw more than available"
                 );
             }
-            v.d1 = getD(_xp(self, balances1, v.baseVirtualPrice), v.preciseA);
+            v.d1 = getD(
+                _xp(balances1, v.tokenPrecisionMultipliers, v.baseVirtualPrice),
+                v.preciseA
+            );
 
-            for (uint256 i = 0; i < pooledTokens.length; i++) {
-                uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
+            for (uint256 i = 0; i < v.oldBalances.length; i++) {
+                uint256 idealBalance = v.d1.mul(v.oldBalances[i]).div(v.d0);
                 uint256 difference = idealBalance.difference(balances1[i]);
                 fees[i] = feePerToken.mul(difference).div(FEE_DENOMINATOR);
                 self.balances[i] = balances1[i].sub(
@@ -1510,7 +1506,10 @@ library MetaSwapUtils {
                 balances1[i] = balances1[i].sub(fees[i]);
             }
 
-            v.d2 = getD(_xp(self, balances1, v.baseVirtualPrice), v.preciseA);
+            v.d2 = getD(
+                _xp(balances1, v.tokenPrecisionMultipliers, v.baseVirtualPrice),
+                v.preciseA
+            );
         }
 
         uint256 tokenAmount = v.d0.sub(v.d2).mul(v.totalSupply).div(v.d0);
@@ -1523,8 +1522,8 @@ library MetaSwapUtils {
 
         v.lpToken.burnFrom(msg.sender, tokenAmount);
 
-        for (uint256 i = 0; i < pooledTokens.length; i++) {
-            pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
+        for (uint256 i = 0; i < v.oldBalances.length; i++) {
+            self.pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
         }
 
         emit RemoveLiquidityImbalance(
@@ -1592,76 +1591,5 @@ library MetaSwapUtils {
         self.defaultWithdrawFee = newWithdrawFee;
 
         emit NewWithdrawFee(newWithdrawFee);
-    }
-
-    /**
-     * @notice Start ramping up or down A parameter towards given futureA_ and futureTime_
-     * Checks if the change is too rapid, and commits the new A value only when it falls under
-     * the limit range.
-     * @param self Swap struct to update
-     * @param futureA_ the new A to ramp towards
-     * @param futureTime_ timestamp when the new A should be reached
-     */
-    function rampA(
-        Swap storage self,
-        uint256 futureA_,
-        uint256 futureTime_
-    ) external {
-        require(
-            block.timestamp >= self.initialATime.add(1 days),
-            "Wait 1 day before starting ramp"
-        );
-        require(
-            futureTime_ >= block.timestamp.add(MIN_RAMP_TIME),
-            "Insufficient ramp time"
-        );
-        require(
-            futureA_ > 0 && futureA_ < MAX_A,
-            "futureA_ must be > 0 and < MAX_A"
-        );
-
-        uint256 initialAPrecise = _getAPrecise(self);
-        uint256 futureAPrecise = futureA_.mul(A_PRECISION);
-
-        if (futureAPrecise < initialAPrecise) {
-            require(
-                futureAPrecise.mul(MAX_A_CHANGE) >= initialAPrecise,
-                "futureA_ is too small"
-            );
-        } else {
-            require(
-                futureAPrecise <= initialAPrecise.mul(MAX_A_CHANGE),
-                "futureA_ is too large"
-            );
-        }
-
-        self.initialA = initialAPrecise;
-        self.futureA = futureAPrecise;
-        self.initialATime = block.timestamp;
-        self.futureATime = futureTime_;
-
-        emit RampA(
-            initialAPrecise,
-            futureAPrecise,
-            block.timestamp,
-            futureTime_
-        );
-    }
-
-    /**
-     * @notice Stops ramping A immediately. Once this function is called, rampA()
-     * cannot be called for another 24 hours
-     * @param self Swap struct to update
-     */
-    function stopRampA(Swap storage self) external {
-        require(self.futureATime > block.timestamp, "Ramp is already stopped");
-        uint256 currentA = _getAPrecise(self);
-
-        self.initialA = currentA;
-        self.futureA = currentA;
-        self.initialATime = block.timestamp;
-        self.futureATime = block.timestamp;
-
-        emit StopRampA(currentA, block.timestamp);
     }
 }

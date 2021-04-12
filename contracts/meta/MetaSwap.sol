@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "../OwnerPausableUpgradeable.sol";
 import "./MetaSwapUtils.sol";
 import "../MathUtils.sol";
+import "./AmplificationUtils.sol";
 
 /**
  * @title MetaSwap - A StableSwap implementation in solidity.
@@ -33,6 +34,7 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;
     using MathUtils for uint256;
     using MetaSwapUtils for MetaSwapUtils.Swap;
+    using AmplificationUtils for MetaSwapUtils.Swap;
 
     // Struct storing data responsible for automatic market maker functionalities. In order to
     // access this data, this contract uses SwapUtils library. For more details, see SwapUtils.sol
@@ -169,7 +171,7 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         }
 
         // Check _a, _fee, _adminFee, _withdrawFee parameters
-        require(_a < MetaSwapUtils.MAX_A, "_a exceeds maximum");
+        require(_a < AmplificationUtils.MAX_A, "_a exceeds maximum");
         require(_fee < MetaSwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
         require(
             _adminFee < MetaSwapUtils.MAX_ADMIN_FEE,
@@ -622,13 +624,13 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @param futureTime timestamp when the new A should be reached
      */
     function rampA(uint256 futureA, uint256 futureTime) external onlyOwner {
-        swapStorage.rampA(futureA, futureTime);
+        swapStorage.rampA(swapStorage.getAPrecise(), futureA, futureTime);
     }
 
     /**
      * @notice Stop ramping A immediately. Reverts if ramp A is already stopped.
      */
     function stopRampA() external onlyOwner {
-        swapStorage.stopRampA();
+        swapStorage.stopRampA(swapStorage.getAPrecise());
     }
 }

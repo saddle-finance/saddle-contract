@@ -21,6 +21,8 @@ import { LPToken } from "../build/typechain/LPToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
+import { AmplificationUtils } from "../build/typechain/AmplificationUtils"
+import AmplificationUtilsArtifact from "../build/artifacts/contracts/meta/AmplificationUtils.sol/AmplificationUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { MetaSwap } from "../build/typechain/MetaSwap"
@@ -139,9 +141,16 @@ describe("Meta-Swap", async () => {
       )) as MetaSwapUtils
       await metaSwapUtils.deployed()
 
+      const amplificationUtils = (await deployContract(
+        owner,
+        AmplificationUtilsArtifact,
+      )) as AmplificationUtils
+      await amplificationUtils.deployed()
+
       // Deploy Swap with SwapUtils library
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {
         MetaSwapUtils: metaSwapUtils.address,
+        AmplificationUtils: amplificationUtils.address,
       })) as MetaSwap
       await metaSwap.deployed()
 

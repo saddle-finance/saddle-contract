@@ -28,6 +28,8 @@ import { MetaSwap } from "../build/typechain/MetaSwap"
 import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
 import { MetaSwapUtils } from "../build/typechain/MetaSwapUtils"
 import MetaSwapUtilsArtifact from "../build/artifacts/contracts/meta/MetaSwapUtils.sol/MetaSwapUtils.json"
+import { AmplificationUtils } from "../build/typechain/AmplificationUtils"
+import AmplificationUtilsArtifact from "../build/artifacts/contracts/meta/AmplificationUtils.sol/AmplificationUtils.json"
 import { MetaSwapDeposit } from "../build/typechain/MetaSwapDeposit"
 import MetaSwapDepositArtifact from "../build/artifacts/contracts/meta/MetaSwapDeposit.sol/MetaSwapDeposit.json"
 import chai from "chai"
@@ -144,9 +146,16 @@ describe("Meta-Swap", async () => {
       )) as MetaSwapUtils
       await metaSwapUtils.deployed()
 
+      const amplificationUtils = (await deployContract(
+        owner,
+        AmplificationUtilsArtifact,
+      )) as AmplificationUtils
+      await amplificationUtils.deployed()
+
       // Deploy Swap with SwapUtils library
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {
         MetaSwapUtils: metaSwapUtils.address,
+        AmplificationUtils: amplificationUtils.address,
       })) as MetaSwap
       await metaSwap.deployed()
 
