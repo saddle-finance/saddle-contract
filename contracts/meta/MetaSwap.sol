@@ -10,7 +10,7 @@ import "./MetaSwapUtils.sol";
 import "../MathUtils.sol";
 
 /**
- * @title Swap - A StableSwap implementation in solidity.
+ * @title MetaSwap - A StableSwap implementation in solidity.
  * @notice This contract is responsible for custody of closely pegged assets (eg. group of stablecoins)
  * and automatic market making system. Users become an LP (Liquidity Provider) by depositing their tokens
  * in desired ratios for an exchange of the pool token that represents their share of the pool.
@@ -22,6 +22,8 @@ import "../MathUtils.sol";
  * In case of emergencies, admin can pause additional deposits, swaps, or single-asset withdraws - which
  * stops the ratio of the tokens in the pool from changing.
  * Users can always withdraw their tokens via multi-asset withdraws.
+ *
+ * MetaSwap is a modified version of Swap that allows Swap's LP token to be utilized in pooling with other tokens.
  *
  * @dev Most of the logic is stored as a library `SwapUtils` for the sake of reducing contract's
  * deployment size.
@@ -308,7 +310,8 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Calculate amount of tokens you receive on swap
+     * @notice Calculate amount of tokens you receive on swap. For this function,
+     * the token indices are flattened out so that underlying tokens are represented.
      * @param tokenIndexFrom the token the user wants to sell
      * @param tokenIndexTo the token the user wants to buy
      * @param dx the amount of tokens the user wants to sell. If the token charges
@@ -442,7 +445,7 @@ contract MetaSwap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Swap two tokens using this pool
+     * @notice Swap two tokens using this pool and the base pool.
      * @param tokenIndexFrom the token the user wants to swap from
      * @param tokenIndexTo the token the user wants to swap to
      * @param dx the amount of tokens the user wants to swap from

@@ -37,6 +37,13 @@ contract MetaSwapDeposit is Initializable {
         uint256 leftoverMetaLPTokenAmount;
     }
 
+    /**
+     * @notice Sets the address for the base swap contract, meta swap contract, and the
+     * meta swap LP token contract.
+     * @param baseSwap_ the address of the base swap contract
+     * @param metaSwap_ the address of the meta swap contract
+     * @param metaLPToken_ the address of the meta swap LP token contract
+     */
     function initialize(
         ISwap baseSwap_,
         IMetaSwap metaSwap_,
@@ -408,7 +415,8 @@ contract MetaSwapDeposit is Initializable {
      * @notice A simple method to calculate prices from deposits or
      * withdrawals, excluding fees but including slippage. This is
      * helpful as an input into the various "min" parameters on calls
-     * to fight front-running
+     * to fight front-running. When withdrawing from the base pool in imbalanced
+     * fashion, the recommended slippage setting is 0.2% or higher.
      *
      * @dev This shouldn't be used outside frontends for user estimates.
      *

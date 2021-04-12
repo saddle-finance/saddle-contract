@@ -7,11 +7,10 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../LPToken.sol";
 import "../interfaces/ISwap.sol";
 import "../MathUtils.sol";
-import "hardhat/console.sol";
 
 /**
- * @title SwapUtils library
- * @notice A library to be used within Swap.sol. Contains functions responsible for custody and AMM functionalities.
+ * @title MetaSwapUtils library
+ * @notice A library to be used within MetaSwap.sol. Contains functions responsible for custody and AMM functionalities.
  * @dev Contracts relying on this library must initialize SwapUtils.Swap struct then use this library
  * for SwapUtils.Swap struct. Note that this library contains both functions called by users and admins.
  * Admin functions should be protected within contracts using this library.
@@ -113,6 +112,7 @@ library MetaSwapUtils {
         uint256 newY;
         uint256 feePerToken;
         uint256 preciseA;
+        uint256 xpi;
     }
 
     // Struct storing variables used in calculation in addLiquidity function
@@ -121,7 +121,10 @@ library MetaSwapUtils {
         uint256 d0;
         uint256 d1;
         uint256 d2;
+        LPToken lpToken;
+        uint256 totalSupply;
         uint256 preciseA;
+        uint256 baseVirtualPrice;
     }
 
     // Struct storing variables used in calculation in removeLiquidityImbalance function
@@ -130,6 +133,8 @@ library MetaSwapUtils {
         uint256 d0;
         uint256 d1;
         uint256 d2;
+        LPToken lpToken;
+        uint256 totalSupply;
         uint256 preciseA;
         uint256 baseVirtualPrice;
     }
@@ -313,7 +318,8 @@ library MetaSwapUtils {
             account,
             tokenAmount,
             tokenIndex,
-            _getBaseVirtualPrice(self)
+            _getBaseVirtualPrice(self),
+            self.lpToken.totalSupply()
         );
     }
 
@@ -322,27 +328,25 @@ library MetaSwapUtils {
         address account,
         uint256 tokenAmount,
         uint8 tokenIndex,
-        uint256 baseVirtualPrice
+        uint256 baseVirtualPrice,
+        uint256 totalSupply
     ) internal view returns (uint256, uint256) {
         uint256 dy;
         uint256 dySwapFee;
 
         {
-            uint256 y;
+            uint256 currentY;
             uint256 newY;
 
-            (dy, newY) = calculateWithdrawOneTokenDY(
+            (dy, newY, currentY) = calculateWithdrawOneTokenDY(
                 self,
                 tokenIndex,
                 tokenAmount,
-                baseVirtualPrice
+                baseVirtualPrice,
+                totalSupply
             );
 
-            // dy_0 (without fees)
-            // dy, dy_0 - dy
-            y = _xp(self, baseVirtualPrice)[tokenIndex];
-
-            dySwapFee = y
+            dySwapFee = currentY
                 .sub(newY)
                 .div(self.tokenPrecisionMultipliers[tokenIndex])
                 .sub(dy);
@@ -368,21 +372,27 @@ library MetaSwapUtils {
         Swap storage self,
         uint8 tokenIndex,
         uint256 tokenAmount,
-        uint256 baseVirtualPrice
-    ) internal view returns (uint256, uint256) {
-        require(
-            tokenIndex < self.pooledTokens.length,
-            "Token index out of range"
-        );
-
+        uint256 baseVirtualPrice,
+        uint256 totalSupply
+    )
+        internal
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         // Get the current D, then solve the stableswap invariant
         // y_i for D - tokenAmount
         uint256[] memory xp = _xp(self, baseVirtualPrice);
+        require(tokenIndex < xp.length, "Token index out of range");
+
         CalculateWithdrawOneTokenDYInfo memory v =
-            CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0, 0);
+            CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0, 0, 0);
         v.preciseA = _getAPrecise(self);
         v.d0 = getD(xp, v.preciseA);
-        v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(self.lpToken.totalSupply()));
+        v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(totalSupply));
 
         require(tokenAmount <= xp[tokenIndex], "Withdraw exceeds available");
 
@@ -391,16 +401,16 @@ library MetaSwapUtils {
         uint256[] memory xpReduced = new uint256[](xp.length);
 
         v.feePerToken = _feePerToken(self);
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            uint256 xpi = xp[i];
+        for (uint256 i = 0; i < xp.length; i++) {
+            v.xpi = xp[i];
             // if i == tokenIndex, dxExpected = xp[i] * d1 / d0 - newY
             // else dxExpected = xp[i] - (xp[i] * d1 / d0)
             // xpReduced[i] -= dxExpected * fee / FEE_DENOMINATOR
-            xpReduced[i] = xpi.sub(
+            xpReduced[i] = v.xpi.sub(
                 (
                     (i == tokenIndex)
-                        ? xpi.mul(v.d1).div(v.d0).sub(v.newY)
-                        : xpi.sub(xpi.mul(v.d1).div(v.d0))
+                        ? v.xpi.mul(v.d1).div(v.d0).sub(v.newY)
+                        : v.xpi.sub(v.xpi.mul(v.d1).div(v.d0))
                 )
                     .mul(v.feePerToken)
                     .div(FEE_DENOMINATOR)
@@ -417,7 +427,7 @@ library MetaSwapUtils {
             dy = dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
         }
 
-        return (dy, v.newY);
+        return (dy, v.newY, xp[tokenIndex]);
     }
 
     /**
@@ -606,10 +616,10 @@ library MetaSwapUtils {
     {
         uint256 d =
             getD(_xp(self, _getBaseVirtualPrice(self)), _getAPrecise(self));
-        uint256 supply = self.lpToken.totalSupply();
+        ERC20 lpToken = self.lpToken;
+        uint256 supply = lpToken.totalSupply();
         if (supply != 0) {
-            return
-                d.mul(10**uint256(ERC20(self.lpToken).decimals())).div(supply);
+            return d.mul(10**uint256(lpToken.decimals())).div(supply);
         }
         return 0;
     }
@@ -831,15 +841,23 @@ library MetaSwapUtils {
         address account,
         uint256 amount
     ) external view returns (uint256[] memory) {
-        return _calculateRemoveLiquidity(self, account, amount);
+        return
+            _calculateRemoveLiquidity(
+                self,
+                self.lpToken.totalSupply(),
+                self.balances,
+                account,
+                amount
+            );
     }
 
     function _calculateRemoveLiquidity(
         Swap storage self,
+        uint256 totalSupply,
+        uint256[] memory balances,
         address account,
         uint256 amount
     ) internal view returns (uint256[] memory) {
-        uint256 totalSupply = self.lpToken.totalSupply();
         require(amount <= totalSupply, "Cannot exceed total supply");
 
         uint256 feeAdjustedAmount =
@@ -849,12 +867,10 @@ library MetaSwapUtils {
             )
                 .div(FEE_DENOMINATOR);
 
-        uint256[] memory amounts = new uint256[](self.pooledTokens.length);
+        uint256[] memory amounts = new uint256[](balances.length);
 
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            amounts[i] = self.balances[i].mul(feeAdjustedAmount).div(
-                totalSupply
-            );
+        for (uint256 i = 0; i < balances.length; i++) {
+            amounts[i] = balances[i].mul(feeAdjustedAmount).div(totalSupply);
         }
         return amounts;
     }
@@ -908,10 +924,10 @@ library MetaSwapUtils {
         uint256[] calldata amounts,
         bool deposit
     ) external view returns (uint256) {
-        uint256 numTokens = self.pooledTokens.length;
         uint256 a = _getAPrecise(self);
         uint256 baseVirtualPrice = _getBaseVirtualPrice(self);
         uint256[] memory balances1 = self.balances;
+        uint256 numTokens = balances1.length;
         uint256 d0 = getD(_xp(self, balances1, baseVirtualPrice), a);
         for (uint256 i = 0; i < numTokens; i++) {
             if (deposit) {
@@ -949,9 +965,10 @@ library MetaSwapUtils {
         view
         returns (uint256)
     {
-        require(index < self.pooledTokens.length, "Token index out of range");
+        IERC20[] memory pooledTokens = self.pooledTokens;
+        require(index < pooledTokens.length, "Token index out of range");
         return
-            self.pooledTokens[index].balanceOf(address(this)).sub(
+            pooledTokens[index].balanceOf(address(this)).sub(
                 self.balances[index]
             );
     }
@@ -962,9 +979,10 @@ library MetaSwapUtils {
      * @param self Swap struct to read from
      */
     function _feePerToken(Swap storage self) internal view returns (uint256) {
+        IERC20[] memory pooledTokens = self.pooledTokens;
         return
-            self.swapFee.mul(self.pooledTokens.length).div(
-                self.pooledTokens.length.sub(1).mul(4)
+            self.swapFee.mul(pooledTokens.length).div(
+                pooledTokens.length.sub(1).mul(4)
             );
     }
 
@@ -986,25 +1004,25 @@ library MetaSwapUtils {
         uint256 dx,
         uint256 minDy
     ) external returns (uint256) {
-        require(
-            dx <= self.pooledTokens[tokenIndexFrom].balanceOf(msg.sender),
-            "Cannot swap more than you own"
-        );
-
-        // Transfer tokens first to see if a fee was charged on transfer
-        uint256 beforeBalance =
-            self.pooledTokens[tokenIndexFrom].balanceOf(address(this));
-        self.pooledTokens[tokenIndexFrom].safeTransferFrom(
-            msg.sender,
-            address(this),
-            dx
-        );
-
-        // Use the actual transferred amount for AMM math
-        uint256 transferredDx =
-            self.pooledTokens[tokenIndexFrom].balanceOf(address(this)).sub(
-                beforeBalance
+        uint256 transferredDx;
+        {
+            IERC20 tokenFrom = self.pooledTokens[tokenIndexFrom];
+            require(
+                dx <= tokenFrom.balanceOf(msg.sender),
+                "Cannot swap more than you own"
             );
+
+            {
+                // Transfer tokens first to see if a fee was charged on transfer
+                uint256 beforeBalance = tokenFrom.balanceOf(address(this));
+                tokenFrom.safeTransferFrom(msg.sender, address(this), dx);
+
+                // Use the actual transferred amount for AMM math
+                transferredDx = tokenFrom.balanceOf(address(this)).sub(
+                    beforeBalance
+                );
+            }
+        }
 
         (uint256 dy, uint256 dyFee) =
             _calculateSwap(self, tokenIndexFrom, tokenIndexTo, transferredDx);
@@ -1195,58 +1213,68 @@ library MetaSwapUtils {
         uint256[] memory amounts,
         uint256 minToMint
     ) external returns (uint256) {
+        IERC20[] memory pooledTokens = self.pooledTokens;
         require(
-            amounts.length == self.pooledTokens.length,
+            amounts.length == pooledTokens.length,
             "Amounts must match pooled tokens"
         );
 
-        uint256[] memory fees = new uint256[](self.pooledTokens.length);
+        uint256[] memory fees = new uint256[](pooledTokens.length);
 
         // current state
-        AddLiquidityInfo memory v = AddLiquidityInfo(0, 0, 0, 0);
-        uint256 totalSupply = self.lpToken.totalSupply();
+        AddLiquidityInfo memory v =
+            AddLiquidityInfo(
+                0,
+                0,
+                0,
+                self.lpToken,
+                0,
+                _getAPrecise(self),
+                _getBaseVirtualPrice(self)
+            );
+        v.totalSupply = v.lpToken.totalSupply();
         uint256[] memory newBalances = self.balances;
-        uint256 baseVirtualPrice = _getBaseVirtualPrice(self);
-        v.preciseA = _getAPrecise(self);
 
-        if (totalSupply != 0) {
-            v.d0 = getD(_xp(self, newBalances, baseVirtualPrice), v.preciseA);
+        if (v.totalSupply != 0) {
+            v.d0 = getD(_xp(self, newBalances, v.baseVirtualPrice), v.preciseA);
         }
 
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
+        for (uint256 i = 0; i < pooledTokens.length; i++) {
             require(
-                totalSupply != 0 || amounts[i] > 0,
+                v.totalSupply != 0 || amounts[i] > 0,
                 "Must supply all tokens in pool"
             );
 
             // Transfer tokens first to see if a fee was charged on transfer
             if (amounts[i] != 0) {
                 uint256 beforeBalance =
-                    self.pooledTokens[i].balanceOf(address(this));
-                self.pooledTokens[i].safeTransferFrom(
+                    pooledTokens[i].balanceOf(address(this));
+                pooledTokens[i].safeTransferFrom(
                     msg.sender,
                     address(this),
                     amounts[i]
                 );
 
                 // Update the amounts[] with actual transfer amount
-                amounts[i] = self.pooledTokens[i].balanceOf(address(this)).sub(
+                amounts[i] = pooledTokens[i].balanceOf(address(this)).sub(
                     beforeBalance
                 );
             }
 
-            newBalances[i] = self.balances[i].add(amounts[i]);
+            newBalances[i] = newBalances[i].add(amounts[i]);
         }
 
         // invariant after change
-        v.d1 = getD(_xp(self, newBalances, baseVirtualPrice), v.preciseA);
+        v.d1 = getD(_xp(self, newBalances, v.baseVirtualPrice), v.preciseA);
         require(v.d1 > v.d0, "D should increase");
 
         // updated to reflect fees and calculate the user's LP tokens
         v.d2 = v.d1;
-        if (totalSupply != 0) {
+        uint256 toMint;
+
+        if (v.totalSupply != 0) {
             uint256 feePerToken = _feePerToken(self);
-            for (uint256 i = 0; i < self.pooledTokens.length; i++) {
+            for (uint256 i = 0; i < pooledTokens.length; i++) {
                 uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
                 fees[i] = feePerToken
                     .mul(idealBalance.difference(newBalances[i]))
@@ -1256,17 +1284,12 @@ library MetaSwapUtils {
                 );
                 newBalances[i] = newBalances[i].sub(fees[i]);
             }
-            v.d2 = getD(_xp(self, newBalances, baseVirtualPrice), v.preciseA);
+            v.d2 = getD(_xp(self, newBalances, v.baseVirtualPrice), v.preciseA);
+            toMint = v.d2.sub(v.d0).mul(v.totalSupply).div(v.d0);
         } else {
             // the initial depositor doesn't pay fees
             self.balances = newBalances;
-        }
-
-        uint256 toMint;
-        if (totalSupply == 0) {
             toMint = v.d1;
-        } else {
-            toMint = v.d2.sub(v.d0).mul(totalSupply).div(v.d0);
         }
 
         require(toMint >= minToMint, "Couldn't mint min requested");
@@ -1279,7 +1302,7 @@ library MetaSwapUtils {
             amounts,
             fees,
             v.d1,
-            totalSupply.add(toMint)
+            v.totalSupply.add(toMint)
         );
 
         return toMint;
@@ -1345,24 +1368,36 @@ library MetaSwapUtils {
         uint256 amount,
         uint256[] calldata minAmounts
     ) external returns (uint256[] memory) {
-        require(amount <= self.lpToken.balanceOf(msg.sender), ">LP.balanceOf");
+        LPToken lpToken = self.lpToken;
+        IERC20[] memory pooledTokens = self.pooledTokens;
+
+        require(amount <= lpToken.balanceOf(msg.sender), ">LP.balanceOf");
         require(
-            minAmounts.length == self.pooledTokens.length,
+            minAmounts.length == pooledTokens.length,
             "minAmounts must match poolTokens"
         );
 
+        uint256 totalSupply = lpToken.totalSupply();
+        uint256[] memory balances = self.balances;
+
         uint256[] memory amounts =
-            _calculateRemoveLiquidity(self, msg.sender, amount);
+            _calculateRemoveLiquidity(
+                self,
+                totalSupply,
+                balances,
+                msg.sender,
+                amount
+            );
 
         for (uint256 i = 0; i < amounts.length; i++) {
             require(amounts[i] >= minAmounts[i], "amounts[i] < minAmounts[i]");
-            self.balances[i] = self.balances[i].sub(amounts[i]);
-            self.pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
+            self.balances[i] = balances[i].sub(amounts[i]);
+            pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
         }
 
-        self.lpToken.burnFrom(msg.sender, amount);
+        lpToken.burnFrom(msg.sender, amount);
 
-        emit RemoveLiquidity(msg.sender, amounts, self.lpToken.totalSupply());
+        emit RemoveLiquidity(msg.sender, amounts, totalSupply.sub(amount));
 
         return amounts;
     }
@@ -1381,12 +1416,10 @@ library MetaSwapUtils {
         uint8 tokenIndex,
         uint256 minAmount
     ) external returns (uint256) {
-        uint256 totalSupply = self.lpToken.totalSupply();
+        LPToken lpToken = self.lpToken;
+        uint256 totalSupply = lpToken.totalSupply();
         uint256 numTokens = self.pooledTokens.length;
-        require(
-            tokenAmount <= self.lpToken.balanceOf(msg.sender),
-            ">LP.balanceOf"
-        );
+        require(tokenAmount <= lpToken.balanceOf(msg.sender), ">LP.balanceOf");
         require(tokenIndex < numTokens, "Token not found");
 
         uint256 dyFee;
@@ -1397,7 +1430,8 @@ library MetaSwapUtils {
             msg.sender,
             tokenAmount,
             tokenIndex,
-            _updateBaseVirtualPrice(self)
+            _updateBaseVirtualPrice(self),
+            totalSupply
         );
 
         require(dy >= minAmount, "dy < minAmount");
@@ -1405,7 +1439,7 @@ library MetaSwapUtils {
         self.balances[tokenIndex] = self.balances[tokenIndex].sub(
             dy.add(dyFee.mul(self.adminFee).div(FEE_DENOMINATOR))
         );
-        self.lpToken.burnFrom(msg.sender, tokenAmount);
+        lpToken.burnFrom(msg.sender, tokenAmount);
         self.pooledTokens[tokenIndex].safeTransfer(msg.sender, dy);
 
         emit RemoveLiquidityOne(
@@ -1434,49 +1468,52 @@ library MetaSwapUtils {
         uint256[] memory amounts,
         uint256 maxBurnAmount
     ) public returns (uint256) {
+        RemoveLiquidityImbalanceInfo memory v =
+            RemoveLiquidityImbalanceInfo(0, 0, 0, self.lpToken, 0, 0, 0);
+        v.totalSupply = v.lpToken.totalSupply();
+
+        IERC20[] memory pooledTokens = self.pooledTokens;
         require(
-            amounts.length == self.pooledTokens.length,
+            amounts.length == pooledTokens.length,
             "Amounts should match pool tokens"
         );
         require(
-            maxBurnAmount <= self.lpToken.balanceOf(msg.sender) &&
+            maxBurnAmount <= v.lpToken.balanceOf(msg.sender) &&
                 maxBurnAmount != 0,
             ">LP.balanceOf"
         );
 
-        RemoveLiquidityImbalanceInfo memory v =
-            RemoveLiquidityImbalanceInfo(0, 0, 0, 0, 0);
-
-        uint256 tokenSupply = self.lpToken.totalSupply();
         uint256 feePerToken = _feePerToken(self);
         v.baseVirtualPrice = _updateBaseVirtualPrice(self);
 
-        uint256[] memory balances1 = self.balances;
+        uint256[] memory fees = new uint256[](pooledTokens.length);
+        {
+            uint256[] memory balances1 = self.balances;
 
-        v.preciseA = _getAPrecise(self);
-        v.d0 = getD(_xp(self, balances1, v.baseVirtualPrice), v.preciseA);
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            balances1[i] = balances1[i].sub(
-                amounts[i],
-                "Cannot withdraw more than available"
-            );
+            v.preciseA = _getAPrecise(self);
+            v.d0 = getD(_xp(self, balances1, v.baseVirtualPrice), v.preciseA);
+            for (uint256 i = 0; i < pooledTokens.length; i++) {
+                balances1[i] = balances1[i].sub(
+                    amounts[i],
+                    "Cannot withdraw more than available"
+                );
+            }
+            v.d1 = getD(_xp(self, balances1, v.baseVirtualPrice), v.preciseA);
+
+            for (uint256 i = 0; i < pooledTokens.length; i++) {
+                uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
+                uint256 difference = idealBalance.difference(balances1[i]);
+                fees[i] = feePerToken.mul(difference).div(FEE_DENOMINATOR);
+                self.balances[i] = balances1[i].sub(
+                    fees[i].mul(self.adminFee).div(FEE_DENOMINATOR)
+                );
+                balances1[i] = balances1[i].sub(fees[i]);
+            }
+
+            v.d2 = getD(_xp(self, balances1, v.baseVirtualPrice), v.preciseA);
         }
-        v.d1 = getD(_xp(self, balances1, v.baseVirtualPrice), v.preciseA);
-        uint256[] memory fees = new uint256[](balances1.length);
 
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
-            uint256 difference = idealBalance.difference(balances1[i]);
-            fees[i] = feePerToken.mul(difference).div(FEE_DENOMINATOR);
-            self.balances[i] = balances1[i].sub(
-                fees[i].mul(self.adminFee).div(FEE_DENOMINATOR)
-            );
-            balances1[i] = balances1[i].sub(fees[i]);
-        }
-
-        v.d2 = getD(_xp(self, balances1, v.baseVirtualPrice), v.preciseA);
-
-        uint256 tokenAmount = v.d0.sub(v.d2).mul(tokenSupply).div(v.d0);
+        uint256 tokenAmount = v.d0.sub(v.d2).mul(v.totalSupply).div(v.d0);
         require(tokenAmount != 0, "Burnt amount cannot be zero");
         tokenAmount = tokenAmount.add(1).mul(FEE_DENOMINATOR).div(
             FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender))
@@ -1484,10 +1521,10 @@ library MetaSwapUtils {
 
         require(tokenAmount <= maxBurnAmount, "tokenAmount > maxBurnAmount");
 
-        self.lpToken.burnFrom(msg.sender, tokenAmount);
+        v.lpToken.burnFrom(msg.sender, tokenAmount);
 
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            self.pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
+        for (uint256 i = 0; i < pooledTokens.length; i++) {
+            pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
         }
 
         emit RemoveLiquidityImbalance(
@@ -1495,7 +1532,7 @@ library MetaSwapUtils {
             amounts,
             fees,
             v.d1,
-            tokenSupply.sub(tokenAmount)
+            v.totalSupply.sub(tokenAmount)
         );
 
         return tokenAmount;
