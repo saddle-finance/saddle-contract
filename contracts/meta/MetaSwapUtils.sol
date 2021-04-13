@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../LPToken.sol";
 import "../interfaces/ISwap.sol";
 import "../MathUtils.sol";
+import "../SwapUtils.sol";
 
 /**
  * @title MetaSwapUtils library
@@ -43,11 +44,6 @@ library MetaSwapUtils {
         uint256 invariant,
         uint256 lpTokenSupply
     );
-    event RemoveLiquidity(
-        address indexed provider,
-        uint256[] tokenAmounts,
-        uint256 lpTokenSupply
-    );
     event RemoveLiquidityOne(
         address indexed provider,
         uint256 lpTokenAmount,
@@ -66,30 +62,7 @@ library MetaSwapUtils {
     event NewSwapFee(uint256 newSwapFee);
     event NewWithdrawFee(uint256 newWithdrawFee);
 
-    struct Swap {
-        // variables around the ramp management of A,
-        // the amplification coefficient * n * (n - 1)
-        // see https://www.curve.fi/stableswap-paper.pdf for details
-        uint256 initialA;
-        uint256 futureA;
-        uint256 initialATime;
-        uint256 futureATime;
-        // fee calculation
-        uint256 swapFee;
-        uint256 adminFee;
-        uint256 defaultWithdrawFee;
-        LPToken lpToken;
-        // contract references for all tokens being pooled
-        IERC20[] pooledTokens;
-        // multipliers for each pooled token's precision to get to POOL_PRECISION_DECIMALS
-        // for example, TBTC has 18 decimals, so the multiplier should be 1. WBTC
-        // has 8, so the multiplier should be 10 ** 18 / 10 ** 8 => 10 ** 10
-        uint256[] tokenPrecisionMultipliers;
-        // the pool balance of each token, in the token's precision
-        // the contract's actual token balance might differ
-        uint256[] balances;
-        mapping(address => uint256) depositTimestamp;
-        mapping(address => uint256) withdrawFeeMultiplier;
+    struct MetaSwap {
         // Meta-Swap related parameters
         ISwap baseSwap;
         uint256 baseVirtualPrice;
@@ -119,7 +92,7 @@ library MetaSwapUtils {
         uint256 preciseA;
         uint256 baseVirtualPrice;
         uint256[] tokenPrecisionMultipliers;
-        uint256[] oldBalances;
+        uint256[] newBalances;
     }
 
     struct SwapUnderlyingInfo {
@@ -132,6 +105,7 @@ library MetaSwapUtils {
         IERC20[] baseTokens;
         IERC20 tokenFrom;
         IERC20 tokenTo;
+        uint256 baseVirtualPrice;
     }
 
     struct CalculateSwapUnderlyingInfo {
@@ -139,6 +113,7 @@ library MetaSwapUtils {
         ISwap baseSwap;
         uint8 baseLPTokenIndex;
         uint8 baseTokensLength;
+        uint8 metaIndexTo;
         uint256 x;
         uint256 dy;
     }
@@ -149,20 +124,6 @@ library MetaSwapUtils {
     // the denominator used to calculate admin and LP fees. For example, an
     // LP fee might be something like tradeAmount.mul(fee).div(FEE_DENOMINATOR)
     uint256 private constant FEE_DENOMINATOR = 10**10;
-
-    // Max swap fee is 1% or 100bps of each swap
-    uint256 public constant MAX_SWAP_FEE = 10**8;
-
-    // Max adminFee is 100% of the swapFee
-    // adminFee does not add additional fee on top of swapFee
-    // Instead it takes a certain % of the swapFee. Therefore it has no impact on the
-    // users but only on the earnings of LPs
-    uint256 public constant MAX_ADMIN_FEE = 10**10;
-
-    // Max withdrawFee is 1% of the value withdrawn
-    // Fee will be redistributed to the LPs in the pool, rewarding
-    // long term providers.
-    uint256 public constant MAX_WITHDRAW_FEE = 10**8;
 
     // Constant value used as max loop limit
     uint256 private constant MAX_LOOP_LIMIT = 256;
@@ -180,7 +141,7 @@ library MetaSwapUtils {
      * @param self Swap struct to read from
      * @return A parameter
      */
-    function getA(Swap storage self) public view returns (uint256) {
+    function getA(SwapUtils.Swap storage self) public view returns (uint256) {
         return getAPrecise(self).div(A_PRECISION);
     }
 
@@ -190,7 +151,11 @@ library MetaSwapUtils {
      * @param self Swap struct to read from
      * @return A parameter in its raw precision form
      */
-    function getAPrecise(Swap storage self) public view returns (uint256) {
+    function getAPrecise(SwapUtils.Swap storage self)
+        public
+        view
+        returns (uint256)
+    {
         uint256 t1 = self.futureATime; // time when ramp is finished
         uint256 a1 = self.futureA; // final A value when ramp is finished
 
@@ -215,34 +180,44 @@ library MetaSwapUtils {
         }
     }
 
-    function _updateBaseVirtualPrice(Swap storage self)
+    function _updateBaseVirtualPrice(MetaSwap storage metaSwapStorage)
         internal
         returns (uint256)
     {
         if (
-            block.timestamp > self.baseCacheLastUpdated + BASE_CACHE_EXPIRE_TIME
+            block.timestamp >
+            metaSwapStorage.baseCacheLastUpdated + BASE_CACHE_EXPIRE_TIME
         ) {
-            uint256 baseVirtualPrice = ISwap(self.baseSwap).getVirtualPrice();
-            self.baseVirtualPrice = baseVirtualPrice;
-            self.baseCacheLastUpdated = block.timestamp;
+            uint256 baseVirtualPrice =
+                ISwap(metaSwapStorage.baseSwap).getVirtualPrice();
+            metaSwapStorage.baseVirtualPrice = baseVirtualPrice;
+            metaSwapStorage.baseCacheLastUpdated = block.timestamp;
             return baseVirtualPrice;
         } else {
-            return self.baseVirtualPrice;
+            return metaSwapStorage.baseVirtualPrice;
         }
     }
 
-    function _getBaseVirtualPrice(Swap storage self)
+    function _getBaseVirtualPrice(
+        MetaSwap storage metaSwapStorage,
+        ISwap baseSwap
+    ) internal view returns (uint256) {
+        if (
+            block.timestamp >
+            metaSwapStorage.baseCacheLastUpdated + BASE_CACHE_EXPIRE_TIME
+        ) {
+            return baseSwap.getVirtualPrice();
+        } else {
+            return metaSwapStorage.baseVirtualPrice;
+        }
+    }
+
+    function _getBaseVirtualPrice(MetaSwap storage metaSwapStorage)
         internal
         view
         returns (uint256)
     {
-        if (
-            block.timestamp > self.baseCacheLastUpdated + BASE_CACHE_EXPIRE_TIME
-        ) {
-            return ISwap(self.baseSwap).getVirtualPrice();
-        } else {
-            return self.baseVirtualPrice;
-        }
+        return _getBaseVirtualPrice(metaSwapStorage, metaSwapStorage.baseSwap);
     }
 
     /**
@@ -250,7 +225,7 @@ library MetaSwapUtils {
      * @param self Swap struct to read from
      * @return timestamp of last deposit
      */
-    function getDepositTimestamp(Swap storage self, address user)
+    function getDepositTimestamp(SwapUtils.Swap storage self, address user)
         external
         view
         returns (uint256)
@@ -267,7 +242,8 @@ library MetaSwapUtils {
      * @return dy the amount of token user will receive
      */
     function calculateWithdrawOneToken(
-        Swap storage self,
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage,
         address account,
         uint256 tokenAmount,
         uint8 tokenIndex
@@ -277,13 +253,13 @@ library MetaSwapUtils {
             account,
             tokenAmount,
             tokenIndex,
-            _getBaseVirtualPrice(self),
+            _getBaseVirtualPrice(metaSwapStorage),
             self.lpToken.totalSupply()
         );
     }
 
     function calculateWithdrawOneToken(
-        Swap storage self,
+        SwapUtils.Swap storage self,
         address account,
         uint256 tokenAmount,
         uint8 tokenIndex,
@@ -328,7 +304,7 @@ library MetaSwapUtils {
      * @return the d and the new y after withdrawing one token
      */
     function calculateWithdrawOneTokenDY(
-        Swap storage self,
+        SwapUtils.Swap storage self,
         uint8 tokenIndex,
         uint256 tokenAmount,
         uint256 baseVirtualPrice,
@@ -537,7 +513,7 @@ library MetaSwapUtils {
      * them to be more easily compared.
      */
     function _xp(
-        Swap storage self,
+        SwapUtils.Swap storage self,
         uint256[] memory balances,
         uint256 baseVirtualPrice
     ) internal view returns (uint256[] memory) {
@@ -550,7 +526,7 @@ library MetaSwapUtils {
      * @return the pool balances "scaled" to the pool's precision, allowing
      * them to be more easily compared.
      */
-    function _xp(Swap storage self, uint256 baseVirtualPrice)
+    function _xp(SwapUtils.Swap storage self, uint256 baseVirtualPrice)
         internal
         view
         returns (uint256[] memory)
@@ -568,13 +544,15 @@ library MetaSwapUtils {
      * @param self Swap struct to read from
      * @return the virtual price, scaled to precision of POOL_PRECISION_DECIMALS
      */
-    function getVirtualPrice(Swap storage self)
-        external
-        view
-        returns (uint256)
-    {
+    function getVirtualPrice(
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage
+    ) external view returns (uint256) {
         uint256 d =
-            getD(_xp(self, _getBaseVirtualPrice(self)), getAPrecise(self));
+            getD(
+                _xp(self, _getBaseVirtualPrice(metaSwapStorage)),
+                getAPrecise(self)
+            );
         ERC20 lpToken = self.lpToken;
         uint256 supply = lpToken.totalSupply();
         if (supply != 0) {
@@ -597,7 +575,7 @@ library MetaSwapUtils {
      * @return the amount of TO token that should remain in the pool
      */
     function getY(
-        Swap storage self,
+        SwapUtils.Swap storage self,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 x,
@@ -660,12 +638,19 @@ library MetaSwapUtils {
      * @return dy the number of tokens the user will get
      */
     function calculateSwap(
-        Swap storage self,
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 dx
     ) external view returns (uint256 dy) {
-        (dy, ) = _calculateSwap(self, tokenIndexFrom, tokenIndexTo, dx);
+        (dy, ) = _calculateSwap(
+            self,
+            tokenIndexFrom,
+            tokenIndexTo,
+            dx,
+            _getBaseVirtualPrice(metaSwapStorage)
+        );
     }
 
     /**
@@ -683,12 +668,13 @@ library MetaSwapUtils {
      * @return dyFee the associated fee
      */
     function _calculateSwap(
-        Swap storage self,
+        SwapUtils.Swap storage self,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
-        uint256 dx
+        uint256 dx,
+        uint256 baseVirtualPrice
     ) internal view returns (uint256 dy, uint256 dyFee) {
-        uint256[] memory xp = _xp(self, _getBaseVirtualPrice(self));
+        uint256[] memory xp = _xp(self, baseVirtualPrice);
         require(
             tokenIndexFrom < xp.length && tokenIndexTo < xp.length,
             "Token index out of range"
@@ -704,17 +690,19 @@ library MetaSwapUtils {
     }
 
     function calculateSwapUnderlying(
-        Swap storage self,
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 dx
     ) external view returns (uint256) {
         CalculateSwapUnderlyingInfo memory v =
             CalculateSwapUnderlyingInfo(
-                _getBaseVirtualPrice(self),
-                self.baseSwap,
+                _getBaseVirtualPrice(metaSwapStorage),
+                metaSwapStorage.baseSwap,
                 0,
-                uint8(self.baseTokens.length),
+                uint8(metaSwapStorage.baseTokens.length),
+                0,
                 0,
                 0
             );
@@ -758,21 +746,21 @@ library MetaSwapUtils {
             tokenIndexFrom = v.baseLPTokenIndex;
         }
 
-        uint8 metaIndexTo = v.baseLPTokenIndex;
+        v.metaIndexTo = v.baseLPTokenIndex;
         if (tokenIndexTo < v.baseLPTokenIndex) {
-            metaIndexTo = tokenIndexTo;
+            v.metaIndexTo = tokenIndexTo;
         }
 
         {
-            uint256 y = getY(self, tokenIndexFrom, metaIndexTo, v.x, xp);
-            v.dy = xp[metaIndexTo].sub(y).sub(1);
+            uint256 y = getY(self, tokenIndexFrom, v.metaIndexTo, v.x, xp);
+            v.dy = xp[v.metaIndexTo].sub(y).sub(1);
             uint256 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
             v.dy = v.dy.sub(dyFee);
         }
 
         if (tokenIndexTo < v.baseLPTokenIndex) {
             // tokenTo is from this pool
-            v.dy = v.dy.div(self.tokenPrecisionMultipliers[metaIndexTo]);
+            v.dy = v.dy.div(self.tokenPrecisionMultipliers[v.metaIndexTo]);
         } else {
             // tokenTo is from the base pool
             v.dy = v.baseSwap.calculateRemoveLiquidityOneToken(
@@ -786,65 +774,15 @@ library MetaSwapUtils {
     }
 
     /**
-     * @notice A simple method to calculate amount of each underlying
-     * tokens that is returned upon burning given amount of
-     * LP tokens
-     *
-     * @param account the address that is removing liquidity. required for withdraw fee calculation
-     * @param amount the amount of LP tokens that would to be burned on
-     * withdrawal
-     * @return array of amounts of tokens user will receive
-     */
-    function calculateRemoveLiquidity(
-        Swap storage self,
-        address account,
-        uint256 amount
-    ) external view returns (uint256[] memory) {
-        return
-            _calculateRemoveLiquidity(
-                self,
-                self.lpToken.totalSupply(),
-                self.balances,
-                account,
-                amount
-            );
-    }
-
-    function _calculateRemoveLiquidity(
-        Swap storage self,
-        uint256 totalSupply,
-        uint256[] memory balances,
-        address account,
-        uint256 amount
-    ) internal view returns (uint256[] memory) {
-        require(amount <= totalSupply, "Cannot exceed total supply");
-
-        uint256 feeAdjustedAmount =
-            amount
-                .mul(
-                FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, account))
-            )
-                .div(FEE_DENOMINATOR);
-
-        uint256[] memory amounts = new uint256[](balances.length);
-
-        for (uint256 i = 0; i < balances.length; i++) {
-            amounts[i] = balances[i].mul(feeAdjustedAmount).div(totalSupply);
-        }
-        return amounts;
-    }
-
-    /**
      * @notice Calculate the fee that is applied when the given user withdraws.
      * Withdraw fee decays linearly over 4 weeks.
      * @param user address you want to calculate withdraw fee of
      * @return current withdraw fee of the user
      */
-    function calculateCurrentWithdrawFee(Swap storage self, address user)
-        public
-        view
-        returns (uint256)
-    {
+    function calculateCurrentWithdrawFee(
+        SwapUtils.Swap storage self,
+        address user
+    ) public view returns (uint256) {
         uint256 endTime = self.depositTimestamp[user].add(4 weeks);
         if (endTime > block.timestamp) {
             uint256 timeLeftover = endTime.sub(block.timestamp);
@@ -878,27 +816,32 @@ library MetaSwapUtils {
      * deposit was false, total amount of lp token that will be burned
      */
     function calculateTokenAmount(
-        Swap storage self,
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage,
         address account,
         uint256[] calldata amounts,
         bool deposit
     ) external view returns (uint256) {
         uint256 a = getAPrecise(self);
-        uint256 baseVirtualPrice = _getBaseVirtualPrice(self);
-        uint256[] memory balances1 = self.balances;
-        uint256 numTokens = balances1.length;
-        uint256 d0 = getD(_xp(self, balances1, baseVirtualPrice), a);
-        for (uint256 i = 0; i < numTokens; i++) {
-            if (deposit) {
-                balances1[i] = balances1[i].add(amounts[i]);
-            } else {
-                balances1[i] = balances1[i].sub(
-                    amounts[i],
-                    "Cannot withdraw more than available"
-                );
+        uint256 d0;
+        uint256 d1;
+        {
+            uint256 baseVirtualPrice = _getBaseVirtualPrice(metaSwapStorage);
+            uint256[] memory balances1 = self.balances;
+            uint256 numTokens = balances1.length;
+            d0 = getD(_xp(self, balances1, baseVirtualPrice), a);
+            for (uint256 i = 0; i < numTokens; i++) {
+                if (deposit) {
+                    balances1[i] = balances1[i].add(amounts[i]);
+                } else {
+                    balances1[i] = balances1[i].sub(
+                        amounts[i],
+                        "Cannot withdraw more than available"
+                    );
+                }
             }
+            d1 = getD(_xp(self, balances1, baseVirtualPrice), a);
         }
-        uint256 d1 = getD(_xp(self, balances1, baseVirtualPrice), a);
         uint256 totalSupply = self.lpToken.totalSupply();
 
         if (deposit) {
@@ -919,7 +862,7 @@ library MetaSwapUtils {
      * @param index Index of the pooled token
      * @return admin balance in the token's precision
      */
-    function getAdminBalance(Swap storage self, uint256 index)
+    function getAdminBalance(SwapUtils.Swap storage self, uint256 index)
         external
         view
         returns (uint256)
@@ -937,7 +880,11 @@ library MetaSwapUtils {
      * swap fee calculations
      * @param self Swap struct to read from
      */
-    function _feePerToken(Swap storage self) internal view returns (uint256) {
+    function _feePerToken(SwapUtils.Swap storage self)
+        internal
+        view
+        returns (uint256)
+    {
         IERC20[] memory pooledTokens = self.pooledTokens;
         return
             self.swapFee.mul(pooledTokens.length).div(
@@ -957,7 +904,8 @@ library MetaSwapUtils {
      * @return amount of token user received on swap
      */
     function swap(
-        Swap storage self,
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 dx,
@@ -984,7 +932,13 @@ library MetaSwapUtils {
         }
 
         (uint256 dy, uint256 dyFee) =
-            _calculateSwap(self, tokenIndexFrom, tokenIndexTo, transferredDx);
+            _calculateSwap(
+                self,
+                tokenIndexFrom,
+                tokenIndexTo,
+                transferredDx,
+                _updateBaseVirtualPrice(metaSwapStorage)
+            );
         require(dy >= minDy, "Swap didn't result in min tokens");
 
         uint256 dyAdminFee =
@@ -1013,7 +967,8 @@ library MetaSwapUtils {
     }
 
     function swapUnderlying(
-        Swap storage self,
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 dx,
@@ -1027,12 +982,12 @@ library MetaSwapUtils {
                 0,
                 0,
                 self.balances,
-                self.baseTokens,
+                metaSwapStorage.baseTokens,
                 IERC20(address(0)),
-                IERC20(address(0))
+                IERC20(address(0)),
+                _updateBaseVirtualPrice(metaSwapStorage)
             );
 
-        uint256 baseVirtualPrice = _getBaseVirtualPrice(self);
         uint8 baseLPTokenIndex = uint8(v.oldBalances.length) - 1;
 
         {
@@ -1043,7 +998,7 @@ library MetaSwapUtils {
             );
         }
 
-        ISwap baseSwap = self.baseSwap;
+        ISwap baseSwap = metaSwapStorage.baseSwap;
 
         // Find the address of the token swapping from
         if (tokenIndexFrom < baseLPTokenIndex) {
@@ -1070,7 +1025,7 @@ library MetaSwapUtils {
         if (
             tokenIndexFrom < baseLPTokenIndex || tokenIndexTo < baseLPTokenIndex
         ) {
-            uint256[] memory xp = _xp(self, v.oldBalances, baseVirtualPrice);
+            uint256[] memory xp = _xp(self, v.oldBalances, v.baseVirtualPrice);
 
             if (tokenIndexFrom < baseLPTokenIndex) {
                 v.x =
@@ -1089,7 +1044,7 @@ library MetaSwapUtils {
                 v.dx = baseLPToken.balanceOf(address(this)).sub(v.x);
                 v.x = v
                     .dx
-                    .mul(baseVirtualPrice)
+                    .mul(v.baseVirtualPrice)
                     .div(BASE_VIRTUAL_PRICE_PRECISION)
                     .add(xp[baseLPTokenIndex]);
             }
@@ -1104,7 +1059,7 @@ library MetaSwapUtils {
 
             if (tokenIndexTo >= baseLPTokenIndex) {
                 v.dy = v.dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
-                    baseVirtualPrice
+                    v.baseVirtualPrice
                 );
             }
             v.dy = v.dy.mul(self.tokenPrecisionMultipliers[v.metaIndexTo]);
@@ -1168,7 +1123,8 @@ library MetaSwapUtils {
      * @return amount of LP token user received
      */
     function addLiquidity(
-        Swap storage self,
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage,
         uint256[] memory amounts,
         uint256 minToMint
     ) external returns (uint256) {
@@ -1189,18 +1145,16 @@ library MetaSwapUtils {
                 self.lpToken,
                 0,
                 getAPrecise(self),
-                _updateBaseVirtualPrice(self),
+                _updateBaseVirtualPrice(metaSwapStorage),
                 self.tokenPrecisionMultipliers,
                 self.balances
             );
         v.totalSupply = v.lpToken.totalSupply();
 
-        uint256[] memory newBalances = v.oldBalances;
-
         if (v.totalSupply != 0) {
             v.d0 = getD(
                 _xp(
-                    newBalances,
+                    v.newBalances,
                     v.tokenPrecisionMultipliers,
                     v.baseVirtualPrice
                 ),
@@ -1230,12 +1184,12 @@ library MetaSwapUtils {
                 );
             }
 
-            newBalances[i] = newBalances[i].add(amounts[i]);
+            v.newBalances[i] = v.newBalances[i].add(amounts[i]);
         }
 
         // invariant after change
         v.d1 = getD(
-            _xp(newBalances, v.tokenPrecisionMultipliers, v.baseVirtualPrice),
+            _xp(v.newBalances, v.tokenPrecisionMultipliers, v.baseVirtualPrice),
             v.preciseA
         );
         require(v.d1 > v.d0, "D should increase");
@@ -1249,16 +1203,16 @@ library MetaSwapUtils {
             for (uint256 i = 0; i < pooledTokens.length; i++) {
                 uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
                 fees[i] = feePerToken
-                    .mul(idealBalance.difference(newBalances[i]))
+                    .mul(idealBalance.difference(v.newBalances[i]))
                     .div(FEE_DENOMINATOR);
-                self.balances[i] = newBalances[i].sub(
+                self.balances[i] = v.newBalances[i].sub(
                     fees[i].mul(self.adminFee).div(FEE_DENOMINATOR)
                 );
-                newBalances[i] = newBalances[i].sub(fees[i]);
+                v.newBalances[i] = v.newBalances[i].sub(fees[i]);
             }
             v.d2 = getD(
                 _xp(
-                    newBalances,
+                    v.newBalances,
                     v.tokenPrecisionMultipliers,
                     v.baseVirtualPrice
                 ),
@@ -1267,7 +1221,7 @@ library MetaSwapUtils {
             toMint = v.d2.sub(v.d0).mul(v.totalSupply).div(v.d0);
         } else {
             // the initial depositor doesn't pay fees
-            self.balances = newBalances;
+            self.balances = v.newBalances;
             toMint = v.d1;
         }
 
@@ -1288,100 +1242,6 @@ library MetaSwapUtils {
     }
 
     /**
-     * @notice Update the withdraw fee for `user`. If the user is currently
-     * not providing liquidity in the pool, sets to default value. If not, recalculate
-     * the starting withdraw fee based on the last deposit's time & amount relative
-     * to the new deposit.
-     *
-     * @param self Swap struct to read from and write to
-     * @param user address of the user depositing tokens
-     * @param toMint amount of pool tokens to be minted
-     */
-    function updateUserWithdrawFee(
-        Swap storage self,
-        address user,
-        uint256 toMint
-    ) external {
-        _updateUserWithdrawFee(self, user, toMint);
-    }
-
-    function _updateUserWithdrawFee(
-        Swap storage self,
-        address user,
-        uint256 toMint
-    ) internal {
-        // If token is transferred to address 0 (or burned), don't update the fee.
-        if (user == address(0)) {
-            return;
-        }
-        if (self.defaultWithdrawFee == 0) {
-            // If current fee is set to 0%, set multiplier to FEE_DENOMINATOR
-            self.withdrawFeeMultiplier[user] = FEE_DENOMINATOR;
-        } else {
-            // Otherwise, calculate appropriate discount based on last deposit amount
-            uint256 currentFee = calculateCurrentWithdrawFee(self, user);
-            uint256 currentBalance = self.lpToken.balanceOf(user);
-
-            // ((currentBalance * currentFee) + (toMint * defaultWithdrawFee)) * FEE_DENOMINATOR /
-            // ((toMint + currentBalance) * defaultWithdrawFee)
-            self.withdrawFeeMultiplier[user] = currentBalance
-                .mul(currentFee)
-                .add(toMint.mul(self.defaultWithdrawFee))
-                .mul(FEE_DENOMINATOR)
-                .div(toMint.add(currentBalance).mul(self.defaultWithdrawFee));
-        }
-        self.depositTimestamp[user] = block.timestamp;
-    }
-
-    /**
-     * @notice Burn LP tokens to remove liquidity from the pool.
-     * @dev Liquidity can always be removed, even when the pool is paused.
-     * @param self Swap struct to read from and write to
-     * @param amount the amount of LP tokens to burn
-     * @param minAmounts the minimum amounts of each token in the pool
-     * acceptable for this burn. Useful as a front-running mitigation
-     * @return amounts of tokens the user received
-     */
-    function removeLiquidity(
-        Swap storage self,
-        uint256 amount,
-        uint256[] calldata minAmounts
-    ) external returns (uint256[] memory) {
-        LPToken lpToken = self.lpToken;
-        IERC20[] memory pooledTokens = self.pooledTokens;
-
-        require(amount <= lpToken.balanceOf(msg.sender), ">LP.balanceOf");
-        require(
-            minAmounts.length == pooledTokens.length,
-            "minAmounts must match poolTokens"
-        );
-
-        uint256 totalSupply = lpToken.totalSupply();
-        uint256[] memory balances = self.balances;
-
-        uint256[] memory amounts =
-            _calculateRemoveLiquidity(
-                self,
-                totalSupply,
-                balances,
-                msg.sender,
-                amount
-            );
-
-        for (uint256 i = 0; i < amounts.length; i++) {
-            require(amounts[i] >= minAmounts[i], "amounts[i] < minAmounts[i]");
-            self.balances[i] = balances[i].sub(amounts[i]);
-            pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
-        }
-
-        lpToken.burnFrom(msg.sender, amount);
-
-        emit RemoveLiquidity(msg.sender, amounts, totalSupply.sub(amount));
-
-        return amounts;
-    }
-
-    /**
      * @notice Remove liquidity from the pool all in one token.
      * @param self Swap struct to read from and write to
      * @param tokenAmount the amount of the lp tokens to burn
@@ -1390,7 +1250,8 @@ library MetaSwapUtils {
      * @return amount chosen token that user received
      */
     function removeLiquidityOneToken(
-        Swap storage self,
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage,
         uint256 tokenAmount,
         uint8 tokenIndex,
         uint256 minAmount
@@ -1409,7 +1270,7 @@ library MetaSwapUtils {
             msg.sender,
             tokenAmount,
             tokenIndex,
-            _updateBaseVirtualPrice(self),
+            _updateBaseVirtualPrice(metaSwapStorage),
             totalSupply
         );
 
@@ -1443,7 +1304,8 @@ library MetaSwapUtils {
      * @return actual amount of LP tokens burned in the withdrawal
      */
     function removeLiquidityImbalance(
-        Swap storage self,
+        SwapUtils.Swap storage self,
+        MetaSwap storage metaSwapStorage,
         uint256[] memory amounts,
         uint256 maxBurnAmount
     ) public returns (uint256) {
@@ -1455,14 +1317,14 @@ library MetaSwapUtils {
                 self.lpToken,
                 0,
                 getAPrecise(self),
-                _updateBaseVirtualPrice(self),
+                _updateBaseVirtualPrice(metaSwapStorage),
                 self.tokenPrecisionMultipliers,
                 self.balances
             );
         v.totalSupply = v.lpToken.totalSupply();
 
         require(
-            amounts.length == v.oldBalances.length,
+            amounts.length == v.newBalances.length,
             "Amounts should match pool tokens"
         );
         require(
@@ -1473,20 +1335,20 @@ library MetaSwapUtils {
 
         uint256 feePerToken = _feePerToken(self);
 
-        uint256[] memory fees = new uint256[](v.oldBalances.length);
+        uint256[] memory fees = new uint256[](v.newBalances.length);
         {
-            uint256[] memory balances1 = new uint256[](v.oldBalances.length);
+            uint256[] memory balances1 = new uint256[](v.newBalances.length);
 
             v.d0 = getD(
                 _xp(
-                    v.oldBalances,
+                    v.newBalances,
                     v.tokenPrecisionMultipliers,
                     v.baseVirtualPrice
                 ),
                 v.preciseA
             );
-            for (uint256 i = 0; i < v.oldBalances.length; i++) {
-                balances1[i] = v.oldBalances[i].sub(
+            for (uint256 i = 0; i < v.newBalances.length; i++) {
+                balances1[i] = v.newBalances[i].sub(
                     amounts[i],
                     "Cannot withdraw more than available"
                 );
@@ -1496,8 +1358,8 @@ library MetaSwapUtils {
                 v.preciseA
             );
 
-            for (uint256 i = 0; i < v.oldBalances.length; i++) {
-                uint256 idealBalance = v.d1.mul(v.oldBalances[i]).div(v.d0);
+            for (uint256 i = 0; i < v.newBalances.length; i++) {
+                uint256 idealBalance = v.d1.mul(v.newBalances[i]).div(v.d0);
                 uint256 difference = idealBalance.difference(balances1[i]);
                 fees[i] = feePerToken.mul(difference).div(FEE_DENOMINATOR);
                 self.balances[i] = balances1[i].sub(
@@ -1522,7 +1384,7 @@ library MetaSwapUtils {
 
         v.lpToken.burnFrom(msg.sender, tokenAmount);
 
-        for (uint256 i = 0; i < v.oldBalances.length; i++) {
+        for (uint256 i = 0; i < v.newBalances.length; i++) {
             self.pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
         }
 
@@ -1535,61 +1397,5 @@ library MetaSwapUtils {
         );
 
         return tokenAmount;
-    }
-
-    /**
-     * @notice withdraw all admin fees to a given address
-     * @param self Swap struct to withdraw fees from
-     * @param to Address to send the fees to
-     */
-    function withdrawAdminFees(Swap storage self, address to) external {
-        for (uint256 i = 0; i < self.pooledTokens.length; i++) {
-            IERC20 token = self.pooledTokens[i];
-            uint256 balance =
-                token.balanceOf(address(this)).sub(self.balances[i]);
-            if (balance != 0) {
-                token.safeTransfer(to, balance);
-            }
-        }
-    }
-
-    /**
-     * @notice Sets the admin fee
-     * @dev adminFee cannot be higher than 100% of the swap fee
-     * @param self Swap struct to update
-     * @param newAdminFee new admin fee to be applied on future transactions
-     */
-    function setAdminFee(Swap storage self, uint256 newAdminFee) external {
-        require(newAdminFee <= MAX_ADMIN_FEE, "Fee is too high");
-        self.adminFee = newAdminFee;
-
-        emit NewAdminFee(newAdminFee);
-    }
-
-    /**
-     * @notice update the swap fee
-     * @dev fee cannot be higher than 1% of each swap
-     * @param self Swap struct to update
-     * @param newSwapFee new swap fee to be applied on future transactions
-     */
-    function setSwapFee(Swap storage self, uint256 newSwapFee) external {
-        require(newSwapFee <= MAX_SWAP_FEE, "Fee is too high");
-        self.swapFee = newSwapFee;
-
-        emit NewSwapFee(newSwapFee);
-    }
-
-    /**
-     * @notice update the default withdraw fee. This also affects deposits made in the past as well.
-     * @param self Swap struct to update
-     * @param newWithdrawFee new withdraw fee to be applied
-     */
-    function setDefaultWithdrawFee(Swap storage self, uint256 newWithdrawFee)
-        external
-    {
-        require(newWithdrawFee <= MAX_WITHDRAW_FEE, "Fee is too high");
-        self.defaultWithdrawFee = newWithdrawFee;
-
-        emit NewWithdrawFee(newWithdrawFee);
     }
 }

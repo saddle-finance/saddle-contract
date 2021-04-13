@@ -29,7 +29,7 @@ import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/Met
 import { MetaSwapUtils } from "../build/typechain/MetaSwapUtils"
 import MetaSwapUtilsArtifact from "../build/artifacts/contracts/meta/MetaSwapUtils.sol/MetaSwapUtils.json"
 import { AmplificationUtils } from "../build/typechain/AmplificationUtils"
-import AmplificationUtilsArtifact from "../build/artifacts/contracts/meta/AmplificationUtils.sol/AmplificationUtils.json"
+import AmplificationUtilsArtifact from "../build/artifacts/contracts/AmplificationUtils.sol/AmplificationUtils.json"
 import { MetaSwapDeposit } from "../build/typechain/MetaSwapDeposit"
 import MetaSwapDepositArtifact from "../build/artifacts/contracts/meta/MetaSwapDeposit.sol/MetaSwapDeposit.json"
 import chai from "chai"
@@ -37,7 +37,7 @@ import chai from "chai"
 chai.use(solidity)
 const { expect } = chai
 
-describe("Meta-Swap", async () => {
+describe("Meta-Swap Deposit Contract", async () => {
   let signers: Array<Signer>
   let baseSwap: Swap
   let metaSwap: MetaSwap
@@ -130,32 +130,11 @@ describe("Meta-Swap", async () => {
         },
       )
 
-      // Get MathUtils
-      mathUtils = (await ethers.getContractAt(
-        MathUtilsArtifact.abi,
-        (await get("MathUtils")).address,
-      )) as MathUtils
-
-      // Deploy SwapUtils with MathUtils library
-      metaSwapUtils = (await deployContractWithLibraries(
-        owner,
-        MetaSwapUtilsArtifact,
-        {
-          MathUtils: mathUtils.address,
-        },
-      )) as MetaSwapUtils
-      await metaSwapUtils.deployed()
-
-      const amplificationUtils = (await deployContract(
-        owner,
-        AmplificationUtilsArtifact,
-      )) as AmplificationUtils
-      await amplificationUtils.deployed()
-
       // Deploy Swap with SwapUtils library
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {
-        MetaSwapUtils: metaSwapUtils.address,
-        AmplificationUtils: amplificationUtils.address,
+        SwapUtils: (await get("SwapUtils")).address,
+        MetaSwapUtils: (await get("MetaSwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
       })) as MetaSwap
       await metaSwap.deployed()
 
@@ -181,7 +160,9 @@ describe("Meta-Swap", async () => {
       })
 
       // Initialize meta swap pool
-      await metaSwap.initialize(
+      await metaSwap[
+        "initialize(address[],uint8[],string,string,uint256,uint256,uint256,uint256,address)"
+      ](
         [susd.address, baseLPToken.address],
         [18, 18],
         LP_TOKEN_NAME,
@@ -191,7 +172,6 @@ describe("Meta-Swap", async () => {
         0,
         0,
         baseSwap.address,
-        3,
       )
       metaLPToken = (await ethers.getContractAt(
         LPTokenArtifact.abi,

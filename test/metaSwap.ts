@@ -22,7 +22,7 @@ import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.js
 import { MathUtils } from "../build/typechain/MathUtils"
 import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { AmplificationUtils } from "../build/typechain/AmplificationUtils"
-import AmplificationUtilsArtifact from "../build/artifacts/contracts/meta/AmplificationUtils.sol/AmplificationUtils.json"
+import AmplificationUtilsArtifact from "../build/artifacts/contracts/AmplificationUtils.sol/AmplificationUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { MetaSwap } from "../build/typechain/MetaSwap"
@@ -141,16 +141,11 @@ describe("Meta-Swap", async () => {
       )) as MetaSwapUtils
       await metaSwapUtils.deployed()
 
-      const amplificationUtils = (await deployContract(
-        owner,
-        AmplificationUtilsArtifact,
-      )) as AmplificationUtils
-      await amplificationUtils.deployed()
-
       // Deploy Swap with SwapUtils library
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {
+        SwapUtils: (await get("SwapUtils")).address,
         MetaSwapUtils: metaSwapUtils.address,
-        AmplificationUtils: amplificationUtils.address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
       })) as MetaSwap
       await metaSwap.deployed()
 
@@ -176,7 +171,10 @@ describe("Meta-Swap", async () => {
       })
 
       // Initialize meta swap pool
-      await metaSwap.initialize(
+      // Manually overload the signature
+      await metaSwap[
+        "initialize(address[],uint8[],string,string,uint256,uint256,uint256,uint256,address)"
+      ](
         [susd.address, baseLPToken.address],
         [18, 18],
         LP_TOKEN_NAME,
@@ -186,7 +184,6 @@ describe("Meta-Swap", async () => {
         0,
         0,
         baseSwap.address,
-        3,
       )
       metaLPToken = (await ethers.getContractAt(
         LPTokenArtifact.abi,
