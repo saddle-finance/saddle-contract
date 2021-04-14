@@ -1,9 +1,8 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { DeployFunction } from "hardhat-deploy/types"
-import { getChainId } from "hardhat-deploy/dist/src/utils"
-import { CHAIN_ID } from "../utils/network"
-import { DeployResult } from "hardhat-deploy/dist/types"
 import { BigNumber } from "ethers"
+import { CHAIN_ID } from "../utils/network"
+import { DeployFunction } from "hardhat-deploy/types"
+import { DeployResult } from "hardhat-deploy/dist/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 
 const BTC_TOKENS_ARGS: { [token: string]: any[] } = {
   TBTC: ["tBTC", "TBTC", "18"],
