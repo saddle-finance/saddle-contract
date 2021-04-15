@@ -16,7 +16,7 @@
     "hardhat-typechain": "^0.3.5",
     "openzeppelin-contracts-3.4": "npm:@openzeppelin/contracts@3.4.1",
     "openzeppelin-contracts-sol-0.5": "npm:@openzeppelin/contracts@3.4.1",
-    "synthetix": "2.39.4"
+    "synthetix": "2.41.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
