@@ -44,7 +44,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (e: any) => e["event"] == "NewSwapPool",
     )
     const usdSwapAddress = newPoolEvent["args"]["swapAddress"]
-    console.log(
+    log(
       `deployed USD pool clone (targeting "SwapFlashLoan") at ${usdSwapAddress}`,
     )
     await save("SaddleUSDPool", {
