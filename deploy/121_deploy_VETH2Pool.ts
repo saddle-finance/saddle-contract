@@ -43,7 +43,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (e: any) => e["event"] == "NewSwapPool",
     )
     const veth2SwapAddress = newPoolEvent["args"]["swapAddress"]
-    console.log(
+    log(
       `deployed vETH2 pool (targeting "SwapFlashLoan") at ${veth2SwapAddress}`,
     )
     await save("SaddleVETH2Pool", {

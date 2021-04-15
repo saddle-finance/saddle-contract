@@ -6,10 +6,10 @@ import { MULTISIG_ADDRESS } from "../utils/accounts"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
   const { deploy, get } = deployments
-  const { deployer } = await getNamedAccounts()
+  const { libraryDeployer } = await getNamedAccounts()
 
   await deploy("SwapFlashLoan", {
-    from: deployer,
+    from: libraryDeployer,
     log: true,
     libraries: {
       SwapUtils: (await get("SwapUtils")).address,

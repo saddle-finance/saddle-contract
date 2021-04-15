@@ -4,10 +4,10 @@ import { DeployFunction } from "hardhat-deploy/types"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
   const { deploy } = deployments
-  const { deployer } = await getNamedAccounts()
+  const { libraryDeployer } = await getNamedAccounts()
 
   await deploy("MathUtils", {
-    from: deployer,
+    from: libraryDeployer,
     log: true,
     skipIfAlreadyDeployed: true,
   })
