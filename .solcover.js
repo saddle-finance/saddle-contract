@@ -10,9 +10,10 @@ module.exports = {
   // TODO: remove VirtualSwap from skipFiles once coverage is added
   // TODO: add coverage for older contracts
   skipFiles: [
-    'helper/test/TestSwapReturnValues.sol',
     'VirtualSwap/',
-    'guarded/'
+    'guarded/',
+    'helper/Multicall.sol',
+    'helper/test/TestSwapReturnValues.sol',
   ],
   mocha: {
     grep: "@skip-on-coverage", // Find everything with this tag
