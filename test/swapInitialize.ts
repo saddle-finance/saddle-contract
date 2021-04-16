@@ -33,6 +33,7 @@ describe("Swap", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
+      const { get } = deployments
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
@@ -51,20 +52,9 @@ describe("Swap", () => {
         ["Second Token", "SECOND", "18"],
       )) as GenericERC20
 
-      // Deploy MathUtils
-      mathUtils = (await deployContract(
-        signers[0] as Wallet,
-        MathUtilsArtifact,
-      )) as MathUtils
-
-      // Deploy SwapUtils with MathUtils library
-      swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-        MathUtils: mathUtils.address,
-      })) as SwapUtils
-      await swapUtils.deployed()
-
       swap = (await deployContractWithLibraries(owner, SwapArtifact, {
-        SwapUtils: swapUtils.address,
+        SwapUtils: (await get("SwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
       })) as Swap
       await swap.deployed()
     },
