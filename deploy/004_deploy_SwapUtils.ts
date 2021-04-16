@@ -9,9 +9,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await deploy("SwapUtils", {
     from: libraryDeployer,
     log: true,
-    libraries: {
-      MathUtils: (await get("MathUtils")).address,
-    },
     skipIfAlreadyDeployed: true,
   })
 }

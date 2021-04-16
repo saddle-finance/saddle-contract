@@ -29,7 +29,6 @@ import "./MathUtils.sol";
 contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
-    using MathUtils for uint256;
     using SwapUtils for SwapUtils.Swap;
 
     // Struct storing data responsible for automatic market maker functionalities. In order to

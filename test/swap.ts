@@ -19,8 +19,6 @@ import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
@@ -36,7 +34,6 @@ describe("Swap", async () => {
   let signers: Array<Signer>
   let swap: Swap
   let testSwapReturnValues: TestSwapReturnValues
-  let mathUtils: MathUtils
   let swapUtils: SwapUtils
   let firstToken: GenericERC20
   let secondToken: GenericERC20
@@ -95,16 +92,8 @@ describe("Swap", async () => {
         await secondToken.mint(address, String(1e20))
       })
 
-      // Deploy MathUtils
-      mathUtils = (await deployContract(
-        signers[0] as Wallet,
-        MathUtilsArtifact,
-      )) as MathUtils
-
-      // Deploy SwapUtils with MathUtils library
-      swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-        MathUtils: mathUtils.address,
-      })) as SwapUtils
+      // Deploy SwapUtils
+      swapUtils = (await deployContract(owner, SwapUtilsArtifact)) as SwapUtils
       await swapUtils.deployed()
 
       // Deploy Swap with SwapUtils library
