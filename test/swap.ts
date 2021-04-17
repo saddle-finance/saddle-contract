@@ -48,6 +48,7 @@ describe("Swap", async () => {
     initialA: BigNumber
     futureA: BigNumber
     initialATime: BigNumber
+    
     futureATime: BigNumber
     swapFee: BigNumber
     adminFee: BigNumber
@@ -62,6 +63,7 @@ describe("Swap", async () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
+      const { get } = deployments
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
@@ -92,13 +94,10 @@ describe("Swap", async () => {
         await secondToken.mint(address, String(1e20))
       })
 
-      // Deploy SwapUtils
-      swapUtils = (await deployContract(owner, SwapUtilsArtifact)) as SwapUtils
-      await swapUtils.deployed()
-
       // Deploy Swap with SwapUtils library
       swap = (await deployContractWithLibraries(owner, SwapArtifact, {
-        SwapUtils: swapUtils.address,
+        SwapUtils: (await get("SwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
       })) as Swap
       await swap.deployed()
 

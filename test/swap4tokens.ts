@@ -61,6 +61,7 @@ describe("Swap with 4 tokens", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
+      const { get } = deployments
       await deployments.fixture() // ensure you start from a fresh deployments
 
       TOKENS.length = 0
@@ -111,13 +112,10 @@ describe("Swap with 4 tokens", () => {
         },
       )
 
-      // Deploy SwapUtils
-      swapUtils = (await deployContract(owner, SwapUtilsArtifact)) as SwapUtils
-      await swapUtils.deployed()
-
       // Deploy Swap with SwapUtils library
       swap = (await deployContractWithLibraries(owner, SwapArtifact, {
-        SwapUtils: swapUtils.address,
+        SwapUtils: (await get("SwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
       })) as Swap
       await swap.deployed()
 
