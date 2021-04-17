@@ -154,6 +154,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
+      const { get } = deployments
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
@@ -205,21 +206,10 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(balances[4]).to.eq("6559142099847758949166311")
       expect(balances[5]).to.eq("315600946507951")
 
-      // Deploy MathUtils
-      mathUtils = (await deployContract(
-        signers[0] as Wallet,
-        MathUtilsArtifact,
-      )) as MathUtils
-
-      // Deploy SwapUtils with MathUtils library
-      swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-        MathUtils: mathUtils.address,
-      })) as SwapUtils
-      await swapUtils.deployed()
-
       // Deploy Swap with SwapUtils library
       btcSwap = (await deployContractWithLibraries(owner, SwapArtifact, {
-        SwapUtils: swapUtils.address,
+        SwapUtils: (await get("SwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
       })) as Swap
       await btcSwap.deployed()
       await btcSwap.initialize(
@@ -245,7 +235,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       )) as LPToken
 
       usdSwap = (await deployContractWithLibraries(owner, SwapArtifact, {
-        SwapUtils: swapUtils.address,
+        SwapUtils: (await get("SwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
       })) as Swap
       await usdSwap.deployed()
       await usdSwap.initialize(
