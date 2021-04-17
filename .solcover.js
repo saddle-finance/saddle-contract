@@ -12,8 +12,7 @@ module.exports = {
   skipFiles: [
     'VirtualSwap/',
     'guarded/',
-    'helper/Multicall.sol',
-    'helper/test/TestSwapReturnValues.sol',
+    'helper/',
   ],
   mocha: {
     grep: "@skip-on-coverage", // Find everything with this tag

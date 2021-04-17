@@ -17,8 +17,6 @@ import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapDeployer } from "../build/typechain/SwapDeployer"
@@ -36,7 +34,6 @@ describe("Swap Deployer", () => {
   let swap: Swap
   let swapClone: Swap
   let swapDeployer: SwapDeployer
-  let mathUtils: MathUtils
   let swapUtils: SwapUtils
   let DAI: GenericERC20
   let USDC: GenericERC20

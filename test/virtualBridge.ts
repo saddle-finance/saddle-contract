@@ -17,8 +17,6 @@ import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
@@ -54,7 +52,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
   let bridge: Bridge
   let btcSwap: Swap
   let usdSwap: Swap
-  let mathUtils: MathUtils
   let swapUtils: SwapUtils
   let wbtc: GenericERC20
   let renbtc: GenericERC20

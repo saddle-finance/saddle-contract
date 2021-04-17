@@ -30,7 +30,6 @@ import "./AmplificationUtils.sol";
 contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
-    using MathUtils for uint256;
     using SwapUtils for SwapUtils.Swap;
     using AmplificationUtils for SwapUtils.Swap;
 
@@ -338,11 +337,12 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 tokenAmount,
         uint8 tokenIndex
     ) external view returns (uint256 availableTokenAmount) {
-        (availableTokenAmount, ) = swapStorage.calculateWithdrawOneToken(
-            account,
-            tokenAmount,
-            tokenIndex
-        );
+        return
+            swapStorage.calculateWithdrawOneToken(
+                account,
+                tokenAmount,
+                tokenIndex
+            );
     }
 
     /**
