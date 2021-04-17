@@ -48,7 +48,7 @@ describe("Swap", async () => {
     initialA: BigNumber
     futureA: BigNumber
     initialATime: BigNumber
-    
+
     futureATime: BigNumber
     swapFee: BigNumber
     adminFee: BigNumber

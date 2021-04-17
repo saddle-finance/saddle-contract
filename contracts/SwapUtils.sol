@@ -94,8 +94,8 @@ library SwapUtils {
         uint256 preciseA;
     }
 
-    // Struct storing variables used in calculation in addLiquidity function
-    // to avoid stack too deep error
+    // Struct storing variables used in calculations in the
+    // {add,remove}Liquidity functions to avoid stack too deep errors
     struct ManageLiquidityInfo {
         uint256 d0;
         uint256 d1;
