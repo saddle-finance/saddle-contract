@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "./OwnerPausableUpgradeable.sol";
 import "./SwapUtils.sol";
 import "./MathUtils.sol";
+import "./AmplificationUtils.sol";
 
 /**
  * @title Swap - A StableSwap implementation in solidity.
@@ -31,6 +32,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;
     using MathUtils for uint256;
     using SwapUtils for SwapUtils.Swap;
+    using AmplificationUtils for SwapUtils.Swap;
 
     // Struct storing data responsible for automatic market maker functionalities. In order to
     // access this data, this contract uses SwapUtils library. For more details, see SwapUtils.sol
@@ -156,7 +158,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         }
 
         // Check _a, _fee, _adminFee, _withdrawFee parameters
-        require(_a < SwapUtils.MAX_A, "_a exceeds maximum");
+        require(_a < AmplificationUtils.MAX_A, "_a exceeds maximum");
         require(_fee < SwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
         require(
             _adminFee < SwapUtils.MAX_ADMIN_FEE,
@@ -548,13 +550,13 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @param futureTime timestamp when the new A should be reached
      */
     function rampA(uint256 futureA, uint256 futureTime) external onlyOwner {
-        swapStorage.rampA(futureA, futureTime);
+        swapStorage.rampA(swapStorage.getAPrecise(), futureA, futureTime);
     }
 
     /**
      * @notice Stop ramping A immediately. Reverts if ramp A is already stopped.
      */
     function stopRampA() external onlyOwner {
-        swapStorage.stopRampA();
+        swapStorage.stopRampA(swapStorage.getAPrecise());
     }
 }

@@ -63,7 +63,9 @@ describe("Swap Flashloan", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
+      const { get } = deployments
       await deployments.fixture() // ensure you start from a fresh deployments
+
       TOKENS.length = 0
       signers = await ethers.getSigners()
       owner = signers[0]
@@ -112,23 +114,14 @@ describe("Swap Flashloan", () => {
         },
       )
 
-      // Deploy MathUtils
-      mathUtils = (await deployContract(
-        signers[0] as Wallet,
-        MathUtilsArtifact,
-      )) as MathUtils
-
-      // Deploy SwapUtils with MathUtils library
-      swapUtils = (await deployContractWithLibraries(owner, SwapUtilsArtifact, {
-        MathUtils: mathUtils.address,
-      })) as SwapUtils
-      await swapUtils.deployed()
-
       // Deploy Swap with SwapUtils library
       swapFlashLoan = (await deployContractWithLibraries(
         owner,
         SwapFlashLoanArtifact,
-        { SwapUtils: swapUtils.address },
+        {
+          SwapUtils: (await get("SwapUtils")).address,
+          AmplificationUtils: (await get("AmplificationUtils")).address,
+        },
       )) as SwapFlashLoan
       await swapFlashLoan.deployed()
 
