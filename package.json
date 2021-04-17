@@ -30,7 +30,7 @@
     "@typescript-eslint/parser": "^4.20.0",
     "chai": "^4.3.4",
     "eslint": "^7.23.0",
-    "eslint-config-prettier": "^8.1.0",
+    "eslint-config-prettier": "^8.2.0",
     "eslint-plugin-json": "^2.1.2",
     "eslint-plugin-prettier": "^3.4.0",
     "ethereum-waffle": "^3.3.0",
