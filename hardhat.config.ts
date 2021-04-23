@@ -6,6 +6,7 @@ import "hardhat-gas-reporter"
 import "solidity-coverage"
 import "hardhat-typechain"
 import "hardhat-deploy"
+import "hardhat-spdx-license-identifier"
 
 import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
@@ -63,6 +64,10 @@ let config: HardhatUserConfig = {
       default: 1, // use a different account for deploying libraries on the hardhat network
       1: 0, // use the same address as the main deployer on mainnet
     },
+  },
+  spdxLicenseIdentifier: {
+    overwrite: false,
+    runOnCompile: true,
   },
 }
 

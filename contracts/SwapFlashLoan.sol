@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT WITH AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
 
