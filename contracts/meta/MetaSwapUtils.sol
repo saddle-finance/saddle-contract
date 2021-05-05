@@ -136,16 +136,6 @@ library MetaSwapUtils {
     /*** VIEW & PURE FUNCTIONS ***/
 
     /**
-     * @notice Return A, the amplification coefficient * n * (n - 1)
-     * @dev See the StableSwap paper for details
-     * @param self Swap struct to read from
-     * @return A parameter
-     */
-    function getA(SwapUtils.Swap storage self) public view returns (uint256) {
-        return getAPrecise(self).div(A_PRECISION);
-    }
-
-    /**
      * @notice Return A in its raw precision
      * @dev See the StableSwap paper for details
      * @param self Swap struct to read from
@@ -218,19 +208,6 @@ library MetaSwapUtils {
         returns (uint256)
     {
         return _getBaseVirtualPrice(metaSwapStorage, metaSwapStorage.baseSwap);
-    }
-
-    /**
-     * @notice Retrieves the timestamp of last deposit made by the given address
-     * @param self Swap struct to read from
-     * @return timestamp of last deposit
-     */
-    function getDepositTimestamp(SwapUtils.Swap storage self, address user)
-        external
-        view
-        returns (uint256)
-    {
-        return self.depositTimestamp[user];
     }
 
     /**
@@ -855,25 +832,6 @@ library MetaSwapUtils {
                     )
                 );
         }
-    }
-
-    /**
-     * @notice return accumulated amount of admin fees of the token with given index
-     * @param self Swap struct to read from
-     * @param index Index of the pooled token
-     * @return admin balance in the token's precision
-     */
-    function getAdminBalance(SwapUtils.Swap storage self, uint256 index)
-        external
-        view
-        returns (uint256)
-    {
-        IERC20[] memory pooledTokens = self.pooledTokens;
-        require(index < pooledTokens.length, "Token index out of range");
-        return
-            pooledTokens[index].balanceOf(address(this)).sub(
-                self.balances[index]
-            );
     }
 
     /**
