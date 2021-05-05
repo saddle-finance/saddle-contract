@@ -1,17 +1,11 @@
 import { BigNumber, Signer, Wallet } from "ethers"
 import {
   MAX_UINT256,
-  TIME,
-  ZERO_ADDRESS,
   asyncForEach,
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
   getUserTokenBalance,
   getUserTokenBalances,
-  setNextTimestamp,
-  setTimestamp,
-  forceAdvanceOneBlock,
-  increaseTimestamp,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
@@ -20,16 +14,10 @@ import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { MetaSwap } from "../build/typechain/MetaSwap"
 import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
-import { MetaSwapUtils } from "../build/typechain/MetaSwapUtils"
-import MetaSwapUtilsArtifact from "../build/artifacts/contracts/meta/MetaSwapUtils.sol/MetaSwapUtils.json"
-import { AmplificationUtils } from "../build/typechain/AmplificationUtils"
-import AmplificationUtilsArtifact from "../build/artifacts/contracts/AmplificationUtils.sol/AmplificationUtils.json"
 import { MetaSwapDeposit } from "../build/typechain/MetaSwapDeposit"
 import MetaSwapDepositArtifact from "../build/artifacts/contracts/meta/MetaSwapDeposit.sol/MetaSwapDeposit.json"
 import chai from "chai"
@@ -41,8 +29,6 @@ describe("Meta-Swap Deposit Contract", async () => {
   let signers: Array<Signer>
   let baseSwap: Swap
   let metaSwap: MetaSwap
-  let mathUtils: MathUtils
-  let metaSwapUtils: MetaSwapUtils
   let metaSwapDeposit: MetaSwapDeposit
   let susd: GenericERC20
   let dai: GenericERC20
@@ -57,15 +43,6 @@ describe("Meta-Swap Deposit Contract", async () => {
   let ownerAddress: string
   let user1Address: string
   let user2Address: string
-  let swapStorage: {
-    initialA: BigNumber
-    futureA: BigNumber
-    initialATime: BigNumber
-    futureATime: BigNumber
-    swapFee: BigNumber
-    adminFee: BigNumber
-    lpToken: string
-  }
 
   // Test Values
   const INITIAL_A_VALUE = 50

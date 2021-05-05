@@ -682,7 +682,8 @@ library MetaSwapUtils {
             dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]).add(
                 xp[tokenIndexFrom]
             );
-        uint256 y = getY(getAPrecise(self), tokenIndexFrom, tokenIndexTo, x, xp);
+        uint256 y =
+            getY(getAPrecise(self), tokenIndexFrom, tokenIndexTo, x, xp);
         dy = xp[tokenIndexTo].sub(y).sub(1);
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
         dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
@@ -751,7 +752,8 @@ library MetaSwapUtils {
         }
 
         {
-            uint256 y = getY(getAPrecise(self), tokenIndexFrom, v.metaIndexTo, v.x, xp);
+            uint256 y =
+                getY(getAPrecise(self), tokenIndexFrom, v.metaIndexTo, v.x, xp);
             v.dy = xp[v.metaIndexTo].sub(y).sub(1);
             uint256 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
             v.dy = v.dy.sub(dyFee);
@@ -1050,7 +1052,14 @@ library MetaSwapUtils {
 
             uint256 dyFee;
             {
-                uint256 y = getY(getAPrecise(self), v.metaIndexFrom, v.metaIndexTo, v.x, xp);
+                uint256 y =
+                    getY(
+                        getAPrecise(self),
+                        v.metaIndexFrom,
+                        v.metaIndexTo,
+                        v.x,
+                        xp
+                    );
                 v.dy = xp[v.metaIndexTo].sub(y).sub(1);
                 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
                 v.dy = v.dy.sub(dyFee);
