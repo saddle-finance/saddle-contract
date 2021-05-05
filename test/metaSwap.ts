@@ -19,10 +19,6 @@ import { GenericERC20 } from "../build/typechain/GenericERC20"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { MathUtils } from "../build/typechain/MathUtils"
-import MathUtilsArtifact from "../build/artifacts/contracts/MathUtils.sol/MathUtils.json"
-import { AmplificationUtils } from "../build/typechain/AmplificationUtils"
-import AmplificationUtilsArtifact from "../build/artifacts/contracts/AmplificationUtils.sol/AmplificationUtils.json"
 import { Swap } from "../build/typechain/Swap"
 import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { MetaSwap } from "../build/typechain/MetaSwap"
@@ -38,7 +34,6 @@ describe("Meta-Swap", async () => {
   let signers: Array<Signer>
   let baseSwap: Swap
   let metaSwap: MetaSwap
-  let mathUtils: MathUtils
   let metaSwapUtils: MetaSwapUtils
   let susd: GenericERC20
   let dai: GenericERC20
@@ -52,15 +47,6 @@ describe("Meta-Swap", async () => {
   let ownerAddress: string
   let user1Address: string
   let user2Address: string
-  let swapStorage: {
-    initialA: BigNumber
-    futureA: BigNumber
-    initialATime: BigNumber
-    futureATime: BigNumber
-    swapFee: BigNumber
-    adminFee: BigNumber
-    lpToken: string
-  }
 
   // Test Values
   const INITIAL_A_VALUE = 50
@@ -125,19 +111,10 @@ describe("Meta-Swap", async () => {
         },
       )
 
-      // Deploy MathUtils
-      mathUtils = (await deployContract(
-        signers[0] as Wallet,
-        MathUtilsArtifact,
-      )) as MathUtils
-
-      // Deploy SwapUtils with MathUtils library
-      metaSwapUtils = (await deployContractWithLibraries(
+      // Deploy MetaSwapUtils
+      metaSwapUtils = (await deployContract(
         owner,
         MetaSwapUtilsArtifact,
-        {
-          MathUtils: mathUtils.address,
-        },
       )) as MetaSwapUtils
       await metaSwapUtils.deployed()
 
