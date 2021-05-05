@@ -567,7 +567,7 @@ library MetaSwapUtils {
      * This function is used as a helper function to calculate how much TO token
      * the user should receive on swap.
      *
-     * @param self Swap struct to read from
+     * @param preciseA value of A parameter to use for calculation
      * @param tokenIndexFrom index of FROM token
      * @param tokenIndexTo index of TO token
      * @param x the new total amount of FROM token
@@ -575,13 +575,13 @@ library MetaSwapUtils {
      * @return the amount of TO token that should remain in the pool
      */
     function getY(
-        SwapUtils.Swap storage self,
+        uint256 preciseA,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 x,
         uint256[] memory xp
-    ) internal view returns (uint256) {
-        uint256 numTokens = self.pooledTokens.length;
+    ) internal pure returns (uint256) {
+        uint256 numTokens = xp.length;
         require(
             tokenIndexFrom != tokenIndexTo,
             "Can't compare token to itself"
@@ -591,11 +591,10 @@ library MetaSwapUtils {
             "Tokens must be in pool"
         );
 
-        uint256 a = getAPrecise(self);
-        uint256 d = getD(xp, a);
+        uint256 d = getD(xp, preciseA);
         uint256 c = d;
         uint256 s;
-        uint256 nA = numTokens.mul(a);
+        uint256 nA = numTokens.mul(preciseA);
 
         uint256 _x;
         for (uint256 i = 0; i < numTokens; i++) {
@@ -683,7 +682,7 @@ library MetaSwapUtils {
             dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]).add(
                 xp[tokenIndexFrom]
             );
-        uint256 y = getY(self, tokenIndexFrom, tokenIndexTo, x, xp);
+        uint256 y = getY(getAPrecise(self), tokenIndexFrom, tokenIndexTo, x, xp);
         dy = xp[tokenIndexTo].sub(y).sub(1);
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
         dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
@@ -752,7 +751,7 @@ library MetaSwapUtils {
         }
 
         {
-            uint256 y = getY(self, tokenIndexFrom, v.metaIndexTo, v.x, xp);
+            uint256 y = getY(getAPrecise(self), tokenIndexFrom, v.metaIndexTo, v.x, xp);
             v.dy = xp[v.metaIndexTo].sub(y).sub(1);
             uint256 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
             v.dy = v.dy.sub(dyFee);
@@ -1051,7 +1050,7 @@ library MetaSwapUtils {
 
             uint256 dyFee;
             {
-                uint256 y = getY(self, v.metaIndexFrom, v.metaIndexTo, v.x, xp);
+                uint256 y = getY(getAPrecise(self), v.metaIndexFrom, v.metaIndexTo, v.x, xp);
                 v.dy = xp[v.metaIndexTo].sub(y).sub(1);
                 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
                 v.dy = v.dy.sub(dyFee);
