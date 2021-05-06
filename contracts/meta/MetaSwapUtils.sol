@@ -1020,7 +1020,9 @@ library MetaSwapUtils {
                     );
                 v.dy = xp[v.metaIndexTo].sub(y).sub(1);
                 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
-                v.dy = v.dy.sub(dyFee);
+                v.dy = v.dy.sub(dyFee).div(
+                    self.tokenPrecisionMultipliers[v.metaIndexTo]
+                );
             }
 
             if (tokenIndexTo >= baseLPTokenIndex) {
@@ -1028,11 +1030,13 @@ library MetaSwapUtils {
                     v.baseVirtualPrice
                 );
             }
-            v.dy = v.dy.mul(self.tokenPrecisionMultipliers[v.metaIndexTo]);
 
             {
                 uint256 dyAdminFee =
                     dyFee.mul(self.adminFee).div(FEE_DENOMINATOR);
+                dyAdminFee = dyAdminFee.div(
+                    self.tokenPrecisionMultipliers[v.metaIndexTo]
+                );
                 self.balances[v.metaIndexFrom] = v.oldBalances[v.metaIndexFrom]
                     .add(v.dx);
                 self.balances[v.metaIndexTo] = v.oldBalances[v.metaIndexTo]
