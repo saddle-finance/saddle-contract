@@ -149,9 +149,7 @@ describe("Meta-Swap", async () => {
 
       // Initialize meta swap pool
       // Manually overload the signature
-      await metaSwap[
-        "initialize(address[],uint8[],string,string,uint256,uint256,uint256,uint256,address)"
-      ](
+      await metaSwap.initializeMetaSwap(
         [dummyUSD.address, baseLPToken.address],
         [6, 18],
         LP_TOKEN_NAME,
