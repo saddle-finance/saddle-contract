@@ -24,6 +24,7 @@ contract MetaSwapDeposit is Initializable {
     IMetaSwap public metaSwap;
     IERC20[] public baseTokens;
     IERC20[] public metaTokens;
+    IERC20[] public tokens;
     IERC20 public metaLPToken;
 
     uint256 constant MAX_UINT256 = 2**256 - 1;
@@ -54,6 +55,7 @@ contract MetaSwapDeposit is Initializable {
             try baseSwap_.getToken(i) returns (IERC20 token) {
                 baseTokens.push(token);
                 token.approve(address(baseSwap_), MAX_UINT256);
+                token.approve(address(metaSwap_), MAX_UINT256);
             } catch {
                 break;
             }
@@ -65,10 +67,16 @@ contract MetaSwapDeposit is Initializable {
             try metaSwap_.getToken(i) returns (IERC20 token) {
                 baseLPToken = token;
                 metaTokens.push(token);
+                tokens.push(token);
                 token.approve(address(metaSwap_), MAX_UINT256);
             } catch {
                 break;
             }
+        }
+
+        tokens[tokens.length - 1] = baseTokens[0];
+        for (uint8 i = 1; i < baseTokens.length; i++) {
+            tokens.push(baseTokens[i]);
         }
 
         // Approve base swap LP token to be burned by the base swap contract for withdrawing
@@ -83,6 +91,26 @@ contract MetaSwapDeposit is Initializable {
     }
 
     // Mutative functions
+
+    function swap(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx,
+        uint256 minDy,
+        uint256 deadline
+    ) external returns (uint256) {
+        tokens[tokenIndexFrom].safeTransferFrom(msg.sender, address(this), dx);
+        uint256 tokenToAmount =
+            metaSwap.swapUnderlying(
+                tokenIndexFrom,
+                tokenIndexTo,
+                dx,
+                minDy,
+                deadline
+            );
+        tokens[tokenIndexTo].transfer(msg.sender, tokenToAmount);
+        return tokenToAmount;
+    }
 
     /**
      * @notice Add liquidity to the pool with the given amounts of tokens
@@ -525,5 +553,19 @@ contract MetaSwapDeposit is Initializable {
                     tokenIndex - baseLPTokenIndex
                 );
         }
+    }
+
+    function getToken(uint256 index) external view returns (IERC20) {
+        require(index < tokens.length, "index out of range");
+        return tokens[index];
+    }
+
+    function calculateSwap(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx
+    ) external view returns (uint256) {
+        return
+            metaSwap.calculateSwapUnderlying(tokenIndexFrom, tokenIndexTo, dx);
     }
 }

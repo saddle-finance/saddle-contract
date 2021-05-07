@@ -175,16 +175,172 @@ describe("Meta-Swap Deposit Contract", async () => {
       allTokens = [susd, dai, usdc, usdt]
 
       // Approve token transfers to MetaSwapDeposit
-      await susd.approve(metaSwapDeposit.address, MAX_UINT256)
-      await dai.approve(metaSwapDeposit.address, MAX_UINT256)
-      await usdc.approve(metaSwapDeposit.address, MAX_UINT256)
-      await usdt.approve(metaSwapDeposit.address, MAX_UINT256)
-      await metaLPToken.approve(metaSwapDeposit.address, MAX_UINT256)
+      await asyncForEach([owner, user1, user2], async (signer) => {
+        await asyncForEach(
+          [susd, dai, usdc, usdt, metaLPToken],
+          async (token) => {
+            await token
+              .connect(signer)
+              .approve(metaSwapDeposit.address, MAX_UINT256)
+          },
+        )
+      })
     },
   )
 
   beforeEach(async () => {
     await setupTest()
+  })
+
+  describe("getToken", () => {
+    it("Returns correct token addresses", async () => {
+      expect(await metaSwapDeposit.getToken(0)).to.be.eq(susd.address)
+      expect(await metaSwapDeposit.getToken(1)).to.be.eq(dai.address)
+      expect(await metaSwapDeposit.getToken(2)).to.be.eq(usdc.address)
+      expect(await metaSwapDeposit.getToken(3)).to.be.eq(usdt.address)
+    })
+
+    it("Reverts if out of range", async () => {
+      await expect(metaSwapDeposit.getToken(20)).to.be.revertedWith(
+        "out of range",
+      )
+    })
+  })
+
+  describe("swap", () => {
+    it("From 18 decimal token (meta) to 18 decimal token (base)", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await metaSwapDeposit.calculateSwap(
+        0,
+        1,
+        String(1e17),
+      )
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99878006452940184"))
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getUserTokenBalances(user1, [susd, dai])
+
+      // User 1 successfully initiates swap
+      await metaSwapDeposit
+        .connect(user1)
+        .swap(0, 1, String(1e17), calculatedSwapReturn, MAX_UINT256)
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getUserTokenBalances(user1, [susd, dai])
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e17)),
+      )
+      expect(tokenToBalanceAfter.sub(tokenToBalanceBefore)).to.eq(
+        calculatedSwapReturn,
+      )
+    })
+
+    it("From 6 decimal token (base) to 18 decimal token (meta)", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await metaSwapDeposit.calculateSwap(
+        2,
+        0,
+        String(1e5),
+      )
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99897986001503096"))
+
+      // Calculating swapping from a base token to a meta level token
+      // does not account for base pool's swap fees
+      const minReturnWithNegativeSlippage = calculatedSwapReturn
+        .mul(999)
+        .div(1000)
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getUserTokenBalances(user1, [usdc, susd])
+
+      // User 1 successfully initiates swap
+      await metaSwapDeposit
+        .connect(user1)
+        .swap(2, 0, String(1e5), minReturnWithNegativeSlippage, MAX_UINT256)
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getUserTokenBalances(user1, [usdc, susd])
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e5)),
+      )
+      expect(tokenToBalanceAfter.sub(tokenToBalanceBefore)).to.eq(
+        "99879005754596734",
+      )
+    })
+
+    it("From 18 decimal token (meta) to 6 decimal token (base)", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await metaSwapDeposit.calculateSwap(
+        0,
+        2,
+        String(1e17),
+      )
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99878"))
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getUserTokenBalances(user1, [susd, usdc])
+
+      // User 1 successfully initiates swap
+      await metaSwapDeposit
+        .connect(user1)
+        .swap(0, 2, String(1e17), calculatedSwapReturn, MAX_UINT256)
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getUserTokenBalances(user1, [susd, usdc])
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e17)),
+      )
+      expect(tokenToBalanceAfter.sub(tokenToBalanceBefore)).to.eq(
+        calculatedSwapReturn,
+      )
+    })
+
+    it("From 18 decimal token (base) to 6 decimal token (base)", async () => {
+      // User 1 calculates how much token to receive
+      const calculatedSwapReturn = await metaSwapDeposit.calculateSwap(
+        1,
+        3,
+        String(1e17),
+      )
+      expect(calculatedSwapReturn).to.eq(BigNumber.from("99959"))
+
+      const [
+        tokenFromBalanceBefore,
+        tokenToBalanceBefore,
+      ] = await getUserTokenBalances(user1, [dai, usdt])
+
+      // User 1 successfully initiates swap
+      await metaSwapDeposit
+        .connect(user1)
+        .swap(1, 3, String(1e17), calculatedSwapReturn, MAX_UINT256)
+
+      // Check the sent and received amounts are as expected
+      const [
+        tokenFromBalanceAfter,
+        tokenToBalanceAfter,
+      ] = await getUserTokenBalances(user1, [dai, usdt])
+      expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
+        BigNumber.from(String(1e17)),
+      )
+      expect(tokenToBalanceAfter.sub(tokenToBalanceBefore)).to.eq(
+        calculatedSwapReturn,
+      )
+    })
   })
 
   describe("addLiquidity", () => {

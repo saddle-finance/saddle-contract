@@ -25,6 +25,12 @@ interface IMetaSwap {
         uint256 dx
     ) external view returns (uint256);
 
+    function calculateSwapUnderlying(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx
+    ) external view returns (uint256);
+
     function calculateTokenAmount(
         address account,
         uint256[] calldata amounts,
@@ -55,6 +61,14 @@ interface IMetaSwap {
     ) external;
 
     function swap(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx,
+        uint256 minDy,
+        uint256 deadline
+    ) external returns (uint256);
+
+    function swapUnderlying(
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 dx,
