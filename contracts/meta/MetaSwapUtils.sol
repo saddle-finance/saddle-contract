@@ -128,8 +128,10 @@ library MetaSwapUtils {
     // Constant value used as max loop limit
     uint256 private constant MAX_LOOP_LIMIT = 256;
 
+    // Precision used in A parameter calculation
     uint256 public constant A_PRECISION = 100;
 
+    // Cache expire time for the stored value of base swap's virtual price
     uint256 public constant BASE_CACHE_EXPIRE_TIME = 10 minutes;
     uint256 public constant BASE_VIRTUAL_PRICE_PRECISION = 10**18;
 

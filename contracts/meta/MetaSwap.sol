@@ -26,7 +26,7 @@ import "../Swap.sol";
  *
  * MetaSwap is a modified version of Swap that allows Swap's LP token to be utilized in pooling with other tokens.
  *
- * @dev Most of the logic is stored as a library `SwapUtils` for the sake of reducing contract's
+ * @dev Most of the logic is stored as a library `MetaSwapUtils` for the sake of reducing contract's
  * deployment size.
  */
 contract MetaSwap is Swap {
@@ -99,6 +99,9 @@ contract MetaSwap is Swap {
                 break;
             }
         }
+
+        // Last element of _pooledTokens represents the baseSwap's LP token
+        // Below approval is required for when unwrapping the LP token into underlying assets.
         _pooledTokens[_pooledTokens.length - 1].approve(
             address(baseSwap),
             MAX_UINT256

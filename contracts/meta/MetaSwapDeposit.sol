@@ -10,11 +10,15 @@ import "../interfaces/ISwap.sol";
 import "../interfaces/IMetaSwap.sol";
 
 /**
- * @title SwapUtils library
- * @notice A library to be used within Swap.sol. Contains functions responsible for custody and AMM functionalities.
- * @dev Contracts relying on this library must initialize SwapUtils.Swap struct then use this library
- * for SwapUtils.Swap struct. Note that this library contains both functions called by users and admins.
- * Admin functions should be protected within contracts using this library.
+ * @title MetaSwapDeposit
+ * @notice This contract flattens the LP token in a MetaSwap pool for easier user access.
+ *
+ * For example, suppose there exists a base Swap pool consisting of [DAI, USDC, USDT].
+ * Then a MetaSwap pool can be created with [sUSD, BaseSwapLPToken] to allow trades between either
+ * the LP token or the underlying tokens and sUSD.
+ *
+ * MetaSwapDeposit flattens the LP token and remaps them to [sUSD, DAI, USDC, USDT], allowing users
+ * to ignore the dependency on BaseSwapLPToken.
  */
 contract MetaSwapDeposit is Initializable {
     using SafeERC20 for IERC20;
@@ -41,21 +45,21 @@ contract MetaSwapDeposit is Initializable {
     /**
      * @notice Sets the address for the base swap contract, meta swap contract, and the
      * meta swap LP token contract.
-     * @param baseSwap_ the address of the base swap contract
-     * @param metaSwap_ the address of the meta swap contract
-     * @param metaLPToken_ the address of the meta swap LP token contract
+     * @param _baseSwap the address of the base swap contract
+     * @param _metaSwap the address of the meta swap contract
+     * @param _metaLPToken the address of the meta swap LP token contract
      */
     function initialize(
-        ISwap baseSwap_,
-        IMetaSwap metaSwap_,
-        IERC20 metaLPToken_
+        ISwap _baseSwap,
+        IMetaSwap _metaSwap,
+        IERC20 _metaLPToken
     ) external initializer {
         // Check and approve base level tokens to be deposited to the base swap contract
         for (uint8 i = 0; i < 32; i++) {
-            try baseSwap_.getToken(i) returns (IERC20 token) {
+            try _baseSwap.getToken(i) returns (IERC20 token) {
                 baseTokens.push(token);
-                token.approve(address(baseSwap_), MAX_UINT256);
-                token.approve(address(metaSwap_), MAX_UINT256);
+                token.approve(address(_baseSwap), MAX_UINT256);
+                token.approve(address(_metaSwap), MAX_UINT256);
             } catch {
                 break;
             }
@@ -64,11 +68,11 @@ contract MetaSwapDeposit is Initializable {
         // Check and approve meta level tokens to be deposited to the meta swap contract
         IERC20 baseLPToken;
         for (uint8 i = 0; i < 32; i++) {
-            try metaSwap_.getToken(i) returns (IERC20 token) {
+            try _metaSwap.getToken(i) returns (IERC20 token) {
                 baseLPToken = token;
                 metaTokens.push(token);
                 tokens.push(token);
-                token.approve(address(metaSwap_), MAX_UINT256);
+                token.approve(address(_metaSwap), MAX_UINT256);
             } catch {
                 break;
             }
@@ -80,18 +84,26 @@ contract MetaSwapDeposit is Initializable {
         }
 
         // Approve base swap LP token to be burned by the base swap contract for withdrawing
-        baseLPToken.approve(address(baseSwap_), MAX_UINT256);
+        baseLPToken.approve(address(_baseSwap), MAX_UINT256);
         // Approve meta swap LP token to be burned by the meta swap contract for withdrawing
-        metaLPToken_.approve(address(metaSwap_), MAX_UINT256);
+        _metaLPToken.approve(address(_metaSwap), MAX_UINT256);
 
         // Initialize storage variables
-        baseSwap = baseSwap_;
-        metaSwap = metaSwap_;
-        metaLPToken = metaLPToken_;
+        baseSwap = _baseSwap;
+        metaSwap = _metaSwap;
+        metaLPToken = _metaLPToken;
     }
 
     // Mutative functions
 
+    /**
+     * @notice Swap two underlying tokens using the meta pool and the base pool
+     * @param tokenIndexFrom the token the user wants to swap from
+     * @param tokenIndexTo the token the user wants to swap to
+     * @param dx the amount of tokens the user wants to swap from
+     * @param minDy the min amount the user would like to receive, or revert.
+     * @param deadline latest timestamp to accept this transaction
+     */
     function swap(
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
@@ -108,7 +120,7 @@ contract MetaSwapDeposit is Initializable {
                 minDy,
                 deadline
             );
-        tokens[tokenIndexTo].transfer(msg.sender, tokenToAmount);
+        tokens[tokenIndexTo].safeTransfer(msg.sender, tokenToAmount);
         return tokenToAmount;
     }
 
@@ -340,11 +352,10 @@ contract MetaSwapDeposit is Initializable {
         uint256[] memory metaAmounts = new uint256[](memMetaTokens.length);
         uint256[] memory baseAmounts = new uint256[](memBaseTokens.length);
 
-        {
-            uint256 numOfAllTokens =
-                memBaseTokens.length + memMetaTokens.length - 1;
-            require(amounts.length == numOfAllTokens, "out of range");
-        }
+        require(
+            amounts.length == memBaseTokens.length + memMetaTokens.length - 1,
+            "out of range"
+        );
 
         RemoveLiquidityImbalanceInfo memory v =
             RemoveLiquidityImbalanceInfo(
@@ -555,11 +566,25 @@ contract MetaSwapDeposit is Initializable {
         }
     }
 
+    /**
+     * @notice Return address of the pooled token at given index. Reverts if tokenIndex is out of range.
+     * This is a flattened representation of the pooled tokens.
+     * @param index the index of the token
+     * @return address of the token at given index
+     */
     function getToken(uint256 index) external view returns (IERC20) {
         require(index < tokens.length, "index out of range");
         return tokens[index];
     }
 
+    /**
+     * @notice Calculate amount of tokens you receive on swap
+     * @param tokenIndexFrom the token the user wants to sell
+     * @param tokenIndexTo the token the user wants to buy
+     * @param dx the amount of tokens the user wants to sell. If the token charges
+     * a fee on transfers, use the amount that gets transferred after the fee.
+     * @return amount of tokens the user will receive
+     */
     function calculateSwap(
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
