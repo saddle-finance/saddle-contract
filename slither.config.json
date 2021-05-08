@@ -1,6 +1,6 @@
 {
   "compile_force_framework": "hardhat",
-  "filter_paths": "node_modules|TestSwapReturnValues.sol",
+  "filter_paths": "node_modules|contracts/helper",
   "hardhat_artifacts_directory": "build/artifacts",
   "hardhat_cache_directory": "build/cache"
 }
