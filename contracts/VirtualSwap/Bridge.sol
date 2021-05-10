@@ -150,8 +150,8 @@ contract Bridge is ERC721 {
      * @notice Deploys this contract and initializes the master version of the SynthSwapper contract. The address to
      * the Synthetix protocol's Exchanger contract is also set on deployment.
      */
-    constructor() public ERC721("Saddle Cross-Asset Swap", "SaddleSynthSwap") {
-        SYNTH_SWAPPER_MASTER = address(new SynthSwapper());
+    constructor(address synthSwapperAddress) public ERC721("Saddle Cross-Asset Swap", "SaddleSynthSwap") {
+        SYNTH_SWAPPER_MASTER = synthSwapperAddress;
         updateExchangerCache();
     }
 
@@ -490,6 +490,7 @@ contract Bridge is ERC721 {
         // Create a SynthSwapper clone
         SynthSwapper synthSwapper =
             SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
+        synthSwapper.initialize();
 
         // Add the synthswapper to the pending settlement list
         uint256 itemId =
@@ -611,6 +612,7 @@ contract Bridge is ERC721 {
         // Create a SynthSwapper clone
         SynthSwapper synthSwapper =
             SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
+        synthSwapper.initialize();
 
         // Add the synthswapper to the pending synth to token settlement list
         uint256 itemId =
@@ -715,6 +717,8 @@ contract Bridge is ERC721 {
         require(tokenFromAmount != 0, "amount must be greater than 0");
         SynthSwapper synthSwapper =
             SynthSwapper(Clones.clone(SYNTH_SWAPPER_MASTER));
+        synthSwapper.initialize();
+
         bytes32 mediumSynthKey = getSynthKey(swaps[1]);
 
         // Add the synthswapper to the pending synth to token settlement list

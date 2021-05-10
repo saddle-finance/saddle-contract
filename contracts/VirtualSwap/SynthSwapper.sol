@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 
 import "synthetix/contracts/interfaces/ISynthetix.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../interfaces/ISwap.sol";
 
 /**
@@ -12,10 +13,10 @@ import "../interfaces/ISwap.sol";
  * or Saddle's pools. The `Bridge.sol` contract will deploy minimal clones of this contract upon initiating
  * any cross-asset swaps.
  */
-contract SynthSwapper {
+contract SynthSwapper is Initializable {
     using SafeERC20 for IERC20;
 
-    address payable immutable owner;
+    address payable owner;
     // SYNTHETIX points to `ProxyERC20` (0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F).
     // This contract is a proxy of `Synthetix` and is used to exchange synths.
     ISynthetix public constant SYNTHETIX =
@@ -25,10 +26,9 @@ contract SynthSwapper {
         0x534144444c450000000000000000000000000000000000000000000000000000;
 
     /**
-     * @notice Deploys this contract and sets the `owner`. Note that when creating clones of this contract,
-     * the owner will be constant and cannot be changed.
+     * @notice Sets the `owner` as the caller of this function
      */
-    constructor() public {
+    function initialize() public initializer {
         owner = msg.sender;
     }
 

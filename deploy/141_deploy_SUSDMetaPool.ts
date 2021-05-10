@@ -38,7 +38,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await execute(
       "SaddleSUSDMetaPool",
-      { from: deployer, log: true },
+      { from: deployer, log: true, gasLimit: 5000000 },
       "initializeMetaSwap",
       TOKEN_ADDRESSES,
       TOKEN_DECIMALS,
@@ -62,5 +62,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   })
 }
 export default func
-func.tags = ["MetaSUSDPool"]
-func.dependencies = ["MetaSwapUtils", "MetaSUSDPoolTokens"]
+func.tags = ["SUSDMetaPool"]
+func.dependencies = [
+  "AmplificationUtils",
+  "MetaSwapUtils",
+  "MetaSUSDPoolTokens",
+  "SwapUtils",
+]

@@ -44,5 +44,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["MetaSUSDPoolTokens"]
+func.tags = ["SUSDMetaPoolTokens"]
 func.dependencies = ["USDPool"]
