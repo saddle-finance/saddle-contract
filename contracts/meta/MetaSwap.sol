@@ -123,16 +123,14 @@ contract MetaSwap is Swap {
         metaSwapStorage.baseCacheLastUpdated = block.timestamp;
         for (uint8 i; i < 32; i++) {
             try baseSwap.getToken(i) returns (IERC20 token) {
-                token.approve(address(baseSwap), MAX_UINT256);
+                token.safeApprove(address(baseSwap), MAX_UINT256);
                 metaSwapStorage.baseTokens.push(token);
             } catch {
                 break;
             }
         }
 
-        // Last element of _pooledTokens represents the baseSwap's LP token
-        // Below approval is required for when unwrapping the LP token into underlying assets.
-        _pooledTokens[_pooledTokens.length - 1].approve(
+        _pooledTokens[_pooledTokens.length - 1].safeApprove(
             address(baseSwap),
             MAX_UINT256
         );

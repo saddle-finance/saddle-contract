@@ -58,8 +58,8 @@ contract MetaSwapDeposit is Initializable {
         for (uint8 i = 0; i < 32; i++) {
             try _baseSwap.getToken(i) returns (IERC20 token) {
                 baseTokens.push(token);
-                token.approve(address(_baseSwap), MAX_UINT256);
-                token.approve(address(_metaSwap), MAX_UINT256);
+                token.safeApprove(address(_baseSwap), MAX_UINT256);
+                token.safeApprove(address(_metaSwap), MAX_UINT256);
             } catch {
                 break;
             }
@@ -72,7 +72,7 @@ contract MetaSwapDeposit is Initializable {
                 baseLPToken = token;
                 metaTokens.push(token);
                 tokens.push(token);
-                token.approve(address(_metaSwap), MAX_UINT256);
+                token.safeApprove(address(_metaSwap), MAX_UINT256);
             } catch {
                 break;
             }
@@ -84,9 +84,9 @@ contract MetaSwapDeposit is Initializable {
         }
 
         // Approve base swap LP token to be burned by the base swap contract for withdrawing
-        baseLPToken.approve(address(_baseSwap), MAX_UINT256);
+        baseLPToken.safeApprove(address(_baseSwap), MAX_UINT256);
         // Approve meta swap LP token to be burned by the meta swap contract for withdrawing
-        _metaLPToken.approve(address(_metaSwap), MAX_UINT256);
+        _metaLPToken.safeApprove(address(_metaSwap), MAX_UINT256);
 
         // Initialize storage variables
         baseSwap = _baseSwap;
