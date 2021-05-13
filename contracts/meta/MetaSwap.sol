@@ -25,6 +25,9 @@ import "../Swap.sol";
  * Users can always withdraw their tokens via multi-asset withdraws.
  *
  * MetaSwap is a modified version of Swap that allows Swap's LP token to be utilized in pooling with other tokens.
+ * As an example, if there is a Swap pool consisting of [DAI, USDC, USDT]. Then a MetaSwap pool can be created
+ * with [sUSD, BaseSwapLPToken] to allow trades between either the LP token or the underlying tokens and sUSD.
+ * Note that when interacting with MetaSwap, users cannot deposit or withdraw via underlying tokens.
  *
  * @dev Most of the logic is stored as a library `MetaSwapUtils` for the sake of reducing contract's
  * deployment size.
@@ -49,10 +52,126 @@ contract MetaSwap is Swap {
     );
 
     /**
-     * @notice Initializes this Swap contract with the given parameters.
-     * This will also deploy the LPToken that represents users
-     * LP position. The owner of LPToken will be this contract - which means
-     * only this contract is allowed to mint new tokens.
+     * @notice Get the virtual price, to help calculate profit
+     * @return the virtual price, scaled to the POOL_PRECISION_DECIMALS
+     */
+    function getVirtualPrice()
+        external
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        return MetaSwapUtils.getVirtualPrice(swapStorage, metaSwapStorage);
+    }
+
+    /**
+     * @notice Calculate amount of tokens you receive on swap
+     * @param tokenIndexFrom the token the user wants to sell
+     * @param tokenIndexTo the token the user wants to buy
+     * @param dx the amount of tokens the user wants to sell. If the token charges
+     * a fee on transfers, use the amount that gets transferred after the fee.
+     * @return amount of tokens the user will receive
+     */
+    function calculateSwap(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx
+    ) external view virtual override returns (uint256) {
+        return
+            MetaSwapUtils.calculateSwap(
+                swapStorage,
+                metaSwapStorage,
+                tokenIndexFrom,
+                tokenIndexTo,
+                dx
+            );
+    }
+
+    /**
+     * @notice Calculate amount of tokens you receive on swap. For this function,
+     * the token indices are flattened out so that underlying tokens are represented.
+     * @param tokenIndexFrom the token the user wants to sell
+     * @param tokenIndexTo the token the user wants to buy
+     * @param dx the amount of tokens the user wants to sell. If the token charges
+     * a fee on transfers, use the amount that gets transferred after the fee.
+     * @return amount of tokens the user will receive
+     */
+    function calculateSwapUnderlying(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx
+    ) external view virtual returns (uint256) {
+        return
+            MetaSwapUtils.calculateSwapUnderlying(
+                swapStorage,
+                metaSwapStorage,
+                tokenIndexFrom,
+                tokenIndexTo,
+                dx
+            );
+    }
+
+    /**
+     * @notice A simple method to calculate prices from deposits or
+     * withdrawals, excluding fees but including slippage. This is
+     * helpful as an input into the various "min" parameters on calls
+     * to fight front-running
+     *
+     * @dev This shouldn't be used outside frontends for user estimates.
+     *
+     * @param account address that is depositing or withdrawing tokens
+     * @param amounts an array of token amounts to deposit or withdrawal,
+     * corresponding to pooledTokens. The amount should be in each
+     * pooled token's native precision. If a token charges a fee on transfers,
+     * use the amount that gets transferred after the fee.
+     * @param deposit whether this is a deposit or a withdrawal
+     * @return token amount the user will receive
+     */
+    function calculateTokenAmount(
+        address account,
+        uint256[] calldata amounts,
+        bool deposit
+    ) external view virtual override returns (uint256) {
+        return
+            MetaSwapUtils.calculateTokenAmount(
+                swapStorage,
+                metaSwapStorage,
+                account,
+                amounts,
+                deposit
+            );
+    }
+
+    /**
+     * @notice Calculate the amount of underlying token available to withdraw
+     * when withdrawing via only single token
+     * @param account the address that is withdrawing tokens
+     * @param tokenAmount the amount of LP token to burn
+     * @param tokenIndex index of which token will be withdrawn
+     * @return availableTokenAmount calculated amount of underlying token
+     * available to withdraw
+     */
+    function calculateRemoveLiquidityOneToken(
+        address account,
+        uint256 tokenAmount,
+        uint8 tokenIndex
+    ) external view virtual override returns (uint256) {
+        return
+            MetaSwapUtils.calculateWithdrawOneToken(
+                swapStorage,
+                metaSwapStorage,
+                account,
+                tokenAmount,
+                tokenIndex
+            );
+    }
+
+    /*** STATE MODIFYING FUNCTIONS ***/
+
+    /**
+     * @notice This overrides Swap's initialize function to prevent initializing
+     * without the address of the base Swap contract.
      *
      * @param _pooledTokens an array of ERC20s this pool will accept
      * @param decimals the decimals to use for each pooled token,
@@ -79,12 +198,19 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @notice Initializes this Swap contract with the given parameters.
+     * @notice Initializes this MetaSwap contract with the given parameters.
+     * MetaSwap uses an existing Swap pool to expand the available liquidity.
+     * _pooledTokens array should contain the base Swap pool's LP token as
+     * the last element. For example, if there is a Swap pool consisting of
+     * [DAI, USDC, USDT]. Then a MetaSwap pool can be created with [sUSD, BaseSwapLPToken]
+     * as _pooledTokens.
+     *
      * This will also deploy the LPToken that represents users
      * LP position. The owner of LPToken will be this contract - which means
      * only this contract is allowed to mint new tokens.
      *
-     * @param _pooledTokens an array of ERC20s this pool will accept
+     * @param _pooledTokens an array of ERC20s this pool will accept. The last
+     * element must be an existing Swap pool's LP token's address.
      * @param decimals the decimals to use for each pooled token,
      * eg 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
      * @param lpTokenName the long-form name of the token to be deployed
@@ -137,120 +263,6 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @notice Get the virtual price, to help calculate profit
-     * @return the virtual price, scaled to the POOL_PRECISION_DECIMALS
-     */
-    function getVirtualPrice()
-        external
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return swapStorage.getVirtualPrice(metaSwapStorage);
-    }
-
-    /**
-     * @notice Calculate amount of tokens you receive on swap
-     * @param tokenIndexFrom the token the user wants to sell
-     * @param tokenIndexTo the token the user wants to buy
-     * @param dx the amount of tokens the user wants to sell. If the token charges
-     * a fee on transfers, use the amount that gets transferred after the fee.
-     * @return amount of tokens the user will receive
-     */
-    function calculateSwap(
-        uint8 tokenIndexFrom,
-        uint8 tokenIndexTo,
-        uint256 dx
-    ) external view virtual override returns (uint256) {
-        return
-            swapStorage.calculateSwap(
-                metaSwapStorage,
-                tokenIndexFrom,
-                tokenIndexTo,
-                dx
-            );
-    }
-
-    /**
-     * @notice Calculate amount of tokens you receive on swap. For this function,
-     * the token indices are flattened out so that underlying tokens are represented.
-     * @param tokenIndexFrom the token the user wants to sell
-     * @param tokenIndexTo the token the user wants to buy
-     * @param dx the amount of tokens the user wants to sell. If the token charges
-     * a fee on transfers, use the amount that gets transferred after the fee.
-     * @return amount of tokens the user will receive
-     */
-    function calculateSwapUnderlying(
-        uint8 tokenIndexFrom,
-        uint8 tokenIndexTo,
-        uint256 dx
-    ) external view virtual returns (uint256) {
-        return
-            swapStorage.calculateSwapUnderlying(
-                metaSwapStorage,
-                tokenIndexFrom,
-                tokenIndexTo,
-                dx
-            );
-    }
-
-    /**
-     * @notice A simple method to calculate prices from deposits or
-     * withdrawals, excluding fees but including slippage. This is
-     * helpful as an input into the various "min" parameters on calls
-     * to fight front-running
-     *
-     * @dev This shouldn't be used outside frontends for user estimates.
-     *
-     * @param account address that is depositing or withdrawing tokens
-     * @param amounts an array of token amounts to deposit or withdrawal,
-     * corresponding to pooledTokens. The amount should be in each
-     * pooled token's native precision. If a token charges a fee on transfers,
-     * use the amount that gets transferred after the fee.
-     * @param deposit whether this is a deposit or a withdrawal
-     * @return token amount the user will receive
-     */
-    function calculateTokenAmount(
-        address account,
-        uint256[] calldata amounts,
-        bool deposit
-    ) external view virtual override returns (uint256) {
-        return
-            swapStorage.calculateTokenAmount(
-                metaSwapStorage,
-                account,
-                amounts,
-                deposit
-            );
-    }
-
-    /**
-     * @notice Calculate the amount of underlying token available to withdraw
-     * when withdrawing via only single token
-     * @param account the address that is withdrawing tokens
-     * @param tokenAmount the amount of LP token to burn
-     * @param tokenIndex index of which token will be withdrawn
-     * @return availableTokenAmount calculated amount of underlying token
-     * available to withdraw
-     */
-    function calculateRemoveLiquidityOneToken(
-        address account,
-        uint256 tokenAmount,
-        uint8 tokenIndex
-    ) external view virtual override returns (uint256) {
-        return
-            swapStorage.calculateWithdrawOneToken(
-                metaSwapStorage,
-                account,
-                tokenAmount,
-                tokenIndex
-            );
-    }
-
-    /*** STATE MODIFYING FUNCTIONS ***/
-
-    /**
      * @notice Swap two tokens using this pool
      * @param tokenIndexFrom the token the user wants to swap from
      * @param tokenIndexTo the token the user wants to swap to
@@ -274,7 +286,8 @@ contract MetaSwap is Swap {
         returns (uint256)
     {
         return
-            swapStorage.swap(
+            MetaSwapUtils.swap(
+                swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
                 tokenIndexTo,
@@ -306,7 +319,8 @@ contract MetaSwap is Swap {
         returns (uint256)
     {
         return
-            swapStorage.swapUnderlying(
+            MetaSwapUtils.swapUnderlying(
+                swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
                 tokenIndexTo,
@@ -336,7 +350,13 @@ contract MetaSwap is Swap {
         deadlineCheck(deadline)
         returns (uint256)
     {
-        return swapStorage.addLiquidity(metaSwapStorage, amounts, minToMint);
+        return
+            MetaSwapUtils.addLiquidity(
+                swapStorage,
+                metaSwapStorage,
+                amounts,
+                minToMint
+            );
     }
 
     /**
@@ -363,7 +383,8 @@ contract MetaSwap is Swap {
         returns (uint256)
     {
         return
-            swapStorage.removeLiquidityOneToken(
+            MetaSwapUtils.removeLiquidityOneToken(
+                swapStorage,
                 metaSwapStorage,
                 tokenAmount,
                 tokenIndex,
@@ -395,7 +416,8 @@ contract MetaSwap is Swap {
         returns (uint256)
     {
         return
-            swapStorage.removeLiquidityImbalance(
+            MetaSwapUtils.removeLiquidityImbalance(
+                swapStorage,
                 metaSwapStorage,
                 amounts,
                 maxBurnAmount

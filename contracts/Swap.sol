@@ -177,8 +177,8 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisionMultipliers;
         swapStorage.balances = new uint256[](_pooledTokens.length);
-        swapStorage.initialA = _a.mul(SwapUtils.A_PRECISION);
-        swapStorage.futureA = _a.mul(SwapUtils.A_PRECISION);
+        swapStorage.initialA = _a.mul(AmplificationUtils.A_PRECISION);
+        swapStorage.futureA = _a.mul(AmplificationUtils.A_PRECISION);
         swapStorage.initialATime = 0;
         swapStorage.futureATime = 0;
         swapStorage.swapFee = _fee;
@@ -582,13 +582,13 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @param futureTime timestamp when the new A should be reached
      */
     function rampA(uint256 futureA, uint256 futureTime) external onlyOwner {
-        swapStorage.rampA(swapStorage.getAPrecise(), futureA, futureTime);
+        swapStorage.rampA(futureA, futureTime);
     }
 
     /**
      * @notice Stop ramping A immediately. Reverts if ramp A is already stopped.
      */
     function stopRampA() external onlyOwner {
-        swapStorage.stopRampA(swapStorage.getAPrecise());
+        swapStorage.stopRampA();
     }
 }
