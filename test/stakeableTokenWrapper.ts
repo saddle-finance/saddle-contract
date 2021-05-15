@@ -1,5 +1,5 @@
 import { Signer, Wallet } from "ethers"
-import { deployContract, solidity } from "ethereum-waffle"
+import { solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"

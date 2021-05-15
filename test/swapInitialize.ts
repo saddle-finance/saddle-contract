@@ -1,11 +1,10 @@
-import { Signer, Wallet } from "ethers"
-import { ZERO_ADDRESS, deployContractWithLibraries } from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { Signer } from "ethers"
+import { ZERO_ADDRESS } from "./testUtils"
+import { solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { Swap } from "../build/typechain/Swap"
-import { SwapUtils } from "../build/typechain/SwapUtils"
 import chai from "chai"
 
 chai.use(solidity)
@@ -13,7 +12,6 @@ const { expect } = chai
 
 describe("Swap", () => {
   let signers: Array<Signer>
-  let swapUtils: SwapUtils
   let swap: Swap
   let firstToken: GenericERC20
   let secondToken: GenericERC20

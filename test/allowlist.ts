@@ -4,7 +4,7 @@ import {
   getTestMerkleAllowedAccounts,
   getTestMerkleRoot,
 } from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
 import { Allowlist } from "../build/typechain/Allowlist"
@@ -21,7 +21,6 @@ const ALLOWED_ACCOUNTS = getTestMerkleAllowedAccounts()
 
 describe("Allowlist", () => {
   let signers: Array<Signer>
-  let owner: Signer
   let malActor: Signer
   let allowlist: Allowlist
 
@@ -30,7 +29,6 @@ describe("Allowlist", () => {
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
-      owner = signers[0]
       malActor = signers[10]
 
       const cf = await ethers.getContractFactory("Allowlist")

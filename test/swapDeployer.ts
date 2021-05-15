@@ -1,7 +1,6 @@
-import { BigNumber, Signer, Wallet } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import {
   MAX_UINT256,
-  deployContractWithLibraries,
   getCurrentBlockTimestamp,
   getUserTokenBalance,
   asyncForEach,
@@ -11,7 +10,7 @@ import {
   getPoolBalances,
   forceAdvanceOneBlock,
 } from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { solidity } from "ethereum-waffle"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { LPToken } from "../build/typechain/LPToken"

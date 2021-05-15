@@ -1,5 +1,5 @@
-import { Signer, Wallet } from "ethers"
-import { deployContract, solidity } from "ethereum-waffle"
+import { Signer } from "ethers"
+import { solidity } from "ethereum-waffle"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import chai from "chai"

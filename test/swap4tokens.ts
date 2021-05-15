@@ -1,4 +1,4 @@
-import { BigNumber, Signer, Wallet } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import {
   MAX_UINT256,
   TIME,

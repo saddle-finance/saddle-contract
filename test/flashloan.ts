@@ -1,17 +1,11 @@
-import { BigNumber, Signer, Wallet } from "ethers"
-import {
-  MAX_UINT256,
-  deployContractWithLibraries,
-  getUserTokenBalance,
-  asyncForEach,
-} from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { BigNumber, Signer } from "ethers"
+import { MAX_UINT256, getUserTokenBalance, asyncForEach } from "./testUtils"
+import { solidity } from "ethereum-waffle"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { LPToken } from "../build/typechain/LPToken"
 import { FlashLoanBorrowerExample } from "../build/typechain/FlashLoanBorrowerExample"
 import { SwapFlashLoan } from "../build/typechain/SwapFlashLoan"
-import { SwapUtils } from "../build/typechain/SwapUtils"
 import chai from "chai"
 import { deployments, ethers } from "hardhat"
 import { solidityPack } from "ethers/lib/utils"
@@ -22,7 +16,6 @@ const { expect } = chai
 describe("Swap Flashloan", () => {
   let signers: Array<Signer>
   let swapFlashLoan: SwapFlashLoan
-  let swapUtils: SwapUtils
   let flashLoanExample: FlashLoanBorrowerExample
   let DAI: GenericERC20
   let USDC: GenericERC20

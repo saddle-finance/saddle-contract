@@ -1,5 +1,5 @@
-import { Signer, Wallet } from "ethers"
-import { deployContract, solidity } from "ethereum-waffle"
+import { Signer } from "ethers"
+import { solidity } from "ethereum-waffle"
 
 import { LPToken } from "../build/typechain/LPToken"
 import chai from "chai"

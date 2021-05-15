@@ -1,10 +1,9 @@
-import { BigNumber, Signer, Wallet } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import {
   MAX_UINT256,
   TIME,
   ZERO_ADDRESS,
   asyncForEach,
-  deployContractWithLibraries,
   getCurrentBlockTimestamp,
   getUserTokenBalance,
   getUserTokenBalances,
@@ -12,7 +11,7 @@ import {
   setTimestamp,
   forceAdvanceOneBlock,
 } from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"

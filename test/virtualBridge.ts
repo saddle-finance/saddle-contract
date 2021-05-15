@@ -14,7 +14,6 @@ import { Bridge } from "../build/typechain/Bridge"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { LPToken } from "../build/typechain/LPToken"
 import { Swap } from "../build/typechain/Swap"
-import { SwapUtils } from "../build/typechain/SwapUtils"
 import chai from "chai"
 import dotenv from "dotenv"
 
@@ -46,7 +45,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
   let bridge: Bridge
   let btcSwap: Swap
   let usdSwap: Swap
-  let swapUtils: SwapUtils
   let wbtc: GenericERC20
   let renbtc: GenericERC20
   let sbtc: GenericERC20
