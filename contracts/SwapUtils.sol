@@ -473,10 +473,10 @@ library SwapUtils {
         returns (uint256)
     {
         uint256 d = getD(_xp(self), getAPrecise(self));
-        ERC20 lpToken = self.lpToken;
+        LPToken lpToken = self.lpToken;
         uint256 supply = lpToken.totalSupply();
         if (supply > 0) {
-            return d.mul(10**uint256(lpToken.decimals())).div(supply);
+            return d.mul(10**uint256(POOL_PRECISION_DECIMALS)).div(supply);
         }
         return 0;
     }
