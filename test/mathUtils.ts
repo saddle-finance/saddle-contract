@@ -1,8 +1,7 @@
-import { Signer, Wallet, constants } from "ethers"
-import { deployContract, solidity } from "ethereum-waffle"
+import { constants } from "ethers"
+import { solidity } from "ethereum-waffle"
 
 import { TestMathUtils } from "../build/typechain/TestMathUtils"
-import TestMathUtilsArtifact from "../build/artifacts/contracts/helper/test/TestMathUtils.sol/TestMathUtils.json"
 import chai from "chai"
 import { ethers } from "hardhat"
 
@@ -10,16 +9,13 @@ chai.use(solidity)
 const { expect } = chai
 
 describe("MathUtils", () => {
-  let signers: Array<Signer>
-
   let mathUtils: TestMathUtils
 
   beforeEach(async () => {
-    signers = await ethers.getSigners()
-    mathUtils = (await deployContract(
-      signers[0] as Wallet,
-      TestMathUtilsArtifact,
-    )) as TestMathUtils
+    const testMathUtilsFactory = await ethers.getContractFactory(
+      "TestMathUtils",
+    )
+    mathUtils = (await testMathUtilsFactory.deploy()) as TestMathUtils
   })
 
   describe("within1", () => {

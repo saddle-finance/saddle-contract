@@ -1,22 +1,11 @@
-import { BigNumber, Signer, Wallet } from "ethers"
-import {
-  MAX_UINT256,
-  deployContractWithLibraries,
-  getUserTokenBalance,
-  asyncForEach,
-} from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { BigNumber, Signer } from "ethers"
+import { MAX_UINT256, getUserTokenBalance, asyncForEach } from "./testUtils"
+import { solidity } from "ethereum-waffle"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { FlashLoanBorrowerExample } from "../build/typechain/FlashLoanBorrowerExample"
-import FlashLoanBorrowerExampleArtifact from "../build/artifacts/contracts/helper/FlashLoanBorrowerExample.sol/FlashLoanBorrowerExample.json"
 import { SwapFlashLoan } from "../build/typechain/SwapFlashLoan"
-import SwapFlashLoanArtifact from "../build/artifacts/contracts/SwapFlashLoan.sol/SwapFlashLoan.json"
-import { SwapUtils } from "../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
 import { deployments, ethers } from "hardhat"
 import { solidityPack } from "ethers/lib/utils"
@@ -27,7 +16,6 @@ const { expect } = chai
 describe("Swap Flashloan", () => {
   let signers: Array<Signer>
   let swapFlashLoan: SwapFlashLoan
-  let swapUtils: SwapUtils
   let flashLoanExample: FlashLoanBorrowerExample
   let DAI: GenericERC20
   let USDC: GenericERC20
@@ -73,30 +61,13 @@ describe("Swap Flashloan", () => {
       user1Address = await user1.getAddress()
       user2Address = await user2.getAddress()
 
+      const erc20Factory = await ethers.getContractFactory("GenericERC20")
+
       // Deploy dummy tokens
-      DAI = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-        "DAI",
-        "DAI",
-        "18",
-      ])) as GenericERC20
-
-      USDC = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-        "USDC",
-        "USDC",
-        "6",
-      ])) as GenericERC20
-
-      USDT = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-        "USDT",
-        "USDT",
-        "6",
-      ])) as GenericERC20
-
-      SUSD = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-        "SUSD",
-        "SUSD",
-        "18",
-      ])) as GenericERC20
+      DAI = (await erc20Factory.deploy("DAI", "DAI", "18")) as GenericERC20
+      USDC = (await erc20Factory.deploy("USDC", "USDC", "6")) as GenericERC20
+      USDT = (await erc20Factory.deploy("USDT", "USDT", "6")) as GenericERC20
+      SUSD = (await erc20Factory.deploy("SUSD", "SUSD", "18")) as GenericERC20
 
       TOKENS.push(DAI, USDC, USDT, SUSD)
 
@@ -111,16 +82,18 @@ describe("Swap Flashloan", () => {
         },
       )
 
-      // Deploy Swap with SwapUtils library
-      swapFlashLoan = (await deployContractWithLibraries(
-        owner,
-        SwapFlashLoanArtifact,
+      const swapFlashLoanFactory = await ethers.getContractFactory(
+        "SwapFlashLoan",
         {
-          SwapUtils: (await get("SwapUtils")).address,
-          AmplificationUtils: (await get("AmplificationUtils")).address,
+          libraries: {
+            SwapUtils: (await get("SwapUtils")).address,
+            AmplificationUtils: (await get("AmplificationUtils")).address,
+          },
         },
-      )) as SwapFlashLoan
-      await swapFlashLoan.deployed()
+      )
+
+      // Deploy Swap with SwapUtils library
+      swapFlashLoan = (await swapFlashLoanFactory.deploy()) as SwapFlashLoan
 
       await swapFlashLoan.initialize(
         [DAI.address, USDC.address, USDT.address, SUSD.address],
@@ -138,7 +111,7 @@ describe("Swap Flashloan", () => {
       swapStorage = await swapFlashLoan.swapStorage()
 
       swapToken = (await ethers.getContractAt(
-        LPTokenArtifact.abi,
+        "LPToken",
         swapStorage.lpToken,
       )) as LPToken
 
@@ -165,11 +138,10 @@ describe("Swap Flashloan", () => {
       )
 
       // Deploy an example flash loan borrower contract
-      flashLoanExample = (await deployContract(
-        signers[0] as Wallet,
-        FlashLoanBorrowerExampleArtifact,
-      )) as FlashLoanBorrowerExample
-      await flashLoanExample.deployed()
+      const flashLoanExampleFactory = await ethers.getContractFactory(
+        "FlashLoanBorrowerExample",
+      )
+      flashLoanExample = (await flashLoanExampleFactory.deploy()) as FlashLoanBorrowerExample
 
       // Set fees to easier numbers for debugging
       await swapFlashLoan.setFlashLoanFees(100, 5000)

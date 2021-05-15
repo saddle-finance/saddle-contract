@@ -1,7 +1,6 @@
-import { Signer, Wallet } from "ethers"
-import { deployContract, solidity } from "ethereum-waffle"
+import { Signer } from "ethers"
+import { solidity } from "ethereum-waffle"
 
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import chai from "chai"
 import { ethers } from "hardhat"
@@ -17,12 +16,14 @@ describe("GenericERC20", async () => {
   it("Reverts when minting 0", async () => {
     signers = await ethers.getSigners()
     owner = signers[0]
+
     // Deploy dummy tokens
-    firstToken = (await deployContract(owner as Wallet, GenericERC20Artifact, [
+    const erc20Factory = await ethers.getContractFactory("GenericERC20")
+    firstToken = (await erc20Factory.deploy(
       "First Token",
       "FIRST",
       "18",
-    ])) as GenericERC20
+    )) as GenericERC20
     await expect(firstToken.mint(await owner.getAddress(), 0)).to.be.reverted
   })
 })

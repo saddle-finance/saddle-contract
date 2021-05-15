@@ -1,10 +1,9 @@
-import { BigNumber, Signer, Wallet } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import {
   MAX_UINT256,
   TIME,
   ZERO_ADDRESS,
   asyncForEach,
-  deployContractWithLibraries,
   getCurrentBlockTimestamp,
   getUserTokenBalance,
   getUserTokenBalances,
@@ -12,19 +11,14 @@ import {
   setTimestamp,
   forceAdvanceOneBlock,
 } from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { Swap } from "../build/typechain/Swap"
-import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { SwapUtils } from "../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import { TestSwapReturnValues } from "../build/typechain/TestSwapReturnValues"
-import TestSwapReturnValuesArtifact from "../build/artifacts/contracts/helper/test/TestSwapReturnValues.sol/TestSwapReturnValues.json"
 import chai from "chai"
 
 chai.use(solidity)
@@ -74,16 +68,18 @@ describe("Swap", async () => {
       user2Address = await user2.getAddress()
 
       // Deploy dummy tokens
-      firstToken = (await deployContract(
-        owner as Wallet,
-        GenericERC20Artifact,
-        ["First Token", "FIRST", "18"],
+      const erc20Factory = await ethers.getContractFactory("GenericERC20")
+
+      firstToken = (await erc20Factory.deploy(
+        "First Token",
+        "FIRST",
+        "18",
       )) as GenericERC20
 
-      secondToken = (await deployContract(
-        owner as Wallet,
-        GenericERC20Artifact,
-        ["Second Token", "SECOND", "18"],
+      secondToken = (await erc20Factory.deploy(
+        "Second Token",
+        "SECOND",
+        "18",
       )) as GenericERC20
 
       // Mint dummy tokens
@@ -94,11 +90,13 @@ describe("Swap", async () => {
       })
 
       // Deploy Swap with SwapUtils library
-      swap = (await deployContractWithLibraries(owner, SwapArtifact, {
-        SwapUtils: (await get("SwapUtils")).address,
-        AmplificationUtils: (await get("AmplificationUtils")).address,
-      })) as Swap
-      await swap.deployed()
+      const swapFactory = await ethers.getContractFactory("Swap", {
+        libraries: {
+          SwapUtils: (await get("SwapUtils")).address,
+          AmplificationUtils: (await get("AmplificationUtils")).address,
+        },
+      })
+      swap = (await swapFactory.deploy()) as Swap
 
       await swap.initialize(
         [firstToken.address, secondToken.address],
@@ -116,16 +114,18 @@ describe("Swap", async () => {
       swapStorage = await swap.swapStorage()
 
       swapToken = (await ethers.getContractAt(
-        LPTokenArtifact.abi,
+        "LPToken",
         swapStorage.lpToken,
       )) as LPToken
 
-      testSwapReturnValues = (await deployContract(
-        owner,
-        TestSwapReturnValuesArtifact,
-        [swap.address, swapToken.address, 2],
+      const testSwapReturnValuesFactory = await ethers.getContractFactory(
+        "TestSwapReturnValues",
+      )
+      testSwapReturnValues = (await testSwapReturnValuesFactory.deploy(
+        swap.address,
+        swapToken.address,
+        2,
       )) as TestSwapReturnValues
-      await testSwapReturnValues.deployed()
 
       await asyncForEach([owner, user1, user2], async (signer) => {
         await firstToken.connect(signer).approve(swap.address, MAX_UINT256)

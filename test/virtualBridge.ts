@@ -1,26 +1,19 @@
-import { BigNumber, Signer, Wallet, utils } from "ethers"
+import { BigNumber, Signer, utils } from "ethers"
 import {
   MAX_UINT256,
   asyncForEach,
-  deployContractWithLibraries,
   getUserTokenBalances,
   impersonateAccount,
   increaseTimestamp,
   setTimestamp,
 } from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { solidity } from "ethereum-waffle"
 import { deployments, ethers, network } from "hardhat"
 
 import { Bridge } from "../build/typechain/Bridge"
-import BridgeArtifact from "../build/artifacts/contracts/VirtualSwap/Bridge.sol/Bridge.json"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import { LPToken } from "../build/typechain/LPToken"
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { Swap } from "../build/typechain/Swap"
-import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
-import { SwapUtils } from "../build/typechain/SwapUtils"
-import SwapUtilsArtifact from "../build/artifacts/contracts/SwapUtils.sol/SwapUtils.json"
 import chai from "chai"
 import dotenv from "dotenv"
 
@@ -52,7 +45,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
   let bridge: Bridge
   let btcSwap: Swap
   let usdSwap: Swap
-  let swapUtils: SwapUtils
   let wbtc: GenericERC20
   let renbtc: GenericERC20
   let sbtc: GenericERC20
@@ -166,7 +158,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       // eslint-disable-next-line no-unused-vars
       for (const [k, v] of Object.entries(tokenList)) {
         const contract = (await ethers.getContractAt(
-          GenericERC20Artifact.abi,
+          "GenericERC20",
           v.address,
         )) as GenericERC20
 
@@ -204,11 +196,14 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       expect(balances[5]).to.eq("315600946507951")
 
       // Deploy Swap with SwapUtils library
-      btcSwap = (await deployContractWithLibraries(owner, SwapArtifact, {
-        SwapUtils: (await get("SwapUtils")).address,
-        AmplificationUtils: (await get("AmplificationUtils")).address,
-      })) as Swap
-      await btcSwap.deployed()
+      const swapFactory = await ethers.getContractFactory("Swap", {
+        libraries: {
+          SwapUtils: (await get("SwapUtils")).address,
+          AmplificationUtils: (await get("AmplificationUtils")).address,
+        },
+      })
+      btcSwap = (await swapFactory.deploy()) as Swap
+
       await btcSwap.initialize(
         [
           tokenList.tbtc.address,
@@ -227,15 +222,11 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       btcSwapStorage = await btcSwap.swapStorage()
 
       btcSwapToken = (await ethers.getContractAt(
-        LPTokenArtifact.abi,
+        "LPToken",
         btcSwapStorage.lpToken,
       )) as LPToken
 
-      usdSwap = (await deployContractWithLibraries(owner, SwapArtifact, {
-        SwapUtils: (await get("SwapUtils")).address,
-        AmplificationUtils: (await get("AmplificationUtils")).address,
-      })) as Swap
-      await usdSwap.deployed()
+      usdSwap = (await swapFactory.deploy()) as Swap
       await usdSwap.initialize(
         [tokenList.susd.address, tokenList.usdc.address],
         [18, 6],
@@ -248,8 +239,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       )
 
       // Deploy Bridge contract
-      bridge = (await deployContract(owner, BridgeArtifact)) as Bridge
-      await bridge.deployed()
+      const bridgeFactory = await ethers.getContractFactory("Bridge")
+      bridge = (await bridgeFactory.deploy()) as Bridge
 
       // Approve token transfer to Swap for adding liquidity and to Bridge for virtual swaps
       await asyncForEach(
@@ -943,7 +934,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
             queueId,
           )
           const synth = (await ethers.getContractAt(
-            GenericERC20Artifact.abi,
+            "GenericERC20",
             await bridge.getProxyAddressFromTargetSynthKey(
               pendingToTokenSwap.synthKey,
             ),
@@ -966,7 +957,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
             queueId,
           )
           const synth = (await ethers.getContractAt(
-            GenericERC20Artifact.abi,
+            "GenericERC20",
             await bridge.getProxyAddressFromTargetSynthKey(
               pendingToTokenSwap.synthKey,
             ),
@@ -997,7 +988,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
             queueId,
           )
           const synth = (await ethers.getContractAt(
-            GenericERC20Artifact.abi,
+            "GenericERC20",
             await bridge.getProxyAddressFromTargetSynthKey(
               pendingToTokenSwap.synthKey,
             ),
