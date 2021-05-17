@@ -173,7 +173,10 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
 
         // Clone and initialize a LPToken contract
         LPToken lpToken = LPToken(Clones.clone(lpTokenTargetAddress));
-        lpToken.initialize(lpTokenName, lpTokenSymbol);
+        require(
+            lpToken.initialize(lpTokenName, lpTokenSymbol),
+            "could not init lpToken clone"
+        );
 
         // Initialize swapStorage struct
         swapStorage.lpToken = lpToken;

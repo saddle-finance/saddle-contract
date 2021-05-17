@@ -18,11 +18,8 @@ describe("LPToken", async () => {
     owner = signers[0]
     // Deploy dummy tokens
     const lpTokenFactory = await ethers.getContractFactory("LPToken")
-    firstToken = (await lpTokenFactory.deploy(
-      "First Token",
-      "FIRST",
-      "18",
-    )) as LPToken
+    firstToken = (await lpTokenFactory.deploy()) as LPToken
+    firstToken.initialize("Test Token", "TEST")
     await expect(firstToken.mint(await owner.getAddress(), 0)).to.be.reverted
   })
 })
