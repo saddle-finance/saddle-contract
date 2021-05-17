@@ -5,7 +5,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "openzeppelin-contracts-3.4/proxy/Clones.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "synthetix/contracts/interfaces/IAddressResolver.sol";
 import "synthetix/contracts/interfaces/IExchanger.sol";
 import "synthetix/contracts/interfaces/IExchangeRates.sol";
