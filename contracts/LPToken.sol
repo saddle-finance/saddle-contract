@@ -10,14 +10,15 @@ import "./interfaces/ISwap.sol";
  * @title Liquidity Provider Token
  * @notice This token is an ERC20 detailed token with added capability to be minted by the owner.
  * It is used to represent user's shares when providing liquidity to swap contracts.
+ * @dev Only Swap contracts should initialize and own LPToken contracts.
  */
 contract LPToken is ERC20BurnableUpgradeable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     /**
-     * @notice Initializes this LPToken contract with the given name, symbol, decimals, and Swap address.
-     * @dev As the caller of this function will become the owner, a Swap contract should call this
-     * in its initializer function. This contract uses the default value of 18 decimal points.
+     * @notice Initializes this LPToken contract with the given name and symbol
+     * @dev The caller of this function will become the owner. A Swap contract should call this
+     * in its initializer function.
      * @param name name of this token
      * @param symbol symbol of this token
      */
