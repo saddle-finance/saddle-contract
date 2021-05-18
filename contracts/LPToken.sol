@@ -5,6 +5,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/ISwap.sol";
+import "hardhat/console.sol";
 
 /**
  * @title Liquidity Provider Token
@@ -42,6 +43,17 @@ contract LPToken is ERC20BurnableUpgradeable, OwnableUpgradeable {
     function mint(address recipient, uint256 amount) external onlyOwner {
         require(amount != 0, "amount == 0");
         _mint(recipient, amount);
+    }
+
+    /**
+     * @notice Sends any of this LPToken that this contract holds to a specified address.
+     * @param recipient the address to send the token to
+     */
+    function rescue(address recipient) external {
+        uint256 balance = balanceOf(address(this));
+        if (balance > 0) {
+            _transfer(address(this), recipient, balance);
+        }
     }
 
     /**

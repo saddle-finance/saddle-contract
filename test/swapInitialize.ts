@@ -220,5 +220,21 @@ describe("Swap", () => {
         ),
       ).to.be.revertedWith("_withdrawFee exceeds maximum")
     })
+
+    it("Reverts when the LPToken target does not implement initialize function", async () => {
+      await expect(
+        swap.initialize(
+          [firstToken.address, secondToken.address],
+          [18, 18],
+          LP_TOKEN_NAME,
+          LP_TOKEN_SYMBOL,
+          INITIAL_A_VALUE,
+          SWAP_FEE,
+          0,
+          0,
+          ZERO_ADDRESS,
+        ),
+      ).to.be.revertedWith("function returned an unexpected amount of data")
+    })
   })
 })
