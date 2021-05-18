@@ -38,6 +38,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       SWAP_FEE,
       ADMIN_FEE,
       WITHDRAW_FEE,
+      (await get("LPToken")).address,
     )
 
     const newPoolEvent = receipt?.events?.find(

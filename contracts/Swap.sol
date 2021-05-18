@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./OwnerPausableUpgradeable.sol";
 import "./SwapUtils.sol";
@@ -94,9 +95,9 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
 
     /**
      * @notice Initializes this Swap contract with the given parameters.
-     * This will also deploy the LPToken that represents users
-     * LP position. The owner of LPToken will be this contract - which means
-     * only this contract is allowed to mint new tokens.
+     * This will also clone a LPToken contract that represents users'
+     * LP positions. The owner of LPToken will be this contract - which means
+     * only this contract is allowed to mint/burn tokens.
      *
      * @param _pooledTokens an array of ERC20s this pool will accept
      * @param decimals the decimals to use for each pooled token,
@@ -108,6 +109,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
      * @param _withdrawFee default withdrawFee to be initialized with
+     * @param lpTokenTargetAddress the address of an existing LPToken contract to use as a target
      */
     function initialize(
         IERC20[] memory _pooledTokens,
@@ -117,7 +119,8 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee
+        uint256 _withdrawFee,
+        address lpTokenTargetAddress
     ) public virtual initializer {
         __OwnerPausable_init();
         __ReentrancyGuard_init();
@@ -168,12 +171,15 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
             "_withdrawFee exceeds maximum"
         );
 
-        // Initialize swapStorage struct
-        swapStorage.lpToken = new LPToken(
-            lpTokenName,
-            lpTokenSymbol,
-            SwapUtils.POOL_PRECISION_DECIMALS
+        // Clone and initialize a LPToken contract
+        LPToken lpToken = LPToken(Clones.clone(lpTokenTargetAddress));
+        require(
+            lpToken.initialize(lpTokenName, lpTokenSymbol),
+            "could not init lpToken clone"
         );
+
+        // Initialize swapStorage struct
+        swapStorage.lpToken = lpToken;
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisionMultipliers;
         swapStorage.balances = new uint256[](_pooledTokens.length);
