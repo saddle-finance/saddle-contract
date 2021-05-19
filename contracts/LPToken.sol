@@ -40,19 +40,8 @@ contract LPToken is ERC20BurnableUpgradeable, OwnableUpgradeable {
      * @param amount amount of tokens to mint
      */
     function mint(address recipient, uint256 amount) external onlyOwner {
-        require(amount != 0, "amount == 0");
+        require(amount != 0, "LPToken: cannot mint 0");
         _mint(recipient, amount);
-    }
-
-    /**
-     * @notice Sends any of this LPToken that this contract holds to a specified address.
-     * @param recipient the address to send the token to
-     */
-    function rescue(address recipient) external {
-        uint256 balance = balanceOf(address(this));
-        if (balance > 0) {
-            _transfer(address(this), recipient, balance);
-        }
     }
 
     /**
@@ -66,6 +55,7 @@ contract LPToken is ERC20BurnableUpgradeable, OwnableUpgradeable {
         uint256 amount
     ) internal virtual override(ERC20Upgradeable) {
         super._beforeTokenTransfer(from, to, amount);
+        require(to != address(this), "LPToken: cannot send to itself");
         ISwap(owner()).updateUserWithdrawFee(to, amount);
     }
 }
