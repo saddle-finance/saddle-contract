@@ -9,6 +9,7 @@
     "test": "test"
   },
   "dependencies": {
+    "@eth-optimism/hardhat-ovm": "^0.2.0",
     "@eth-optimism/smock": "^1.0.1",
     "@openzeppelin/contracts": "3.4.1",
     "@openzeppelin/contracts-upgradeable": "^3.4.1",
@@ -35,7 +36,7 @@
     "ethers": "^5.0.32",
     "ethlint": "^1.2.5",
     "hardhat": "^2.2.0",
-    "hardhat-deploy": "^0.7.4",
+    "hardhat-deploy": "^0.7.5",
     "hardhat-gas-reporter": "^1.0.4",
     "hardhat-spdx-license-identifier": "^2.0.3",
     "husky": "^6.0.0",

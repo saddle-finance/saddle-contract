@@ -7,6 +7,7 @@ import "solidity-coverage"
 import "hardhat-typechain"
 import "hardhat-deploy"
 import "hardhat-spdx-license-identifier"
+import "@eth-optimism/hardhat-ovm"
 
 import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
@@ -22,6 +23,14 @@ let config: HardhatUserConfig = {
     mainnet: {
       url: process.env.ALCHEMY_API,
       gasPrice: 140 * 1000000000,
+    },
+    optimism: {
+      url: "http://127.0.0.1:8545",
+      gasPrice: 0,
+      ovm: true,
+      accounts: {
+        mnemonic: "test test test test test test test test test test test junk",
+      },
     },
   },
   paths: {
@@ -59,15 +68,20 @@ let config: HardhatUserConfig = {
     deployer: {
       default: 0, // here this will by default take the first account as deployer
       1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
+      420: 0,
     },
     libraryDeployer: {
       default: 1, // use a different account for deploying libraries on the hardhat network
       1: 0, // use the same address as the main deployer on mainnet
+      420: 1,
     },
   },
   spdxLicenseIdentifier: {
     overwrite: false,
     runOnCompile: true,
+  },
+  ovm: {
+    solcVersion: "0.6.12",
   },
 }
 
