@@ -120,6 +120,6 @@ contract SynthSwapper {
     }
 
     function _destroy() internal {
-        selfdestruct(msg.sender);
+        // selfdestruct(msg.sender);
     }
 }

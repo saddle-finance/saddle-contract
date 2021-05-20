@@ -4,12 +4,13 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/proxy/UpgradeableProxy.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./OwnerPausableUpgradeable.sol";
 import "./SwapUtils.sol";
 import "./MathUtils.sol";
 import "./AmplificationUtils.sol";
+import "./FixedProxy.sol";
 
 /**
  * @title Swap - A StableSwap implementation in solidity.
@@ -124,6 +125,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     ) public virtual initializer {
         __OwnerPausable_init();
         __ReentrancyGuard_init();
+
         // Check _pooledTokens and precisions parameter
         require(_pooledTokens.length > 1, "_pooledTokens.length <= 1");
         require(_pooledTokens.length <= 32, "_pooledTokens.length > 32");
@@ -172,7 +174,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         );
 
         // Clone and initialize a LPToken contract
-        LPToken lpToken = LPToken(Clones.clone(lpTokenTargetAddress));
+        LPToken lpToken = LPToken(address(new FixedProxy(lpTokenTargetAddress)));
         require(
             lpToken.initialize(lpTokenName, lpTokenSymbol),
             "could not init lpToken clone"
