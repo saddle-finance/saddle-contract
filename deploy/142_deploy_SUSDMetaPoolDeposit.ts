@@ -9,7 +9,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Manually check if the pool is already deployed
   const saddleSUSDMetaPoolDeposit = await getOrNull("SaddleSUSDMetaPoolDeposit")
   if (saddleSUSDMetaPoolDeposit) {
-    log(`reusing "SaddleSUSDMetaPool" at ${saddleSUSDMetaPoolDeposit.address}`)
+    log(
+      `reusing "SaddleSUSDMetaPoolDeposit" at ${saddleSUSDMetaPoolDeposit.address}`,
+    )
   } else {
     await deploy("SaddleSUSDMetaPoolDeposit", {
       from: deployer,

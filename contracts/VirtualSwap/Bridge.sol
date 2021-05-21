@@ -150,7 +150,10 @@ contract Bridge is ERC721 {
      * @notice Deploys this contract and initializes the master version of the SynthSwapper contract. The address to
      * the Synthetix protocol's Exchanger contract is also set on deployment.
      */
-    constructor(address synthSwapperAddress) public ERC721("Saddle Cross-Asset Swap", "SaddleSynthSwap") {
+    constructor(address synthSwapperAddress)
+        public
+        ERC721("Saddle Cross-Asset Swap", "SaddleSynthSwap")
+    {
         SYNTH_SWAPPER_MASTER = synthSwapperAddress;
         updateExchangerCache();
     }

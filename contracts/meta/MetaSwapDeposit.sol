@@ -582,7 +582,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
      * @param index the index of the token
      * @return address of the token at given index
      */
-    function getToken(uint256 index) external view returns (IERC20) {
+    function getToken(uint8 index) external view returns (IERC20) {
         require(index < tokens.length, "index out of range");
         return tokens[index];
     }

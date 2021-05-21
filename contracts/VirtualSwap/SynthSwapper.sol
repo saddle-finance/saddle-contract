@@ -128,7 +128,7 @@ contract SynthSwapper is Initializable {
     /**
      * @notice Destroys this contract. Only owner can call this function.
      */
-    function destroy() onlyOwner external {
+    function destroy() external onlyOwner {
         _destroy();
     }
 
