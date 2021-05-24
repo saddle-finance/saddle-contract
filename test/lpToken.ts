@@ -1,7 +1,6 @@
-import { Signer, Wallet } from "ethers"
-import { deployContract, solidity } from "ethereum-waffle"
+import { Signer } from "ethers"
+import { solidity } from "ethereum-waffle"
 
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { LPToken } from "../build/typechain/LPToken"
 import chai from "chai"
 import { ethers } from "hardhat"
@@ -18,11 +17,12 @@ describe("LPToken", async () => {
     signers = await ethers.getSigners()
     owner = signers[0]
     // Deploy dummy tokens
-    firstToken = (await deployContract(owner as Wallet, LPTokenArtifact, [
+    const lpTokenFactory = await ethers.getContractFactory("LPToken")
+    firstToken = (await lpTokenFactory.deploy(
       "First Token",
       "FIRST",
       "18",
-    ])) as LPToken
+    )) as LPToken
     await expect(firstToken.mint(await owner.getAddress(), 0)).to.be.reverted
   })
 })

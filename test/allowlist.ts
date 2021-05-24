@@ -4,11 +4,10 @@ import {
   getTestMerkleAllowedAccounts,
   getTestMerkleRoot,
 } from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
 import { Allowlist } from "../build/typechain/Allowlist"
-import AllowlistArtifact from "../build/artifacts/contracts/guarded/Allowlist.sol/Allowlist.json"
 import { Signer } from "ethers"
 import chai from "chai"
 import { formatBytes32String } from "ethers/lib/utils"
@@ -22,7 +21,6 @@ const ALLOWED_ACCOUNTS = getTestMerkleAllowedAccounts()
 
 describe("Allowlist", () => {
   let signers: Array<Signer>
-  let owner: Signer
   let malActor: Signer
   let allowlist: Allowlist
 
@@ -31,11 +29,10 @@ describe("Allowlist", () => {
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
-      owner = signers[0]
       malActor = signers[10]
-      allowlist = (await deployContract(owner, AllowlistArtifact, [
-        getTestMerkleRoot(),
-      ])) as Allowlist
+
+      const cf = await ethers.getContractFactory("Allowlist")
+      allowlist = (await cf.deploy(getTestMerkleRoot())) as Allowlist
     },
   )
 
