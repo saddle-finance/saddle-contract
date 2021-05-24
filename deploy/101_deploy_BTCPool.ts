@@ -6,25 +6,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get, log, read, save, execute, getOrNull } = deployments
   const { deployer } = await getNamedAccounts()
 
+  // Constructor arguments
+  const TOKEN_ADDRESSES = [
+    (await get("TBTC")).address,
+    (await get("WBTC")).address,
+    (await get("RENBTC")).address,
+    (await get("SBTC")).address,
+  ]
+  const TOKEN_DECIMALS = [18, 8, 8, 18]
+  const LP_TOKEN_NAME = "Saddle tBTC/WBTC/renBTC/sBTC"
+  const LP_TOKEN_SYMBOL = "saddleTWRenSBTC"
+  const INITIAL_A = 200
+  const SWAP_FEE = 4e6 // 4bps
+  const ADMIN_FEE = 0
+  const WITHDRAW_FEE = 0
+
   const saddleBTCPool = await getOrNull("SaddleBTCPool")
   if (saddleBTCPool) {
     log(`reusing "SaddleBTCPool" at ${saddleBTCPool.address}`)
   } else {
-    // Constructor arguments
-    const TOKEN_ADDRESSES = [
-      (await get("TBTC")).address,
-      (await get("WBTC")).address,
-      (await get("RENBTC")).address,
-      (await get("SBTC")).address,
-    ]
-    const TOKEN_DECIMALS = [18, 8, 8, 18]
-    const LP_TOKEN_NAME = "Saddle tBTC/WBTC/renBTC/sBTC"
-    const LP_TOKEN_SYMBOL = "saddleTWRenSBTC"
-    const INITIAL_A = 200
-    const SWAP_FEE = 4e6 // 4bps
-    const ADMIN_FEE = 0
-    const WITHDRAW_FEE = 0
-
     await deploy("SaddleBTCPool", {
       from: deployer,
       log: true,
@@ -35,7 +35,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       },
       skipIfAlreadyDeployed: true,
     })
+  }
 
+  const saddleBTCPoolLPToken = await getOrNull("SaddleBTCPoolLPToken")
+  if (saddleBTCPoolLPToken) {
+    log(`reusing "SaddleBTCPoolLPToken" at ${saddleBTCPoolLPToken.address}`)
+  } else {
     await execute(
       "SaddleBTCPool",
       { from: deployer, log: true },
@@ -63,9 +68,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func
 func.tags = ["BTCPool"]
 func.dependencies = [
-  "Swap",
+  "AmplificationUtils",
   "SwapUtils",
-  "BTCPoolTokens",
-  "SwapDeployer",
   "LPToken",
+  "BTCPoolTokens",
 ]

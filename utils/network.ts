@@ -1,5 +1,7 @@
 export const CHAIN_ID = {
   MAINNET: "1",
   KOVAN: "42",
+  OPTIMISM_KOVAN: "69",
+  OPTIMISM_HARDHAT: "420",
   HARDHAT: "31337",
 }

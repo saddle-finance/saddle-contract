@@ -25,12 +25,10 @@ contract LPToken is ERC20BurnableUpgradeable, OwnableUpgradeable {
     function initialize(string memory name, string memory symbol)
         public
         initializer
-        returns (bool)
     {
         __Context_init_unchained();
         __ERC20_init_unchained(name, symbol);
         __Ownable_init_unchained();
-        return true;
     }
 
     /**

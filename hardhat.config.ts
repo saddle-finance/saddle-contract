@@ -24,12 +24,21 @@ let config: HardhatUserConfig = {
       url: process.env.ALCHEMY_API,
       gasPrice: 140 * 1000000000,
     },
-    optimism: {
+    optimismLocalhost: {
       url: "http://127.0.0.1:8545",
       gasPrice: 0,
       ovm: true,
       accounts: {
         mnemonic: "test test test test test test test test test test test junk",
+      },
+    },
+    optimismKovan: {
+      url: "https://kovan.optimism.io",
+      gasPrice: 0,
+      ovm: true,
+      accounts: {
+        mnemonic:
+          "saddle test test test test test test test test test test junk",
       },
     },
   },
