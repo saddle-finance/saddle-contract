@@ -4,12 +4,17 @@ import { CHAIN_ID } from "../utils/network"
 import { MULTISIG_ADDRESS } from "../utils/accounts"
 import path from "path"
 import { Deployment } from "hardhat-deploy/dist/types"
-import { asyncForEach, impersonateAccount } from "../test/testUtils"
+import {
+  asyncForEach,
+  impersonateAccount,
+  MAX_UINT256,
+} from "../test/testUtils"
 import { ethers } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 
 import dotenv from "dotenv"
+import { BigNumber } from "ethers";
 dotenv.config()
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -60,6 +65,31 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
       })
     }
+
+    // Approve USD tokens and deposit some to the sUSD pool.
+    const metaSwapDeposit = await get("SaddleSUSDMetaPoolDeposit")
+    await asyncForEach(["DAI", "USDC", "USDT", "SUSD"], async (tokenName) => {
+      await execute(
+        tokenName,
+        { from: deployer, log: true },
+        "approve",
+        metaSwapDeposit.address,
+        MAX_UINT256,
+      )
+    })
+    await execute(
+      "SaddleSUSDMetaPoolDeposit",
+      { from: deployer, log: true },
+      "addLiquidity",
+      [
+        ethers.utils.parseUnits("100000", 18),
+        ethers.utils.parseUnits("100000", 18),
+        ethers.utils.parseUnits("100000", 6),
+        ethers.utils.parseUnits("100000", 6),
+      ],
+      0,
+      MAX_UINT256,
+    )
   } else {
     log(`skipping ${path.basename(__filename)}`)
   }
