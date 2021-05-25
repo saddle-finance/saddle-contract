@@ -43,9 +43,9 @@ contract SwapFlashLoan is Swap {
 
     /**
      * @notice Initializes this Swap contract with the given parameters.
-     * This will also deploy the LPToken that represents users
-     * LP position. The owner of LPToken will be this contract - which means
-     * only this contract is allowed to mint new tokens.
+     * This will also clone a LPToken contract that represents users'
+     * LP positions. The owner of LPToken will be this contract - which means
+     * only this contract is allowed to mint/burn tokens.
      *
      * @param _pooledTokens an array of ERC20s this pool will accept
      * @param decimals the decimals to use for each pooled token,
@@ -57,6 +57,7 @@ contract SwapFlashLoan is Swap {
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
      * @param _withdrawFee default withdrawFee to be initialized with
+     * @param lpTokenTargetAddress the address of an existing LPToken contract to use as a target
      */
     function initialize(
         IERC20[] memory _pooledTokens,
@@ -66,7 +67,8 @@ contract SwapFlashLoan is Swap {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee
+        uint256 _withdrawFee,
+        address lpTokenTargetAddress
     ) public virtual override initializer {
         Swap.initialize(
             _pooledTokens,
@@ -76,7 +78,8 @@ contract SwapFlashLoan is Swap {
             _a,
             _fee,
             _adminFee,
-            _withdrawFee
+            _withdrawFee,
+            lpTokenTargetAddress
         );
         flashLoanFeeBPS = 8; // 8 bps
         protocolFeeShareBPS = 0; // 0 bps

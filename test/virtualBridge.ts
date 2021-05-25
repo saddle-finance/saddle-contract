@@ -218,6 +218,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         SWAP_FEE,
         0,
         0,
+        (await deployments.get("LPToken")).address,
       )
       btcSwapStorage = await btcSwap.swapStorage()
 
@@ -236,6 +237,7 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         SWAP_FEE,
         0,
         0,
+        (await deployments.get("LPToken")).address,
       )
 
       // Deploy Bridge contract

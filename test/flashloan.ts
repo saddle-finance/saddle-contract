@@ -104,6 +104,7 @@ describe("Swap Flashloan", () => {
         SWAP_FEE,
         0,
         0,
+        (await deployments.get("LPToken")).address,
       )
 
       expect(await swapFlashLoan.getVirtualPrice()).to.be.eq(0)

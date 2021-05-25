@@ -72,6 +72,7 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("_pooledTokens.length <= 1")
     })
@@ -87,6 +88,7 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("_pooledTokens.length > 32")
     })
@@ -102,6 +104,7 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("_pooledTokens decimals mismatch")
     })
@@ -117,6 +120,7 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("Duplicate tokens")
     })
@@ -132,6 +136,7 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("The 0 address isn't an ERC-20")
     })
@@ -147,6 +152,7 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("Token decimals exceeds max")
     })
@@ -162,6 +168,7 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("_a exceeds maximum")
     })
@@ -177,6 +184,7 @@ describe("Swap", () => {
           10e8 + 1,
           0,
           0,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("_fee exceeds maximum")
     })
@@ -192,6 +200,7 @@ describe("Swap", () => {
           SWAP_FEE,
           10e10 + 1,
           0,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("_adminFee exceeds maximum")
     })
@@ -207,8 +216,25 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           10e8 + 1,
+          (await deployments.get("LPToken")).address,
         ),
       ).to.be.revertedWith("_withdrawFee exceeds maximum")
+    })
+
+    it("Reverts when the LPToken target does not implement initialize function", async () => {
+      await expect(
+        swap.initialize(
+          [firstToken.address, secondToken.address],
+          [18, 18],
+          LP_TOKEN_NAME,
+          LP_TOKEN_SYMBOL,
+          INITIAL_A_VALUE,
+          SWAP_FEE,
+          0,
+          0,
+          ZERO_ADDRESS,
+        ),
+      ).to.be.revertedWith("function returned an unexpected amount of data")
     })
   })
 })

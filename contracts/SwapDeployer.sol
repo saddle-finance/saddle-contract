@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "openzeppelin-contracts-3.4/proxy/Clones.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./interfaces/ISwap.sol";
 
 contract SwapDeployer is Ownable {
@@ -24,7 +24,8 @@ contract SwapDeployer is Ownable {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee
+        uint256 _withdrawFee,
+        address lpTokenTargetAddress
     ) external returns (address) {
         address swapClone = Clones.clone(swapAddress);
         ISwap(swapClone).initialize(
@@ -35,7 +36,8 @@ contract SwapDeployer is Ownable {
             _a,
             _fee,
             _adminFee,
-            _withdrawFee
+            _withdrawFee,
+            lpTokenTargetAddress
         );
         Ownable(swapClone).transferOwnership(owner());
         emit NewSwapPool(msg.sender, swapClone, _pooledTokens);

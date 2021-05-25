@@ -118,6 +118,7 @@ describe("Swap Deployer", () => {
         SWAP_FEE,
         0,
         0,
+        (await deployments.get("LPToken")).address,
       )
 
       await swapDeployer.deploy(
@@ -130,6 +131,7 @@ describe("Swap Deployer", () => {
         SWAP_FEE,
         0,
         0,
+        (await deployments.get("LPToken")).address,
       )
 
       swapClone = (await ethers.getContractAt("Swap", swapCloneAddress)) as Swap
