@@ -29,7 +29,7 @@ let config: HardhatUserConfig = {
       gasPrice: 0,
       ovm: true,
       accounts: {
-        mnemonic: "test test test test test test test test test test test junk",
+        mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
     },
     optimismKovan: {
@@ -37,8 +37,7 @@ let config: HardhatUserConfig = {
       gasPrice: 0,
       ovm: true,
       accounts: {
-        mnemonic:
-          "saddle test test test test test test test test test test junk",
+        mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
     },
   },
