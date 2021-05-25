@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "openzeppelin-contracts-3.4/proxy/Clones.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./interfaces/ISwap.sol";
 
 contract SwapDeployer is Ownable {
