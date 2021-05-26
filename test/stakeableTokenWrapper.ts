@@ -24,14 +24,14 @@ describe("StakeableTokenWrapper", () => {
   async function approveAndStake(
     wallet: Wallet,
     amount: number,
-  ): Promise<Array<StakeableTokenWrapper | GenericERC20>> {
+  ): Promise<StakeableTokenWrapper> {
     const wrapperAsStaker = tokenWrapper.connect(wallet)
     const tokenAsStaker = basicToken.connect(wallet)
 
     await tokenAsStaker.approve(wrapperAsStaker.address, amount)
     await wrapperAsStaker.stake(amount)
 
-    return [wrapperAsStaker, tokenAsStaker]
+    return wrapperAsStaker
   }
 
   const setupTest = deployments.createFixture(
@@ -76,7 +76,7 @@ describe("StakeableTokenWrapper", () => {
   })
 
   it("Emits an event on withdrawing", async () => {
-    const [wrapperContract] = await approveAndStake(signers[1] as Wallet, 1000)
+    const wrapperContract = await approveAndStake(signers[1] as Wallet, 1000)
 
     await expect(wrapperContract.withdraw(1000)).to.emit(
       tokenWrapper,
@@ -85,7 +85,7 @@ describe("StakeableTokenWrapper", () => {
   })
 
   it("Only allows staked funds to be withdrawn", async () => {
-    const [wrapperContract] = await approveAndStake(signers[1] as Wallet, 1000)
+    const wrapperContract = await approveAndStake(signers[1] as Wallet, 1000)
 
     await expect(wrapperContract.withdraw(1001)).to.be.reverted
   })
