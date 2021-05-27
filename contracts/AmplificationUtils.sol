@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 
+pragma solidity 0.6.12;
+
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./SwapUtils.sol";
 
-pragma solidity 0.6.12;
-
+/**
+ * @title AmplificationUtils library
+ * @notice A library to be used to calculate A parameter of given `SwapUtils.Swap` struct.
+ * This library assumes all necessary checks all done to the struct.
+ */
 library AmplificationUtils {
     using SafeMath for uint256;
 

@@ -12,14 +12,16 @@ import "../interfaces/IMetaSwap.sol";
 
 /**
  * @title MetaSwapDeposit
- * @notice This contract flattens the LP token in a MetaSwap pool for easier user access.
+ * @notice This contract flattens the LP token in a MetaSwap pool for easier user access. MetaSwap must be
+ * deployed before this contract can be initialized successfully.
  *
  * For example, suppose there exists a base Swap pool consisting of [DAI, USDC, USDT].
  * Then a MetaSwap pool can be created with [sUSD, BaseSwapLPToken] to allow trades between either
  * the LP token or the underlying tokens and sUSD.
  *
- * MetaSwapDeposit flattens the LP token and remaps them to [sUSD, DAI, USDC, USDT], allowing users
- * to ignore the dependency on BaseSwapLPToken.
+ * MetaSwapDeposit flattens the LP token and remaps them to a single array, allowing users
+ * to ignore the dependency on BaseSwapLPToken. Using the above example, MetaSwapDeposit can act
+ * as a Swap containing [sUSD, DAI, USDC, USDT] tokens.
  */
 contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;

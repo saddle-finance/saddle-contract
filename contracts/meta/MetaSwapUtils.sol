@@ -697,6 +697,8 @@ library MetaSwapUtils {
      * @notice swaps with the underlying tokens of the base swap pool. For this function,
      * the token indices are flattened out so that underlying tokens are represented
      * in the indices.
+     * @dev Since this calls multiple external functions during the execution,
+     * it is recommended to protect any function that depends on this with reentrancy guards.
      * @param self Swap struct to read from and write to
      * @param metaSwapStorage MetaSwap struct to read from and write to
      * @param tokenIndexFrom the token the user wants to sell

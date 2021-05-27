@@ -25,7 +25,8 @@ import "../Swap.sol";
  * MetaSwap is a modified version of Swap that allows Swap's LP token to be utilized in pooling with other tokens.
  * As an example, if there is a Swap pool consisting of [DAI, USDC, USDT]. Then a MetaSwap pool can be created
  * with [sUSD, BaseSwapLPToken] to allow trades between either the LP token or the underlying tokens and sUSD.
- * Note that when interacting with MetaSwap, users cannot deposit or withdraw via underlying tokens.
+ * Note that when interacting with MetaSwap, users cannot deposit or withdraw via underlying tokens. In that case,
+ * `MetaSwapDeposit.sol` can be deployed additionally to allow unwrapped representation of the tokens.
  *
  * @dev Most of the logic is stored as a library `MetaSwapUtils` for the sake of reducing contract's
  * deployment size.
