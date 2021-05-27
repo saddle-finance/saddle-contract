@@ -2,11 +2,8 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "../OwnerPausableUpgradeable.sol";
-import "./MetaSwapUtils.sol";
-import "../MathUtils.sol";
 import "../Swap.sol";
+import "./MetaSwapUtils.sol";
 
 /**
  * @title MetaSwap - A StableSwap implementation in solidity.
