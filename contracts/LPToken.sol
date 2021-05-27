@@ -2,37 +2,35 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20BurnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/ISwap.sol";
 
 /**
  * @title Liquidity Provider Token
  * @notice This token is an ERC20 detailed token with added capability to be minted by the owner.
  * It is used to represent user's shares when providing liquidity to swap contracts.
+ * @dev Only Swap contracts should initialize and own LPToken contracts.
  */
-contract LPToken is ERC20Burnable, Ownable {
-    using SafeMath for uint256;
-
-    // Address of the swap contract that owns this LP token. When a user adds liquidity to the swap contract,
-    // they receive a proportionate amount of this LPToken.
-    ISwap public swap;
+contract LPToken is ERC20BurnableUpgradeable, OwnableUpgradeable {
+    using SafeMathUpgradeable for uint256;
 
     /**
-     * @notice Deploys LPToken contract with given name, symbol, and decimals
-     * @dev the caller of this constructor will become the owner of this contract
-     * @param name_ name of this token
-     * @param symbol_ symbol of this token
-     * @param decimals_ number of decimals this token will be based on
+     * @notice Initializes this LPToken contract with the given name and symbol
+     * @dev The caller of this function will become the owner. A Swap contract should call this
+     * in its initializer function.
+     * @param name name of this token
+     * @param symbol symbol of this token
      */
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        uint8 decimals_
-    ) public ERC20(name_, symbol_) {
-        _setupDecimals(decimals_);
-        swap = ISwap(_msgSender());
+    function initialize(string memory name, string memory symbol)
+        public
+        initializer
+        returns (bool)
+    {
+        __Context_init_unchained();
+        __ERC20_init_unchained(name, symbol);
+        __Ownable_init_unchained();
+        return true;
     }
 
     /**
@@ -42,20 +40,22 @@ contract LPToken is ERC20Burnable, Ownable {
      * @param amount amount of tokens to mint
      */
     function mint(address recipient, uint256 amount) external onlyOwner {
-        require(amount != 0, "amount == 0");
+        require(amount != 0, "LPToken: cannot mint 0");
         _mint(recipient, amount);
     }
 
     /**
      * @dev Overrides ERC20._beforeTokenTransfer() which get called on every transfers including
-     * minting and burning. This ensures that swap.updateUserWithdrawFees are called everytime.
+     * minting and burning. This ensures that Swap.updateUserWithdrawFees are called everytime.
+     * This assumes the owner is set to a Swap contract's address.
      */
     function _beforeTokenTransfer(
         address from,
         address to,
         uint256 amount
-    ) internal override(ERC20) {
+    ) internal virtual override(ERC20Upgradeable) {
         super._beforeTokenTransfer(from, to, amount);
-        swap.updateUserWithdrawFee(to, amount);
+        require(to != address(this), "LPToken: cannot send to itself");
+        ISwap(owner()).updateUserWithdrawFee(to, amount);
     }
 }
