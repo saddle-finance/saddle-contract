@@ -265,11 +265,16 @@ contract MetaSwap is Swap {
             require(i > 1, "baseSwap must pool at least 2 tokens");
         }
 
-        // Pre-approve the baseSwapLPToken to be used by baseSwap
-        _pooledTokens[_pooledTokens.length - 1].safeApprove(
-            address(baseSwap),
-            MAX_UINT256
+        IERC20 baseLPToken = _pooledTokens[_pooledTokens.length - 1];
+
+        // Check the last element is an LPToken owned by baseSwap
+        require(
+            LPToken(address(baseLPToken)).owner() == address(baseSwap),
+            "baseLPToken is not owned by baseSwap"
         );
+
+        // Pre-approve the baseSwapLPToken to be used by baseSwap
+        baseLPToken.safeApprove(address(baseSwap), MAX_UINT256);
     }
 
     /**
