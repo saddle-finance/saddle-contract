@@ -192,7 +192,8 @@ contract MetaSwap is Swap {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee
+        uint256 _withdrawFee,
+        address lpTokenTargetAddress
     ) public virtual override initializer {
         revert("use initializeMetaSwap() instead");
     }
@@ -230,6 +231,7 @@ contract MetaSwap is Swap {
         uint256 _fee,
         uint256 _adminFee,
         uint256 _withdrawFee,
+        address lpTokenTargetAddress,
         ISwap baseSwap
     ) public virtual initializer {
         Swap.initialize(
@@ -240,7 +242,8 @@ contract MetaSwap is Swap {
             _a,
             _fee,
             _adminFee,
-            _withdrawFee
+            _withdrawFee,
+            lpTokenTargetAddress
         );
 
         // MetaSwap initializer

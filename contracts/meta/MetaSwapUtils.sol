@@ -358,7 +358,7 @@ library MetaSwapUtils {
      * @notice Get the virtual price, to help calculate profit
      * @param self Swap struct to read from
      * @param metaSwapStorage MetaSwap struct to read from
-     * @return the virtual price, scaled to precision of POOL_PRECISION_DECIMALS
+     * @return the virtual price, scaled to precision of BASE_VIRTUAL_PRICE_PRECISION
      */
     function getVirtualPrice(
         SwapUtils.Swap storage self,
@@ -369,10 +369,9 @@ library MetaSwapUtils {
                 _xp(self, _getBaseVirtualPrice(metaSwapStorage)),
                 self._getAPrecise()
             );
-        ERC20 lpToken = self.lpToken;
-        uint256 supply = lpToken.totalSupply();
+        uint256 supply = self.lpToken.totalSupply();
         if (supply != 0) {
-            return d.mul(10**uint256(lpToken.decimals())).div(supply);
+            return d.mul(BASE_VIRTUAL_PRICE_PRECISION).div(supply);
         }
         return 0;
     }
