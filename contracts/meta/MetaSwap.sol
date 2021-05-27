@@ -250,15 +250,22 @@ contract MetaSwap is Swap {
         metaSwapStorage.baseSwap = baseSwap;
         metaSwapStorage.baseVirtualPrice = baseSwap.getVirtualPrice();
         metaSwapStorage.baseCacheLastUpdated = block.timestamp;
-        for (uint8 i; i < 32; i++) {
-            try baseSwap.getToken(i) returns (IERC20 token) {
-                token.safeApprove(address(baseSwap), MAX_UINT256);
-                metaSwapStorage.baseTokens.push(token);
-            } catch {
-                break;
+
+        // Try retrieving all tokens baseSwap manages
+        {
+            uint8 i;
+            for (; i < 32; i++) {
+                try baseSwap.getToken(i) returns (IERC20 token) {
+                    token.safeApprove(address(baseSwap), MAX_UINT256);
+                    metaSwapStorage.baseTokens.push(token);
+                } catch {
+                    break;
+                }
             }
+            require(i > 1, "baseSwap must pool at least 2 tokens");
         }
 
+        // Pre-approve the baseSwapLPToken to be used by baseSwap
         _pooledTokens[_pooledTokens.length - 1].safeApprove(
             address(baseSwap),
             MAX_UINT256
