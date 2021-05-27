@@ -105,12 +105,12 @@ library MetaSwapUtils {
         uint256 x;
         uint256 dx;
         uint256 dy;
-        uint8 metaIndexFrom;
-        uint8 metaIndexTo;
         uint256[] oldBalances;
         IERC20[] baseTokens;
         IERC20 tokenFrom;
+        uint8 metaIndexFrom;
         IERC20 tokenTo;
+        uint8 metaIndexTo;
         uint256 baseVirtualPrice;
     }
 
@@ -718,12 +718,12 @@ library MetaSwapUtils {
                 0,
                 0,
                 0,
-                0,
-                0,
                 self.balances,
                 metaSwapStorage.baseTokens,
                 IERC20(address(0)),
+                0,
                 IERC20(address(0)),
+                0,
                 _updateBaseVirtualPrice(metaSwapStorage)
             );
 
