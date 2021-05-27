@@ -55,29 +55,38 @@ contract MetaSwapDeposit is Initializable {
         IERC20 _metaLPToken
     ) external initializer {
         // Check and approve base level tokens to be deposited to the base swap contract
-        for (uint8 i = 0; i < 32; i++) {
-            try _baseSwap.getToken(i) returns (IERC20 token) {
-                baseTokens.push(token);
-                token.safeApprove(address(_baseSwap), MAX_UINT256);
-                token.safeApprove(address(_metaSwap), MAX_UINT256);
-            } catch {
-                break;
+        {
+            uint8 i;
+            for (; i < 32; i++) {
+                try _baseSwap.getToken(i) returns (IERC20 token) {
+                    baseTokens.push(token);
+                    token.safeApprove(address(_baseSwap), MAX_UINT256);
+                    token.safeApprove(address(_metaSwap), MAX_UINT256);
+                } catch {
+                    break;
+                }
             }
+            require(i > 1, "baseSwap must have at least 2 tokens");
         }
 
         // Check and approve meta level tokens to be deposited to the meta swap contract
         IERC20 baseLPToken;
-        for (uint8 i = 0; i < 32; i++) {
-            try _metaSwap.getToken(i) returns (IERC20 token) {
-                baseLPToken = token;
-                metaTokens.push(token);
-                tokens.push(token);
-                token.safeApprove(address(_metaSwap), MAX_UINT256);
-            } catch {
-                break;
+        {
+            uint8 i;
+            for (; i < 32; i++) {
+                try _metaSwap.getToken(i) returns (IERC20 token) {
+                    baseLPToken = token;
+                    metaTokens.push(token);
+                    tokens.push(token);
+                    token.safeApprove(address(_metaSwap), MAX_UINT256);
+                } catch {
+                    break;
+                }
             }
+            require(i > 1, "metaSwap must have at least 2 tokens");
         }
 
+        // Flatten baseTokens and append it to tokens array
         tokens[tokens.length - 1] = baseTokens[0];
         for (uint8 i = 1; i < baseTokens.length; i++) {
             tokens.push(baseTokens[i]);
