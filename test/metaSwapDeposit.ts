@@ -146,6 +146,7 @@ describe("Meta-Swap Deposit Contract", async () => {
         SWAP_FEE,
         0,
         0,
+        (await get("LPToken")).address,
         baseSwap.address,
       )
       metaLPToken = (await ethers.getContractAt(
