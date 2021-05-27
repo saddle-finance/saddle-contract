@@ -52,7 +52,8 @@ interface ISwap {
         uint256 a,
         uint256 fee,
         uint256 adminFee,
-        uint256 withdrawFee
+        uint256 withdrawFee,
+        address lpTokenTargetAddress
     ) external;
 
     function swap(
