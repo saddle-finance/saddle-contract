@@ -5,6 +5,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "../LPToken.sol";
 import "../interfaces/ISwap.sol";
 import "../interfaces/IMetaSwap.sol";
@@ -20,7 +21,7 @@ import "../interfaces/IMetaSwap.sol";
  * MetaSwapDeposit flattens the LP token and remaps them to [sUSD, DAI, USDC, USDT], allowing users
  * to ignore the dependency on BaseSwapLPToken.
  */
-contract MetaSwapDeposit is Initializable {
+contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -54,6 +55,7 @@ contract MetaSwapDeposit is Initializable {
         IMetaSwap _metaSwap,
         IERC20 _metaLPToken
     ) external initializer {
+        __ReentrancyGuard_init();
         // Check and approve base level tokens to be deposited to the base swap contract
         {
             uint8 i;
@@ -119,7 +121,7 @@ contract MetaSwapDeposit is Initializable {
         uint256 dx,
         uint256 minDy,
         uint256 deadline
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         tokens[tokenIndexFrom].safeTransferFrom(msg.sender, address(this), dx);
         uint256 tokenToAmount =
             metaSwap.swapUnderlying(
@@ -145,7 +147,7 @@ contract MetaSwapDeposit is Initializable {
         uint256[] calldata amounts,
         uint256 minToMint,
         uint256 deadline
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         IERC20[] memory memBaseTokens = baseTokens;
         IERC20[] memory memMetaTokens = metaTokens;
         uint256 baseLPTokenIndex = memMetaTokens.length - 1;
@@ -223,7 +225,7 @@ contract MetaSwapDeposit is Initializable {
         uint256 amount,
         uint256[] calldata minAmounts,
         uint256 deadline
-    ) external returns (uint256[] memory) {
+    ) external nonReentrant returns (uint256[] memory) {
         IERC20[] memory memBaseTokens = baseTokens;
         IERC20[] memory memMetaTokens = metaTokens;
         uint256[] memory totalRemovedAmounts;
@@ -301,7 +303,7 @@ contract MetaSwapDeposit is Initializable {
         uint8 tokenIndex,
         uint256 minAmount,
         uint256 deadline
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         uint8 baseLPTokenIndex = uint8(metaTokens.length - 1);
         uint8 baseTokensLength = uint8(baseTokens.length);
 
@@ -355,7 +357,7 @@ contract MetaSwapDeposit is Initializable {
         uint256[] calldata amounts,
         uint256 maxBurnAmount,
         uint256 deadline
-    ) external returns (uint256) {
+    ) external nonReentrant returns (uint256) {
         IERC20[] memory memBaseTokens = baseTokens;
         IERC20[] memory memMetaTokens = metaTokens;
         uint256[] memory metaAmounts = new uint256[](memMetaTokens.length);
