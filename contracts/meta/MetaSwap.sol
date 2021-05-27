@@ -23,7 +23,7 @@ import "./MetaSwapUtils.sol";
  * As an example, if there is a Swap pool consisting of [DAI, USDC, USDT]. Then a MetaSwap pool can be created
  * with [sUSD, BaseSwapLPToken] to allow trades between either the LP token or the underlying tokens and sUSD.
  * Note that when interacting with MetaSwap, users cannot deposit or withdraw via underlying tokens. In that case,
- * `MetaSwapDeposit.sol` can be deployed additionally to allow unwrapped representation of the tokens.
+ * `MetaSwapDeposit.sol` can be additionally deployed to allow interacting with unwrapped representation of the tokens.
  *
  * @dev Most of the logic is stored as a library `MetaSwapUtils` for the sake of reducing contract's
  * deployment size.
@@ -247,7 +247,7 @@ contract MetaSwap is Swap {
         metaSwapStorage.baseVirtualPrice = baseSwap.getVirtualPrice();
         metaSwapStorage.baseCacheLastUpdated = block.timestamp;
 
-        // Try retrieving all tokens baseSwap manages
+        // Read all tokens that belong to baseSwap
         {
             uint8 i;
             for (; i < 32; i++) {
@@ -261,15 +261,14 @@ contract MetaSwap is Swap {
             require(i > 1, "baseSwap must pool at least 2 tokens");
         }
 
+        // Check the last element of _pooledTokens is owned by baseSwap
         IERC20 baseLPToken = _pooledTokens[_pooledTokens.length - 1];
-
-        // Check the last element is an LPToken owned by baseSwap
         require(
             LPToken(address(baseLPToken)).owner() == address(baseSwap),
             "baseLPToken is not owned by baseSwap"
         );
 
-        // Pre-approve the baseSwapLPToken to be used by baseSwap
+        // Pre-approve the baseLPToken to be used by baseSwap
         baseLPToken.safeApprove(address(baseSwap), MAX_UINT256);
     }
 
