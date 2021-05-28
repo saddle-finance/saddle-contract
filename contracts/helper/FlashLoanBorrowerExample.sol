@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../interfaces/IFlashLoanReceiver.sol";
 import "../interfaces/ISwapFlashLoan.sol";
 import "hardhat/console.sol";
@@ -39,15 +39,15 @@ contract FlashLoanBorrowerExample is IFlashLoanReceiver {
                 block.timestamp
             );
         } else if (paramsHash == keccak256(bytes("reentrancy_swap"))) {
-            ISwapFlashLoan(pool).swap(1, 0, 1e6, 0, now);
+            ISwapFlashLoan(pool).swap(1, 0, 1e6, 0, block.timestamp);
         } else if (
             paramsHash == keccak256(bytes("reentrancy_removeLiquidity"))
         ) {
-            ISwapFlashLoan(pool).removeLiquidity(1e18, new uint256[](0), now);
+            ISwapFlashLoan(pool).removeLiquidity(1e18, new uint256[](0), block.timestamp);
         } else if (
             paramsHash == keccak256(bytes("reentrancy_removeLiquidityOneToken"))
         ) {
-            ISwapFlashLoan(pool).removeLiquidityOneToken(1e18, 0, 1e18, now);
+            ISwapFlashLoan(pool).removeLiquidityOneToken(1e18, 0, 1e18, block.timestamp);
         }
 
         // 3. Payback debt

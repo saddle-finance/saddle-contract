@@ -2,11 +2,11 @@
 
 // https://etherscan.io/address/0xC28DF698475dEC994BE00C9C9D8658A548e6304F#code
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/ISwapGuarded.sol";
 
 /**
@@ -24,6 +24,8 @@ contract LPTokenGuarded is ERC20Burnable, Ownable {
     // Maps user account to total number of LPToken minted by them. Used to limit minting during guarded release phase
     mapping(address => uint256) public mintedAmounts;
 
+    uint8 immutable private _decimals;
+
     /**
      * @notice Deploys LPToken contract with given name, symbol, and decimals
      * @dev the caller of this constructor will become the owner of this contract
@@ -36,7 +38,7 @@ contract LPTokenGuarded is ERC20Burnable, Ownable {
         string memory symbol_,
         uint8 decimals_
     ) public ERC20(name_, symbol_) {
-        _setupDecimals(decimals_);
+        _decimals = decimals_;
         swap = ISwapGuarded(_msgSender());
     }
 
@@ -93,5 +95,9 @@ contract LPTokenGuarded is ERC20Burnable, Ownable {
     ) internal override(ERC20) {
         super._beforeTokenTransfer(from, to, amount);
         swap.updateUserWithdrawFee(to, amount);
+    }
+
+    function decimals() public view override returns (uint8) {
+        return _decimals;
     }
 }

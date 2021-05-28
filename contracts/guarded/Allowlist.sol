@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../interfaces/IAllowlist.sol";
 
 /**
@@ -14,7 +13,6 @@ import "../interfaces/IAllowlist.sol";
  * also whether a user's deposit limit is reached.
  */
 contract Allowlist is Ownable, IAllowlist {
-    using SafeMath for uint256;
 
     // Represents the root node of merkle tree containing a list of eligible addresses
     bytes32 public merkleRoot;

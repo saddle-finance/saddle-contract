@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import "../../interfaces/ISwap.sol";
 import "hardhat/console.sol";
 
 contract TestSwapReturnValues {
-    using SafeMath for uint256;
-
     ISwap public swap;
     IERC20 public lpToken;
     uint8 public n;
@@ -45,12 +43,12 @@ contract TestSwapReturnValues {
 
         console.log(
             "swap: Expected %s, got %s",
-            balanceAfter.sub(balanceBefore),
+            balanceAfter - balanceBefore,
             returnValue
         );
 
         require(
-            returnValue == balanceAfter.sub(balanceBefore),
+            returnValue == balanceAfter - (balanceBefore),
             "swap()'s return value does not match received amount"
         );
     }
@@ -64,12 +62,12 @@ contract TestSwapReturnValues {
 
         console.log(
             "addLiquidity: Expected %s, got %s",
-            balanceAfter.sub(balanceBefore),
+            balanceAfter - balanceBefore,
             returnValue
         );
 
         require(
-            returnValue == balanceAfter.sub(balanceBefore),
+            returnValue == balanceAfter - balanceBefore,
             "addLiquidity()'s return value does not match minted amount"
         );
     }
@@ -91,11 +89,11 @@ contract TestSwapReturnValues {
             balanceAfter[i] = swap.getToken(i).balanceOf(address(this));
             console.log(
                 "removeLiquidity: Expected %s, got %s",
-                balanceAfter[i].sub(balanceBefore[i]),
+                balanceAfter[i] - balanceBefore[i],
                 returnValue[i]
             );
             require(
-                balanceAfter[i].sub(balanceBefore[i]) == returnValue[i],
+                balanceAfter[i] - balanceBefore[i] == returnValue[i],
                 "removeLiquidity()'s return value does not match received amounts of tokens"
             );
         }
@@ -112,12 +110,12 @@ contract TestSwapReturnValues {
 
         console.log(
             "removeLiquidityImbalance: Expected %s, got %s",
-            balanceBefore.sub(balanceAfter),
+            balanceBefore - (balanceAfter),
             returnValue
         );
 
         require(
-            returnValue == balanceBefore.sub(balanceAfter),
+            returnValue == balanceBefore - (balanceAfter),
             "removeLiquidityImbalance()'s return value does not match burned lpToken amount"
         );
     }
@@ -141,12 +139,12 @@ contract TestSwapReturnValues {
 
         console.log(
             "removeLiquidityOneToken: Expected %s, got %s",
-            balanceAfter.sub(balanceBefore),
+            balanceAfter - (balanceBefore),
             returnValue
         );
 
         require(
-            returnValue == balanceAfter.sub(balanceBefore),
+            returnValue == balanceAfter - (balanceBefore),
             "removeLiquidityOneToken()'s return value does not match received token amount"
         );
     }

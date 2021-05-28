@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @notice This contract simulates a generic ERC20 token that is mintable and burnable.
  */
 contract GenericERC20 is ERC20, Ownable {
+
+    uint8 immutable private _decimals;
     /**
      * @notice Deploy this contract with given name, symbol, and decimals
      * @dev the caller of this constructor will become the owner of this contract
@@ -22,7 +24,7 @@ contract GenericERC20 is ERC20, Ownable {
         string memory symbol_,
         uint8 decimals_
     ) public ERC20(name_, symbol_) {
-        _setupDecimals(decimals_);
+        _decimals = decimals_;
     }
 
     /**
@@ -34,5 +36,9 @@ contract GenericERC20 is ERC20, Ownable {
     function mint(address recipient, uint256 amount) external onlyOwner {
         require(amount != 0, "amount == 0");
         _mint(recipient, amount);
+    }
+
+    function decimals() public view override returns (uint8) {
+        return _decimals;
     }
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT WITH AGPL-3.0-only
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import "./Swap.sol";
 import "./interfaces/IFlashLoanReceiver.sol";
@@ -23,6 +23,8 @@ import "./interfaces/IFlashLoanReceiver.sol";
  * deployment size.
  */
 contract SwapFlashLoan is Swap {
+    using SafeERC20 for IERC20;
+
     // Total fee that is charged on all flashloans in BPS. Borrowers must repay the amount plus the flash loan fee.
     // This fee is split between the protocol and the pool.
     uint256 public flashLoanFeeBPS;
@@ -107,16 +109,16 @@ contract SwapFlashLoan is Swap {
         uint8 tokenIndex = getTokenIndex(address(token));
         uint256 availableLiquidityBefore = token.balanceOf(address(this));
         uint256 protocolBalanceBefore =
-            availableLiquidityBefore.sub(swapStorage.balances[tokenIndex]);
+            availableLiquidityBefore - (swapStorage.balances[tokenIndex]);
         require(
             amount > 0 && availableLiquidityBefore >= amount,
             "invalid amount"
         );
 
         // Calculate the additional amount of tokens the pool should end up with
-        uint256 amountFee = amount.mul(flashLoanFeeBPS).div(10000);
+        uint256 amountFee = amount * (flashLoanFeeBPS) / (10000);
         // Calculate the portion of the fee that will go to the protocol
-        uint256 protocolFee = amountFee.mul(protocolFeeShareBPS).div(10000);
+        uint256 protocolFee = amountFee * (protocolFeeShareBPS) / (10000);
         require(amountFee > 0, "amount is small for a flashLoan");
 
         // Transfer the requested amount of tokens
@@ -133,13 +135,13 @@ contract SwapFlashLoan is Swap {
 
         uint256 availableLiquidityAfter = token.balanceOf(address(this));
         require(
-            availableLiquidityAfter >= availableLiquidityBefore.add(amountFee),
+            availableLiquidityAfter >= availableLiquidityBefore + (amountFee),
             "flashLoan fee is not met"
         );
 
         swapStorage.balances[tokenIndex] = availableLiquidityAfter
-            .sub(protocolBalanceBefore)
-            .sub(protocolFee);
+             - (protocolBalanceBefore)
+             - (protocolFee);
         emit FlashLoan(receiver, tokenIndex, amount, amountFee, protocolFee);
     }
 
