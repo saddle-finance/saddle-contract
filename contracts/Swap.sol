@@ -151,9 +151,8 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
             );
             precisionMultipliers[i] =
                 10 **
-                (uint256(SwapUtils.POOL_PRECISION_DECIMALS) - (
-                        uint256(decimals[i])
-                    ));
+                    (uint256(SwapUtils.POOL_PRECISION_DECIMALS) -
+                        (uint256(decimals[i])));
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 

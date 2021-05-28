@@ -13,7 +13,6 @@ import "./interfaces/ISwap.sol";
  * @dev Only Swap contracts should initialize and own LPToken contracts.
  */
 contract LPToken is ERC20BurnableUpgradeable, OwnableUpgradeable {
-
     /**
      * @notice Initializes this LPToken contract with the given name and symbol
      * @dev The caller of this function will become the owner. A Swap contract should call this

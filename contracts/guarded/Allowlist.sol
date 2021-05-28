@@ -13,7 +13,6 @@ import "../interfaces/IAllowlist.sol";
  * also whether a user's deposit limit is reached.
  */
 contract Allowlist is Ownable, IAllowlist {
-
     // Represents the root node of merkle tree containing a list of eligible addresses
     bytes32 public merkleRoot;
     // Maps pool address -> maximum total supply

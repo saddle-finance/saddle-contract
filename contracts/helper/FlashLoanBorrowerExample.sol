@@ -43,11 +43,20 @@ contract FlashLoanBorrowerExample is IFlashLoanReceiver {
         } else if (
             paramsHash == keccak256(bytes("reentrancy_removeLiquidity"))
         ) {
-            ISwapFlashLoan(pool).removeLiquidity(1e18, new uint256[](0), block.timestamp);
+            ISwapFlashLoan(pool).removeLiquidity(
+                1e18,
+                new uint256[](0),
+                block.timestamp
+            );
         } else if (
             paramsHash == keccak256(bytes("reentrancy_removeLiquidityOneToken"))
         ) {
-            ISwapFlashLoan(pool).removeLiquidityOneToken(1e18, 0, 1e18, block.timestamp);
+            ISwapFlashLoan(pool).removeLiquidityOneToken(
+                1e18,
+                0,
+                1e18,
+                block.timestamp
+            );
         }
 
         // 3. Payback debt

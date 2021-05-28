@@ -116,9 +116,9 @@ contract SwapFlashLoan is Swap {
         );
 
         // Calculate the additional amount of tokens the pool should end up with
-        uint256 amountFee = amount * (flashLoanFeeBPS) / (10000);
+        uint256 amountFee = (amount * (flashLoanFeeBPS)) / (10000);
         // Calculate the portion of the fee that will go to the protocol
-        uint256 protocolFee = amountFee * (protocolFeeShareBPS) / (10000);
+        uint256 protocolFee = (amountFee * (protocolFeeShareBPS)) / (10000);
         require(amountFee > 0, "amount is small for a flashLoan");
 
         // Transfer the requested amount of tokens
@@ -139,9 +139,10 @@ contract SwapFlashLoan is Swap {
             "flashLoan fee is not met"
         );
 
-        swapStorage.balances[tokenIndex] = availableLiquidityAfter
-             - (protocolBalanceBefore)
-             - (protocolFee);
+        swapStorage.balances[tokenIndex] =
+            availableLiquidityAfter -
+            (protocolBalanceBefore) -
+            (protocolFee);
         emit FlashLoan(receiver, tokenIndex, amount, amountFee, protocolFee);
     }
 

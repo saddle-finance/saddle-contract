@@ -24,7 +24,7 @@ contract LPTokenGuarded is ERC20Burnable, Ownable {
     // Maps user account to total number of LPToken minted by them. Used to limit minting during guarded release phase
     mapping(address => uint256) public mintedAmounts;
 
-    uint8 immutable private _decimals;
+    uint8 private immutable _decimals;
 
     /**
      * @notice Deploys LPToken contract with given name, symbol, and decimals
