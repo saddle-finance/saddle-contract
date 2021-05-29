@@ -7,8 +7,8 @@ import "./SwapUtils.sol";
 
 /**
  * @title AmplificationUtils library
- * @notice A library to be used to calculate A parameter of given `SwapUtils.Swap` struct.
- * This library assumes all necessary checks all done to the struct.
+ * @notice A library to calculate and ramp the A parameter of a given `SwapUtils.Swap` struct.
+ * This library assumes the struct is fully validated.
  */
 library AmplificationUtils {
     using SafeMath for uint256;

@@ -8,7 +8,6 @@ import "../LPToken.sol";
 import "../interfaces/ISwap.sol";
 import "../MathUtils.sol";
 import "../SwapUtils.sol";
-import "hardhat/console.sol";
 
 /**
  * @title MetaSwapUtils library
@@ -130,7 +129,7 @@ library MetaSwapUtils {
     // LP fee might be something like tradeAmount.mul(fee).div(FEE_DENOMINATOR)
     uint256 private constant FEE_DENOMINATOR = 10**10;
 
-    // Cache expire time for the stored value of base swap's virtual price
+    // Cache expire time for the stored value of base Swap's virtual price
     uint256 public constant BASE_CACHE_EXPIRE_TIME = 10 minutes;
     uint256 public constant BASE_VIRTUAL_PRICE_PRECISION = 10**18;
 
@@ -696,7 +695,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @notice swaps with the underlying tokens of the base swap pool. For this function,
+     * @notice Swaps with the underlying tokens of the base Swap pool. For this function,
      * the token indices are flattened out so that underlying tokens are represented
      * in the indices.
      * @dev Since this calls multiple external functions during the execution,
@@ -744,7 +743,7 @@ library MetaSwapUtils {
 
         ISwap baseSwap = metaSwapStorage.baseSwap;
 
-        // Find the address of the token swapping from and the index in meta swap's token list
+        // Find the address of the token swapping from and the index in MetaSwap's token list
         if (tokenIndexFrom < baseLPTokenIndex) {
             v.tokenFrom = self.pooledTokens[tokenIndexFrom];
             v.metaIndexFrom = tokenIndexFrom;
@@ -753,7 +752,7 @@ library MetaSwapUtils {
             v.metaIndexFrom = baseLPTokenIndex;
         }
 
-        // Find the address of the token swapping to and the index in meta swap's token list
+        // Find the address of the token swapping to and the index in MetaSwap's token list
         if (tokenIndexTo < baseLPTokenIndex) {
             v.tokenTo = self.pooledTokens[tokenIndexTo];
             v.metaIndexTo = tokenIndexTo;
@@ -770,7 +769,7 @@ library MetaSwapUtils {
         if (
             tokenIndexFrom < baseLPTokenIndex || tokenIndexTo < baseLPTokenIndex
         ) {
-            // Either one of the tokens belongs to the meta swap tokens list
+            // Either one of the tokens belongs to the MetaSwap tokens list
             uint256[] memory xp =
                 _xp(
                     v.oldBalances,
@@ -779,20 +778,20 @@ library MetaSwapUtils {
                 );
 
             if (tokenIndexFrom < baseLPTokenIndex) {
-                // Swapping from a meta swap token
+                // Swapping from a MetaSwap token
                 v.x = xp[tokenIndexFrom].add(
                     dx.mul(v.tokenPrecisionMultipliers[tokenIndexFrom])
                 );
             } else {
-                // Swapping from a base swap token
-                // This case requires adding the underlying token to the base swap, then
+                // Swapping from a base Swap token
+                // This case requires adding the underlying token to the base Swap, then
                 // using the base LP token to swap to the desired token
                 uint256[] memory baseAmounts =
                     new uint256[](v.baseTokens.length);
                 baseAmounts[tokenIndexFrom - baseLPTokenIndex] = v.dx;
                 IERC20 baseLPToken = self.pooledTokens[baseLPTokenIndex];
 
-                // Add liquidity to the underlying swap contract and receive base LP token
+                // Add liquidity to the underlying Swap contract and receive base LP token
                 v.dx = baseSwap.addLiquidity(baseAmounts, 0, block.timestamp);
 
                 // Calculate the value of total amount of baseLPToken we end up with
@@ -803,7 +802,7 @@ library MetaSwapUtils {
                     .add(xp[baseLPTokenIndex]);
             }
 
-            // Calculate how much to withdraw in meta swap level and the the associated swap fee
+            // Calculate how much to withdraw in MetaSwap level and the the associated swap fee
             uint256 dyFee;
             {
                 uint256 y =
@@ -822,7 +821,7 @@ library MetaSwapUtils {
             }
 
             if (tokenIndexTo >= baseLPTokenIndex) {
-                // When swapping to a base swap token, scale down dy by its virtual price
+                // When swapping to a base Swap token, scale down dy by its virtual price
                 v.dy = v.dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
                     v.baseVirtualPrice
                 );
@@ -843,7 +842,7 @@ library MetaSwapUtils {
             }
 
             if (tokenIndexTo >= baseLPTokenIndex) {
-                // When swapping to a token that belongs to the base swap, burn the LP token
+                // When swapping to a token that belongs to the base Swap, burn the LP token
                 // and withdraw the desired token from the base pool
                 uint256 oldBalance = v.tokenTo.balanceOf(address(this));
                 baseSwap.removeLiquidityOneToken(
@@ -858,8 +857,8 @@ library MetaSwapUtils {
             // Check the amount of token to send meets minDy
             require(v.dy >= minDy, "Swap didn't result in min tokens");
         } else {
-            // Both tokens are from the base swap pool
-            // Do a swap through the base swap
+            // Both tokens are from the base Swap pool
+            // Do a swap through the base Swap
             v.dy = v.tokenTo.balanceOf(address(this));
             baseSwap.swap(
                 tokenIndexFrom - baseLPTokenIndex,

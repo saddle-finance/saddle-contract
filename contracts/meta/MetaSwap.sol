@@ -20,10 +20,10 @@ import "./MetaSwapUtils.sol";
  * Users can always withdraw their tokens via multi-asset withdraws.
  *
  * MetaSwap is a modified version of Swap that allows Swap's LP token to be utilized in pooling with other tokens.
- * As an example, if there is a Swap pool consisting of [DAI, USDC, USDT]. Then a MetaSwap pool can be created
+ * As an example, if there is a Swap pool consisting of [DAI, USDC, USDT], then a MetaSwap pool can be created
  * with [sUSD, BaseSwapLPToken] to allow trades between either the LP token or the underlying tokens and sUSD.
  * Note that when interacting with MetaSwap, users cannot deposit or withdraw via underlying tokens. In that case,
- * `MetaSwapDeposit.sol` can be additionally deployed to allow interacting with unwrapped representation of the tokens.
+ * `MetaSwapDeposit.sol` can be additionally deployed to allow interacting with unwrapped representations of the tokens.
  *
  * @dev Most of the logic is stored as a library `MetaSwapUtils` for the sake of reducing contract's
  * deployment size.
@@ -202,7 +202,7 @@ contract MetaSwap is Swap {
      * [DAI, USDC, USDT]. Then a MetaSwap pool can be created with [sUSD, BaseSwapLPToken]
      * as _pooledTokens.
      *
-     * This will also deploy the LPToken that represents users
+     * This will also deploy the LPToken that represents users'
      * LP position. The owner of LPToken will be this contract - which means
      * only this contract is allowed to mint new tokens.
      *
