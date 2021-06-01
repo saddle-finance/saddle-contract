@@ -6,11 +6,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = deployments
   const { deployer } = await getNamedAccounts()
 
-  await deploy("Multicall", {
+  await deploy("Multicall2", {
     from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
   })
 }
 export default func
-func.tags = ["Multicall"]
+func.tags = ["Multicall2"]
