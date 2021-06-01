@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "synthetix/contracts/interfaces/IAddressResolver.sol";
@@ -41,7 +40,6 @@ contract Target {
  * to withdraw the bridging synthetic assets instead of completing the swap.
  */
 contract Bridge is ERC721 {
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     event SynthIndex(

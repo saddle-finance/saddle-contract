@@ -2,10 +2,10 @@
 
 // https://etherscan.io/address/0x2b7a5a5923eca5c00c6572cf3e8e08384f563f93#code
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./LPTokenGuarded.sol";
 import "../MathUtils.sol";
 
