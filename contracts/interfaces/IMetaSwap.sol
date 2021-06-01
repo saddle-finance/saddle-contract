@@ -3,13 +3,10 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./IAllowlist.sol";
 
-interface ISwap {
+interface IMetaSwap {
     // pool data view functions
     function getA() external view returns (uint256);
-
-    function getAllowlist() external view returns (IAllowlist);
 
     function getToken(uint8 index) external view returns (IERC20);
 
@@ -23,6 +20,12 @@ interface ISwap {
 
     // min return calculation functions
     function calculateSwap(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx
+    ) external view returns (uint256);
+
+    function calculateSwapUnderlying(
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 dx
@@ -54,11 +57,18 @@ interface ISwap {
         uint256 a,
         uint256 fee,
         uint256 adminFee,
-        uint256 withdrawFee,
-        address lpTokenTargetAddress
+        uint256 withdrawFee
     ) external;
 
     function swap(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx,
+        uint256 minDy,
+        uint256 deadline
+    ) external returns (uint256);
+
+    function swapUnderlying(
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 dx,

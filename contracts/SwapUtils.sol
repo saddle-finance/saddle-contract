@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "./AmplificationUtils.sol";
 import "./LPToken.sol";
 import "./MathUtils.sol";
 
@@ -131,51 +132,10 @@ library SwapUtils {
     // Constant value used as max loop limit
     uint256 private constant MAX_LOOP_LIMIT = 256;
 
-    // Constant values used in ramping A calculations
-    uint256 public constant A_PRECISION = 100;
+    // Time that it should take for the withdraw fee to fully decay to 0
+    uint256 public constant WITHDRAW_FEE_DECAY_TIME = 4 weeks;
 
     /*** VIEW & PURE FUNCTIONS ***/
-
-    /**
-     * @notice Return A, the amplification coefficient * n * (n - 1)
-     * @dev See the StableSwap paper for details
-     * @param self Swap struct to read from
-     * @return A parameter
-     */
-    function getA(Swap storage self) external view returns (uint256) {
-        return getAPrecise(self).div(A_PRECISION);
-    }
-
-    /**
-     * @notice Return A in its raw precision
-     * @dev See the StableSwap paper for details
-     * @param self Swap struct to read from
-     * @return A parameter in its raw precision form
-     */
-    function getAPrecise(Swap storage self) public view returns (uint256) {
-        uint256 t1 = self.futureATime; // time when ramp is finished
-        uint256 a1 = self.futureA; // final A value when ramp is finished
-
-        if (block.timestamp < t1) {
-            uint256 t0 = self.initialATime; // time when ramp is started
-            uint256 a0 = self.initialA; // initial A value when ramp is started
-            if (a1 > a0) {
-                // a0 + (a1 - a0) * (block.timestamp - t0) / (t1 - t0)
-                return
-                    a0.add(
-                        a1.sub(a0).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
-                    );
-            } else {
-                // a0 - (a0 - a1) * (block.timestamp - t0) / (t1 - t0)
-                return
-                    a0.sub(
-                        a0.sub(a1).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
-                    );
-            }
-        } else {
-            return a1;
-        }
-    }
 
     /**
      * @notice Retrieves the timestamp of last deposit made by the given address
@@ -188,6 +148,10 @@ library SwapUtils {
         returns (uint256)
     {
         return self.depositTimestamp[user];
+    }
+
+    function _getAPrecise(Swap storage self) internal view returns (uint256) {
+        return AmplificationUtils._getAPrecise(self);
     }
 
     /**
@@ -245,7 +209,7 @@ library SwapUtils {
 
         dy = dy
             .mul(
-            FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, account))
+            FEE_DENOMINATOR.sub(_calculateCurrentWithdrawFee(self, account))
         )
             .div(FEE_DENOMINATOR);
 
@@ -281,7 +245,7 @@ library SwapUtils {
 
         CalculateWithdrawOneTokenDYInfo memory v =
             CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0, 0);
-        v.preciseA = getAPrecise(self);
+        v.preciseA = _getAPrecise(self);
         v.d0 = getD(xp, v.preciseA);
         v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(totalSupply));
 
@@ -357,9 +321,9 @@ library SwapUtils {
                 // c = c * D * D * D * ... overflow!
             }
         }
-        c = c.mul(d).mul(A_PRECISION).div(nA.mul(numTokens));
+        c = c.mul(d).mul(AmplificationUtils.A_PRECISION).div(nA.mul(numTokens));
 
-        uint256 b = s.add(d.mul(A_PRECISION).div(nA));
+        uint256 b = s.add(d.mul(AmplificationUtils.A_PRECISION).div(nA));
         uint256 yPrev;
         uint256 y = d;
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
@@ -407,10 +371,17 @@ library SwapUtils {
                 // dP = dP * D * D * D * ... overflow!
             }
             prevD = d;
-            d = nA.mul(s).div(A_PRECISION).add(dP.mul(numTokens)).mul(d).div(
-                nA.sub(A_PRECISION).mul(d).div(A_PRECISION).add(
-                    numTokens.add(1).mul(dP)
-                )
+            d = nA
+                .mul(s)
+                .div(AmplificationUtils.A_PRECISION)
+                .add(dP.mul(numTokens))
+                .mul(d)
+                .div(
+                nA
+                    .sub(AmplificationUtils.A_PRECISION)
+                    .mul(d)
+                    .div(AmplificationUtils.A_PRECISION)
+                    .add(numTokens.add(1).mul(dP))
             );
             if (d.within1(prevD)) {
                 return d;
@@ -472,7 +443,7 @@ library SwapUtils {
         view
         returns (uint256)
     {
-        uint256 d = getD(_xp(self), getAPrecise(self));
+        uint256 d = getD(_xp(self), _getAPrecise(self));
         LPToken lpToken = self.lpToken;
         uint256 supply = lpToken.totalSupply();
         if (supply > 0) {
@@ -531,8 +502,8 @@ library SwapUtils {
             // and divide at the end. However this leads to overflow with large numTokens or/and D.
             // c = c * D * D * D * ... overflow!
         }
-        c = c.mul(d).mul(A_PRECISION).div(nA.mul(numTokens));
-        uint256 b = s.add(d.mul(A_PRECISION).div(nA));
+        c = c.mul(d).mul(AmplificationUtils.A_PRECISION).div(nA.mul(numTokens));
+        uint256 b = s.add(d.mul(AmplificationUtils.A_PRECISION).div(nA));
         uint256 yPrev;
         uint256 y = d;
 
@@ -600,7 +571,7 @@ library SwapUtils {
         );
         uint256 x = dx.mul(multipliers[tokenIndexFrom]).add(xp[tokenIndexFrom]);
         uint256 y =
-            getY(getAPrecise(self), tokenIndexFrom, tokenIndexTo, x, xp);
+            getY(_getAPrecise(self), tokenIndexFrom, tokenIndexTo, x, xp);
         dy = xp[tokenIndexTo].sub(y).sub(1);
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
         dy = dy.sub(dyFee).div(multipliers[tokenIndexTo]);
@@ -643,7 +614,7 @@ library SwapUtils {
         uint256 feeAdjustedAmount =
             amount
                 .mul(
-                FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, account))
+                FEE_DENOMINATOR.sub(_calculateCurrentWithdrawFee(self, account))
             )
                 .div(FEE_DENOMINATOR);
 
@@ -657,16 +628,25 @@ library SwapUtils {
 
     /**
      * @notice Calculate the fee that is applied when the given user withdraws.
-     * Withdraw fee decays linearly over 4 weeks.
+     * Withdraw fee decays linearly over WITHDRAW_FEE_DECAY_TIME.
      * @param user address you want to calculate withdraw fee of
      * @return current withdraw fee of the user
      */
     function calculateCurrentWithdrawFee(Swap storage self, address user)
-        public
+        external
         view
         returns (uint256)
     {
-        uint256 endTime = self.depositTimestamp[user].add(4 weeks);
+        return _calculateCurrentWithdrawFee(self, user);
+    }
+
+    function _calculateCurrentWithdrawFee(Swap storage self, address user)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 endTime =
+            self.depositTimestamp[user].add(WITHDRAW_FEE_DECAY_TIME);
         if (endTime > block.timestamp) {
             uint256 timeLeftover = endTime.sub(block.timestamp);
             return
@@ -674,7 +654,7 @@ library SwapUtils {
                     .defaultWithdrawFee
                     .mul(self.withdrawFeeMultiplier[user])
                     .mul(timeLeftover)
-                    .div(4 weeks)
+                    .div(WITHDRAW_FEE_DECAY_TIME)
                     .div(FEE_DENOMINATOR);
         }
         return 0;
@@ -704,7 +684,7 @@ library SwapUtils {
         uint256[] calldata amounts,
         bool deposit
     ) external view returns (uint256) {
-        uint256 a = getAPrecise(self);
+        uint256 a = _getAPrecise(self);
         uint256[] memory balances = self.balances;
         uint256[] memory multipliers = self.tokenPrecisionMultipliers;
 
@@ -728,7 +708,7 @@ library SwapUtils {
             return
                 d0.sub(d1).mul(totalSupply).div(d0).mul(FEE_DENOMINATOR).div(
                     FEE_DENOMINATOR.sub(
-                        calculateCurrentWithdrawFee(self, account)
+                        _calculateCurrentWithdrawFee(self, account)
                     )
                 );
         }
@@ -853,7 +833,7 @@ library SwapUtils {
                 0,
                 0,
                 0,
-                getAPrecise(self),
+                _getAPrecise(self),
                 self.lpToken,
                 0,
                 self.balances,
@@ -966,7 +946,7 @@ library SwapUtils {
             self.withdrawFeeMultiplier[user] = FEE_DENOMINATOR;
         } else {
             // Otherwise, calculate appropriate discount based on last deposit amount
-            uint256 currentFee = calculateCurrentWithdrawFee(self, user);
+            uint256 currentFee = _calculateCurrentWithdrawFee(self, user);
             uint256 currentBalance = self.lpToken.balanceOf(user);
 
             // ((currentBalance * currentFee) + (toMint * defaultWithdrawFee)) * FEE_DENOMINATOR /
@@ -1097,7 +1077,7 @@ library SwapUtils {
                 0,
                 0,
                 0,
-                getAPrecise(self),
+                _getAPrecise(self),
                 self.lpToken,
                 0,
                 self.balances,
@@ -1146,7 +1126,7 @@ library SwapUtils {
         uint256 tokenAmount = v.d0.sub(v.d2).mul(v.totalSupply).div(v.d0);
         require(tokenAmount != 0, "Burnt amount cannot be zero");
         tokenAmount = tokenAmount.add(1).mul(FEE_DENOMINATOR).div(
-            FEE_DENOMINATOR.sub(calculateCurrentWithdrawFee(self, msg.sender))
+            FEE_DENOMINATOR.sub(_calculateCurrentWithdrawFee(self, msg.sender))
         );
 
         require(tokenAmount <= maxBurnAmount, "tokenAmount > maxBurnAmount");

@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 
+pragma solidity 0.6.12;
+
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./SwapUtils.sol";
 
-pragma solidity 0.6.12;
-
+/**
+ * @title AmplificationUtils library
+ * @notice A library to calculate and ramp the A parameter of a given `SwapUtils.Swap` struct.
+ * This library assumes the struct is fully validated.
+ */
 library AmplificationUtils {
     using SafeMath for uint256;
 
@@ -23,6 +28,65 @@ library AmplificationUtils {
     uint256 private constant MIN_RAMP_TIME = 14 days;
 
     /**
+     * @notice Return A, the amplification coefficient * n * (n - 1)
+     * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
+     * @return A parameter
+     */
+    function getA(SwapUtils.Swap storage self) external view returns (uint256) {
+        return _getAPrecise(self).div(A_PRECISION);
+    }
+
+    /**
+     * @notice Return A in its raw precision
+     * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
+     * @return A parameter in its raw precision form
+     */
+    function getAPrecise(SwapUtils.Swap storage self)
+        external
+        view
+        returns (uint256)
+    {
+        return _getAPrecise(self);
+    }
+
+    /**
+     * @notice Return A in its raw precision
+     * @dev See the StableSwap paper for details
+     * @param self Swap struct to read from
+     * @return A parameter in its raw precision form
+     */
+    function _getAPrecise(SwapUtils.Swap storage self)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 t1 = self.futureATime; // time when ramp is finished
+        uint256 a1 = self.futureA; // final A value when ramp is finished
+
+        if (block.timestamp < t1) {
+            uint256 t0 = self.initialATime; // time when ramp is started
+            uint256 a0 = self.initialA; // initial A value when ramp is started
+            if (a1 > a0) {
+                // a0 + (a1 - a0) * (block.timestamp - t0) / (t1 - t0)
+                return
+                    a0.add(
+                        a1.sub(a0).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
+                    );
+            } else {
+                // a0 - (a0 - a1) * (block.timestamp - t0) / (t1 - t0)
+                return
+                    a0.sub(
+                        a0.sub(a1).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
+                    );
+            }
+        } else {
+            return a1;
+        }
+    }
+
+    /**
      * @notice Start ramping up or down A parameter towards given futureA_ and futureTime_
      * Checks if the change is too rapid, and commits the new A value only when it falls under
      * the limit range.
@@ -32,7 +96,6 @@ library AmplificationUtils {
      */
     function rampA(
         SwapUtils.Swap storage self,
-        uint256 initialAPrecise,
         uint256 futureA_,
         uint256 futureTime_
     ) external {
@@ -49,6 +112,7 @@ library AmplificationUtils {
             "futureA_ must be > 0 and < MAX_A"
         );
 
+        uint256 initialAPrecise = _getAPrecise(self);
         uint256 futureAPrecise = futureA_.mul(A_PRECISION);
 
         if (futureAPrecise < initialAPrecise) {
@@ -81,9 +145,10 @@ library AmplificationUtils {
      * cannot be called for another 24 hours
      * @param self Swap struct to update
      */
-    function stopRampA(SwapUtils.Swap storage self, uint256 currentA) external {
+    function stopRampA(SwapUtils.Swap storage self) external {
         require(self.futureATime > block.timestamp, "Ramp is already stopped");
 
+        uint256 currentA = _getAPrecise(self);
         self.initialA = currentA;
         self.futureA = currentA;
         self.initialATime = block.timestamp;
