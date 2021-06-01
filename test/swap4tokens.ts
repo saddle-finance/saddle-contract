@@ -108,7 +108,9 @@ describe("Swap with 4 tokens", () => {
         SWAP_FEE,
         0,
         0,
-        (await get("LPToken")).address,
+        (
+          await get("LPToken")
+        ).address,
       )
 
       expect(await swap.getVirtualPrice()).to.be.eq(0)
