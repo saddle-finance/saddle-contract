@@ -66,27 +66,37 @@ describe("Meta-Swap Deposit Contract", async () => {
       // Load contracts from the deployments
       baseSwap = (await ethers.getContractAt(
         SwapArtifact.abi,
-        (await get("SaddleUSDPool")).address,
+        (
+          await get("SaddleUSDPool")
+        ).address,
       )) as Swap
 
       baseLPToken = (await ethers.getContractAt(
         GenericERC20Artifact.abi,
-        (await get("SaddleUSDPoolLPToken")).address,
+        (
+          await get("SaddleUSDPoolLPToken")
+        ).address,
       )) as GenericERC20
 
       dai = (await ethers.getContractAt(
         GenericERC20Artifact.abi,
-        (await get("DAI")).address,
+        (
+          await get("DAI")
+        ).address,
       )) as GenericERC20
 
       usdc = (await ethers.getContractAt(
         GenericERC20Artifact.abi,
-        (await get("USDC")).address,
+        (
+          await get("USDC")
+        ).address,
       )) as GenericERC20
 
       usdt = (await ethers.getContractAt(
         GenericERC20Artifact.abi,
-        (await get("USDT")).address,
+        (
+          await get("USDT")
+        ).address,
       )) as GenericERC20
 
       // Deploy dummy tokens
@@ -146,12 +156,16 @@ describe("Meta-Swap Deposit Contract", async () => {
         SWAP_FEE,
         0,
         0,
-        (await get("LPToken")).address,
+        (
+          await get("LPToken")
+        ).address,
         baseSwap.address,
       )
       metaLPToken = (await ethers.getContractAt(
         LPTokenArtifact.abi,
-        (await metaSwap.swapStorage()).lpToken,
+        (
+          await metaSwap.swapStorage()
+        ).lpToken,
       )) as LPToken
 
       // Add some initial liquidity so that calculations work
@@ -216,10 +230,8 @@ describe("Meta-Swap Deposit Contract", async () => {
       )
       expect(calculatedSwapReturn).to.eq(BigNumber.from("99878006452940184"))
 
-      const [
-        tokenFromBalanceBefore,
-        tokenToBalanceBefore,
-      ] = await getUserTokenBalances(user1, [susd, dai])
+      const [tokenFromBalanceBefore, tokenToBalanceBefore] =
+        await getUserTokenBalances(user1, [susd, dai])
 
       // User 1 successfully initiates swap
       await metaSwapDeposit
@@ -227,10 +239,8 @@ describe("Meta-Swap Deposit Contract", async () => {
         .swap(0, 1, String(1e17), calculatedSwapReturn, MAX_UINT256)
 
       // Check the sent and received amounts are as expected
-      const [
-        tokenFromBalanceAfter,
-        tokenToBalanceAfter,
-      ] = await getUserTokenBalances(user1, [susd, dai])
+      const [tokenFromBalanceAfter, tokenToBalanceAfter] =
+        await getUserTokenBalances(user1, [susd, dai])
       expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
         BigNumber.from(String(1e17)),
       )
@@ -254,10 +264,8 @@ describe("Meta-Swap Deposit Contract", async () => {
         .mul(999)
         .div(1000)
 
-      const [
-        tokenFromBalanceBefore,
-        tokenToBalanceBefore,
-      ] = await getUserTokenBalances(user1, [usdc, susd])
+      const [tokenFromBalanceBefore, tokenToBalanceBefore] =
+        await getUserTokenBalances(user1, [usdc, susd])
 
       // User 1 successfully initiates swap
       await metaSwapDeposit
@@ -265,10 +273,8 @@ describe("Meta-Swap Deposit Contract", async () => {
         .swap(2, 0, String(1e5), minReturnWithNegativeSlippage, MAX_UINT256)
 
       // Check the sent and received amounts are as expected
-      const [
-        tokenFromBalanceAfter,
-        tokenToBalanceAfter,
-      ] = await getUserTokenBalances(user1, [usdc, susd])
+      const [tokenFromBalanceAfter, tokenToBalanceAfter] =
+        await getUserTokenBalances(user1, [usdc, susd])
       expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
         BigNumber.from(String(1e5)),
       )
@@ -286,10 +292,8 @@ describe("Meta-Swap Deposit Contract", async () => {
       )
       expect(calculatedSwapReturn).to.eq(BigNumber.from("99878"))
 
-      const [
-        tokenFromBalanceBefore,
-        tokenToBalanceBefore,
-      ] = await getUserTokenBalances(user1, [susd, usdc])
+      const [tokenFromBalanceBefore, tokenToBalanceBefore] =
+        await getUserTokenBalances(user1, [susd, usdc])
 
       // User 1 successfully initiates swap
       await metaSwapDeposit
@@ -297,10 +301,8 @@ describe("Meta-Swap Deposit Contract", async () => {
         .swap(0, 2, String(1e17), calculatedSwapReturn, MAX_UINT256)
 
       // Check the sent and received amounts are as expected
-      const [
-        tokenFromBalanceAfter,
-        tokenToBalanceAfter,
-      ] = await getUserTokenBalances(user1, [susd, usdc])
+      const [tokenFromBalanceAfter, tokenToBalanceAfter] =
+        await getUserTokenBalances(user1, [susd, usdc])
       expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
         BigNumber.from(String(1e17)),
       )
@@ -318,10 +320,8 @@ describe("Meta-Swap Deposit Contract", async () => {
       )
       expect(calculatedSwapReturn).to.eq(BigNumber.from("99959"))
 
-      const [
-        tokenFromBalanceBefore,
-        tokenToBalanceBefore,
-      ] = await getUserTokenBalances(user1, [dai, usdt])
+      const [tokenFromBalanceBefore, tokenToBalanceBefore] =
+        await getUserTokenBalances(user1, [dai, usdt])
 
       // User 1 successfully initiates swap
       await metaSwapDeposit
@@ -329,10 +329,8 @@ describe("Meta-Swap Deposit Contract", async () => {
         .swap(1, 3, String(1e17), calculatedSwapReturn, MAX_UINT256)
 
       // Check the sent and received amounts are as expected
-      const [
-        tokenFromBalanceAfter,
-        tokenToBalanceAfter,
-      ] = await getUserTokenBalances(user1, [dai, usdt])
+      const [tokenFromBalanceAfter, tokenToBalanceAfter] =
+        await getUserTokenBalances(user1, [dai, usdt])
       expect(tokenFromBalanceBefore.sub(tokenFromBalanceAfter)).to.eq(
         BigNumber.from(String(1e17)),
       )
@@ -631,12 +629,13 @@ describe("Meta-Swap Deposit Contract", async () => {
         String(1e18),
         0,
       )
-      const returnValue = await metaSwapDeposit.callStatic.removeLiquidityOneToken(
-        String(1e18),
-        0,
-        minAmount,
-        MAX_UINT256,
-      )
+      const returnValue =
+        await metaSwapDeposit.callStatic.removeLiquidityOneToken(
+          String(1e18),
+          0,
+          minAmount,
+          MAX_UINT256,
+        )
 
       const balanceBefore = await getUserTokenBalance(ownerAddress, susd)
       await metaSwapDeposit.removeLiquidityOneToken(
@@ -658,12 +657,13 @@ describe("Meta-Swap Deposit Contract", async () => {
         String(1e18),
         2,
       )
-      const returnValue = await metaSwapDeposit.callStatic.removeLiquidityOneToken(
-        String(1e18),
-        2,
-        minAmount,
-        MAX_UINT256,
-      )
+      const returnValue =
+        await metaSwapDeposit.callStatic.removeLiquidityOneToken(
+          String(1e18),
+          2,
+          minAmount,
+          MAX_UINT256,
+        )
 
       const balanceBefore = await getUserTokenBalance(ownerAddress, usdc)
       await metaSwapDeposit.removeLiquidityOneToken(
@@ -756,11 +756,12 @@ describe("Meta-Swap Deposit Contract", async () => {
       const balancesBefore = await getUserTokenBalances(ownerAddress, tokens)
 
       // Perform the call
-      const returnValues = await metaSwapDeposit.callStatic.removeLiquidityImbalance(
-        amounts,
-        maxBurnAmount,
-        MAX_UINT256,
-      )
+      const returnValues =
+        await metaSwapDeposit.callStatic.removeLiquidityImbalance(
+          amounts,
+          maxBurnAmount,
+          MAX_UINT256,
+        )
       await metaSwapDeposit.removeLiquidityImbalance(
         amounts,
         maxBurnAmount,
@@ -799,11 +800,12 @@ describe("Meta-Swap Deposit Contract", async () => {
       const balancesBefore = await getUserTokenBalances(ownerAddress, tokens)
 
       // Perform the call
-      const returnValues = await metaSwapDeposit.callStatic.removeLiquidityImbalance(
-        amounts,
-        maxBurnAmount,
-        MAX_UINT256,
-      )
+      const returnValues =
+        await metaSwapDeposit.callStatic.removeLiquidityImbalance(
+          amounts,
+          maxBurnAmount,
+          MAX_UINT256,
+        )
       await metaSwapDeposit.removeLiquidityImbalance(
         amounts,
         maxBurnAmount,
@@ -842,11 +844,12 @@ describe("Meta-Swap Deposit Contract", async () => {
       const balancesBefore = await getUserTokenBalances(ownerAddress, tokens)
 
       // Perform the call
-      const returnValues = await metaSwapDeposit.callStatic.removeLiquidityImbalance(
-        amounts,
-        maxBurnAmount,
-        MAX_UINT256,
-      )
+      const returnValues =
+        await metaSwapDeposit.callStatic.removeLiquidityImbalance(
+          amounts,
+          maxBurnAmount,
+          MAX_UINT256,
+        )
       await metaSwapDeposit.removeLiquidityImbalance(
         amounts,
         maxBurnAmount,
