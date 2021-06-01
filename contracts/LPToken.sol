@@ -23,7 +23,7 @@ contract LPToken is ERC20BurnableUpgradeable, OwnableUpgradeable {
      * @param symbol symbol of this token
      */
     function initialize(string memory name, string memory symbol)
-        public
+        external
         initializer
         returns (bool)
     {

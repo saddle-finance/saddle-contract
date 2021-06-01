@@ -229,7 +229,7 @@ contract MetaSwap is Swap {
         uint256 _withdrawFee,
         address lpTokenTargetAddress,
         ISwap baseSwap
-    ) public virtual initializer {
+    ) external virtual initializer {
         Swap.initialize(
             _pooledTokens,
             decimals,
@@ -252,8 +252,8 @@ contract MetaSwap is Swap {
             uint8 i;
             for (; i < 32; i++) {
                 try baseSwap.getToken(i) returns (IERC20 token) {
-                    token.safeApprove(address(baseSwap), MAX_UINT256);
                     metaSwapStorage.baseTokens.push(token);
+                    token.safeApprove(address(baseSwap), MAX_UINT256);
                 } catch {
                     break;
                 }

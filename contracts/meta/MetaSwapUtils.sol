@@ -789,7 +789,6 @@ library MetaSwapUtils {
                 uint256[] memory baseAmounts =
                     new uint256[](v.baseTokens.length);
                 baseAmounts[tokenIndexFrom - baseLPTokenIndex] = v.dx;
-                IERC20 baseLPToken = self.pooledTokens[baseLPTokenIndex];
 
                 // Add liquidity to the underlying Swap contract and receive base LP token
                 v.dx = baseSwap.addLiquidity(baseAmounts, 0, block.timestamp);
