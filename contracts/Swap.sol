@@ -184,6 +184,8 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         swapStorage.balances = new uint256[](_pooledTokens.length);
         swapStorage.initialA = _a.mul(AmplificationUtils.A_PRECISION);
         swapStorage.futureA = _a.mul(AmplificationUtils.A_PRECISION);
+        // swapStorage.initialATime = 0;
+        // swapStorage.futureATime = 0;
         swapStorage.swapFee = _fee;
         swapStorage.adminFee = _adminFee;
         swapStorage.defaultWithdrawFee = _withdrawFee;
