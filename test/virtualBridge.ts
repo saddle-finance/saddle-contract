@@ -218,7 +218,9 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         SWAP_FEE,
         0,
         0,
-        (await deployments.get("LPToken")).address,
+        (
+          await deployments.get("LPToken")
+        ).address,
       )
       btcSwapStorage = await btcSwap.swapStorage()
 
@@ -237,7 +239,9 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         SWAP_FEE,
         0,
         0,
-        (await deployments.get("LPToken")).address,
+        (
+          await deployments.get("LPToken")
+        ).address,
       )
 
       // Deploy Bridge contract
@@ -427,13 +431,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       const sUSDBalanceBefore = await susd.balanceOf(user1Address)
 
       // Check the pending swap info
-      let [
-        swapType,
-        timeLeft,
-        synth,
-        synthBalance,
-        tokenTo,
-      ] = await bridge.getPendingSwapInfo(queueId)
+      let [swapType, timeLeft, synth, synthBalance, tokenTo] =
+        await bridge.getPendingSwapInfo(queueId)
       expect(swapType).to.eq(PendingSwapType.TokenToSynth)
       expect(timeLeft).to.eq(360)
       expect(synth).to.eq(susd.address)
@@ -444,13 +443,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       await increaseTimestamp(360)
 
       // Check the time left has changed
-      ;[
-        swapType,
-        timeLeft,
-        synth,
-        synthBalance,
-        tokenTo,
-      ] = await bridge.getPendingSwapInfo(queueId)
+      ;[swapType, timeLeft, synth, synthBalance, tokenTo] =
+        await bridge.getPendingSwapInfo(queueId)
       expect(swapType).to.eq(PendingSwapType.TokenToSynth)
       expect(timeLeft).to.eq(0)
 
@@ -564,15 +558,13 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
     })
 
     it("Succeeds to calculate sUSD -> tBTC", async () => {
-      const [
-        expectedMediumSynthAmount,
-        expectedTokenAmount,
-      ] = await bridge.calcSynthToToken(
-        btcSwap.address,
-        utils.formatBytes32String("sUSD"),
-        await btcSwap.getTokenIndex(tbtc.address),
-        BigNumber.from(50000).mul(String(1e18)),
-      )
+      const [expectedMediumSynthAmount, expectedTokenAmount] =
+        await bridge.calcSynthToToken(
+          btcSwap.address,
+          utils.formatBytes32String("sUSD"),
+          await btcSwap.getTokenIndex(tbtc.address),
+          BigNumber.from(50000).mul(String(1e18)),
+        )
 
       // expected medium synth amount : 1.470427 sBTC
       expect(expectedMediumSynthAmount).to.eq("1470427715128388590")
@@ -581,15 +573,13 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
     })
 
     it("Succeeds to calculate sDEFI -> tBTC", async () => {
-      const [
-        expectedMediumSynthAmount,
-        expectedTokenAmount,
-      ] = await bridge.calcSynthToToken(
-        btcSwap.address,
-        utils.formatBytes32String("sDEFI"),
-        await btcSwap.getTokenIndex(tbtc.address),
-        BigNumber.from(15).mul(String(1e18)),
-      )
+      const [expectedMediumSynthAmount, expectedTokenAmount] =
+        await bridge.calcSynthToToken(
+          btcSwap.address,
+          utils.formatBytes32String("sDEFI"),
+          await btcSwap.getTokenIndex(tbtc.address),
+          BigNumber.from(15).mul(String(1e18)),
+        )
 
       // expected medium synth amount : 2.214412 sBTC
       expect(expectedMediumSynthAmount).to.eq("2214412068902910393")
@@ -628,15 +618,13 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
     it("Succeeds to swap sUSD -> sBTC -> tBTC", async () => {
       const tbtcIndex = await btcSwap.getTokenIndex(tbtc.address)
 
-      const [
-        expectedMediumSynthAmount,
-        expectedTokenAmount,
-      ] = await bridge.calcSynthToToken(
-        btcSwap.address,
-        utils.formatBytes32String("sUSD"),
-        tbtcIndex,
-        BigNumber.from(50000).mul(String(1e18)),
-      )
+      const [expectedMediumSynthAmount, expectedTokenAmount] =
+        await bridge.calcSynthToToken(
+          btcSwap.address,
+          utils.formatBytes32String("sUSD"),
+          tbtcIndex,
+          BigNumber.from(50000).mul(String(1e18)),
+        )
 
       // expected medium synth amount: 1.47042 sBTC
       expect(expectedMediumSynthAmount).to.eq("1470427715128388590")
@@ -669,13 +657,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       const tBTCBalanceBefore = await tbtc.balanceOf(user1Address)
 
       // Check the pending swap info
-      let [
-        swapType,
-        timeLeft,
-        synth,
-        synthBalance,
-        tokenTo,
-      ] = await bridge.getPendingSwapInfo(queueId)
+      let [swapType, timeLeft, synth, synthBalance, tokenTo] =
+        await bridge.getPendingSwapInfo(queueId)
       expect(swapType).to.eq(PendingSwapType.SynthToToken)
       expect(timeLeft).to.eq(360)
       expect(synth).to.eq(sbtc.address)
@@ -686,13 +669,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       await increaseTimestamp(360)
 
       // Check the state has changed
-      ;[
-        swapType,
-        timeLeft,
-        synth,
-        synthBalance,
-        tokenTo,
-      ] = await bridge.getPendingSwapInfo(queueId)
+      ;[swapType, timeLeft, synth, synthBalance, tokenTo] =
+        await bridge.getPendingSwapInfo(queueId)
       expect(swapType).to.eq(PendingSwapType.SynthToToken)
       expect(timeLeft).to.eq(0)
 
@@ -797,15 +775,13 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
     describe("Initiate a cross asset swap: tBTC -> sBTC -> sUSD -> USDC", async () => {
       let queueId: BigNumber
       beforeEach(async () => {
-        const [
-          expectedMediumSynthAmount,
-          expectedTokenAmount,
-        ] = await bridge.calcTokenToToken(
-          [btcSwap.address, usdSwap.address],
-          0,
-          1,
-          BigNumber.from(String(1e18)).mul(10),
-        )
+        const [expectedMediumSynthAmount, expectedTokenAmount] =
+          await bridge.calcTokenToToken(
+            [btcSwap.address, usdSwap.address],
+            0,
+            1,
+            BigNumber.from(String(1e18)).mul(10),
+          )
 
         // expected medium synth amount: 338,353 sUSD
         expect(expectedMediumSynthAmount).to.eq("338353754957020598075449")
@@ -901,12 +877,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
           expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.eq("149851775624")
 
           // Check the time left is still 0
-          const [
-            swapType,
-            timeLeft,
-            ,
-            synthBalance,
-          ] = await bridge.getPendingSwapInfo(queueId)
+          const [swapType, timeLeft, , synthBalance] =
+            await bridge.getPendingSwapInfo(queueId)
           expect(swapType).to.eq(PendingSwapType.TokenToToken)
           expect(timeLeft).to.eq(0)
           expect(synthBalance)
@@ -932,9 +904,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
 
         it("Reverts when not reached minAmount", async () => {
           // Get the max amount of synth we can trade from
-          const pendingToTokenSwap: PendingToTokenSwap = await bridge.pendingToTokenSwaps(
-            queueId,
-          )
+          const pendingToTokenSwap: PendingToTokenSwap =
+            await bridge.pendingToTokenSwaps(queueId)
           const synth = (await ethers.getContractAt(
             "GenericERC20",
             await bridge.getProxyAddressFromTargetSynthKey(
@@ -955,9 +926,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
 
       describe("withdraw", async () => {
         it("Succeeds to withdraw the synth in full amount", async () => {
-          const pendingToTokenSwap: PendingToTokenSwap = await bridge.pendingToTokenSwaps(
-            queueId,
-          )
+          const pendingToTokenSwap: PendingToTokenSwap =
+            await bridge.pendingToTokenSwaps(queueId)
           const synth = (await ethers.getContractAt(
             "GenericERC20",
             await bridge.getProxyAddressFromTargetSynthKey(
@@ -986,9 +956,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         })
 
         it("Succeeds to withdraw in partial amounts", async () => {
-          const pendingToTokenSwap: PendingToTokenSwap = await bridge.pendingToTokenSwaps(
-            queueId,
-          )
+          const pendingToTokenSwap: PendingToTokenSwap =
+            await bridge.pendingToTokenSwaps(queueId)
           const synth = (await ethers.getContractAt(
             "GenericERC20",
             await bridge.getProxyAddressFromTargetSynthKey(
