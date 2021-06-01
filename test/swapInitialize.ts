@@ -72,7 +72,9 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("_pooledTokens.length <= 1")
     })
@@ -88,7 +90,9 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("_pooledTokens.length > 32")
     })
@@ -104,7 +108,9 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("_pooledTokens decimals mismatch")
     })
@@ -120,7 +126,9 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("Duplicate tokens")
     })
@@ -136,7 +144,9 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("The 0 address isn't an ERC-20")
     })
@@ -152,7 +162,9 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("Token decimals exceeds max")
     })
@@ -168,7 +180,9 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           0,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("_a exceeds maximum")
     })
@@ -184,7 +198,9 @@ describe("Swap", () => {
           10e8 + 1,
           0,
           0,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("_fee exceeds maximum")
     })
@@ -200,7 +216,9 @@ describe("Swap", () => {
           SWAP_FEE,
           10e10 + 1,
           0,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("_adminFee exceeds maximum")
     })
@@ -216,7 +234,9 @@ describe("Swap", () => {
           SWAP_FEE,
           0,
           10e8 + 1,
-          (await deployments.get("LPToken")).address,
+          (
+            await deployments.get("LPToken")
+          ).address,
         ),
       ).to.be.revertedWith("_withdrawFee exceeds maximum")
     })

@@ -36,7 +36,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     for (const [tokenName, holders] of Object.entries(tokenToAccountsMap)) {
       const contract = (await ethers.getContractAt(
         "GenericERC20",
-        (await get(tokenName)).address,
+        (
+          await get(tokenName)
+        ).address,
       )) as GenericERC20
 
       await asyncForEach(holders, async (holder) => {
