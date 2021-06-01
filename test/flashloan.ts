@@ -104,7 +104,9 @@ describe("Swap Flashloan", () => {
         SWAP_FEE,
         0,
         0,
-        (await deployments.get("LPToken")).address,
+        (
+          await deployments.get("LPToken")
+        ).address,
       )
 
       expect(await swapFlashLoan.getVirtualPrice()).to.be.eq(0)
@@ -142,7 +144,8 @@ describe("Swap Flashloan", () => {
       const flashLoanExampleFactory = await ethers.getContractFactory(
         "FlashLoanBorrowerExample",
       )
-      flashLoanExample = (await flashLoanExampleFactory.deploy()) as FlashLoanBorrowerExample
+      flashLoanExample =
+        (await flashLoanExampleFactory.deploy()) as FlashLoanBorrowerExample
 
       // Set fees to easier numbers for debugging
       await swapFlashLoan.setFlashLoanFees(100, 5000)
