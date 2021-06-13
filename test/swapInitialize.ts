@@ -71,7 +71,6 @@ describe("Swap", () => {
           INITIAL_A_VALUE,
           SWAP_FEE,
           0,
-          0,
           (
             await deployments.get("LPToken")
           ).address,
@@ -88,7 +87,6 @@ describe("Swap", () => {
           LP_TOKEN_SYMBOL,
           INITIAL_A_VALUE,
           SWAP_FEE,
-          0,
           0,
           (
             await deployments.get("LPToken")
@@ -107,7 +105,6 @@ describe("Swap", () => {
           INITIAL_A_VALUE,
           SWAP_FEE,
           0,
-          0,
           (
             await deployments.get("LPToken")
           ).address,
@@ -124,7 +121,6 @@ describe("Swap", () => {
           LP_TOKEN_SYMBOL,
           INITIAL_A_VALUE,
           SWAP_FEE,
-          0,
           0,
           (
             await deployments.get("LPToken")
@@ -143,7 +139,6 @@ describe("Swap", () => {
           INITIAL_A_VALUE,
           SWAP_FEE,
           0,
-          0,
           (
             await deployments.get("LPToken")
           ).address,
@@ -160,7 +155,6 @@ describe("Swap", () => {
           LP_TOKEN_SYMBOL,
           INITIAL_A_VALUE,
           SWAP_FEE,
-          0,
           0,
           (
             await deployments.get("LPToken")
@@ -179,7 +173,6 @@ describe("Swap", () => {
           10e6 + 1,
           SWAP_FEE,
           0,
-          0,
           (
             await deployments.get("LPToken")
           ).address,
@@ -196,7 +189,6 @@ describe("Swap", () => {
           LP_TOKEN_SYMBOL,
           INITIAL_A_VALUE,
           10e8 + 1,
-          0,
           0,
           (
             await deployments.get("LPToken")
@@ -215,30 +207,11 @@ describe("Swap", () => {
           INITIAL_A_VALUE,
           SWAP_FEE,
           10e10 + 1,
-          0,
           (
             await deployments.get("LPToken")
           ).address,
         ),
       ).to.be.revertedWith("_adminFee exceeds maximum")
-    })
-
-    it("Reverts with '_withdrawFee exceeds maximum'", async () => {
-      await expect(
-        swap.initialize(
-          [firstToken.address, secondToken.address],
-          [18, 18],
-          LP_TOKEN_NAME,
-          LP_TOKEN_SYMBOL,
-          INITIAL_A_VALUE,
-          SWAP_FEE,
-          0,
-          10e8 + 1,
-          (
-            await deployments.get("LPToken")
-          ).address,
-        ),
-      ).to.be.revertedWith("_withdrawFee exceeds maximum")
     })
 
     it("Reverts when the LPToken target does not implement initialize function", async () => {
@@ -250,7 +223,6 @@ describe("Swap", () => {
           LP_TOKEN_SYMBOL,
           INITIAL_A_VALUE,
           SWAP_FEE,
-          0,
           0,
           ZERO_ADDRESS,
         ),

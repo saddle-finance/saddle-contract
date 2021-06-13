@@ -107,7 +107,6 @@ describe("Swap with 4 tokens", () => {
         INITIAL_A_VALUE,
         SWAP_FEE,
         0,
-        0,
         (
           await get("LPToken")
         ).address,
@@ -153,7 +152,6 @@ describe("Swap with 4 tokens", () => {
   describe("addLiquidity", () => {
     it("Add liquidity succeeds with pool with 4 tokens", async () => {
       const calcTokenAmount = await swap.calculateTokenAmount(
-        user1Address,
         [String(1e18), 0, 0, 0],
         true,
       )
@@ -205,7 +203,6 @@ describe("Swap with 4 tokens", () => {
   describe("removeLiquidity", () => {
     it("Remove Liquidity succeeds", async () => {
       const calcTokenAmount = await swap.calculateTokenAmount(
-        user1Address,
         [String(1e18), 0, 0, 0],
         true,
       )
@@ -227,7 +224,6 @@ describe("Swap with 4 tokens", () => {
 
       // Calculate expected amounts of tokens user1 will receive
       const expectedAmounts = await swap.calculateRemoveLiquidity(
-        user1Address,
         "999355335447632820",
       )
 

@@ -24,7 +24,6 @@ contract SwapDeployer is Ownable {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee,
         address lpTokenTargetAddress
     ) external returns (address) {
         address swapClone = Clones.clone(swapAddress);
@@ -36,7 +35,6 @@ contract SwapDeployer is Ownable {
             _a,
             _fee,
             _adminFee,
-            _withdrawFee,
             lpTokenTargetAddress
         );
         Ownable(swapClone).transferOwnership(owner());

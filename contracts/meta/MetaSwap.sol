@@ -116,7 +116,6 @@ contract MetaSwap is Swap {
      *
      * @dev This shouldn't be used outside frontends for user estimates.
      *
-     * @param account address that is depositing or withdrawing tokens
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
      * pooled token's native precision. If a token charges a fee on transfers,
@@ -124,16 +123,17 @@ contract MetaSwap is Swap {
      * @param deposit whether this is a deposit or a withdrawal
      * @return token amount the user will receive
      */
-    function calculateTokenAmount(
-        address account,
-        uint256[] calldata amounts,
-        bool deposit
-    ) external view virtual override returns (uint256) {
+    function calculateTokenAmount(uint256[] calldata amounts, bool deposit)
+        external
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return
             MetaSwapUtils.calculateTokenAmount(
                 swapStorage,
                 metaSwapStorage,
-                account,
                 amounts,
                 deposit
             );
@@ -142,14 +142,12 @@ contract MetaSwap is Swap {
     /**
      * @notice Calculate the amount of underlying token available to withdraw
      * when withdrawing via only single token
-     * @param account the address that is withdrawing tokens
      * @param tokenAmount the amount of LP token to burn
      * @param tokenIndex index of which token will be withdrawn
      * @return availableTokenAmount calculated amount of underlying token
      * available to withdraw
      */
     function calculateRemoveLiquidityOneToken(
-        address account,
         uint256 tokenAmount,
         uint8 tokenIndex
     ) external view virtual override returns (uint256) {
@@ -157,7 +155,6 @@ contract MetaSwap is Swap {
             MetaSwapUtils.calculateWithdrawOneToken(
                 swapStorage,
                 metaSwapStorage,
-                account,
                 tokenAmount,
                 tokenIndex
             );
@@ -178,7 +175,6 @@ contract MetaSwap is Swap {
      * StableSwap paper for details
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
-     * @param _withdrawFee default withdrawFee to be initialized with
      */
     function initialize(
         IERC20[] memory _pooledTokens,
@@ -188,7 +184,6 @@ contract MetaSwap is Swap {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee,
         address lpTokenTargetAddress
     ) public virtual override initializer {
         revert("use initializeMetaSwap() instead");
@@ -216,7 +211,6 @@ contract MetaSwap is Swap {
      * StableSwap paper for details
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
-     * @param _withdrawFee default withdrawFee to be initialized with
      */
     function initializeMetaSwap(
         IERC20[] memory _pooledTokens,
@@ -226,7 +220,6 @@ contract MetaSwap is Swap {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee,
         address lpTokenTargetAddress,
         ISwap baseSwap
     ) external virtual initializer {
@@ -238,7 +231,6 @@ contract MetaSwap is Swap {
             _a,
             _fee,
             _adminFee,
-            _withdrawFee,
             lpTokenTargetAddress
         );
 

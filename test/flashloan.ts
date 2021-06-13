@@ -103,7 +103,6 @@ describe("Swap Flashloan", () => {
         INITIAL_A_VALUE,
         SWAP_FEE,
         0,
-        0,
         (
           await deployments.get("LPToken")
         ).address,

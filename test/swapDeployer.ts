@@ -117,7 +117,6 @@ describe("Swap Deployer", () => {
         INITIAL_A_VALUE,
         SWAP_FEE,
         0,
-        0,
         (
           await deployments.get("LPToken")
         ).address,
@@ -131,7 +130,6 @@ describe("Swap Deployer", () => {
         LP_TOKEN_SYMBOL,
         INITIAL_A_VALUE,
         SWAP_FEE,
-        0,
         0,
         (
           await deployments.get("LPToken")
@@ -180,7 +178,6 @@ describe("Swap Deployer", () => {
   describe("addLiquidity", () => {
     it("Add liquidity succeeds with pool with 4 tokens", async () => {
       const calcTokenAmount = await swapClone.calculateTokenAmount(
-        user1Address,
         [String(1e18), 0, 0, 0],
         true,
       )
@@ -233,7 +230,6 @@ describe("Swap Deployer", () => {
   describe("removeLiquidity", () => {
     it("Remove Liquidity succeeds", async () => {
       const calcTokenAmount = await swapClone.calculateTokenAmount(
-        user1Address,
         [String(1e18), 0, 0, 0],
         true,
       )
@@ -255,7 +251,6 @@ describe("Swap Deployer", () => {
 
       // Calculate expected amounts of tokens user1 will receive
       const expectedAmounts = await swapClone.calculateRemoveLiquidity(
-        user1Address,
         "999355335447632820",
       )
 

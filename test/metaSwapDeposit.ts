@@ -155,7 +155,6 @@ describe("Meta-Swap Deposit Contract", async () => {
         INITIAL_A_VALUE,
         SWAP_FEE,
         0,
-        0,
         (
           await get("LPToken")
         ).address,
@@ -386,7 +385,6 @@ describe("Meta-Swap Deposit Contract", async () => {
         String(1e6),
       ]
       const minToMint = await metaSwapDeposit.calculateTokenAmount(
-        ownerAddress,
         tokenDepositAmounts,
         true,
       )
@@ -411,7 +409,6 @@ describe("Meta-Swap Deposit Contract", async () => {
         String(1e6),
       ]
       const minToMint = await metaSwapDeposit.calculateTokenAmount(
-        ownerAddress,
         tokenDepositAmounts,
         true,
       )
@@ -446,7 +443,6 @@ describe("Meta-Swap Deposit Contract", async () => {
         String(0),
       ]
       const minToMint = await metaSwapDeposit.calculateTokenAmount(
-        ownerAddress,
         tokenDepositAmounts,
         true,
       )
@@ -470,7 +466,6 @@ describe("Meta-Swap Deposit Contract", async () => {
     it("Succeeds when depositing single token (base swap level)", async () => {
       const tokenDepositAmounts = [String(0), String(1e6), String(0), String(0)]
       const minToMint = await metaSwapDeposit.calculateTokenAmount(
-        ownerAddress,
         tokenDepositAmounts,
         true,
       )
@@ -542,7 +537,6 @@ describe("Meta-Swap Deposit Contract", async () => {
 
     it("Succeeds with expected minAmounts", async () => {
       const minAmounts = await metaSwapDeposit.calculateRemoveLiquidity(
-        ownerAddress,
         String(1e18),
       )
       expect(minAmounts[0]).to.eq("504905415701427558")
@@ -625,7 +619,6 @@ describe("Meta-Swap Deposit Contract", async () => {
 
     it("Succeeds when withdrawing via a meta level token", async () => {
       const minAmount = await metaSwapDeposit.calculateRemoveLiquidityOneToken(
-        ownerAddress,
         String(1e18),
         0,
       )
@@ -653,7 +646,6 @@ describe("Meta-Swap Deposit Contract", async () => {
 
     it("Succeeds when withdrawing via a base level token", async () => {
       const minAmount = await metaSwapDeposit.calculateRemoveLiquidityOneToken(
-        ownerAddress,
         String(1e18),
         2,
       )
@@ -727,7 +719,6 @@ describe("Meta-Swap Deposit Contract", async () => {
       // setting that is at least 0.1% when withdrawing meta-level tokens and 0.2% when withdrawing base-level tokens.
       const amounts = [String(1e18), String(0), String(0), String(0)]
       const maxBurnAmount = await metaSwapDeposit.calculateTokenAmount(
-        ownerAddress,
         amounts,
         false,
       )
@@ -745,7 +736,7 @@ describe("Meta-Swap Deposit Contract", async () => {
 
       // Apply 0.1% slippage
       const maxBurnAmount = (
-        await metaSwapDeposit.calculateTokenAmount(ownerAddress, amounts, false)
+        await metaSwapDeposit.calculateTokenAmount(amounts, false)
       )
         .mul(1001)
         .div(1000)
@@ -789,7 +780,7 @@ describe("Meta-Swap Deposit Contract", async () => {
 
       // Apply 0.2% slippage
       const maxBurnAmount = (
-        await metaSwapDeposit.calculateTokenAmount(ownerAddress, amounts, false)
+        await metaSwapDeposit.calculateTokenAmount(amounts, false)
       )
         .mul(1002)
         .div(1000)
@@ -833,7 +824,7 @@ describe("Meta-Swap Deposit Contract", async () => {
 
       // Apply 0.2% slippage
       const maxBurnAmount = (
-        await metaSwapDeposit.calculateTokenAmount(ownerAddress, amounts, false)
+        await metaSwapDeposit.calculateTokenAmount(amounts, false)
       )
         .mul(1002)
         .div(1000)
