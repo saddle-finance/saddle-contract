@@ -107,7 +107,6 @@ describe("Swap with 4 tokens", () => {
         INITIAL_A_VALUE,
         SWAP_FEE,
         0,
-        0,
         (
           await get("LPToken")
         ).address,
@@ -153,7 +152,6 @@ describe("Swap with 4 tokens", () => {
   describe("addLiquidity", () => {
     it("Add liquidity succeeds with pool with 4 tokens", async () => {
       const calcTokenAmount = await swap.calculateTokenAmount(
-        user1Address,
         [String(1e18), 0, 0, 0],
         true,
       )
@@ -205,7 +203,6 @@ describe("Swap with 4 tokens", () => {
   describe("removeLiquidity", () => {
     it("Remove Liquidity succeeds", async () => {
       const calcTokenAmount = await swap.calculateTokenAmount(
-        user1Address,
         [String(1e18), 0, 0, 0],
         true,
       )
@@ -227,7 +224,6 @@ describe("Swap with 4 tokens", () => {
 
       // Calculate expected amounts of tokens user1 will receive
       const expectedAmounts = await swap.calculateRemoveLiquidity(
-        user1Address,
         "999355335447632820",
       )
 
@@ -263,6 +259,117 @@ describe("Swap with 4 tokens", () => {
       )
       expect(afterTokenBalances[3].sub(beforeTokenBalances[3])).to.be.eq(
         "248596651909606787",
+      )
+    })
+  })
+
+  describe("withdrawAdminFees", () => {
+    it("Reverts when called by non-owners", async () => {
+      await expect(swap.connect(user1).withdrawAdminFees()).to.be.reverted
+      await expect(swap.connect(user2).withdrawAdminFees()).to.be.reverted
+    })
+
+    it("Succeeds when there are no fees withdrawn", async () => {
+      // Sets adminFee to 1% of the swap fees
+      await swap.setAdminFee(BigNumber.from(10 ** 8))
+
+      const balancesBefore = await getUserTokenBalances(owner, [
+        DAI,
+        USDC,
+        USDT,
+        SUSD,
+      ])
+
+      await swap.withdrawAdminFees()
+
+      const balancesAfter = await getUserTokenBalances(owner, [
+        DAI,
+        USDC,
+        USDT,
+        SUSD,
+      ])
+
+      expect(balancesBefore).to.eql(balancesAfter)
+    })
+
+    it("Succeeds with expected amount of fees withdrawn", async () => {
+      // Sets adminFee to 1% of the swap fees
+      await swap.setAdminFee(BigNumber.from(10 ** 8))
+      await swap.connect(user1).swap(0, 1, String(1e18), 0, MAX_UINT256)
+      await swap.connect(user1).swap(1, 0, String(1e6), 0, MAX_UINT256)
+
+      expect(await swap.getAdminBalance(0)).to.eq(String(10003917589952))
+      expect(await swap.getAdminBalance(1)).to.eq(String(9))
+
+      const balancesBefore = await getUserTokenBalances(owner, [
+        DAI,
+        USDC,
+        USDT,
+        SUSD,
+      ])
+
+      await swap.withdrawAdminFees()
+
+      const balancesAfter = await getUserTokenBalances(owner, [
+        DAI,
+        USDC,
+        USDT,
+        SUSD,
+      ])
+
+      expect(balancesAfter[0].sub(balancesBefore[0])).to.eq(
+        String(10003917589952),
+      )
+      expect(balancesAfter[1].sub(balancesBefore[1])).to.eq(String(9))
+    })
+
+    it("Withdrawing admin fees has no impact on users' withdrawal", async () => {
+      // Sets adminFee to 1% of the swap fees
+      await swap.setAdminFee(BigNumber.from(10 ** 8))
+      await swap
+        .connect(user1)
+        .addLiquidity(
+          [String(1e18), String(1e6), String(1e6), String(1e18)],
+          0,
+          MAX_UINT256,
+        )
+
+      for (let i = 0; i < 10; i++) {
+        await swap.connect(user2).swap(0, 1, String(1e18), 0, MAX_UINT256)
+        await swap.connect(user2).swap(1, 0, String(1e6), 0, MAX_UINT256)
+      }
+
+      expect(await swap.getAdminBalance(0)).to.eq(String(100038269603084))
+      expect(await swap.getAdminBalance(1)).to.eq(String(90))
+
+      await swap.withdrawAdminFees()
+
+      const balancesBefore = await getUserTokenBalances(user1, [
+        DAI,
+        USDC,
+        USDT,
+        SUSD,
+      ])
+
+      const user1LPTokenBalance = await swapToken.balanceOf(user1Address)
+      await swapToken.connect(user1).approve(swap.address, user1LPTokenBalance)
+      await swap
+        .connect(user1)
+        .removeLiquidity(user1LPTokenBalance, [0, 0, 0, 0], MAX_UINT256)
+
+      const balancesAfter = await getUserTokenBalances(user1, [
+        DAI,
+        USDC,
+        USDT,
+        SUSD,
+      ])
+
+      expect(balancesAfter[0].sub(balancesBefore[0])).to.eq(
+        BigNumber.from("1000119153497686425"),
+      )
+
+      expect(balancesAfter[1].sub(balancesBefore[1])).to.eq(
+        BigNumber.from("1000269"),
       )
     })
   })

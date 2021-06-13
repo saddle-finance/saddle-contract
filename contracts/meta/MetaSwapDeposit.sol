@@ -405,7 +405,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
         if (v.withdrawFromBase) {
             metaAmounts[v.baseLPTokenIndex] = v
                 .baseSwap
-                .calculateTokenAmount(address(this), baseAmounts, false)
+                .calculateTokenAmount(baseAmounts, false)
                 .mul(10005)
                 .div(10000);
         }
@@ -482,7 +482,6 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
      *
      * @dev This shouldn't be used outside frontends for user estimates.
      *
-     * @param account address that is depositing or withdrawing tokens
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
      * pooled token's native precision. If a token charges a fee on transfers,
@@ -490,12 +489,11 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
      * @param deposit whether this is a deposit or a withdrawal
      * @return token amount the user will receive
      */
-    function calculateTokenAmount(
-        address account,
-        uint256[] calldata amounts,
-        bool deposit
-    ) external view returns (uint256) {
-        account = address(this);
+    function calculateTokenAmount(uint256[] calldata amounts, bool deposit)
+        external
+        view
+        returns (uint256)
+    {
         uint256[] memory metaAmounts = new uint256[](metaTokens.length);
         uint256[] memory baseAmounts = new uint256[](baseTokens.length);
         uint256 baseLPTokenIndex = metaAmounts.length - 1;
@@ -509,33 +507,28 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
         }
 
         uint256 baseLPTokenAmount =
-            baseSwap.calculateTokenAmount(account, baseAmounts, deposit);
+            baseSwap.calculateTokenAmount(baseAmounts, deposit);
         metaAmounts[baseLPTokenIndex] = baseLPTokenAmount;
 
-        return metaSwap.calculateTokenAmount(account, metaAmounts, deposit);
+        return metaSwap.calculateTokenAmount(metaAmounts, deposit);
     }
 
     /**
      * @notice A simple method to calculate amount of each underlying
      * tokens that is returned upon burning given amount of LP tokens
-     * @param account the address that is withdrawing tokens
      * @param amount the amount of LP tokens that would be burned on withdrawal
      * @return array of token balances that the user will receive
      */
-    function calculateRemoveLiquidity(address account, uint256 amount)
+    function calculateRemoveLiquidity(uint256 amount)
         external
         view
         returns (uint256[] memory)
     {
-        account = address(this); // overwrite account
         uint256[] memory metaAmounts =
-            metaSwap.calculateRemoveLiquidity(account, amount);
+            metaSwap.calculateRemoveLiquidity(amount);
         uint8 baseLPTokenIndex = uint8(metaAmounts.length - 1);
         uint256[] memory baseAmounts =
-            baseSwap.calculateRemoveLiquidity(
-                account,
-                metaAmounts[baseLPTokenIndex]
-            );
+            baseSwap.calculateRemoveLiquidity(metaAmounts[baseLPTokenIndex]);
 
         uint256[] memory totalAmounts =
             new uint256[](baseLPTokenIndex + baseAmounts.length);
@@ -552,37 +545,31 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     /**
      * @notice Calculate the amount of underlying token available to withdraw
      * when withdrawing via only single token
-     * @param account the address that is withdrawing tokens
      * @param tokenAmount the amount of LP token to burn
      * @param tokenIndex index of which token will be withdrawn
      * @return availableTokenAmount calculated amount of underlying token
      * available to withdraw
      */
     function calculateRemoveLiquidityOneToken(
-        address account,
         uint256 tokenAmount,
         uint8 tokenIndex
     ) external view returns (uint256) {
-        account = address(this); // overwrite account
         uint8 baseLPTokenIndex = uint8(metaTokens.length - 1);
 
         if (tokenIndex < baseLPTokenIndex) {
             return
                 metaSwap.calculateRemoveLiquidityOneToken(
-                    account,
                     tokenAmount,
                     tokenIndex
                 );
         } else {
             uint256 baseLPTokenAmount =
                 metaSwap.calculateRemoveLiquidityOneToken(
-                    account,
                     tokenAmount,
                     baseLPTokenIndex
                 );
             return
                 baseSwap.calculateRemoveLiquidityOneToken(
-                    account,
                     baseLPTokenAmount,
                     tokenIndex - baseLPTokenIndex
                 );

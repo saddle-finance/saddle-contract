@@ -28,19 +28,17 @@ interface ISwap {
         uint256 dx
     ) external view returns (uint256);
 
-    function calculateTokenAmount(
-        address account,
-        uint256[] calldata amounts,
-        bool deposit
-    ) external view returns (uint256);
+    function calculateTokenAmount(uint256[] calldata amounts, bool deposit)
+        external
+        view
+        returns (uint256);
 
-    function calculateRemoveLiquidity(address account, uint256 amount)
+    function calculateRemoveLiquidity(uint256 amount)
         external
         view
         returns (uint256[] memory);
 
     function calculateRemoveLiquidityOneToken(
-        address account,
         uint256 tokenAmount,
         uint8 tokenIndex
     ) external view returns (uint256 availableTokenAmount);
@@ -54,7 +52,6 @@ interface ISwap {
         uint256 a,
         uint256 fee,
         uint256 adminFee,
-        uint256 withdrawFee,
         address lpTokenTargetAddress
     ) external;
 
@@ -90,8 +87,4 @@ interface ISwap {
         uint256 maxBurnAmount,
         uint256 deadline
     ) external returns (uint256);
-
-    // withdraw fee update function
-    function updateUserWithdrawFee(address recipient, uint256 transferAmount)
-        external;
 }

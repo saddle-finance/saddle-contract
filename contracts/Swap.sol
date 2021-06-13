@@ -104,7 +104,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * StableSwap paper for details
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
-     * @param _withdrawFee default withdrawFee to be initialized with
      * @param lpTokenTargetAddress the address of an existing LPToken contract to use as a target
      */
     function initialize(
@@ -115,7 +114,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _a,
         uint256 _fee,
         uint256 _adminFee,
-        uint256 _withdrawFee,
         address lpTokenTargetAddress
     ) public virtual initializer {
         __OwnerPausable_init();
@@ -162,10 +160,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
             _adminFee < SwapUtils.MAX_ADMIN_FEE,
             "_adminFee exceeds maximum"
         );
-        require(
-            _withdrawFee < SwapUtils.MAX_WITHDRAW_FEE,
-            "_withdrawFee exceeds maximum"
-        );
 
         // Clone and initialize a LPToken contract
         LPToken lpToken = LPToken(Clones.clone(lpTokenTargetAddress));
@@ -185,7 +179,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         // swapStorage.futureATime = 0;
         swapStorage.swapFee = _fee;
         swapStorage.adminFee = _adminFee;
-        swapStorage.defaultWithdrawFee = _withdrawFee;
     }
 
     /*** MODIFIERS ***/
@@ -250,19 +243,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Return timestamp of last deposit of given address
-     * @return timestamp of the last deposit made by the given address
-     */
-    function getDepositTimestamp(address user)
-        external
-        view
-        virtual
-        returns (uint256)
-    {
-        return swapStorage.getDepositTimestamp(user);
-    }
-
-    /**
      * @notice Return current balance of the pooled token at given index
      * @param index the index of the token
      * @return current balance of the pooled token at given index with token's native precision
@@ -309,7 +289,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      *
      * @dev This shouldn't be used outside frontends for user estimates.
      *
-     * @param account address that is depositing or withdrawing tokens
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
      * pooled token's native precision. If a token charges a fee on transfers,
@@ -317,68 +296,43 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @param deposit whether this is a deposit or a withdrawal
      * @return token amount the user will receive
      */
-    function calculateTokenAmount(
-        address account,
-        uint256[] calldata amounts,
-        bool deposit
-    ) external view virtual returns (uint256) {
-        return swapStorage.calculateTokenAmount(account, amounts, deposit);
+    function calculateTokenAmount(uint256[] calldata amounts, bool deposit)
+        external
+        view
+        virtual
+        returns (uint256)
+    {
+        return swapStorage.calculateTokenAmount(amounts, deposit);
     }
 
     /**
      * @notice A simple method to calculate amount of each underlying
      * tokens that is returned upon burning given amount of LP tokens
-     * @param account the address that is withdrawing tokens
      * @param amount the amount of LP tokens that would be burned on withdrawal
      * @return array of token balances that the user will receive
      */
-    function calculateRemoveLiquidity(address account, uint256 amount)
+    function calculateRemoveLiquidity(uint256 amount)
         external
         view
         virtual
         returns (uint256[] memory)
     {
-        return swapStorage.calculateRemoveLiquidity(account, amount);
+        return swapStorage.calculateRemoveLiquidity(amount);
     }
 
     /**
      * @notice Calculate the amount of underlying token available to withdraw
      * when withdrawing via only single token
-     * @param account the address that is withdrawing tokens
      * @param tokenAmount the amount of LP token to burn
      * @param tokenIndex index of which token will be withdrawn
      * @return availableTokenAmount calculated amount of underlying token
      * available to withdraw
      */
     function calculateRemoveLiquidityOneToken(
-        address account,
         uint256 tokenAmount,
         uint8 tokenIndex
     ) external view virtual returns (uint256 availableTokenAmount) {
-        return
-            swapStorage.calculateWithdrawOneToken(
-                account,
-                tokenAmount,
-                tokenIndex
-            );
-    }
-
-    /**
-     * @notice Calculate the fee that is applied when the given user withdraws. The withdraw fee
-     * decays linearly over period of 4 weeks. For example, depositing and withdrawing right away
-     * will charge you the full amount of withdraw fee. But withdrawing after 4 weeks will charge you
-     * no additional fees.
-     * @dev returned value should be divided by FEE_DENOMINATOR to convert to correct decimals
-     * @param user address you want to calculate withdraw fee of
-     * @return current withdraw fee of the user
-     */
-    function calculateCurrentWithdrawFee(address user)
-        external
-        view
-        virtual
-        returns (uint256)
-    {
-        return swapStorage.calculateCurrentWithdrawFee(user);
+        return swapStorage.calculateWithdrawOneToken(tokenAmount, tokenIndex);
     }
 
     /**
@@ -527,24 +481,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     /*** ADMIN FUNCTIONS ***/
 
     /**
-     * @notice Updates the user withdraw fee. This function can only be called by
-     * the pool token. Should be used to update the withdraw fee on transfer of pool tokens.
-     * Transferring your pool token will reset the 4 weeks period. If the recipient is already
-     * holding some pool tokens, the withdraw fee will be discounted in respective amounts.
-     * @param recipient address of the recipient of pool token
-     * @param transferAmount amount of pool token to transfer
-     */
-    function updateUserWithdrawFee(address recipient, uint256 transferAmount)
-        external
-    {
-        require(
-            msg.sender == address(swapStorage.lpToken),
-            "Only callable by pool token"
-        );
-        swapStorage.updateUserWithdrawFee(recipient, transferAmount);
-    }
-
-    /**
      * @notice Withdraw all admin fees to the contract owner
      */
     function withdrawAdminFees() external onlyOwner {
@@ -565,15 +501,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      */
     function setSwapFee(uint256 newSwapFee) external onlyOwner {
         swapStorage.setSwapFee(newSwapFee);
-    }
-
-    /**
-     * @notice Update the withdraw fee. This fee decays linearly over 4 weeks since
-     * user's last deposit.
-     * @param newWithdrawFee new withdraw fee to be applied on future deposits
-     */
-    function setDefaultWithdrawFee(uint256 newWithdrawFee) external onlyOwner {
-        swapStorage.setDefaultWithdrawFee(newWithdrawFee);
     }
 
     /**

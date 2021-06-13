@@ -160,7 +160,6 @@ library MetaSwapUtils {
      * @notice Calculate how much the user would receive when withdrawing via single token
      * @param self Swap struct to read from
      * @param metaSwapStorage MetaSwap struct to read from
-     * @param account the address that is withdrawing
      * @param tokenAmount the amount to withdraw in the pool's precision
      * @param tokenIndex which token will be withdrawn
      * @return dy the amount of token user will receive
@@ -168,13 +167,11 @@ library MetaSwapUtils {
     function calculateWithdrawOneToken(
         SwapUtils.Swap storage self,
         MetaSwap storage metaSwapStorage,
-        address account,
         uint256 tokenAmount,
         uint8 tokenIndex
     ) external view returns (uint256 dy) {
         (dy, ) = _calculateWithdrawOneToken(
             self,
-            account,
             tokenAmount,
             tokenIndex,
             _getBaseVirtualPrice(metaSwapStorage),
@@ -184,7 +181,6 @@ library MetaSwapUtils {
 
     function _calculateWithdrawOneToken(
         SwapUtils.Swap storage self,
-        address account,
         uint256 tokenAmount,
         uint8 tokenIndex,
         uint256 baseVirtualPrice,
@@ -212,15 +208,6 @@ library MetaSwapUtils {
                 .div(self.tokenPrecisionMultipliers[tokenIndex])
                 .sub(dy);
         }
-
-        // Adjust by withdraw fee
-        dy = dy
-            .mul(
-            FEE_DENOMINATOR.sub(
-                SwapUtils._calculateCurrentWithdrawFee(self, account)
-            )
-        )
-            .div(FEE_DENOMINATOR);
 
         return (dy, dySwapFee);
     }
@@ -492,7 +479,7 @@ library MetaSwapUtils {
                 baseInputs[tokenIndexFrom] = dx;
                 v.x = v
                     .baseSwap
-                    .calculateTokenAmount(address(this), baseInputs, true)
+                    .calculateTokenAmount(baseInputs, true)
                     .mul(v.baseVirtualPrice)
                     .div(BASE_VIRTUAL_PRICE_PRECISION)
                     .add(xp[v.baseLPTokenIndex]);
@@ -533,7 +520,6 @@ library MetaSwapUtils {
         } else {
             // tokenTo is from the base pool
             v.dy = v.baseSwap.calculateRemoveLiquidityOneToken(
-                address(this),
                 v.dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(v.baseVirtualPrice),
                 tokenIndexTo - v.baseLPTokenIndex
             );
@@ -552,7 +538,6 @@ library MetaSwapUtils {
      *
      * @param self Swap struct to read from
      * @param metaSwapStorage MetaSwap struct to read from
-     * @param account address of the account depositing or withdrawing tokens
      * @param amounts an array of token amounts to deposit or withdrawal,
      * corresponding to pooledTokens. The amount should be in each
      * pooled token's native precision. If a token charges a fee on transfers,
@@ -564,7 +549,6 @@ library MetaSwapUtils {
     function calculateTokenAmount(
         SwapUtils.Swap storage self,
         MetaSwap storage metaSwapStorage,
-        address account,
         uint256[] calldata amounts,
         bool deposit
     ) external view returns (uint256) {
@@ -601,12 +585,7 @@ library MetaSwapUtils {
         if (deposit) {
             return d1.sub(d0).mul(totalSupply).div(d0);
         } else {
-            return
-                d0.sub(d1).mul(totalSupply).div(d0).mul(FEE_DENOMINATOR).div(
-                    FEE_DENOMINATOR.sub(
-                        SwapUtils._calculateCurrentWithdrawFee(self, account)
-                    )
-                );
+            return d0.sub(d1).mul(totalSupply).div(d0);
         }
     }
 
@@ -1040,7 +1019,6 @@ library MetaSwapUtils {
 
         (dy, dyFee) = _calculateWithdrawOneToken(
             self,
-            msg.sender,
             tokenAmount,
             tokenIndex,
             _updateBaseVirtualPrice(metaSwapStorage),
@@ -1154,11 +1132,7 @@ library MetaSwapUtils {
         require(tokenAmount != 0, "Burnt amount cannot be zero");
 
         // Scale up by withdraw fee
-        tokenAmount = tokenAmount.add(1).mul(FEE_DENOMINATOR).div(
-            FEE_DENOMINATOR.sub(
-                SwapUtils._calculateCurrentWithdrawFee(self, msg.sender)
-            )
-        );
+        tokenAmount = tokenAmount.add(1);
 
         // Check for max burn amount
         require(tokenAmount <= maxBurnAmount, "tokenAmount > maxBurnAmount");

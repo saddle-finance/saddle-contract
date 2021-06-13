@@ -217,7 +217,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         INITIAL_A_VALUE,
         SWAP_FEE,
         0,
-        0,
         (
           await deployments.get("LPToken")
         ).address,
@@ -237,7 +236,6 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
         LP_TOKEN_SYMBOL,
         INITIAL_A_VALUE,
         SWAP_FEE,
-        0,
         0,
         (
           await deployments.get("LPToken")

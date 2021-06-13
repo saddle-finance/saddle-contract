@@ -56,6 +56,5 @@ contract LPToken is ERC20BurnableUpgradeable, OwnableUpgradeable {
     ) internal virtual override(ERC20Upgradeable) {
         super._beforeTokenTransfer(from, to, amount);
         require(to != address(this), "LPToken: cannot send to itself");
-        ISwap(owner()).updateUserWithdrawFee(to, amount);
     }
 }
