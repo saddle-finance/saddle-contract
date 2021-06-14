@@ -23,13 +23,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const INITIAL_A = 200
     const SWAP_FEE = 4e6 // 4bps
     const ADMIN_FEE = 0
+    const WITHDRAW_FEE = 0
 
     const receipt = await execute(
-      "SwapDeployer",
+      "SwapDeployerV1",
       { from: deployer, log: true },
       "deploy",
       (
-        await get("SwapFlashLoan")
+        await get("SwapFlashLoanV1")
       ).address,
       TOKEN_ADDRESSES,
       TOKEN_DECIMALS,
@@ -38,8 +39,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       INITIAL_A,
       SWAP_FEE,
       ADMIN_FEE,
+      WITHDRAW_FEE,
       (
-        await get("LPToken")
+        await get("LPTokenV1")
       ).address,
     )
 
@@ -48,10 +50,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
     const usdSwapAddress = newPoolEvent["args"]["swapAddress"]
     log(
-      `deployed USD pool clone (targeting "SwapFlashLoan") at ${usdSwapAddress}`,
+      `deployed USD pool clone (targeting "SwapFlashLoanV1") at ${usdSwapAddress}`,
     )
     await save("SaddleUSDPool", {
-      abi: (await get("SwapFlashLoan")).abi,
+      abi: (await get("SwapFlashLoanV1")).abi,
       address: usdSwapAddress,
     })
   }

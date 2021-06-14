@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
-// https://etherscan.io/address/0x4f6a43ad7cba042606decaca730d4ce0a57ac62e#code
 
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "./OwnerPausable.sol";
-import "./SwapUtils.sol";
-import "./MathUtils.sol";
-import "../../Allowlist.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "./OwnerPausableUpgradeable.sol";
+import "./SwapUtilsV1.sol";
+import "./AmplificationUtilsV1.sol";
 
 /**
  * @title Swap - A StableSwap implementation in solidity.
@@ -28,24 +27,15 @@ import "../../Allowlist.sol";
  * @dev Most of the logic is stored as a library `SwapUtils` for the sake of reducing contract's
  * deployment size.
  */
-contract SwapGuarded is OwnerPausable, ReentrancyGuard {
+contract SwapV1 is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
-    using MathUtils for uint256;
-    using SwapUtils for SwapUtils.Swap;
+    using SwapUtilsV1 for SwapUtilsV1.Swap;
+    using AmplificationUtilsV1 for SwapUtilsV1.Swap;
 
     // Struct storing data responsible for automatic market maker functionalities. In order to
-    // access this data, this contract uses SwapUtils library. For more details, see SwapUtils.sol
-    SwapUtils.Swap public swapStorage;
-
-    // Address to allowlist contract that holds information about maximum totaly supply of lp tokens
-    // and maximum mintable amount per user address. As this is immutable, this will become a constant
-    // after initialization.
-    IAllowlist private immutable allowlist;
-
-    // Boolean value that notates whether this pool is guarded or not. When isGuarded is true,
-    // addLiquidity function will be restricted by limits defined in allowlist contract.
-    bool private guarded = true;
+    // access this data, this contract uses SwapUtils library. For more details, see SwapUtilsV1.sol
+    SwapUtilsV1.Swap public swapStorage;
 
     // Maps token address to an index in the pool. Used to prevent duplicate tokens in the pool.
     // getTokenIndex function also relies on this mapping to retrieve token index.
@@ -100,10 +90,10 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
     event StopRampA(uint256 currentA, uint256 time);
 
     /**
-     * @notice Deploys this Swap contract with given parameters as default
-     * values. This will also deploy a LPToken that represents users
-     * LP position. The owner of LPToken will be this contract - which means
-     * only this contract is allowed to mint new tokens.
+     * @notice Initializes this Swap contract with the given parameters.
+     * This will also clone a LPToken contract that represents users'
+     * LP positions. The owner of LPToken will be this contract - which means
+     * only this contract is allowed to mint/burn tokens.
      *
      * @param _pooledTokens an array of ERC20s this pool will accept
      * @param decimals the decimals to use for each pooled token,
@@ -115,9 +105,9 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
      * @param _fee default swap fee to be initialized with
      * @param _adminFee default adminFee to be initialized with
      * @param _withdrawFee default withdrawFee to be initialized with
-     * @param _allowlist address of allowlist contract for guarded launch
+     * @param lpTokenTargetAddress the address of an existing LPToken contract to use as a target
      */
-    constructor(
+    function initialize(
         IERC20[] memory _pooledTokens,
         uint8[] memory decimals,
         string memory lpTokenName,
@@ -126,8 +116,10 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
         uint256 _fee,
         uint256 _adminFee,
         uint256 _withdrawFee,
-        IAllowlist _allowlist
-    ) public OwnerPausable() ReentrancyGuard() {
+        address lpTokenTargetAddress
+    ) public virtual initializer {
+        __OwnerPausable_init();
+        __ReentrancyGuard_init();
         // Check _pooledTokens and precisions parameter
         require(_pooledTokens.length > 1, "_pooledTokens.length <= 1");
         require(_pooledTokens.length <= 32, "_pooledTokens.length > 32");
@@ -152,53 +144,48 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
                 "The 0 address isn't an ERC-20"
             );
             require(
-                decimals[i] <= SwapUtils.POOL_PRECISION_DECIMALS,
+                decimals[i] <= SwapUtilsV1.POOL_PRECISION_DECIMALS,
                 "Token decimals exceeds max"
             );
             precisionMultipliers[i] =
                 10 **
-                    uint256(SwapUtils.POOL_PRECISION_DECIMALS).sub(
+                    uint256(SwapUtilsV1.POOL_PRECISION_DECIMALS).sub(
                         uint256(decimals[i])
                     );
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
-        // Check _a, _fee, _adminFee, _withdrawFee, _allowlist parameters
-        require(_a < SwapUtils.MAX_A, "_a exceeds maximum");
-        require(_fee < SwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
+        // Check _a, _fee, _adminFee, _withdrawFee parameters
+        require(_a < AmplificationUtilsV1.MAX_A, "_a exceeds maximum");
+        require(_fee < SwapUtilsV1.MAX_SWAP_FEE, "_fee exceeds maximum");
         require(
-            _adminFee < SwapUtils.MAX_ADMIN_FEE,
+            _adminFee < SwapUtilsV1.MAX_ADMIN_FEE,
             "_adminFee exceeds maximum"
         );
         require(
-            _withdrawFee < SwapUtils.MAX_WITHDRAW_FEE,
+            _withdrawFee < SwapUtilsV1.MAX_WITHDRAW_FEE,
             "_withdrawFee exceeds maximum"
         );
+
+        // Clone and initialize a LPToken contract
+        LPToken lpToken = LPToken(Clones.clone(lpTokenTargetAddress));
         require(
-            _allowlist.getPoolCap(address(0x0)) == uint256(0x54dd1e),
-            "Allowlist check failed"
+            lpToken.initialize(lpTokenName, lpTokenSymbol),
+            "could not init lpToken clone"
         );
 
         // Initialize swapStorage struct
-        swapStorage.lpToken = new LPToken(
-            lpTokenName,
-            lpTokenSymbol,
-            SwapUtils.POOL_PRECISION_DECIMALS
-        );
+        swapStorage.lpToken = lpToken;
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisionMultipliers;
         swapStorage.balances = new uint256[](_pooledTokens.length);
-        swapStorage.initialA = _a.mul(SwapUtils.A_PRECISION);
-        swapStorage.futureA = _a.mul(SwapUtils.A_PRECISION);
-        swapStorage.initialATime = 0;
-        swapStorage.futureATime = 0;
+        swapStorage.initialA = _a.mul(AmplificationUtilsV1.A_PRECISION);
+        swapStorage.futureA = _a.mul(AmplificationUtilsV1.A_PRECISION);
+        // swapStorage.initialATime = 0;
+        // swapStorage.futureATime = 0;
         swapStorage.swapFee = _fee;
         swapStorage.adminFee = _adminFee;
         swapStorage.defaultWithdrawFee = _withdrawFee;
-
-        // Initialize variables related to guarding the initial deposits
-        allowlist = _allowlist;
-        guarded = true;
     }
 
     /*** MODIFIERS ***/
@@ -219,7 +206,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
      * @dev See the StableSwap paper for details
      * @return A parameter
      */
-    function getA() external view returns (uint256) {
+    function getA() external view virtual returns (uint256) {
         return swapStorage.getA();
     }
 
@@ -228,7 +215,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
      * @dev See the StableSwap paper for details
      * @return A parameter in its raw precision form
      */
-    function getAPrecise() external view returns (uint256) {
+    function getAPrecise() external view virtual returns (uint256) {
         return swapStorage.getAPrecise();
     }
 
@@ -237,7 +224,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
      * @param index the index of the token
      * @return address of the token at given index
      */
-    function getToken(uint8 index) public view returns (IERC20) {
+    function getToken(uint8 index) public view virtual returns (IERC20) {
         require(index < swapStorage.pooledTokens.length, "Out of range");
         return swapStorage.pooledTokens[index];
     }
@@ -248,7 +235,12 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
      * @param tokenAddress address of the token
      * @return the index of the given token address
      */
-    function getTokenIndex(address tokenAddress) external view returns (uint8) {
+    function getTokenIndex(address tokenAddress)
+        public
+        view
+        virtual
+        returns (uint8)
+    {
         uint8 index = tokenIndexes[tokenAddress];
         require(
             address(getToken(index)) == tokenAddress,
@@ -258,18 +250,15 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Reads and returns the address of the allowlist that is set during deployment of this contract
-     * @return the address of the allowlist contract casted to the IAllowlist interface
-     */
-    function getAllowlist() external view returns (IAllowlist) {
-        return allowlist;
-    }
-
-    /**
      * @notice Return timestamp of last deposit of given address
      * @return timestamp of the last deposit made by the given address
      */
-    function getDepositTimestamp(address user) external view returns (uint256) {
+    function getDepositTimestamp(address user)
+        external
+        view
+        virtual
+        returns (uint256)
+    {
         return swapStorage.getDepositTimestamp(user);
     }
 
@@ -278,7 +267,12 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
      * @param index the index of the token
      * @return current balance of the pooled token at given index with token's native precision
      */
-    function getTokenBalance(uint8 index) external view returns (uint256) {
+    function getTokenBalance(uint8 index)
+        external
+        view
+        virtual
+        returns (uint256)
+    {
         require(index < swapStorage.pooledTokens.length, "Index out of range");
         return swapStorage.balances[index];
     }
@@ -287,7 +281,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
      * @notice Get the virtual price, to help calculate profit
      * @return the virtual price, scaled to the POOL_PRECISION_DECIMALS
      */
-    function getVirtualPrice() external view returns (uint256) {
+    function getVirtualPrice() external view virtual returns (uint256) {
         return swapStorage.getVirtualPrice();
     }
 
@@ -303,7 +297,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 dx
-    ) external view returns (uint256) {
+    ) external view virtual returns (uint256) {
         return swapStorage.calculateSwap(tokenIndexFrom, tokenIndexTo, dx);
     }
 
@@ -327,7 +321,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
         address account,
         uint256[] calldata amounts,
         bool deposit
-    ) external view returns (uint256) {
+    ) external view virtual returns (uint256) {
         return swapStorage.calculateTokenAmount(account, amounts, deposit);
     }
 
@@ -341,6 +335,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
     function calculateRemoveLiquidity(address account, uint256 amount)
         external
         view
+        virtual
         returns (uint256[] memory)
     {
         return swapStorage.calculateRemoveLiquidity(account, amount);
@@ -359,12 +354,13 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
         address account,
         uint256 tokenAmount,
         uint8 tokenIndex
-    ) external view returns (uint256 availableTokenAmount) {
-        (availableTokenAmount, ) = swapStorage.calculateWithdrawOneToken(
-            account,
-            tokenAmount,
-            tokenIndex
-        );
+    ) external view virtual returns (uint256 availableTokenAmount) {
+        return
+            swapStorage.calculateWithdrawOneToken(
+                account,
+                tokenAmount,
+                tokenIndex
+            );
     }
 
     /**
@@ -379,6 +375,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
     function calculateCurrentWithdrawFee(address user)
         external
         view
+        virtual
         returns (uint256)
     {
         return swapStorage.calculateCurrentWithdrawFee(user);
@@ -389,7 +386,12 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
      * @param index Index of the pooled token
      * @return admin's token balance in the token's precision
      */
-    function getAdminBalance(uint256 index) external view returns (uint256) {
+    function getAdminBalance(uint256 index)
+        external
+        view
+        virtual
+        returns (uint256)
+    {
         return swapStorage.getAdminBalance(index);
     }
 
@@ -411,6 +413,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
         uint256 deadline
     )
         external
+        virtual
         nonReentrant
         whenNotPaused
         deadlineCheck(deadline)
@@ -420,32 +423,26 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
     }
 
     /**
-     * @notice Add liquidity to the pool with given amounts during guarded launch phase. Only users
-     * with valid address and proof can successfully call this function. When this function is called
-     * after the guarded release phase is over, the merkleProof is ignored.
+     * @notice Add liquidity to the pool with the given amounts of tokens
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
      * @param deadline latest timestamp to accept this transaction
-     * @param merkleProof data generated when constructing the allowlist merkle tree. Users can
-     * get this data off chain. Even if the address is in the allowlist, users must include
-     * a valid proof for this call to succeed. If the pool is no longer in the guarded release phase,
-     * this parameter is ignored.
      * @return amount of LP token user minted and received
      */
     function addLiquidity(
         uint256[] calldata amounts,
         uint256 minToMint,
-        uint256 deadline,
-        bytes32[] calldata merkleProof
+        uint256 deadline
     )
         external
+        virtual
         nonReentrant
         whenNotPaused
         deadlineCheck(deadline)
         returns (uint256)
     {
-        return swapStorage.addLiquidity(amounts, minToMint, merkleProof);
+        return swapStorage.addLiquidity(amounts, minToMint);
     }
 
     /**
@@ -462,7 +459,13 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
         uint256 amount,
         uint256[] calldata minAmounts,
         uint256 deadline
-    ) external nonReentrant deadlineCheck(deadline) returns (uint256[] memory) {
+    )
+        external
+        virtual
+        nonReentrant
+        deadlineCheck(deadline)
+        returns (uint256[] memory)
+    {
         return swapStorage.removeLiquidity(amount, minAmounts);
     }
 
@@ -482,6 +485,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
         uint256 deadline
     )
         external
+        virtual
         nonReentrant
         whenNotPaused
         deadlineCheck(deadline)
@@ -511,6 +515,7 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
         uint256 deadline
     )
         external
+        virtual
         nonReentrant
         whenNotPaused
         deadlineCheck(deadline)
@@ -587,20 +592,5 @@ contract SwapGuarded is OwnerPausable, ReentrancyGuard {
      */
     function stopRampA() external onlyOwner {
         swapStorage.stopRampA();
-    }
-
-    /**
-     * @notice Disables the guarded launch phase, removing any limits on deposit amounts and addresses
-     */
-    function disableGuard() external onlyOwner {
-        guarded = false;
-    }
-
-    /**
-     * @notice Reads and returns current guarded status of the pool
-     * @return guarded_ boolean value indicating whether the deposits should be guarded
-     */
-    function isGuarded() external view returns (bool) {
-        return guarded;
     }
 }

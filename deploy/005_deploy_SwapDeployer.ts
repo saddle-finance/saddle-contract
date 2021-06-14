@@ -6,7 +6,15 @@ import { MULTISIG_ADDRESS } from "../utils/accounts"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
   const { deploy, execute, read } = deployments
-  const { deployer } = await getNamedAccounts()
+  const { deployer, libraryDeployer } = await getNamedAccounts()
+
+  if ((await getChainId()) == CHAIN_ID.HARDHAT) {
+    await deploy("SwapDeployerV1", {
+      from: libraryDeployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+    })
+  }
 
   await deploy("SwapDeployer", {
     from: deployer,
