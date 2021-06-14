@@ -67,20 +67,15 @@ describe("Meta-Swap", async () => {
       user1Address = await user1.getAddress()
       user2Address = await user2.getAddress()
 
-      // Load contracts from the deployments
-      baseSwap = (await ethers.getContractAt(
-        SwapArtifact.abi,
-        (
-          await get("SaddleUSDPool")
-        ).address,
+      // Deploy a swap pool
+      baseSwap = (await deployContractWithLibraries(
+        owner as Wallet,
+        SwapArtifact,
+        {
+          SwapUtils: (await get("SwapUtils")).address,
+          AmplificationUtils: (await get("AmplificationUtils")).address,
+        },
       )) as Swap
-
-      baseLPToken = (await ethers.getContractAt(
-        GenericERC20Artifact.abi,
-        (
-          await get("SaddleUSDPoolLPToken")
-        ).address,
-      )) as GenericERC20
 
       dai = (await ethers.getContractAt(
         GenericERC20Artifact.abi,
@@ -101,6 +96,26 @@ describe("Meta-Swap", async () => {
         (
           await get("USDT")
         ).address,
+      )) as GenericERC20
+
+      await baseSwap.initialize(
+        [dai.address, usdc.address, usdt.address],
+        [18, 6, 6],
+        LP_TOKEN_NAME,
+        LP_TOKEN_SYMBOL,
+        200,
+        4e6,
+        0,
+        (
+          await get("LPToken")
+        ).address,
+      )
+
+      baseLPToken = (await ethers.getContractAt(
+        GenericERC20Artifact.abi,
+        (
+          await baseSwap.swapStorage()
+        ).lpToken,
       )) as GenericERC20
 
       // Deploy dummy tokens
@@ -131,7 +146,7 @@ describe("Meta-Swap", async () => {
       // Deploy Swap with SwapUtils library
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {
         SwapUtils: (await get("SwapUtils")).address,
-        MetaSwapUtils: metaSwapUtils.address,
+        MetaSwapUtils: (await get("MetaSwapUtils")).address,
         AmplificationUtils: (await get("AmplificationUtils")).address,
       })) as MetaSwap
       await metaSwap.deployed()
