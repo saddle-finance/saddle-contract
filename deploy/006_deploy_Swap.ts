@@ -4,9 +4,21 @@ import { CHAIN_ID } from "../utils/network"
 import { MULTISIG_ADDRESS } from "../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts } = hre
+  const { deployments, getNamedAccounts, getChainId } = hre
   const { deploy, get } = deployments
   const { libraryDeployer } = await getNamedAccounts()
+
+  if ((await getChainId()) == CHAIN_ID.HARDHAT) {
+    await deploy("SwapV1", {
+      from: libraryDeployer,
+      log: true,
+      libraries: {
+        SwapUtilsV1: (await get("SwapUtilsV1")).address,
+        AmplificationUtilsV1: (await get("AmplificationUtilsV1")).address,
+      },
+      skipIfAlreadyDeployed: true,
+    })
+  }
 
   await deploy("Swap", {
     from: libraryDeployer,
