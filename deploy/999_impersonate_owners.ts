@@ -26,6 +26,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     RENBTC: ["0x7fc77b5c7614e1533320ea6ddc2eb61fa00a9714"],
     SBTC: ["0x7fc77b5c7614e1533320ea6ddc2eb61fa00a9714"],
     TBTC: ["0xC25099792E9349C7DD09759744ea681C7de2cb66"],
+    // ETH
+    ALETH: ["0x1d2c4cd9bee9dfe088430b95d274e765151c32db"],
+    WETH: ["0xceff51756c56ceffca006cd410b03ffc46dd3a58"],
+    SETH: ["0xc5424b857f758e906013f3555dad202e4bdb4567"],
   }
 
   if (
