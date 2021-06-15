@@ -55,13 +55,7 @@ contract SwapEthWrapper {
         if (msg.value > 0) {
             IWETH9(weth).deposit{value: msg.value}();
         }
-        // If using WETH, transfer them to this contract.
-        uint256 wethAmount = amounts[wethIndex];
-        if (wethAmount > 0) {
-            IWETH9(weth).transferFrom(msg.sender, address(this), wethAmount);
-        }
-        // Sum up the ETH and WETH amount.
-        amounts[wethIndex] = wethAmount.add(msg.value);
+        require(msg.value == amounts[wethIndex], "INCORRECT_MSG_VALUE");
         // Go through amounts array and transfer respective tokens to this contract.
         for (uint256 i = 0; i < amounts.length; i++) {
             uint256 amount = amounts[i];
@@ -194,6 +188,7 @@ contract SwapEthWrapper {
             );
         } else {
             IWETH9(weth).deposit{value: msg.value}();
+            require(msg.value == dx, "INCORRECT_MSG_VALUE");
         }
         // Execute swap
         uint256 dy =
@@ -215,7 +210,7 @@ contract SwapEthWrapper {
         return dy;
     }
 
-    function skim() external {
+    function rescue() external {
         IERC20[] memory tokens = pooledTokens;
         for (uint256 i = 0; i < tokens.length; i++) {
             tokens[i].safeTransfer(
@@ -223,6 +218,8 @@ contract SwapEthWrapper {
                 tokens[i].balanceOf(address(this))
             );
         }
+        IERC20 lpToken_ = IERC20(address(lpToken));
+        lpToken_.safeTransfer(msg.sender, lpToken_.balanceOf(address(this)));
         (bool success, ) = msg.sender.call{value: address(this).balance}("");
         require(success, "ETH_TRANSFER_FAILED");
     }
