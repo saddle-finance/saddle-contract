@@ -10,7 +10,7 @@ import "./interfaces/IWETH9.sol";
 /**
  * @title SwapEthWrapper
  * @notice A wrapper contract for Swap contracts that have WETH as one of the pooled tokens.
- * @author Jongseung Lim
+ * @author Jongseung Lim (@weeb_mcgee)
  */
 contract SwapEthWrapper {
     using SafeERC20 for IERC20;
