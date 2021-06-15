@@ -14,7 +14,7 @@ import { ethers } from "hardhat"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 
 import dotenv from "dotenv"
-import { BigNumber } from "ethers";
+import { BigNumber } from "ethers"
 dotenv.config()
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {

@@ -24,9 +24,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "SaddleSUSDMetaPoolDeposit",
       { from: deployer, log: true },
       "initialize",
-      (await get("SaddleUSDPool")).address,
-      (await get("SaddleSUSDMetaPool")).address,
-      (await get("SaddleSUSDMetaPoolLPToken")).address,
+      (
+        await get("SaddleUSDPool")
+      ).address,
+      (
+        await get("SaddleSUSDMetaPool")
+      ).address,
+      (
+        await get("SaddleSUSDMetaPoolLPToken")
+      ).address,
     )
   }
 }
