@@ -22,7 +22,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const INITIAL_A = 200
     const SWAP_FEE = 4e6 // 4bps
     const ADMIN_FEE = 0
-    const WITHDRAW_FEE = 0
 
     await deploy("SaddleSUSDMetaPool", {
       from: deployer,
@@ -47,8 +46,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       INITIAL_A,
       SWAP_FEE,
       ADMIN_FEE,
-      WITHDRAW_FEE,
-      (await get("SaddleUSDPool")).address,
+      (
+        await get("LPToken")
+      ).address,
+      (
+        await get("SaddleUSDPool")
+      ).address,
     )
   }
 
