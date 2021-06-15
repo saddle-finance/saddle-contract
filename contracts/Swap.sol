@@ -400,8 +400,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Burn LP tokens to remove liquidity from the pool. Withdraw fee that decays linearly
-     * over period of 4 weeks since last deposit will apply.
+     * @notice Burn LP tokens to remove liquidity from the pool.
      * @dev Liquidity can always be removed, even when the pool is paused.
      * @param amount the amount of LP tokens to burn
      * @param minAmounts the minimum amounts of each token in the pool
@@ -424,8 +423,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Remove liquidity from the pool all in one token. Withdraw fee that decays linearly
-     * over period of 4 weeks since last deposit will apply.
+     * @notice Remove liquidity from the pool all in one token.
      * @param tokenAmount the amount of the token you want to receive
      * @param tokenIndex the index of the token you want to receive
      * @param minAmount the minimum amount to withdraw, otherwise revert

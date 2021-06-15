@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0
 
 // Copyright (C) 2015, 2016, 2017 Dapphub
 
