@@ -127,6 +127,7 @@ contract SwapEthWrapper {
                 pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
             } else {
                 IWETH9(weth).withdraw(amounts[i]);
+                // slither-disable-next-line arbitrary-send
                 (bool success, ) = msg.sender.call{value: amounts[i]}("");
                 require(success, "ETH_TRANSFER_FAILED");
             }
@@ -168,6 +169,7 @@ contract SwapEthWrapper {
             pooledTokens[tokenIndex].safeTransfer(msg.sender, amount);
         } else {
             IWETH9(weth).withdraw(amount);
+            // slither-disable-next-line arbitrary-send
             (bool success, ) = msg.sender.call{value: amount}("");
             require(success, "ETH_TRANSFER_FAILED");
         }
@@ -208,6 +210,7 @@ contract SwapEthWrapper {
                 pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
             } else {
                 IWETH9(weth).withdraw(amounts[i]);
+                // slither-disable-next-line arbitrary-send
                 (bool success, ) = msg.sender.call{value: amounts[i]}("");
                 require(success, "ETH_TRANSFER_FAILED");
             }
@@ -265,6 +268,7 @@ contract SwapEthWrapper {
             IERC20(pooledTokens[tokenIndexTo]).safeTransfer(msg.sender, dy);
         } else {
             IWETH9(weth).withdraw(dy);
+            // slither-disable-next-line arbitrary-send
             (bool success, ) = msg.sender.call{value: dy}("");
             require(success, "ETH_TRANSFER_FAILED");
         }
@@ -285,6 +289,7 @@ contract SwapEthWrapper {
         }
         IERC20 lpToken_ = IERC20(address(lpToken));
         lpToken_.safeTransfer(msg.sender, lpToken_.balanceOf(address(this)));
+        // slither-disable-next-line arbitrary-send
         (bool success, ) = msg.sender.call{value: address(this).balance}("");
         require(success, "ETH_TRANSFER_FAILED");
     }
