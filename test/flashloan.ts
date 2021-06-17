@@ -7,7 +7,7 @@ import { LPToken } from "../build/typechain/LPToken"
 import { FlashLoanBorrowerExample } from "../build/typechain/FlashLoanBorrowerExample"
 import { SwapFlashLoan } from "../build/typechain/SwapFlashLoan"
 import chai from "chai"
-import { deployments, ethers } from "hardhat"
+import { deployments } from "hardhat"
 import { solidityPack } from "ethers/lib/utils"
 
 chai.use(solidity)

@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { CHAIN_ID } from "../utils/network"
+import { isMainnet } from "../utils/network"
 import path from "path"
 import { asyncForEach, impersonateAccount } from "../test/testUtils"
 import { ethers } from "hardhat"
@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   if (
-    (await getChainId()) == CHAIN_ID.MAINNET &&
+    isMainnet(await getChainId()) &&
     process.env.FORK_MAINNET &&
     process.env.FUND_FORK_MAINNET
   ) {

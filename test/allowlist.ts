@@ -5,7 +5,7 @@ import {
   getTestMerkleRoot,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
-import { deployments, ethers } from "hardhat"
+import { deployments } from "hardhat"
 
 import { Allowlist } from "../build/typechain/Allowlist"
 import { Signer } from "ethers"

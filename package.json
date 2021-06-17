@@ -31,6 +31,7 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-json": "^3.0.0",
     "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-unused-imports": "^1.1.1",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.3.0",
     "ethlint": "^1.2.5",
@@ -55,10 +56,10 @@
   "scripts": {
     "lint": "npm run lint:ts && npm run lint:sol && npm run lint:json",
     "lint:fix": "npm run lint:fix:ts && npm run lint:fix:sol && npm run lint:fix:json",
-    "lint:ts": "eslint --ext ts ${npm_package_config_eslintPaths} && prettier --list-different test/**/*.ts deploy/**/*.ts",
-    "lint:fix:ts": "eslint --ext ts --fix ${npm_package_config_eslintPaths} && prettier --write test/**/*.ts deploy/**/*.ts",
-    "lint:json": "eslint --ext ts ${npm_package_config_eslintPaths} && prettier --list-different deployments/**/*.json",
-    "lint:fix:json": "eslint --ext json --fix ${npm_package_config_eslintPaths} && prettier --write deployments/**/*.json",
+    "lint:ts": "eslint --ext ts test/ && eslint --ext ts deploy/ && prettier --list-different {test,deploy}/**/*.ts",
+    "lint:fix:ts": "eslint --ext ts --fix test/ && eslint --ext ts --fix deploy/ && prettier --write {test,deploy}/**/*.ts",
+    "lint:json": "eslint --ext json deployments/ && prettier --list-different deployments/**/*.json",
+    "lint:fix:json": "eslint --ext json deployments/ && prettier --write deployments/**/*.json",
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "lint:fix:sol": "prettier --write 'contracts/**/*.sol' && solhint 'contracts/**/*.sol' --fix",
     "build": "hardhat compile",
@@ -75,7 +76,7 @@
     }
   },
   "config": {
-    "eslintPaths": "test/"
+    "eslintPaths": "test/ deploy/"
   },
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { CHAIN_ID } from "../utils/network"
+import { isMainnet } from "../utils/network"
 import { MULTISIG_ADDRESS } from "../utils/accounts"
 import path from "path"
 
@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ]
 
   const currentChain = await getChainId()
-  if (currentChain == CHAIN_ID.MAINNET) {
+  if (isMainnet(currentChain)) {
     for (const contract of contractsToTransferOwnership) {
       // Check current owner
       const currentOwner = await read(contract, "owner")

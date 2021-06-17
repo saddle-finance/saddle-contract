@@ -12,7 +12,7 @@ import {
   forceAdvanceOneBlock,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
-import { deployments, ethers } from "hardhat"
+import { deployments } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { LPToken } from "../build/typechain/LPToken"

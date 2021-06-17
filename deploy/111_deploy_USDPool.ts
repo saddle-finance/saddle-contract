@@ -7,7 +7,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
-  let saddleUSDPool = await getOrNull("SaddleUSDPool")
+  const saddleUSDPool = await getOrNull("SaddleUSDPool")
   if (saddleUSDPool) {
     log(`reusing "SaddleUSDPool" at ${saddleUSDPool.address}`)
   } else {
