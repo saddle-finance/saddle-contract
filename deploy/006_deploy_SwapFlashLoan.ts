@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { CHAIN_ID } from "../utils/network"
+import { CHAIN_ID, isTestNetwork } from "../utils/network"
 import { MULTISIG_ADDRESS } from "../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -8,7 +8,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get } = deployments
   const { libraryDeployer } = await getNamedAccounts()
 
-  if ((await getChainId()) == CHAIN_ID.HARDHAT) {
+  if (isTestNetwork(await getChainId())) {
     await deploy("SwapFlashLoanV1", {
       from: libraryDeployer,
       log: true,

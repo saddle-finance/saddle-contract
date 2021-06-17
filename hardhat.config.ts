@@ -10,6 +10,7 @@ import "hardhat-spdx-license-identifier"
 
 import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
+import { ethers } from "ethers"
 
 dotenv.config()
 
@@ -22,6 +23,13 @@ let config: HardhatUserConfig = {
     mainnet: {
       url: process.env.ALCHEMY_API,
       gasPrice: 20 * 1000000000,
+    },
+    ropsten: {
+      url: process.env.ALCHEMY_API_ROPSTEN,
+      gasPrice: ethers.utils.parseUnits("1.01", "gwei").toNumber(),
+      accounts: {
+        mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
+      },
     },
   },
   paths: {

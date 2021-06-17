@@ -7,6 +7,8 @@ const MERKLE_ROOT = {
     "0xc799ec3a26ef7b4c295f6f02d1e6f65c35cef24447ff343076060bfc0eafb24e",
   [CHAIN_ID.HARDHAT]:
     "0xca0f8c7ee1addcc5fce6a7c989ba3f210db065c36c276b71b8c8253a339318a3",
+  [CHAIN_ID.ROPSTEN]:
+    "0xca0f8c7ee1addcc5fce6a7c989ba3f210db065c36c276b71b8c8253a339318a3",
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {

@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers"
-import { CHAIN_ID } from "../utils/network"
+import { CHAIN_ID, isTestNetwork } from "../utils/network"
 import { DeployFunction } from "hardhat-deploy/types"
 import { DeployResult } from "hardhat-deploy/dist/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
@@ -25,7 +25,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       skipIfAlreadyDeployed: true,
     })
     // If it's on hardhat, mint test tokens
-    if ((await getChainId()) == CHAIN_ID.HARDHAT) {
+    if (isTestNetwork(await getChainId())) {
       const decimals = BTC_TOKENS_ARGS[token][2]
       await execute(
         token,
