@@ -18,7 +18,7 @@ import { Swap } from "../build/typechain/Swap"
 import { SwapDeployer } from "../build/typechain/SwapDeployer"
 import { SwapUtils } from "../build/typechain/SwapUtils"
 import chai from "chai"
-import { deployments, ethers } from "hardhat"
+import { deployments } from "hardhat"
 
 chai.use(solidity)
 const { expect } = chai

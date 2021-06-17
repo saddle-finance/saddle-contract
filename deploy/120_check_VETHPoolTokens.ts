@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { CHAIN_ID, isTestNetwork } from "../utils/network"
+import { isTestNetwork } from "../utils/network"
 import { BigNumber } from "ethers"
 
 const VETH2_TOKENS_ARGS: { [token: string]: any[] } = {

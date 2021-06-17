@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { CHAIN_ID, isMainnet, isTestNetwork } from "../utils/network"
+import { isMainnet, isTestNetwork } from "../utils/network"
 import { MULTISIG_ADDRESS } from "../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {

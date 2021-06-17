@@ -1,7 +1,6 @@
 import { BigNumber } from "ethers"
-import { CHAIN_ID, isTestNetwork } from "../utils/network"
+import { isTestNetwork } from "../utils/network"
 import { DeployFunction } from "hardhat-deploy/types"
-import { DeployResult } from "hardhat-deploy/dist/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 
 const BTC_TOKENS_ARGS: { [token: string]: any[] } = {

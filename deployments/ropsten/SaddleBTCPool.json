@@ -1071,12 +1071,7 @@
       "0x79B92D075d72d639D46D30CE15e6DdDE50ad5890",
       "0xAc2931cFA6ff57Aaf64B43DFdc5190ca3c341640"
     ],
-    [
-      18,
-      8,
-      8,
-      18
-    ],
+    [18, 8, 8, 18],
     "Saddle tBTC/WBTC/renBTC/sBTC",
     "saddleTWRenSBTC",
     200,

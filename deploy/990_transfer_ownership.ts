@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { CHAIN_ID, isMainnet } from "../utils/network"
+import { isMainnet } from "../utils/network"
 import { MULTISIG_ADDRESS } from "../utils/accounts"
 import path from "path"
 
