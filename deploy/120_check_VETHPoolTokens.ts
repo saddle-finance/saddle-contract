@@ -20,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       skipIfAlreadyDeployed: true,
     })
 
-    if ((await getChainId()) == CHAIN_ID.HARDHAT) {
+    if (isTestNetwork(await getChainId())) {
       await execute(
         "WETH",
         {

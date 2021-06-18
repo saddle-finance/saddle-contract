@@ -16,46 +16,59 @@ contract SwapEthWrapper {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    Swap public immutable swapInstance;
-    LPToken public immutable lpToken;
-    address payable public immutable weth;
-    IERC20[] public pooledTokens;
-    uint8 public immutable wethIndex;
-
+    // constants
     uint8 private constant MAX_UINT8 = 2**8 - 1;
     uint256 private constant MAX_UINT256 = 2**256 - 1;
+
+    // immutables
+    Swap public immutable SWAP;
+    LPToken public immutable LP_TOKEN;
+    address payable public immutable WETH_ADDRESS;
+    address public immutable OWNER;
+    uint8 public immutable WETH_INDEX;
+
+    IERC20[] public pooledTokens;
 
     /**
      * @notice Deploys this contract with given WETH9 address and Swap address. It will attempt to
      * fetch information about the given Swap pool. If the Swap pool does not contain WETH9,
-     * this call will be reverted.
+     * this call will be reverted. Owner address must be given so that `rescue()` function
+     * can be limited.
      * @param wethAddress address to the WETH9 contract
-     * @param swapAddress address to the Swap contract that has WETH9 as one of the tokens
+     * @param swap address to the Swap contract that has WETH9 as one of the tokens
+     * @param owner address that will be allowed to call `rescue()`
      */
-    constructor(address payable wethAddress, Swap swapAddress) public {
-        (, , , , , , LPToken lpToken_) = swapAddress.swapStorage();
-        uint8 wethIndex_ = MAX_UINT8;
+    constructor(
+        address payable wethAddress,
+        Swap swap,
+        address owner
+    ) public {
+        (, , , , , , LPToken lpToken) = swap.swapStorage();
+        uint8 wethIndex = MAX_UINT8;
 
-        for (uint8 i = 0; i < 32; i++) {
-            try swapAddress.getToken(i) returns (IERC20 token) {
+        for (uint8 i = 0; i < MAX_UINT8; i++) {
+            try swap.getToken(i) returns (IERC20 token) {
                 pooledTokens.push(token);
                 if (address(token) == wethAddress) {
-                    wethIndex_ = i;
+                    wethIndex = i;
                 }
                 // Approve pooled tokens to be used by Swap
-                token.approve(address(swapAddress), MAX_UINT256);
+                token.approve(address(swap), MAX_UINT256);
             } catch {
                 break;
             }
         }
-        require(wethIndex_ != MAX_UINT8, "WETH was not found in the swap pool");
+        require(wethIndex != MAX_UINT8, "WETH was not found in the swap pool");
+
         // Set immutable variables
-        wethIndex = wethIndex_;
-        weth = wethAddress;
-        swapInstance = swapAddress;
-        lpToken = lpToken_;
+        WETH_INDEX = wethIndex;
+        WETH_ADDRESS = wethAddress;
+        SWAP = swap;
+        LP_TOKEN = lpToken;
+        OWNER = owner;
+
         // Approve LPToken to be used by Swap
-        lpToken_.approve(address(swapAddress), MAX_UINT256);
+        lpToken.approve(address(swap), MAX_UINT256);
     }
 
     /**
@@ -74,14 +87,14 @@ contract SwapEthWrapper {
         uint256 deadline
     ) external payable returns (uint256) {
         // If using ETH, deposit them to WETH.
+        require(msg.value == amounts[WETH_INDEX], "INCORRECT_MSG_VALUE");
         if (msg.value > 0) {
-            IWETH9(weth).deposit{value: msg.value}();
+            IWETH9(WETH_ADDRESS).deposit{value: msg.value}();
         }
-        require(msg.value == amounts[wethIndex], "INCORRECT_MSG_VALUE");
         // Go through amounts array and transfer respective tokens to this contract.
         for (uint256 i = 0; i < amounts.length; i++) {
             uint256 amount = amounts[i];
-            if (i != wethIndex && amount > 0) {
+            if (i != WETH_INDEX && amount > 0) {
                 pooledTokens[i].safeTransferFrom(
                     msg.sender,
                     address(this),
@@ -90,10 +103,9 @@ contract SwapEthWrapper {
             }
         }
         // Add the assets to the pool
-        uint256 lpTokenAmount =
-            swapInstance.addLiquidity(amounts, minToMint, deadline);
+        uint256 lpTokenAmount = SWAP.addLiquidity(amounts, minToMint, deadline);
         // Send the LPToken to msg.sender
-        IERC20(address(lpToken)).safeTransfer(msg.sender, lpTokenAmount);
+        IERC20(address(LP_TOKEN)).safeTransfer(msg.sender, lpTokenAmount);
         return lpTokenAmount;
     }
 
@@ -113,20 +125,20 @@ contract SwapEthWrapper {
         uint256 deadline
     ) external returns (uint256[] memory) {
         // Transfer LPToken from msg.sender to this contract.
-        IERC20(address(lpToken)).safeTransferFrom(
+        IERC20(address(LP_TOKEN)).safeTransferFrom(
             msg.sender,
             address(this),
             amount
         );
         // Remove liquidity
         uint256[] memory amounts =
-            swapInstance.removeLiquidity(amount, minAmounts, deadline);
+            SWAP.removeLiquidity(amount, minAmounts, deadline);
         // Send the tokens back to the user
         for (uint256 i = 0; i < amounts.length; i++) {
-            if (i != wethIndex) {
+            if (i != WETH_INDEX) {
                 pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
             } else {
-                IWETH9(weth).withdraw(amounts[i]);
+                IWETH9(WETH_ADDRESS).withdraw(amounts[i]);
                 // slither-disable-next-line arbitrary-send
                 (bool success, ) = msg.sender.call{value: amounts[i]}("");
                 require(success, "ETH_TRANSFER_FAILED");
@@ -151,24 +163,24 @@ contract SwapEthWrapper {
         uint256 deadline
     ) external returns (uint256) {
         // Transfer LPToken from msg.sender to this contract.
-        IERC20(address(lpToken)).safeTransferFrom(
+        IERC20(address(LP_TOKEN)).safeTransferFrom(
             msg.sender,
             address(this),
             tokenAmount
         );
         // Withdraw via single token
         uint256 amount =
-            swapInstance.removeLiquidityOneToken(
+            SWAP.removeLiquidityOneToken(
                 tokenAmount,
                 tokenIndex,
                 minAmount,
                 deadline
             );
         // Transfer the token to msg.sender accordingly
-        if (tokenIndex != wethIndex) {
+        if (tokenIndex != WETH_INDEX) {
             pooledTokens[tokenIndex].safeTransfer(msg.sender, amount);
         } else {
-            IWETH9(weth).withdraw(amount);
+            IWETH9(WETH_ADDRESS).withdraw(amount);
             // slither-disable-next-line arbitrary-send
             (bool success, ) = msg.sender.call{value: amount}("");
             require(success, "ETH_TRANSFER_FAILED");
@@ -192,24 +204,20 @@ contract SwapEthWrapper {
         uint256 deadline
     ) external returns (uint256) {
         // Transfer LPToken from msg.sender to this contract.
-        IERC20(address(lpToken)).safeTransferFrom(
+        IERC20(address(LP_TOKEN)).safeTransferFrom(
             msg.sender,
             address(this),
             maxBurnAmount
         );
         // Withdraw in imbalanced ratio
         uint256 burnedLpTokenAmount =
-            swapInstance.removeLiquidityImbalance(
-                amounts,
-                maxBurnAmount,
-                deadline
-            );
+            SWAP.removeLiquidityImbalance(amounts, maxBurnAmount, deadline);
         // Send the tokens back to the user
         for (uint256 i = 0; i < amounts.length; i++) {
-            if (i != wethIndex) {
+            if (i != WETH_INDEX) {
                 pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
             } else {
-                IWETH9(weth).withdraw(amounts[i]);
+                IWETH9(WETH_ADDRESS).withdraw(amounts[i]);
                 // slither-disable-next-line arbitrary-send
                 (bool success, ) = msg.sender.call{value: amounts[i]}("");
                 require(success, "ETH_TRANSFER_FAILED");
@@ -218,7 +226,7 @@ contract SwapEthWrapper {
         // Send any extra LP tokens back as well
         uint256 extraLpTokenAmount = maxBurnAmount.sub(burnedLpTokenAmount);
         if (extraLpTokenAmount > 0) {
-            IERC20(address(lpToken)).safeTransfer(
+            IERC20(address(LP_TOKEN)).safeTransfer(
                 msg.sender,
                 extraLpTokenAmount
             );
@@ -244,30 +252,24 @@ contract SwapEthWrapper {
         uint256 deadline
     ) external payable returns (uint256) {
         // Transfer tokens from msg.sender to this contract
-        if (tokenIndexFrom != wethIndex) {
+        if (tokenIndexFrom != WETH_INDEX) {
             IERC20(pooledTokens[tokenIndexFrom]).safeTransferFrom(
                 msg.sender,
                 address(this),
                 dx
             );
         } else {
-            IWETH9(weth).deposit{value: msg.value}();
             require(msg.value == dx, "INCORRECT_MSG_VALUE");
+            IWETH9(WETH_ADDRESS).deposit{value: msg.value}();
         }
         // Execute swap
         uint256 dy =
-            swapInstance.swap(
-                tokenIndexFrom,
-                tokenIndexTo,
-                dx,
-                minDy,
-                deadline
-            );
+            SWAP.swap(tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
         // Transfer the swapped tokens to msg.sender
-        if (tokenIndexTo != wethIndex) {
+        if (tokenIndexTo != WETH_INDEX) {
             IERC20(pooledTokens[tokenIndexTo]).safeTransfer(msg.sender, dy);
         } else {
-            IWETH9(weth).withdraw(dy);
+            IWETH9(WETH_ADDRESS).withdraw(dy);
             // slither-disable-next-line arbitrary-send
             (bool success, ) = msg.sender.call{value: dy}("");
             require(success, "ETH_TRANSFER_FAILED");
@@ -277,9 +279,10 @@ contract SwapEthWrapper {
 
     /**
      * @notice Rescues any of the ETH, the pooled tokens, or the LPToken that may be stuck
-     * in this contract.
+     * in this contract. Only the OWNER can call this function.
      */
     function rescue() external {
+        require(msg.sender == OWNER, "CALLED_BY_NON_OWNER");
         IERC20[] memory tokens = pooledTokens;
         for (uint256 i = 0; i < tokens.length; i++) {
             tokens[i].safeTransfer(
@@ -287,7 +290,7 @@ contract SwapEthWrapper {
                 tokens[i].balanceOf(address(this))
             );
         }
-        IERC20 lpToken_ = IERC20(address(lpToken));
+        IERC20 lpToken_ = IERC20(address(LP_TOKEN));
         lpToken_.safeTransfer(msg.sender, lpToken_.balanceOf(address(this)));
         // slither-disable-next-line arbitrary-send
         (bool success, ) = msg.sender.call{value: address(this).balance}("");

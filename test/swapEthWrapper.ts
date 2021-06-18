@@ -1,6 +1,6 @@
 import { BigNumber, Signer } from "ethers"
 import { MAX_UINT256, getUserTokenBalances } from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
+import { solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
@@ -13,6 +13,7 @@ chai.use(solidity)
 const { expect } = chai
 
 let owner: Signer
+let user1: Signer
 let ownerAddress: string
 let alEthPool: Swap
 let alEthPoolWrapper: SwapEthWrapper
@@ -21,7 +22,7 @@ let weth: GenericERC20
 let aleth: GenericERC20
 let seth: GenericERC20
 
-describe("Meta-Swap Deposit Contract", async () => {
+describe("Swap ETH Wrapper contract", async () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
@@ -29,6 +30,7 @@ describe("Meta-Swap Deposit Contract", async () => {
 
       const signers = await ethers.getSigners()
       owner = signers[0]
+      user1 = signers[1]
       ownerAddress = await owner.getAddress()
 
       const alEthPoolDeployment = await get("SaddleALETHPool")
@@ -295,6 +297,12 @@ describe("Meta-Swap Deposit Contract", async () => {
   })
 
   describe("rescue", () => {
+    it("Reverts when called by non-owner", async () => {
+      await expect(alEthPoolWrapper.connect(user1).rescue()).to.be.revertedWith(
+        "CALLED_BY_NON_OWNER",
+      )
+    })
+
     it("Successfully rescues tokens that may be stuck", async () => {
       await owner.sendTransaction({
         to: alEthPoolWrapper.address,
