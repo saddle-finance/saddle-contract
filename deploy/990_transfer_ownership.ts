@@ -1,7 +1,7 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { isMainnet } from "../utils/network"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { MULTISIG_ADDRESS } from "../utils/accounts"
+import { isMainnet } from "../utils/network"
 import path from "path"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -15,6 +15,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "SaddleUSDPool",
     "SaddleVETH2Pool",
     "SaddleALETHPool",
+    "SaddleD4Pool",
   ]
 
   const currentChain = await getChainId()
