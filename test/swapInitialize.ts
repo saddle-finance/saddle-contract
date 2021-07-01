@@ -1,5 +1,5 @@
 import { Signer } from "ethers"
-import { ZERO_ADDRESS } from "./testUtils"
+import { getDeployedContractByName, ZERO_ADDRESS } from "./testUtils"
 import { solidity } from "ethereum-waffle"
 import { deployments } from "hardhat"
 
@@ -26,6 +26,8 @@ describe("Swap", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
+      const getByName = (name: string) =>
+        getDeployedContractByName(deployments, name)
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
@@ -46,13 +48,7 @@ describe("Swap", () => {
         "18",
       )) as GenericERC20
 
-      const swapFactory = await ethers.getContractFactory("Swap", {
-        libraries: {
-          SwapUtils: (await get("SwapUtils")).address,
-          AmplificationUtils: (await get("AmplificationUtils")).address,
-        },
-      })
-      swap = (await swapFactory.deploy()) as Swap
+      swap = (await getByName("Swap")) as Swap
     },
   )
 

@@ -11,6 +11,7 @@ import {
   setNextTimestamp,
   setTimestamp,
   forceAdvanceOneBlock,
+  getDeployedContractByName,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 import { deployments } from "hardhat"
@@ -20,7 +21,6 @@ import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC
 import { LPToken } from "../build/typechain/LPToken"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import { Swap } from "../build/typechain/Swap"
-import SwapArtifact from "../build/artifacts/contracts/Swap.sol/Swap.json"
 import { MetaSwap } from "../build/typechain/MetaSwap"
 import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
 import { MetaSwapUtils } from "../build/typechain/MetaSwapUtils"
@@ -57,6 +57,8 @@ describe("Meta-Swap", async () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
+      const getByName = (name: string) =>
+        getDeployedContractByName(deployments, name)
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
@@ -67,36 +69,12 @@ describe("Meta-Swap", async () => {
       user1Address = await user1.getAddress()
       user2Address = await user2.getAddress()
 
-      // Deploy a swap pool
-      baseSwap = (await deployContractWithLibraries(
-        owner as Wallet,
-        SwapArtifact,
-        {
-          SwapUtils: (await get("SwapUtils")).address,
-          AmplificationUtils: (await get("AmplificationUtils")).address,
-        },
-      )) as Swap
+      // Get deployed Swap
+      baseSwap = (await getByName("Swap")) as Swap
 
-      dai = (await ethers.getContractAt(
-        GenericERC20Artifact.abi,
-        (
-          await get("DAI")
-        ).address,
-      )) as GenericERC20
-
-      usdc = (await ethers.getContractAt(
-        GenericERC20Artifact.abi,
-        (
-          await get("USDC")
-        ).address,
-      )) as GenericERC20
-
-      usdt = (await ethers.getContractAt(
-        GenericERC20Artifact.abi,
-        (
-          await get("USDT")
-        ).address,
-      )) as GenericERC20
+      dai = (await getByName("DAI")) as GenericERC20
+      usdc = (await getByName("USDC")) as GenericERC20
+      usdt = (await getByName("USDT")) as GenericERC20
 
       await baseSwap.initialize(
         [dai.address, usdc.address, usdt.address],
