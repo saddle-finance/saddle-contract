@@ -1,5 +1,10 @@
 import { BigNumber, Signer } from "ethers"
-import { MAX_UINT256, getUserTokenBalance, asyncForEach } from "./testUtils"
+import {
+  MAX_UINT256,
+  getUserTokenBalance,
+  asyncForEach,
+  getDeployedContractByName,
+} from "./testUtils"
 import { solidity } from "ethereum-waffle"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
@@ -49,6 +54,8 @@ describe("Swap Flashloan", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
+      const getByName = (name: string) =>
+        getDeployedContractByName(deployments, name)
       await deployments.fixture() // ensure you start from a fresh deployments
 
       TOKENS.length = 0
@@ -64,9 +71,9 @@ describe("Swap Flashloan", () => {
       const erc20Factory = await ethers.getContractFactory("GenericERC20")
 
       // Deploy dummy tokens
-      DAI = (await erc20Factory.deploy("DAI", "DAI", "18")) as GenericERC20
-      USDC = (await erc20Factory.deploy("USDC", "USDC", "6")) as GenericERC20
-      USDT = (await erc20Factory.deploy("USDT", "USDT", "6")) as GenericERC20
+      DAI = (await getByName("DAI")) as GenericERC20
+      USDC = (await getByName("USDC")) as GenericERC20
+      USDT = (await getByName("USDT")) as GenericERC20
       SUSD = (await erc20Factory.deploy("SUSD", "SUSD", "18")) as GenericERC20
 
       TOKENS.push(DAI, USDC, USDT, SUSD)
@@ -82,18 +89,8 @@ describe("Swap Flashloan", () => {
         },
       )
 
-      const swapFlashLoanFactory = await ethers.getContractFactory(
-        "SwapFlashLoan",
-        {
-          libraries: {
-            SwapUtils: (await get("SwapUtils")).address,
-            AmplificationUtils: (await get("AmplificationUtils")).address,
-          },
-        },
-      )
-
       // Deploy Swap with SwapUtils library
-      swapFlashLoan = (await swapFlashLoanFactory.deploy()) as SwapFlashLoan
+      swapFlashLoan = (await getByName("SwapFlashLoan")) as SwapFlashLoan
 
       await swapFlashLoan.initialize(
         [DAI.address, USDC.address, USDT.address, SUSD.address],

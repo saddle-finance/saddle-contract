@@ -8,6 +8,7 @@ import {
   getUserTokenBalance,
   getUserTokenBalances,
   setTimestamp,
+  getDeployedContractByName,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
 import { deployments } from "hardhat"
@@ -56,7 +57,9 @@ describe("Swap with 4 tokens", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      const { get } = deployments
+      const { get, deploy } = deployments
+      const getByName = (name: string) =>
+        getDeployedContractByName(deployments, name)
       await deployments.fixture() // ensure you start from a fresh deployments
 
       TOKENS.length = 0
@@ -69,13 +72,17 @@ describe("Swap with 4 tokens", () => {
       user1Address = await user1.getAddress()
       user2Address = await user2.getAddress()
 
-      // Deploy dummy tokens
-      const erc20Factory = await ethers.getContractFactory("GenericERC20")
+      await deploy("SUSD", {
+        from: ownerAddress,
+        contract: "GenericERC20",
+        args: ["SUSD", "Synthetix USD", "18"],
+        skipIfAlreadyDeployed: true,
+      })
 
-      DAI = (await erc20Factory.deploy("DAI", "DAI", "18")) as GenericERC20
-      USDC = (await erc20Factory.deploy("USDC", "USDC", "6")) as GenericERC20
-      USDT = (await erc20Factory.deploy("USDT", "USDT", "6")) as GenericERC20
-      SUSD = (await erc20Factory.deploy("SUSD", "SUSD", "18")) as GenericERC20
+      DAI = (await getByName("DAI")) as GenericERC20
+      USDC = (await getByName("USDC")) as GenericERC20
+      USDT = (await getByName("USDT")) as GenericERC20
+      SUSD = (await getByName("SUSD")) as GenericERC20
 
       TOKENS.push(DAI, USDC, USDT, SUSD)
 
@@ -90,14 +97,8 @@ describe("Swap with 4 tokens", () => {
         },
       )
 
-      // Deploy Swap with SwapUtils library
-      const swapFactory = await ethers.getContractFactory("Swap", {
-        libraries: {
-          SwapUtils: (await get("SwapUtils")).address,
-          AmplificationUtils: (await get("AmplificationUtils")).address,
-        },
-      })
-      swap = (await swapFactory.deploy()) as Swap
+      // Get Swap contract
+      swap = (await getByName("Swap")) as Swap
 
       await swap.initialize(
         [DAI.address, USDC.address, USDT.address, SUSD.address],
