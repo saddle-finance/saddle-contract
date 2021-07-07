@@ -9,6 +9,7 @@ import {
   setTimestamp,
   getPoolBalances,
   forceAdvanceOneBlock,
+  getDeployedContractByName,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
 
@@ -60,7 +61,9 @@ describe("Swap Deployer", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      const { get } = deployments
+      const { get, deploy } = deployments
+      const getByName = (name: string) =>
+        getDeployedContractByName(deployments, name)
       await deployments.fixture() // ensure you start from a fresh deployments
 
       TOKENS.length = 0
@@ -73,13 +76,17 @@ describe("Swap Deployer", () => {
       user1Address = await user1.getAddress()
       user2Address = await user2.getAddress()
 
-      // Deploy dummy tokens
-      const erc20Factory = await ethers.getContractFactory("GenericERC20")
+      await deploy("SUSD", {
+        from: ownerAddress,
+        contract: "GenericERC20",
+        args: ["SUSD", "Synthetix USD", "18"],
+        skipIfAlreadyDeployed: true,
+      })
 
-      DAI = (await erc20Factory.deploy("DAI", "DAI", "18")) as GenericERC20
-      USDC = (await erc20Factory.deploy("USDC", "USDC", "6")) as GenericERC20
-      USDT = (await erc20Factory.deploy("USDT", "USDT", "6")) as GenericERC20
-      SUSD = (await erc20Factory.deploy("SUSD", "SUSD", "18")) as GenericERC20
+      DAI = (await getByName("DAI")) as GenericERC20
+      USDC = (await getByName("USDC")) as GenericERC20
+      USDT = (await getByName("USDT")) as GenericERC20
+      SUSD = (await getByName("SUSD")) as GenericERC20
 
       TOKENS.push(DAI, USDC, USDT, SUSD)
 
@@ -94,19 +101,9 @@ describe("Swap Deployer", () => {
         },
       )
 
-      // Deploy Swap with SwapUtils library
-      const swapFactory = await ethers.getContractFactory("Swap", {
-        libraries: {
-          SwapUtils: (await get("SwapUtils")).address,
-          AmplificationUtils: (await get("AmplificationUtils")).address,
-        },
-      })
-      swap = (await swapFactory.deploy()) as Swap
-
-      const swapDeployerFactory = await ethers.getContractFactory(
-        "SwapDeployer",
-      )
-      swapDeployer = (await swapDeployerFactory.deploy()) as SwapDeployer
+      swap = (await getByName("Swap")) as Swap
+      swapDeployer = (await getByName("SwapDeployer")) as SwapDeployer
+      const lpToken = (await getByName("LPToken")) as LPToken
 
       const swapCloneAddress = await swapDeployer.callStatic.deploy(
         swap.address,
@@ -117,9 +114,7 @@ describe("Swap Deployer", () => {
         INITIAL_A_VALUE,
         SWAP_FEE,
         0,
-        (
-          await deployments.get("LPToken")
-        ).address,
+        lpToken.address,
       )
 
       await swapDeployer.deploy(
@@ -131,9 +126,7 @@ describe("Swap Deployer", () => {
         INITIAL_A_VALUE,
         SWAP_FEE,
         0,
-        (
-          await deployments.get("LPToken")
-        ).address,
+        lpToken.address,
       )
 
       swapClone = (await ethers.getContractAt("Swap", swapCloneAddress)) as Swap
