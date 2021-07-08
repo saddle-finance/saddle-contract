@@ -6,6 +6,12 @@ pragma experimental ABIEncoderV2;
 import "./interfaces/ISwap.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
+/**
+ * @title SwapMigrator
+ * @notice This contract is responsible for migrating old BTC or USD pool liquidity to the new ones.
+ * Users can use this contract to remove their liquidity from the old pools and add them to the new
+ * ones with a single transaction.
+ */
 contract SwapMigrator {
     using SafeERC20 for IERC20;
 
@@ -23,6 +29,12 @@ contract SwapMigrator {
 
     uint256 private constant MAX_UINT256 = 2**256 - 1;
 
+    /**
+     * @notice Sets the storage variables and approves tokens to be used by the old and new swap contracts
+     * @param btcData_ MigrationData struct with information about old and new BTC pools
+     * @param usdData_ MigrationData struct with information about old and new USD pools
+     * @param owner_ owner that is allowed to call the `rescue()` function
+     */
     constructor(
         MigrationData memory btcData_,
         MigrationData memory usdData_,
@@ -62,6 +74,11 @@ contract SwapMigrator {
         owner = owner_;
     }
 
+    /**
+     * @notice Migrates old BTC pool's LPToken to the new pool
+     * @param amount Amount of old LPToken to migrate
+     * @param minAmount Minimum amount of new LPToken to receive
+     */
     function migrateBTCPool(uint256 amount, uint256 minAmount)
         external
         returns (uint256)
@@ -70,6 +87,11 @@ contract SwapMigrator {
         return _migrate(btcPoolMigrationData, amount, minAmount);
     }
 
+    /**
+     * @notice Migrates old USD pool's LPToken to the new pool
+     * @param amount Amount of old LPToken to migrate
+     * @param minAmount Minimum amount of new LPToken to receive
+     */
     function migrateUSDPool(uint256 amount, uint256 minAmount)
         external
         returns (uint256)
@@ -109,6 +131,11 @@ contract SwapMigrator {
         return mintedAmount;
     }
 
+    /**
+     * @notice Rescues any token that may be sent to this contract accidentally.
+     * @param token Amount of old LPToken to migrate
+     * @param to Minimum amount of new LPToken to receive
+     */
     function rescue(IERC20 token, address to) external {
         require(msg.sender == owner, "is not owner");
         token.safeTransfer(to, token.balanceOf(address(this)));
