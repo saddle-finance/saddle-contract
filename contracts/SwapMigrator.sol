@@ -3,7 +3,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./interfaces/ISwapGuarded.sol";
 import "./interfaces/ISwap.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
@@ -18,14 +17,17 @@ contract SwapMigrator {
         IERC20[] underlyingTokens;
     }
 
-    MigrationData btcPoolMigrationData;
-    MigrationData usdPoolMigrationData;
+    MigrationData public btcPoolMigrationData;
+    MigrationData public usdPoolMigrationData;
+    address public owner;
 
     uint256 private constant MAX_UINT256 = 2**256 - 1;
 
-    constructor(MigrationData memory btcData_, MigrationData memory usdData_)
-        public
-    {
+    constructor(
+        MigrationData memory btcData_,
+        MigrationData memory usdData_,
+        address owner_
+    ) public {
         // Approve old BTC LP Token to be used by the old BTC pool
         btcData_.oldPoolLPTokenAddress.approve(
             btcData_.oldPoolAddress,
@@ -57,6 +59,7 @@ contract SwapMigrator {
         // Set storage variables
         btcPoolMigrationData = btcData_;
         usdPoolMigrationData = usdData_;
+        owner = owner_;
     }
 
     function migrateBTCPool(uint256 amount, uint256 minAmount)
@@ -104,5 +107,10 @@ contract SwapMigrator {
         // Transfer new LP Token to the caller
         mData.newPoolLPTokenAddress.safeTransfer(msg.sender, mintedAmount);
         return mintedAmount;
+    }
+
+    function rescue(IERC20 token, address to) external {
+        require(msg.sender == owner, "is not owner");
+        token.safeTransfer(to, token.balanceOf(address(this)));
     }
 }
