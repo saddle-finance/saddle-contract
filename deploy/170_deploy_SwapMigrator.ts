@@ -36,4 +36,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["SwapMigrator"]
-func.dependencies = ["BTCPoolV2", "USDPoolV2"]
+func.dependencies = ["USDPoolV2"]
