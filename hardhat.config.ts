@@ -93,7 +93,7 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
   }
 }
 
-if (process.env.FORK_MAINNET && config.networks) {
+if (process.env.FORK_MAINNET === "true" && config.networks) {
   console.log("FORK_MAINNET is set to true")
   config = {
     ...config,
