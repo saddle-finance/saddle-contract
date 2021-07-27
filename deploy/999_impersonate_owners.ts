@@ -40,8 +40,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (
     isMainnet(await getChainId()) &&
-    process.env.FORK_MAINNET &&
-    process.env.FUND_FORK_MAINNET
+    process.env.FORK_MAINNET === "true" &&
+    process.env.FUND_FORK_MAINNET === "true"
   ) {
     for (const [tokenName, holders] of Object.entries(tokenToAccountsMap)) {
       const contract = (await ethers.getContractAt(
