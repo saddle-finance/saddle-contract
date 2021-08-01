@@ -9,7 +9,7 @@
     "test": "test"
   },
   "dependencies": {
-    "@eth-optimism/smock": "^1.1.4",
+    "@eth-optimism/smock": "^1.1.10",
     "@openzeppelin/contracts": "3.4.1",
     "@openzeppelin/contracts-upgradeable": "^3.4.1",
     "dotenv": "^10.0.0",
