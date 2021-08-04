@@ -1,20 +1,17 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { DeployFunction } from "hardhat-deploy/types"
-import { CHAIN_ID } from "../utils/network"
-import { MULTISIG_ADDRESS } from "../utils/accounts"
-import path from "path"
-import { Deployment } from "hardhat-deploy/dist/types"
 import {
+  MAX_UINT256,
   asyncForEach,
   impersonateAccount,
-  MAX_UINT256,
 } from "../test/testUtils"
-import { ethers } from "hardhat"
 
+import { DeployFunction } from "hardhat-deploy/types"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
-
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import dotenv from "dotenv"
-import { BigNumber } from "ethers"
+import { ethers } from "hardhat"
+import { isMainnet } from "../utils/network"
+import path from "path"
+
 dotenv.config()
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -22,6 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { execute, log, read, all, get } = deployments
   const { deployer } = await getNamedAccounts()
 
+  // These addresses are for large holders of the given token (used in forked mainnet testing)
   const tokenToAccountsMap: Record<string, string[]> = {
     // USD
     DAI: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
@@ -37,12 +35,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ALETH: ["0x1d2c4cd9bee9dfe088430b95d274e765151c32db"],
     WETH: ["0xceff51756c56ceffca006cd410b03ffc46dd3a58"],
     SETH: ["0xc5424b857f758e906013f3555dad202e4bdb4567"],
+    // D4
+    ALUSD: ["0x43b4fdfd4ff969587185cdb6f0bd875c5fc83f8c"],
+    FEI: ["0x94b0a3d511b6ecdb17ebf877278ab030acb0a878"],
+    FRAX: ["0xd632f22692fac7611d2aa1c0d552930d43caed3b"],
+    LUSD: ["0x66017d22b0f8556afdd19fc67041899eb65a21bb"],
   }
 
   if (
-    (await getChainId()) == CHAIN_ID.MAINNET &&
-    process.env.FORK_MAINNET &&
-    process.env.FUND_FORK_MAINNET
+    isMainnet(await getChainId()) &&
+    process.env.FORK_MAINNET === "true" &&
+    process.env.FUND_FORK_MAINNET === "true"
   ) {
     for (const [tokenName, holders] of Object.entries(tokenToAccountsMap)) {
       const contract = (await ethers.getContractAt(

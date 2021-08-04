@@ -7,6 +7,7 @@ import { Contract } from "@ethersproject/contracts"
 import { ERC20 } from "../build/typechain/ERC20"
 import { Swap } from "../build/typechain/Swap"
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
+import { DeploymentsExtension } from "hardhat-deploy/dist/types"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -174,4 +175,12 @@ export async function asyncForEach<T>(
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index)
   }
+}
+
+export async function getDeployedContractByName(
+  deployments: DeploymentsExtension,
+  name: string,
+): Promise<Contract> {
+  const deployment = await deployments.get(name)
+  return ethers.getContractAt(deployment.abi, deployment.address)
 }

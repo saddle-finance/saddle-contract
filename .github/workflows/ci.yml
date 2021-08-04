@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
+      ALCHEMY_API_ROPSTEN: ${{ secrets.ALCHEMY_API_ROPSTEN }}
+      MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
@@ -32,6 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
+      ALCHEMY_API_ROPSTEN: ${{ secrets.ALCHEMY_API_ROPSTEN }}
+      MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
@@ -53,6 +57,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
+      ALCHEMY_API_ROPSTEN: ${{ secrets.ALCHEMY_API_ROPSTEN }}
+      MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
@@ -77,6 +83,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
+      ALCHEMY_API_ROPSTEN: ${{ secrets.ALCHEMY_API_ROPSTEN }}
+      MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2

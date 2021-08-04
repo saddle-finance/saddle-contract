@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { CHAIN_ID } from "../utils/network"
+import { isTestNetwork } from "../utils/network"
 import { BigNumber } from "ethers"
 
 const VETH2_TOKENS_ARGS: { [token: string]: any[] } = {
@@ -22,7 +22,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       skipIfAlreadyDeployed: true,
     })
     // If it's on hardhat, mint test tokens
-    if ((await getChainId()) == CHAIN_ID.HARDHAT) {
+    if (isTestNetwork(await getChainId())) {
       const decimals = VETH2_TOKENS_ARGS[token][2]
       await execute(
         token,

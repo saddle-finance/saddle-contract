@@ -10,6 +10,7 @@ import "hardhat-spdx-license-identifier"
 
 import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
+import { ethers } from "ethers"
 
 dotenv.config()
 
@@ -21,7 +22,14 @@ let config: HardhatUserConfig = {
     },
     mainnet: {
       url: process.env.ALCHEMY_API,
-      gasPrice: 20 * 1000000000,
+      gasPrice: 30 * 1000000000,
+    },
+    ropsten: {
+      url: process.env.ALCHEMY_API_ROPSTEN,
+      gasPrice: ethers.utils.parseUnits("1.01", "gwei").toNumber(),
+      accounts: {
+        mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
+      },
     },
   },
   paths: {
@@ -85,12 +93,24 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
   }
 }
 
-if (process.env.FORK_MAINNET && config.networks) {
-  config.networks.hardhat = {
-    forking: {
-      url: process.env.ALCHEMY_API ? process.env.ALCHEMY_API : "",
+if (process.env.FORK_MAINNET === "true" && config.networks) {
+  console.log("FORK_MAINNET is set to true")
+  config = {
+    ...config,
+    networks: {
+      ...config.networks,
+      hardhat: {
+        forking: {
+          url: process.env.ALCHEMY_API ? process.env.ALCHEMY_API : "",
+        },
+        chainId: 1,
+      },
     },
-    chainId: 1,
+    external: {
+      deployments: {
+        hardhat: ["deployments/mainnet"],
+      },
+    },
   }
 }
 

@@ -10,9 +10,10 @@ import {
   setNextTimestamp,
   setTimestamp,
   forceAdvanceOneBlock,
+  getDeployedContractByName,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
-import { deployments, ethers } from "hardhat"
+import { deployments } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { LPToken } from "../build/typechain/LPToken"
@@ -57,6 +58,8 @@ describe("Swap", async () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
+      const getByName = (name: string) =>
+        getDeployedContractByName(deployments, name)
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
@@ -89,14 +92,8 @@ describe("Swap", async () => {
         await secondToken.mint(address, String(1e20))
       })
 
-      // Deploy Swap with SwapUtils library
-      const swapFactory = await ethers.getContractFactory("Swap", {
-        libraries: {
-          SwapUtils: (await get("SwapUtils")).address,
-          AmplificationUtils: (await get("AmplificationUtils")).address,
-        },
-      })
-      swap = (await swapFactory.deploy()) as Swap
+      // Get Swap contract
+      swap = (await getByName("Swap")) as Swap
 
       await swap.initialize(
         [firstToken.address, secondToken.address],
