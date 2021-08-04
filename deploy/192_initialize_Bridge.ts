@@ -17,14 +17,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       currencyKey: utils.formatBytes32String("sBTC"),
     },
     {
-      swapAddress: (await get("SaddleSUSDMetaPoolDeposit")).address,
-      synthIndex: 0,
-      currencyKey: utils.formatBytes32String("sUSD"),
-    },
-    {
       swapAddress: (await get("SaddleALETHPool")).address,
       synthIndex: 2,
       currencyKey: utils.formatBytes32String("sETH"),
+    },
+    {
+      swapAddress: (await get("SaddleSUSDMetaPoolDeposit")).address,
+      synthIndex: 0,
+      currencyKey: utils.formatBytes32String("sUSD"),
     },
   ]
 
