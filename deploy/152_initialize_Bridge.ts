@@ -1,9 +1,9 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { DeployFunction } from "hardhat-deploy/types"
 import { CHAIN_ID } from "../utils/network"
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { asyncForEach } from "../test/testUtils"
 import path from "path"
 import { utils } from "ethers"
-import { asyncForEach } from "../test/testUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
@@ -20,6 +20,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       swapAddress: (await get("SaddleSUSDMetaPoolDeposit")).address,
       synthIndex: 0,
       currencyKey: utils.formatBytes32String("sUSD"),
+    },
+    {
+      swapAddress: (await get("SaddleALETHPool")).address,
+      synthIndex: 2,
+      currencyKey: utils.formatBytes32String("sETH"),
     },
   ]
 
