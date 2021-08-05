@@ -12,7 +12,7 @@ dotenv.config()
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
-  const { execute, log, read, all, get, rawTx } = deployments
+  const { execute, log, read, all, get } = deployments
   const { deployer } = await getNamedAccounts()
 
   // These addresses are for large holders of the given token (used in forked mainnet testing)
