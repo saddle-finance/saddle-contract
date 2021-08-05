@@ -36,12 +36,19 @@ contract TestSwapReturnValues {
         uint256 dx,
         uint256 minDy
     ) public {
-        uint256 balanceBefore =
-            swap.getToken(tokenIndexTo).balanceOf(address(this));
-        uint256 returnValue =
-            swap.swap(tokenIndexFrom, tokenIndexTo, dx, minDy, block.timestamp);
-        uint256 balanceAfter =
-            swap.getToken(tokenIndexTo).balanceOf(address(this));
+        uint256 balanceBefore = swap.getToken(tokenIndexTo).balanceOf(
+            address(this)
+        );
+        uint256 returnValue = swap.swap(
+            tokenIndexFrom,
+            tokenIndexTo,
+            dx,
+            minDy,
+            block.timestamp
+        );
+        uint256 balanceAfter = swap.getToken(tokenIndexTo).balanceOf(
+            address(this)
+        );
 
         console.log(
             "swap: Expected %s, got %s",
@@ -84,8 +91,11 @@ contract TestSwapReturnValues {
             balanceBefore[i] = swap.getToken(i).balanceOf(address(this));
         }
 
-        uint256[] memory returnValue =
-            swap.removeLiquidity(amount, minAmounts, MAX_INT);
+        uint256[] memory returnValue = swap.removeLiquidity(
+            amount,
+            minAmounts,
+            MAX_INT
+        );
 
         for (uint8 i = 0; i < n; i++) {
             balanceAfter[i] = swap.getToken(i).balanceOf(address(this));
@@ -106,8 +116,11 @@ contract TestSwapReturnValues {
         uint256 maxBurnAmount
     ) public {
         uint256 balanceBefore = lpToken.balanceOf(address(this));
-        uint256 returnValue =
-            swap.removeLiquidityImbalance(amounts, maxBurnAmount, MAX_INT);
+        uint256 returnValue = swap.removeLiquidityImbalance(
+            amounts,
+            maxBurnAmount,
+            MAX_INT
+        );
         uint256 balanceAfter = lpToken.balanceOf(address(this));
 
         console.log(
@@ -127,17 +140,18 @@ contract TestSwapReturnValues {
         uint8 tokenIndex,
         uint256 minAmount
     ) public {
-        uint256 balanceBefore =
-            swap.getToken(tokenIndex).balanceOf(address(this));
-        uint256 returnValue =
-            swap.removeLiquidityOneToken(
-                tokenAmount,
-                tokenIndex,
-                minAmount,
-                MAX_INT
-            );
-        uint256 balanceAfter =
-            swap.getToken(tokenIndex).balanceOf(address(this));
+        uint256 balanceBefore = swap.getToken(tokenIndex).balanceOf(
+            address(this)
+        );
+        uint256 returnValue = swap.removeLiquidityOneToken(
+            tokenAmount,
+            tokenIndex,
+            minAmount,
+            MAX_INT
+        );
+        uint256 balanceAfter = swap.getToken(tokenIndex).balanceOf(
+            address(this)
+        );
 
         console.log(
             "removeLiquidityOneToken: Expected %s, got %s",

@@ -25,8 +25,9 @@ contract Multicall2 {
         blockNumber = block.number;
         returnData = new bytes[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
-            (bool success, bytes memory ret) =
-                calls[i].target.call(calls[i].callData);
+            (bool success, bytes memory ret) = calls[i].target.call(
+                calls[i].callData
+            );
             require(success, "Multicall aggregate: call failed");
             returnData[i] = ret;
         }
@@ -96,8 +97,9 @@ contract Multicall2 {
     {
         returnData = new Result[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
-            (bool success, bytes memory ret) =
-                calls[i].target.call(calls[i].callData);
+            (bool success, bytes memory ret) = calls[i].target.call(
+                calls[i].callData
+            );
 
             if (requireSuccess) {
                 require(success, "Multicall2 aggregate: call failed");

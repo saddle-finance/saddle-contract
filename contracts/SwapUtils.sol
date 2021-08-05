@@ -142,13 +142,12 @@ library SwapUtils {
         uint256 tokenAmount,
         uint8 tokenIndex
     ) external view returns (uint256) {
-        (uint256 availableTokenAmount, ) =
-            _calculateWithdrawOneToken(
-                self,
-                tokenAmount,
-                tokenIndex,
-                self.lpToken.totalSupply()
-            );
+        (uint256 availableTokenAmount, ) = _calculateWithdrawOneToken(
+            self,
+            tokenAmount,
+            tokenIndex,
+            self.lpToken.totalSupply()
+        );
         return availableTokenAmount;
     }
 
@@ -172,11 +171,10 @@ library SwapUtils {
         // dy_0 (without fees)
         // dy, dy_0 - dy
 
-        uint256 dySwapFee =
-            currentY
-                .sub(newY)
-                .div(self.tokenPrecisionMultipliers[tokenIndex])
-                .sub(dy);
+        uint256 dySwapFee = currentY
+            .sub(newY)
+            .div(self.tokenPrecisionMultipliers[tokenIndex])
+            .sub(dy);
 
         return (dy, dySwapFee);
     }
@@ -208,8 +206,8 @@ library SwapUtils {
 
         require(tokenIndex < xp.length, "Token index out of range");
 
-        CalculateWithdrawOneTokenDYInfo memory v =
-            CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0, 0);
+        CalculateWithdrawOneTokenDYInfo
+            memory v = CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0, 0);
         v.preciseA = _getAPrecise(self);
         v.d0 = getD(xp, v.preciseA);
         v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(totalSupply));
@@ -231,16 +229,13 @@ library SwapUtils {
                     (i == tokenIndex)
                         ? xpi.mul(v.d1).div(v.d0).sub(v.newY)
                         : xpi.sub(xpi.mul(v.d1).div(v.d0))
-                )
-                    .mul(v.feePerToken)
-                    .div(FEE_DENOMINATOR)
+                ).mul(v.feePerToken).div(FEE_DENOMINATOR)
             );
         }
 
-        uint256 dy =
-            xpReduced[tokenIndex].sub(
-                getYD(v.preciseA, tokenIndex, xpReduced, v.d1)
-            );
+        uint256 dy = xpReduced[tokenIndex].sub(
+            getYD(v.preciseA, tokenIndex, xpReduced, v.d1)
+        );
         dy = dy.sub(1).div(self.tokenPrecisionMultipliers[tokenIndex]);
 
         return (dy, v.newY, xp[tokenIndex]);
@@ -342,12 +337,12 @@ library SwapUtils {
                 .add(dP.mul(numTokens))
                 .mul(d)
                 .div(
-                nA
-                    .sub(AmplificationUtils.A_PRECISION)
-                    .mul(d)
-                    .div(AmplificationUtils.A_PRECISION)
-                    .add(numTokens.add(1).mul(dP))
-            );
+                    nA
+                        .sub(AmplificationUtils.A_PRECISION)
+                        .mul(d)
+                        .div(AmplificationUtils.A_PRECISION)
+                        .add(numTokens.add(1).mul(dP))
+                );
             if (d.within1(prevD)) {
                 return d;
             }
@@ -535,8 +530,13 @@ library SwapUtils {
             "Token index out of range"
         );
         uint256 x = dx.mul(multipliers[tokenIndexFrom]).add(xp[tokenIndexFrom]);
-        uint256 y =
-            getY(_getAPrecise(self), tokenIndexFrom, tokenIndexTo, x, xp);
+        uint256 y = getY(
+            _getAPrecise(self),
+            tokenIndexFrom,
+            tokenIndexTo,
+            x,
+            xp
+        );
         dy = xp[tokenIndexTo].sub(y).sub(1);
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
         dy = dy.sub(dyFee).div(multipliers[tokenIndexTo]);
@@ -702,10 +702,9 @@ library SwapUtils {
         );
         require(dy >= minDy, "Swap didn't result in min tokens");
 
-        uint256 dyAdminFee =
-            dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(
-                self.tokenPrecisionMultipliers[tokenIndexTo]
-            );
+        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(
+            self.tokenPrecisionMultipliers[tokenIndexTo]
+        );
 
         self.balances[tokenIndexFrom] = balances[tokenIndexFrom].add(dx);
         self.balances[tokenIndexTo] = balances[tokenIndexTo].sub(dy).sub(
@@ -740,17 +739,16 @@ library SwapUtils {
         );
 
         // current state
-        ManageLiquidityInfo memory v =
-            ManageLiquidityInfo(
-                0,
-                0,
-                0,
-                _getAPrecise(self),
-                self.lpToken,
-                0,
-                self.balances,
-                self.tokenPrecisionMultipliers
-            );
+        ManageLiquidityInfo memory v = ManageLiquidityInfo(
+            0,
+            0,
+            0,
+            _getAPrecise(self),
+            self.lpToken,
+            0,
+            self.balances,
+            self.tokenPrecisionMultipliers
+        );
         v.totalSupply = v.lpToken.totalSupply();
 
         if (v.totalSupply != 0) {
@@ -767,8 +765,9 @@ library SwapUtils {
 
             // Transfer tokens first to see if a fee was charged on transfer
             if (amounts[i] != 0) {
-                uint256 beforeBalance =
-                    pooledTokens[i].balanceOf(address(this));
+                uint256 beforeBalance = pooledTokens[i].balanceOf(
+                    address(this)
+                );
                 pooledTokens[i].safeTransferFrom(
                     msg.sender,
                     address(this),
@@ -793,8 +792,10 @@ library SwapUtils {
         uint256[] memory fees = new uint256[](pooledTokens.length);
 
         if (v.totalSupply != 0) {
-            uint256 feePerToken =
-                _feePerToken(self.swapFee, pooledTokens.length);
+            uint256 feePerToken = _feePerToken(
+                self.swapFee,
+                pooledTokens.length
+            );
             for (uint256 i = 0; i < pooledTokens.length; i++) {
                 uint256 idealBalance = v.d1.mul(v.balances[i]).div(v.d0);
                 fees[i] = feePerToken
@@ -859,8 +860,11 @@ library SwapUtils {
         uint256[] memory balances = self.balances;
         uint256 totalSupply = lpToken.totalSupply();
 
-        uint256[] memory amounts =
-            _calculateRemoveLiquidity(balances, amount, totalSupply);
+        uint256[] memory amounts = _calculateRemoveLiquidity(
+            balances,
+            amount,
+            totalSupply
+        );
 
         for (uint256 i = 0; i < amounts.length; i++) {
             require(amounts[i] >= minAmounts[i], "amounts[i] < minAmounts[i]");
@@ -897,13 +901,12 @@ library SwapUtils {
 
         uint256 totalSupply = lpToken.totalSupply();
 
-        (uint256 dy, uint256 dyFee) =
-            _calculateWithdrawOneToken(
-                self,
-                tokenAmount,
-                tokenIndex,
-                totalSupply
-            );
+        (uint256 dy, uint256 dyFee) = _calculateWithdrawOneToken(
+            self,
+            tokenAmount,
+            tokenIndex,
+            totalSupply
+        );
 
         require(dy >= minAmount, "dy < minAmount");
 
@@ -939,17 +942,16 @@ library SwapUtils {
         uint256[] memory amounts,
         uint256 maxBurnAmount
     ) public returns (uint256) {
-        ManageLiquidityInfo memory v =
-            ManageLiquidityInfo(
-                0,
-                0,
-                0,
-                _getAPrecise(self),
-                self.lpToken,
-                0,
-                self.balances,
-                self.tokenPrecisionMultipliers
-            );
+        ManageLiquidityInfo memory v = ManageLiquidityInfo(
+            0,
+            0,
+            0,
+            _getAPrecise(self),
+            self.lpToken,
+            0,
+            self.balances,
+            self.tokenPrecisionMultipliers
+        );
         v.totalSupply = v.lpToken.totalSupply();
 
         IERC20[] memory pooledTokens = self.pooledTokens;
@@ -1022,8 +1024,9 @@ library SwapUtils {
         IERC20[] memory pooledTokens = self.pooledTokens;
         for (uint256 i = 0; i < pooledTokens.length; i++) {
             IERC20 token = pooledTokens[i];
-            uint256 balance =
-                token.balanceOf(address(this)).sub(self.balances[i]);
+            uint256 balance = token.balanceOf(address(this)).sub(
+                self.balances[i]
+            );
             if (balance != 0) {
                 token.safeTransfer(to, balance);
             }

@@ -240,8 +240,15 @@ library MetaSwapUtils {
         uint256[] memory xp = _xp(self, baseVirtualPrice);
         require(tokenIndex < xp.length, "Token index out of range");
 
-        CalculateWithdrawOneTokenDYInfo memory v =
-            CalculateWithdrawOneTokenDYInfo(0, 0, 0, 0, self._getAPrecise(), 0);
+        CalculateWithdrawOneTokenDYInfo
+            memory v = CalculateWithdrawOneTokenDYInfo(
+                0,
+                0,
+                0,
+                0,
+                self._getAPrecise(),
+                0
+            );
         v.d0 = SwapUtils.getD(xp, v.preciseA);
         v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(totalSupply));
 
@@ -262,16 +269,13 @@ library MetaSwapUtils {
                     (i == tokenIndex)
                         ? v.xpi.mul(v.d1).div(v.d0).sub(v.newY)
                         : v.xpi.sub(v.xpi.mul(v.d1).div(v.d0))
-                )
-                    .mul(v.feePerToken)
-                    .div(FEE_DENOMINATOR)
+                ).mul(v.feePerToken).div(FEE_DENOMINATOR)
             );
         }
 
-        uint256 dy =
-            xpReduced[tokenIndex].sub(
-                SwapUtils.getYD(v.preciseA, tokenIndex, xpReduced, v.d1)
-            );
+        uint256 dy = xpReduced[tokenIndex].sub(
+            SwapUtils.getYD(v.preciseA, tokenIndex, xpReduced, v.d1)
+        );
 
         if (tokenIndex == xp.length.sub(1)) {
             dy = dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
@@ -340,15 +344,14 @@ library MetaSwapUtils {
         SwapUtils.Swap storage self,
         MetaSwap storage metaSwapStorage
     ) external view returns (uint256) {
-        uint256 d =
-            SwapUtils.getD(
-                _xp(
-                    self.balances,
-                    self.tokenPrecisionMultipliers,
-                    _getBaseVirtualPrice(metaSwapStorage)
-                ),
-                self._getAPrecise()
-            );
+        uint256 d = SwapUtils.getD(
+            _xp(
+                self.balances,
+                self.tokenPrecisionMultipliers,
+                _getBaseVirtualPrice(metaSwapStorage)
+            ),
+            self._getAPrecise()
+        );
         uint256 supply = self.lpToken.totalSupply();
         if (supply != 0) {
             return d.mul(BASE_VIRTUAL_PRICE_PRECISION).div(supply);
@@ -409,18 +412,16 @@ library MetaSwapUtils {
             tokenIndexFrom < xp.length && tokenIndexTo < xp.length,
             "Token index out of range"
         );
-        uint256 x =
-            dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]).add(
-                xp[tokenIndexFrom]
-            );
-        uint256 y =
-            SwapUtils.getY(
-                self._getAPrecise(),
-                tokenIndexFrom,
-                tokenIndexTo,
-                x,
-                xp
-            );
+        uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]).add(
+            xp[tokenIndexFrom]
+        );
+        uint256 y = SwapUtils.getY(
+            self._getAPrecise(),
+            tokenIndexFrom,
+            tokenIndexTo,
+            x,
+            xp
+        );
         dy = xp[tokenIndexTo].sub(y).sub(1);
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
         dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
@@ -445,16 +446,15 @@ library MetaSwapUtils {
         uint8 tokenIndexTo,
         uint256 dx
     ) external view returns (uint256) {
-        CalculateSwapUnderlyingInfo memory v =
-            CalculateSwapUnderlyingInfo(
-                _getBaseVirtualPrice(metaSwapStorage),
-                metaSwapStorage.baseSwap,
-                0,
-                uint8(metaSwapStorage.baseTokens.length),
-                0,
-                0,
-                0
-            );
+        CalculateSwapUnderlyingInfo memory v = CalculateSwapUnderlyingInfo(
+            _getBaseVirtualPrice(metaSwapStorage),
+            metaSwapStorage.baseSwap,
+            0,
+            uint8(metaSwapStorage.baseTokens.length),
+            0,
+            0,
+            0
+        );
 
         uint256[] memory xp = _xp(self, v.baseVirtualPrice);
         v.baseLPTokenIndex = uint8(xp.length.sub(1));
@@ -501,14 +501,13 @@ library MetaSwapUtils {
         }
 
         {
-            uint256 y =
-                SwapUtils.getY(
-                    self._getAPrecise(),
-                    tokenIndexFrom,
-                    v.metaIndexTo,
-                    v.x,
-                    xp
-                );
+            uint256 y = SwapUtils.getY(
+                self._getAPrecise(),
+                tokenIndexFrom,
+                v.metaIndexTo,
+                v.x,
+                xp
+            );
             v.dy = xp[v.metaIndexTo].sub(y).sub(1);
             uint256 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
             v.dy = v.dy.sub(dyFee);
@@ -558,8 +557,8 @@ library MetaSwapUtils {
         {
             uint256 baseVirtualPrice = _getBaseVirtualPrice(metaSwapStorage);
             uint256[] memory balances1 = self.balances;
-            uint256[] memory tokenPrecisionMultipliers =
-                self.tokenPrecisionMultipliers;
+            uint256[] memory tokenPrecisionMultipliers = self
+                .tokenPrecisionMultipliers;
             uint256 numTokens = balances1.length;
             d0 = SwapUtils.getD(
                 _xp(balances1, tokenPrecisionMultipliers, baseVirtualPrice),
@@ -638,20 +637,18 @@ library MetaSwapUtils {
             }
         }
 
-        (uint256 dy, uint256 dyFee) =
-            _calculateSwap(
-                self,
-                tokenIndexFrom,
-                tokenIndexTo,
-                transferredDx,
-                _updateBaseVirtualPrice(metaSwapStorage)
-            );
+        (uint256 dy, uint256 dyFee) = _calculateSwap(
+            self,
+            tokenIndexFrom,
+            tokenIndexTo,
+            transferredDx,
+            _updateBaseVirtualPrice(metaSwapStorage)
+        );
         require(dy >= minDy, "Swap didn't result in min tokens");
 
-        uint256 dyAdminFee =
-            dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(
-                self.tokenPrecisionMultipliers[tokenIndexTo]
-            );
+        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(
+            self.tokenPrecisionMultipliers[tokenIndexTo]
+        );
 
         self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(
             transferredDx
@@ -695,20 +692,19 @@ library MetaSwapUtils {
         uint256 dx,
         uint256 minDy
     ) external returns (uint256) {
-        SwapUnderlyingInfo memory v =
-            SwapUnderlyingInfo(
-                0,
-                0,
-                0,
-                self.tokenPrecisionMultipliers,
-                self.balances,
-                metaSwapStorage.baseTokens,
-                IERC20(address(0)),
-                0,
-                IERC20(address(0)),
-                0,
-                _updateBaseVirtualPrice(metaSwapStorage)
-            );
+        SwapUnderlyingInfo memory v = SwapUnderlyingInfo(
+            0,
+            0,
+            0,
+            self.tokenPrecisionMultipliers,
+            self.balances,
+            metaSwapStorage.baseTokens,
+            IERC20(address(0)),
+            0,
+            IERC20(address(0)),
+            0,
+            _updateBaseVirtualPrice(metaSwapStorage)
+        );
 
         uint8 baseLPTokenIndex = uint8(v.oldBalances.length.sub(1));
 
@@ -749,12 +745,11 @@ library MetaSwapUtils {
             tokenIndexFrom < baseLPTokenIndex || tokenIndexTo < baseLPTokenIndex
         ) {
             // Either one of the tokens belongs to the MetaSwap tokens list
-            uint256[] memory xp =
-                _xp(
-                    v.oldBalances,
-                    v.tokenPrecisionMultipliers,
-                    v.baseVirtualPrice
-                );
+            uint256[] memory xp = _xp(
+                v.oldBalances,
+                v.tokenPrecisionMultipliers,
+                v.baseVirtualPrice
+            );
 
             if (tokenIndexFrom < baseLPTokenIndex) {
                 // Swapping from a MetaSwap token
@@ -765,8 +760,9 @@ library MetaSwapUtils {
                 // Swapping from a base Swap token
                 // This case requires adding the underlying token to the base Swap, then
                 // using the base LP token to swap to the desired token
-                uint256[] memory baseAmounts =
-                    new uint256[](v.baseTokens.length);
+                uint256[] memory baseAmounts = new uint256[](
+                    v.baseTokens.length
+                );
                 baseAmounts[tokenIndexFrom - baseLPTokenIndex] = v.dx;
 
                 // Add liquidity to the underlying Swap contract and receive base LP token
@@ -783,14 +779,13 @@ library MetaSwapUtils {
             // Calculate how much to withdraw in MetaSwap level and the the associated swap fee
             uint256 dyFee;
             {
-                uint256 y =
-                    SwapUtils.getY(
-                        self._getAPrecise(),
-                        v.metaIndexFrom,
-                        v.metaIndexTo,
-                        v.x,
-                        xp
-                    );
+                uint256 y = SwapUtils.getY(
+                    self._getAPrecise(),
+                    v.metaIndexFrom,
+                    v.metaIndexTo,
+                    v.x,
+                    xp
+                );
                 v.dy = xp[v.metaIndexTo].sub(y).sub(1);
                 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
                 v.dy = v.dy.sub(dyFee).div(
@@ -807,14 +802,17 @@ library MetaSwapUtils {
 
             // Update the balances array according to the calculated input and output amount
             {
-                uint256 dyAdminFee =
-                    dyFee.mul(self.adminFee).div(FEE_DENOMINATOR);
+                uint256 dyAdminFee = dyFee.mul(self.adminFee).div(
+                    FEE_DENOMINATOR
+                );
                 dyAdminFee = dyAdminFee.div(
                     v.tokenPrecisionMultipliers[v.metaIndexTo]
                 );
-                self.balances[v.metaIndexFrom] = v.oldBalances[v.metaIndexFrom]
+                self.balances[v.metaIndexFrom] = v
+                    .oldBalances[v.metaIndexFrom]
                     .add(v.dx);
-                self.balances[v.metaIndexTo] = v.oldBalances[v.metaIndexTo]
+                self.balances[v.metaIndexTo] = v
+                    .oldBalances[v.metaIndexTo]
                     .sub(v.dy)
                     .sub(dyAdminFee);
             }
@@ -887,18 +885,17 @@ library MetaSwapUtils {
         uint256[] memory fees = new uint256[](pooledTokens.length);
 
         // current state
-        ManageLiquidityInfo memory v =
-            ManageLiquidityInfo(
-                0,
-                0,
-                0,
-                self.lpToken,
-                0,
-                self._getAPrecise(),
-                _updateBaseVirtualPrice(metaSwapStorage),
-                self.tokenPrecisionMultipliers,
-                self.balances
-            );
+        ManageLiquidityInfo memory v = ManageLiquidityInfo(
+            0,
+            0,
+            0,
+            self.lpToken,
+            0,
+            self._getAPrecise(),
+            _updateBaseVirtualPrice(metaSwapStorage),
+            self.tokenPrecisionMultipliers,
+            self.balances
+        );
         v.totalSupply = v.lpToken.totalSupply();
 
         if (v.totalSupply != 0) {
@@ -920,8 +917,9 @@ library MetaSwapUtils {
 
             // Transfer tokens first to see if a fee was charged on transfer
             if (amounts[i] != 0) {
-                uint256 beforeBalance =
-                    pooledTokens[i].balanceOf(address(this));
+                uint256 beforeBalance = pooledTokens[i].balanceOf(
+                    address(this)
+                );
                 pooledTokens[i].safeTransferFrom(
                     msg.sender,
                     address(this),
@@ -949,8 +947,10 @@ library MetaSwapUtils {
         uint256 toMint;
 
         if (v.totalSupply != 0) {
-            uint256 feePerToken =
-                SwapUtils._feePerToken(self.swapFee, pooledTokens.length);
+            uint256 feePerToken = SwapUtils._feePerToken(
+                self.swapFee,
+                pooledTokens.length
+            );
             for (uint256 i = 0; i < pooledTokens.length; i++) {
                 uint256 idealBalance = v.d1.mul(self.balances[i]).div(v.d0);
                 fees[i] = feePerToken
@@ -1065,18 +1065,17 @@ library MetaSwapUtils {
         uint256 maxBurnAmount
     ) public returns (uint256) {
         // Using this struct to avoid stack too deep error
-        ManageLiquidityInfo memory v =
-            ManageLiquidityInfo(
-                0,
-                0,
-                0,
-                self.lpToken,
-                0,
-                self._getAPrecise(),
-                _updateBaseVirtualPrice(metaSwapStorage),
-                self.tokenPrecisionMultipliers,
-                self.balances
-            );
+        ManageLiquidityInfo memory v = ManageLiquidityInfo(
+            0,
+            0,
+            0,
+            self.lpToken,
+            0,
+            self._getAPrecise(),
+            _updateBaseVirtualPrice(metaSwapStorage),
+            self.tokenPrecisionMultipliers,
+            self.balances
+        );
         v.totalSupply = v.lpToken.totalSupply();
 
         require(
@@ -1085,8 +1084,10 @@ library MetaSwapUtils {
         );
         require(maxBurnAmount != 0, "Must burn more than 0");
 
-        uint256 feePerToken =
-            SwapUtils._feePerToken(self.swapFee, v.newBalances.length);
+        uint256 feePerToken = SwapUtils._feePerToken(
+            self.swapFee,
+            v.newBalances.length
+        );
 
         // Calculate how much LPToken should be burned
         uint256[] memory fees = new uint256[](v.newBalances.length);
@@ -1170,8 +1171,8 @@ library MetaSwapUtils {
             metaSwapStorage.baseCacheLastUpdated + BASE_CACHE_EXPIRE_TIME
         ) {
             // When the cache is expired, update it
-            uint256 baseVirtualPrice =
-                ISwap(metaSwapStorage.baseSwap).getVirtualPrice();
+            uint256 baseVirtualPrice = ISwap(metaSwapStorage.baseSwap)
+                .getVirtualPrice();
             metaSwapStorage.baseVirtualPrice = baseVirtualPrice;
             metaSwapStorage.baseCacheLastUpdated = block.timestamp;
             return baseVirtualPrice;
