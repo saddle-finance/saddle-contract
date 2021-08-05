@@ -12,7 +12,7 @@ dotenv.config()
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
-  const { execute, log, read, all, get } = deployments
+  const { execute, log, read, all, get, rawTx } = deployments
   const { deployer } = await getNamedAccounts()
 
   // These addresses are for large holders of the given token (used in forked mainnet testing)
@@ -53,9 +53,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       await asyncForEach(holders, async (holder) => {
         const balance = await contract.balanceOf(holder)
+        await ethers.provider.send("hardhat_setBalance", [
+          holder,
+          `0x${(1e18).toString(16)}`,
+        ])
         await contract
           .connect(await impersonateAccount(holder))
-          .transfer(deployer, await contract.balanceOf(holder), { gasPrice: 0 })
+          .transfer(deployer, await contract.balanceOf(holder))
         log(
           `Sent ${ethers.utils.formatUnits(
             balance,
