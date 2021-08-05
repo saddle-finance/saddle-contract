@@ -36,7 +36,7 @@ contract SynthSwapper is Initializable {
     /**
      * @notice This modifier checks if the caller is the owner
      */
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(msg.sender == owner, "is not owner");
         _;
     }
