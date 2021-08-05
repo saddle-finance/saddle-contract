@@ -70,18 +70,14 @@ contract SwapMigrator {
         );
 
         // Remove liquidity from the old pool and add them to the new pool
-        uint256[] memory amounts =
-            ISwap(usdPoolMigrationData.oldPoolAddress).removeLiquidity(
+        uint256[] memory amounts = ISwap(usdPoolMigrationData.oldPoolAddress)
+            .removeLiquidity(
                 amount,
                 new uint256[](usdPoolMigrationData.underlyingTokens.length),
                 MAX_UINT256
             );
-        uint256 mintedAmount =
-            ISwap(usdPoolMigrationData.newPoolAddress).addLiquidity(
-                amounts,
-                minAmount,
-                MAX_UINT256
-            );
+        uint256 mintedAmount = ISwap(usdPoolMigrationData.newPoolAddress)
+            .addLiquidity(amounts, minAmount, MAX_UINT256);
 
         // Transfer new LP Token to the caller
         usdPoolMigrationData.newPoolLPTokenAddress.safeTransfer(

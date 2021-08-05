@@ -106,8 +106,9 @@ contract SwapFlashLoanV1 is SwapV1 {
     ) external nonReentrant {
         uint8 tokenIndex = getTokenIndex(address(token));
         uint256 availableLiquidityBefore = token.balanceOf(address(this));
-        uint256 protocolBalanceBefore =
-            availableLiquidityBefore.sub(swapStorage.balances[tokenIndex]);
+        uint256 protocolBalanceBefore = availableLiquidityBefore.sub(
+            swapStorage.balances[tokenIndex]
+        );
         require(
             amount > 0 && availableLiquidityBefore >= amount,
             "invalid amount"

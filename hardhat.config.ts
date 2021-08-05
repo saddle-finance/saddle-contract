@@ -104,6 +104,8 @@ if (process.env.FORK_MAINNET === "true" && config.networks) {
           url: process.env.ALCHEMY_API ? process.env.ALCHEMY_API : "",
         },
         chainId: 1,
+        hardfork: "london",
+        gasPrice: "auto",
       },
     },
     external: {

@@ -53,9 +53,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       await asyncForEach(holders, async (holder) => {
         const balance = await contract.balanceOf(holder)
+        await ethers.provider.send("hardhat_setBalance", [
+          holder,
+          `0x${(1e18).toString(16)}`,
+        ])
         await contract
           .connect(await impersonateAccount(holder))
-          .transfer(deployer, await contract.balanceOf(holder), { gasPrice: 0 })
+          .transfer(deployer, await contract.balanceOf(holder))
         log(
           `Sent ${ethers.utils.formatUnits(
             balance,
