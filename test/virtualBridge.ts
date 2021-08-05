@@ -6,6 +6,7 @@ import {
   impersonateAccount,
   increaseTimestamp,
   setTimestamp,
+  getDeployedContractByName,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
 import { deployments, ethers, network } from "hardhat"
@@ -244,7 +245,11 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
 
       // Deploy Bridge contract
       const bridgeFactory = await ethers.getContractFactory("Bridge")
-      bridge = (await bridgeFactory.deploy()) as Bridge
+      bridge = (await bridgeFactory.deploy(
+        (
+          await getDeployedContractByName(deployments, "SynthSwapper")
+        ).address,
+      )) as Bridge
 
       // Approve token transfer to Swap for adding liquidity and to Bridge for virtual swaps
       await asyncForEach(
