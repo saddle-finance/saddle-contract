@@ -5,7 +5,7 @@ import {
   MAX_UINT256,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
-import { deployments } from "hardhat"
+import { deployments, ethers } from "hardhat"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { SwapFlashLoan } from "../build/typechain/SwapFlashLoan"
 import { SwapFlashLoanV1 } from "../build/typechain/SwapFlashLoanV1"
@@ -212,11 +212,15 @@ describe("Swap", () => {
 
       const contractOwnerAddress = await swapMigrator.owner()
       const impersonatedOwner = await impersonateAccount(contractOwnerAddress)
+      await ethers.provider.send("hardhat_setBalance", [
+        impersonatedOwner,
+        `0x${(1e18).toString(16)}`,
+      ])
 
       // Rescues stuck tokens
       await swapMigrator
         .connect(impersonatedOwner)
-        .rescue(oldUSDPoolLPToken.address, deployerAddress, { gasPrice: 0 })
+        .rescue(oldUSDPoolLPToken.address, deployerAddress)
       expect(await oldUSDPoolLPToken.balanceOf(deployerAddress)).to.eq(
         lpBalance,
       )
