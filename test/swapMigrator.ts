@@ -213,7 +213,7 @@ describe("Swap", () => {
       const contractOwnerAddress = await swapMigrator.owner()
       const impersonatedOwner = await impersonateAccount(contractOwnerAddress)
       await ethers.provider.send("hardhat_setBalance", [
-        impersonatedOwner,
+        await impersonatedOwner.getAddress(),
         `0x${(1e18).toString(16)}`,
       ])
 
