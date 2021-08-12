@@ -1,4 +1,8 @@
-import { asyncForEach, impersonateAccount } from "../test/testUtils"
+import {
+  MAX_UINT256,
+  asyncForEach,
+  impersonateAccount,
+} from "../test/testUtils"
 
 import { DeployFunction } from "hardhat-deploy/types"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
@@ -68,6 +72,31 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
       })
     }
+
+    // Approve USD tokens and deposit some to the sUSD pool.
+    const metaSwapDeposit = await get("SaddleSUSDMetaPoolDeposit")
+    await asyncForEach(["DAI", "USDC", "USDT", "SUSD"], async (tokenName) => {
+      await execute(
+        tokenName,
+        { from: deployer, log: true },
+        "approve",
+        metaSwapDeposit.address,
+        MAX_UINT256,
+      )
+    })
+    await execute(
+      "SaddleSUSDMetaPoolDeposit",
+      { from: deployer, log: true },
+      "addLiquidity",
+      [
+        ethers.utils.parseUnits("100000", 18),
+        ethers.utils.parseUnits("100000", 18),
+        ethers.utils.parseUnits("100000", 6),
+        ethers.utils.parseUnits("100000", 6),
+      ],
+      0,
+      MAX_UINT256,
+    )
   } else {
     log(`skipping ${path.basename(__filename)}`)
   }
