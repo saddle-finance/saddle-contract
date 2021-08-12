@@ -1,12 +1,11 @@
 import { BigNumber, Signer } from "ethers"
 import {
-  getDeployedContractByName,
   getUserTokenBalances,
   impersonateAccount,
   MAX_UINT256,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
-import { deployments } from "hardhat"
+import { deployments, ethers } from "hardhat"
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { SwapFlashLoan } from "../build/typechain/SwapFlashLoan"
 import { SwapFlashLoanV1 } from "../build/typechain/SwapFlashLoanV1"
@@ -38,8 +37,6 @@ describe("Swap", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { deploy, execute, get } = deployments
-      const getByName = (name: string) =>
-        getDeployedContractByName(deployments, name)
       await deployments.fixture(undefined, { keepExistingDeployments: true }) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
@@ -47,17 +44,15 @@ describe("Swap", () => {
       user1 = signers[1]
       deployerAddress = await deployer.getAddress()
 
-      oldUSDPool = (await getByName("SaddleUSDPool")) as SwapFlashLoanV1
-      oldUSDPoolLPToken = (await getByName(
-        "SaddleUSDPoolLPToken",
-      )) as GenericERC20
-      newUSDPool = (await getByName("SaddleUSDPoolV2")) as SwapFlashLoan
-      newUSDPoolLPToken = (await getByName("SaddleUSDPoolV2LPToken")) as LPToken
+      oldUSDPool = await ethers.getContract("SaddleUSDPool")
+      oldUSDPoolLPToken = await ethers.getContract("SaddleUSDPoolLPToken")
+      newUSDPool = await ethers.getContract("SaddleUSDPoolV2")
+      newUSDPoolLPToken = await ethers.getContract("SaddleUSDPoolV2LPToken")
 
-      DAI = (await getByName("DAI")) as GenericERC20
-      USDC = (await getByName("USDC")) as GenericERC20
-      USDT = (await getByName("USDT")) as GenericERC20
-      swapMigrator = (await getByName("SwapMigrator")) as SwapMigrator
+      DAI = await ethers.getContract("DAI")
+      USDC = await ethers.getContract("USDC")
+      USDT = await ethers.getContract("USDT")
+      swapMigrator = await ethers.getContract("SwapMigrator")
 
       for (const token of [DAI, USDC, USDT]) {
         await token.approve(oldUSDPool.address, MAX_UINT256)
@@ -217,11 +212,15 @@ describe("Swap", () => {
 
       const contractOwnerAddress = await swapMigrator.owner()
       const impersonatedOwner = await impersonateAccount(contractOwnerAddress)
+      await ethers.provider.send("hardhat_setBalance", [
+        await impersonatedOwner.getAddress(),
+        `0x${(1e18).toString(16)}`,
+      ])
 
       // Rescues stuck tokens
       await swapMigrator
         .connect(impersonatedOwner)
-        .rescue(oldUSDPoolLPToken.address, deployerAddress, { gasPrice: 0 })
+        .rescue(oldUSDPoolLPToken.address, deployerAddress)
       expect(await oldUSDPoolLPToken.balanceOf(deployerAddress)).to.eq(
         lpBalance,
       )

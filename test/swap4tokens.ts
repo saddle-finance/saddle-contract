@@ -8,7 +8,6 @@ import {
   getUserTokenBalance,
   getUserTokenBalances,
   setTimestamp,
-  getDeployedContractByName,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
 import { deployments } from "hardhat"
@@ -58,8 +57,6 @@ describe("Swap with 4 tokens", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get, deploy } = deployments
-      const getByName = (name: string) =>
-        getDeployedContractByName(deployments, name)
       await deployments.fixture() // ensure you start from a fresh deployments
 
       TOKENS.length = 0
@@ -79,10 +76,10 @@ describe("Swap with 4 tokens", () => {
         skipIfAlreadyDeployed: true,
       })
 
-      DAI = (await getByName("DAI")) as GenericERC20
-      USDC = (await getByName("USDC")) as GenericERC20
-      USDT = (await getByName("USDT")) as GenericERC20
-      SUSD = (await getByName("SUSD")) as GenericERC20
+      DAI = await ethers.getContract("DAI")
+      USDC = await ethers.getContract("USDC")
+      USDT = await ethers.getContract("USDT")
+      SUSD = await ethers.getContract("SUSD")
 
       TOKENS.push(DAI, USDC, USDT, SUSD)
 
@@ -98,7 +95,7 @@ describe("Swap with 4 tokens", () => {
       )
 
       // Get Swap contract
-      swap = (await getByName("Swap")) as Swap
+      swap = await ethers.getContract("Swap")
 
       await swap.initialize(
         [DAI.address, USDC.address, USDT.address, SUSD.address],

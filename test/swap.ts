@@ -10,7 +10,6 @@ import {
   setNextTimestamp,
   setTimestamp,
   forceAdvanceOneBlock,
-  getDeployedContractByName,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
 import { deployments } from "hardhat"
@@ -58,8 +57,6 @@ describe("Swap", async () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      const getByName = (name: string) =>
-        getDeployedContractByName(deployments, name)
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
@@ -93,7 +90,7 @@ describe("Swap", async () => {
       })
 
       // Get Swap contract
-      swap = (await getByName("Swap")) as Swap
+      swap = await ethers.getContract("Swap")
 
       await swap.initialize(
         [firstToken.address, secondToken.address],

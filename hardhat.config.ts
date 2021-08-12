@@ -17,8 +17,8 @@ dotenv.config()
 let config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
-    coverage: {
-      url: "http://127.0.0.1:8555",
+    hardhat: {
+      hardfork: process.env.CODE_COVERAGE ? "berlin" : "london",
     },
     mainnet: {
       url: process.env.ALCHEMY_API,
@@ -100,12 +100,11 @@ if (process.env.FORK_MAINNET === "true" && config.networks) {
     networks: {
       ...config.networks,
       hardhat: {
+        ...config.networks.hardhat,
         forking: {
           url: process.env.ALCHEMY_API ? process.env.ALCHEMY_API : "",
         },
         chainId: 1,
-        hardfork: "london",
-        gasPrice: "auto",
       },
     },
     external: {
