@@ -11,7 +11,6 @@ import {
   setNextTimestamp,
   setTimestamp,
   forceAdvanceOneBlock,
-  getDeployedContractByName,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 import { deployments } from "hardhat"
@@ -57,8 +56,6 @@ describe("Meta-Swap", async () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      const getByName = (name: string) =>
-        getDeployedContractByName(deployments, name)
       await deployments.fixture() // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
@@ -70,11 +67,11 @@ describe("Meta-Swap", async () => {
       user2Address = await user2.getAddress()
 
       // Get deployed Swap
-      baseSwap = (await getByName("Swap")) as Swap
+      baseSwap = await ethers.getContract("Swap")
 
-      dai = (await getByName("DAI")) as GenericERC20
-      usdc = (await getByName("USDC")) as GenericERC20
-      usdt = (await getByName("USDT")) as GenericERC20
+      dai = await ethers.getContract("DAI")
+      usdc = await ethers.getContract("USDC")
+      usdt = await ethers.getContract("USDT")
 
       await baseSwap.initialize(
         [dai.address, usdc.address, usdt.address],
