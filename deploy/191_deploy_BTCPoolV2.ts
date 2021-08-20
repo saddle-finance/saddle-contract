@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Manually check if the pool is already deployed
   const SaddleBTCPoolV2 = await getOrNull("SaddleBTCPoolV2")
   if (SaddleBTCPoolV2) {
-    log(`reusing "SaddleUSDPoolV2" at ${SaddleBTCPoolV2.address}`)
+    log(`reusing "SaddleBTCPoolV2" at ${SaddleBTCPoolV2.address}`)
   } else {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
