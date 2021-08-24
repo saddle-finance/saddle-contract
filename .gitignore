@@ -40,3 +40,4 @@ Temporary Items
 # environment variables
 .env
 deployments/localhost/
+deployments/optimistic/

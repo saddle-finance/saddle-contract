@@ -67,9 +67,8 @@ describe("Swap Flashloan", () => {
       DAI = await ethers.getContract("DAI")
       USDC = await ethers.getContract("USDC")
       USDT = await ethers.getContract("USDT")
-      SUSD = await ethers.getContract("SUSD")
 
-      TOKENS.push(DAI, USDC, USDT, SUSD)
+      TOKENS.push(DAI, USDC, USDT)
 
       // Mint dummy tokens
       await asyncForEach(

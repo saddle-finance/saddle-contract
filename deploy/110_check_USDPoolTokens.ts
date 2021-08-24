@@ -4,9 +4,9 @@ import { isTestNetwork } from "../utils/network"
 import { BigNumber } from "ethers"
 
 const USD_TOKENS_ARGS: { [token: string]: any[] } = {
-  DAI: ["Dai Stablecoin", "DAI", "18"],
-  USDC: ["USD Coin", "USDC", "6"],
-  USDT: ["Tether USD", "USDT", "6"],
+  DAI: ["Dummy Dai Stablecoin", "dummyDAI", "18"],
+  USDC: ["Dummy USD Coin", "dummyUSDC", "6"],
+  USDT: ["Dummy Tether USD", "dummyUSDT", "6"],
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {

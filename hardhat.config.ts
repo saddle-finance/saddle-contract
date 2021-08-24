@@ -7,6 +7,7 @@ import "hardhat-gas-reporter"
 import "solidity-coverage"
 import "hardhat-deploy"
 import "hardhat-spdx-license-identifier"
+import "@eth-optimism/hardhat-ovm"
 
 import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
@@ -15,7 +16,6 @@ import { ethers } from "ethers"
 dotenv.config()
 
 let config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
   networks: {
     hardhat: {
       hardfork: process.env.CODE_COVERAGE ? "berlin" : "london",
@@ -30,6 +30,24 @@ let config: HardhatUserConfig = {
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
+    },
+    optimistic: {
+      url: "http://127.0.0.1:8545",
+      accounts: [
+        "0xcfd793877e87cf549fef0142a21adb036be5e1990eaaee7f358f53da92d08730",
+      ],
+      gasPrice: 0,
+      ovm: true, // This sets the network as using the ovm and ensure contract will be compiled against that.
+      chainId: 420,
+    },
+    "optimistic-kovan": {
+      url: "https://kovan.optimism.io",
+      accounts: [
+        "0xcfd793877e87cf549fef0142a21adb036be5e1990eaaee7f358f53da92d08730",
+      ],
+      gasPrice: 15000000,
+      ovm: true, // This sets the network as using the ovm and ensure contract will be compiled against that.
+      chainId: 69,
     },
   },
   paths: {
@@ -47,10 +65,10 @@ let config: HardhatUserConfig = {
           },
         },
       },
-      {
-        version: "0.5.16",
-      },
     ],
+  },
+  ovm: {
+    solcVersion: "0.6.12",
   },
   typechain: {
     outDir: "./build/typechain/",
@@ -67,10 +85,14 @@ let config: HardhatUserConfig = {
     deployer: {
       default: 0, // here this will by default take the first account as deployer
       1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
+      69: 0,
+      420: 0,
     },
     libraryDeployer: {
       default: 1, // use a different account for deploying libraries on the hardhat network
       1: 0, // use the same address as the main deployer on mainnet
+      69: 0,
+      420: 0,
     },
   },
   spdxLicenseIdentifier: {

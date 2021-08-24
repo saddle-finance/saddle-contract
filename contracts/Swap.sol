@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "./helper/OVMSimpleProxy.sol";
 import "./OwnerPausableUpgradeable.sol";
 import "./SwapUtils.sol";
 import "./AmplificationUtils.sol";
@@ -162,7 +163,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         );
 
         // Clone and initialize a LPToken contract
-        LPToken lpToken = LPToken(Clones.clone(lpTokenTargetAddress));
+        LPToken lpToken = LPToken(address(new OVMSimpleProxy(lpTokenTargetAddress)));
         require(
             lpToken.initialize(lpTokenName, lpTokenSymbol),
             "could not init lpToken clone"
