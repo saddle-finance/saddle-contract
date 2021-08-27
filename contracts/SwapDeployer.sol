@@ -13,10 +13,7 @@ contract SwapDeployer is Ownable {
         address swapAddress,
         IERC20[] pooledTokens
     );
-    event NewClone(
-        address indexed target,
-        address cloneAddress
-    );
+    event NewClone(address indexed target, address cloneAddress);
 
     constructor() public Ownable() {}
 
