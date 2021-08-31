@@ -36,6 +36,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     FEI: ["0x94b0a3d511b6ecdb17ebf877278ab030acb0a878"],
     FRAX: ["0xd632f22692fac7611d2aa1c0d552930d43caed3b"],
     LUSD: ["0x66017d22b0f8556afdd19fc67041899eb65a21bb"],
+    // TBTC
+    TBTCv2: ["0xf9e11762d522ea29dd78178c9baf83b7b093aacc"],
   }
 
   if (
@@ -44,12 +46,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     process.env.FUND_FORK_MAINNET === "true"
   ) {
     for (const [tokenName, holders] of Object.entries(tokenToAccountsMap)) {
-      const contract = (await ethers.getContractAt(
-        "GenericERC20",
-        (
-          await get(tokenName)
-        ).address,
-      )) as GenericERC20
+      const contract = (await ethers.getContract(tokenName)) as GenericERC20
 
       await asyncForEach(holders, async (holder) => {
         const balance = await contract.balanceOf(holder)
