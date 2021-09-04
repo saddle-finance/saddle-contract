@@ -22,7 +22,7 @@ let config: HardhatUserConfig = {
     },
     mainnet: {
       url: process.env.ALCHEMY_API,
-      gasPrice: 80 * 1000000000,
+      gasPrice: 95 * 1000000000,
     },
     ropsten: {
       url: process.env.ALCHEMY_API_ROPSTEN,
