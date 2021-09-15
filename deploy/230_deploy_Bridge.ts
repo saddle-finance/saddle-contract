@@ -6,12 +6,12 @@ import path from "path"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
   const { get, log, deploy } = deployments
-  const { libraryDeployer } = await getNamedAccounts()
+  const { deployer } = await getNamedAccounts()
 
   if ((await getChainId()) == CHAIN_ID.MAINNET) {
     // Manually check if the pool is already deployed
     await deploy("Bridge", {
-      from: libraryDeployer,
+      from: deployer,
       log: true,
       contract: "Bridge",
       args: [(await get("SynthSwapper")).address],
