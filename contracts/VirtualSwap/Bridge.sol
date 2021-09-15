@@ -101,7 +101,7 @@ contract Bridge is ERC721 {
     // This contract is a read proxy of `AddressResolver` which is responsible for storing the addresses of the contracts
     // used by the Synthetix protocol.
     IAddressResolver public constant SYNTHETIX_RESOLVER =
-    IAddressResolver(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2);
+        IAddressResolver(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2);
 
     // EXCHANGER points to `Exchanger`. There is no proxy pair for this contract so we need to update this variable
     // when the protocol is upgraded. This contract is used to settle synths held by SynthSwapper.
@@ -162,8 +162,8 @@ contract Bridge is ERC721 {
      * the Synthetix protocol's Exchanger contract is also set on deployment.
      */
     constructor(address synthSwapperAddress)
-    public
-    ERC721("Saddle Cross-Asset Swap", "SaddleSynthSwap")
+        public
+        ERC721("Saddle Cross-Asset Swap", "SaddleSynthSwap")
     {
         SYNTH_SWAPPER_MASTER = synthSwapperAddress;
         updateExchangerCache();
@@ -175,9 +175,9 @@ contract Bridge is ERC721 {
      * @return address of the proxy contract
      */
     function getProxyAddressFromTargetSynthKey(bytes32 synthKey)
-    public
-    view
-    returns (IERC20)
+        public
+        view
+        returns (IERC20)
     {
         return IERC20(Target(SYNTHETIX_RESOLVER.getSynth(synthKey)).proxy());
     }
@@ -194,15 +194,15 @@ contract Bridge is ERC721 {
      * tokenTo the address of the destination token
      */
     function getPendingSwapInfo(uint256 itemId)
-    external
-    view
-    returns (
-        PendingSwapType swapType,
-        uint256 secsLeft,
-        address synth,
-        uint256 synthBalance,
-        address tokenTo
-    )
+        external
+        view
+        returns (
+            PendingSwapType swapType,
+            uint256 secsLeft,
+            address synth,
+            uint256 synthBalance,
+            address tokenTo
+        )
     {
         swapType = pendingSwapType[itemId];
         require(swapType != PendingSwapType.Null, "invalid itemId");
@@ -217,14 +217,14 @@ contract Bridge is ERC721 {
             tokenTo = synth;
         } else {
             PendingToTokenSwap memory pendingToTokenSwap = pendingToTokenSwaps[
-            itemId
+                itemId
             ];
             synthSwapper = pendingToTokenSwap.swapper;
             synthKey = pendingToTokenSwap.synthKey;
             synth = address(getProxyAddressFromTargetSynthKey(synthKey));
             tokenTo = address(
                 swapContracts[address(pendingToTokenSwap.swap)].tokens[
-                pendingToTokenSwap.tokenToIndex
+                    pendingToTokenSwap.tokenToIndex
                 ]
             );
         }
@@ -257,7 +257,7 @@ contract Bridge is ERC721 {
             "invalid itemId"
         );
         PendingToTokenSwap memory pendingToTokenSwap = pendingToTokenSwaps[
-        itemId
+            itemId
         ];
         _settle(
             address(pendingToTokenSwap.swapper),
@@ -299,7 +299,7 @@ contract Bridge is ERC721 {
         );
 
         PendingToSynthSwap memory pendingToSynthSwap = pendingToSynthSwaps[
-        itemId
+            itemId
         ];
         _settle(
             address(pendingToSynthSwap.swapper),
@@ -345,9 +345,9 @@ contract Bridge is ERC721 {
      * @return expected amount of the token the user will receive
      */
     function calcCompleteToToken(uint256 itemId, uint256 swapAmount)
-    external
-    view
-    returns (uint256)
+        external
+        view
+        returns (uint256)
     {
         require(
             pendingSwapType[itemId] > PendingSwapType.TokenToSynth,
@@ -355,14 +355,14 @@ contract Bridge is ERC721 {
         );
 
         PendingToTokenSwap memory pendingToTokenSwap = pendingToTokenSwaps[
-        itemId
+            itemId
         ];
         return
-        pendingToTokenSwap.swap.calculateSwap(
-            getSynthIndex(pendingToTokenSwap.swap),
-            pendingToTokenSwap.tokenToIndex,
-            swapAmount
-        );
+            pendingToTokenSwap.swap.calculateSwap(
+                getSynthIndex(pendingToTokenSwap.swap),
+                pendingToTokenSwap.tokenToIndex,
+                swapAmount
+            );
     }
 
     /**
@@ -388,7 +388,7 @@ contract Bridge is ERC721 {
         );
 
         PendingToTokenSwap memory pendingToTokenSwap = pendingToTokenSwaps[
-        itemId
+            itemId
         ];
 
         _settle(
@@ -412,17 +412,17 @@ contract Bridge is ERC721 {
         // Try swapping the synth to the desired token via the stored swap pool contract
         // If the external call succeeds, send the token to the owner of token with itemId.
         (IERC20 tokenTo, uint256 amountOut) = pendingToTokenSwap
-        .swapper
-        .swapSynthToToken(
-            pendingToTokenSwap.swap,
-            synth,
-            getSynthIndex(pendingToTokenSwap.swap),
-            pendingToTokenSwap.tokenToIndex,
-            swapAmount,
-            minAmount,
-            deadline,
-            nftOwner
-        );
+            .swapper
+            .swapSynthToToken(
+                pendingToTokenSwap.swap,
+                synth,
+                getSynthIndex(pendingToTokenSwap.swap),
+                pendingToTokenSwap.tokenToIndex,
+                swapAmount,
+                minAmount,
+                deadline,
+                nftOwner
+            );
 
         if (shouldDestroyClone) {
             pendingToTokenSwap.swapper.destroy();
@@ -490,11 +490,11 @@ contract Bridge is ERC721 {
             SYNTHETIX_RESOLVER.getAddress(EXCHANGE_RATES_NAME)
         );
         return
-        exchangeRates.effectiveValue(
-            mediumSynthKey,
-            expectedMediumSynthAmount,
-            synthOutKey
-        );
+            exchangeRates.effectiveValue(
+                mediumSynthKey,
+                expectedMediumSynthAmount,
+                synthOutKey
+            );
     }
 
     /**
@@ -602,12 +602,12 @@ contract Bridge is ERC721 {
         );
 
         return (
-        expectedMediumSynthAmount,
-        swap.calculateSwap(
-            mediumSynthIndex,
-            tokenToIndex,
-            expectedMediumSynthAmount
-        )
+            expectedMediumSynthAmount,
+            swap.calculateSwap(
+                mediumSynthIndex,
+                tokenToIndex,
+                expectedMediumSynthAmount
+            )
         );
     }
 
@@ -656,7 +656,7 @@ contract Bridge is ERC721 {
         synthFrom.safeTransfer(address(synthSwapper), synthInAmount);
         require(
             synthSwapper.swapSynth(synthInKey, synthInAmount, mediumSynthKey) >=
-            minMediumSynthAmount,
+                minMediumSynthAmount,
             "minMediumSynthAmount not reached"
         );
 
@@ -707,12 +707,12 @@ contract Bridge is ERC721 {
         );
 
         return (
-        mediumSynthAmount,
-        swaps[1].calculateSwap(
-            getSynthIndex(swaps[1]),
-            tokenToIndex,
-            mediumSynthAmount
-        )
+            mediumSynthAmount,
+            swaps[1].calculateSwap(
+                getSynthIndex(swaps[1]),
+                tokenToIndex,
+                mediumSynthAmount
+            )
         );
     }
 
@@ -759,7 +759,7 @@ contract Bridge is ERC721 {
         ISwap swap = swaps[0];
         {
             IERC20 tokenFrom = swapContracts[address(swap)].tokens[
-            tokenFromIndex
+                tokenFromIndex
             ];
             tokenFrom.safeTransferFrom(
                 msg.sender,
@@ -817,7 +817,7 @@ contract Bridge is ERC721 {
     ) external {
         require(synthIndex < MAX_UINT8, "index is too large");
         SwapContractInfo storage swapContractInfo = swapContracts[
-        address(swap)
+            address(swap)
         ];
         // Check if the pool has already been added
         require(swapContractInfo.synthIndexPlusOne == 0, "Pool already added");
@@ -858,7 +858,7 @@ contract Bridge is ERC721 {
      */
     function getSynthIndex(ISwap swap) public view returns (uint8) {
         uint8 synthIndexPlusOne = swapContracts[address(swap)]
-        .synthIndexPlusOne;
+            .synthIndexPlusOne;
         require(synthIndexPlusOne > 0, "synth index not found for given pool");
         return synthIndexPlusOne - 1;
     }
