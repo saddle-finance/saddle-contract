@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 
 import "synthetix/contracts/interfaces/ISynthetix.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../interfaces/ISwap.sol";
 
 /**
@@ -12,10 +13,10 @@ import "../interfaces/ISwap.sol";
  * or Saddle's pools. The `Bridge.sol` contract will deploy minimal clones of this contract upon initiating
  * any cross-asset swaps.
  */
-contract SynthSwapper {
+contract SynthSwapper is Initializable {
     using SafeERC20 for IERC20;
 
-    address payable immutable owner;
+    address payable owner;
     // SYNTHETIX points to `ProxyERC20` (0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F).
     // This contract is a proxy of `Synthetix` and is used to exchange synths.
     ISynthetix public constant SYNTHETIX =
@@ -25,10 +26,26 @@ contract SynthSwapper {
         0x534144444c450000000000000000000000000000000000000000000000000000;
 
     /**
-     * @notice Deploys this contract and sets the `owner`. Note that when creating clones of this contract,
-     * the owner will be constant and cannot be changed.
+     * @notice Initializes the contract when deploying this directly. This prevents
+     * others from calling initialize() on the target contract and setting themself as the owner.
      */
     constructor() public {
+        initialize();
+    }
+
+    /**
+     * @notice This modifier checks if the caller is the owner
+     */
+    modifier onlyOwner() {
+        require(msg.sender == owner, "is not owner");
+        _;
+    }
+
+    /**
+     * @notice Sets the `owner` as the caller of this function
+     */
+    function initialize() public initializer {
+        require(owner == address(0), "owner already set");
         owner = msg.sender;
     }
 
@@ -43,8 +60,7 @@ contract SynthSwapper {
         bytes32 sourceKey,
         uint256 synthAmount,
         bytes32 destKey
-    ) external returns (uint256) {
-        require(msg.sender == owner, "is not owner");
+    ) external onlyOwner returns (uint256) {
         return
             SYNTHETIX.exchangeWithTracking(
                 sourceKey,
@@ -75,8 +91,7 @@ contract SynthSwapper {
         uint256 minAmount,
         uint256 deadline,
         address recipient
-    ) external returns (IERC20, uint256) {
-        require(msg.sender == owner, "is not owner");
+    ) external onlyOwner returns (IERC20, uint256) {
         tokenFrom.approve(address(swap), tokenFromAmount);
         swap.swap(
             tokenFromIndex,
@@ -103,8 +118,7 @@ contract SynthSwapper {
         address recipient,
         uint256 withdrawAmount,
         bool shouldDestroy
-    ) external {
-        require(msg.sender == owner, "is not owner");
+    ) external onlyOwner {
         token.safeTransfer(recipient, withdrawAmount);
         if (shouldDestroy) {
             _destroy();
@@ -114,8 +128,7 @@ contract SynthSwapper {
     /**
      * @notice Destroys this contract. Only owner can call this function.
      */
-    function destroy() external {
-        require(msg.sender == owner, "is not owner");
+    function destroy() external onlyOwner {
         _destroy();
     }
 

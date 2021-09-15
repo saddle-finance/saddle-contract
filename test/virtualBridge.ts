@@ -244,7 +244,11 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
 
       // Deploy Bridge contract
       const bridgeFactory = await ethers.getContractFactory("Bridge")
-      bridge = (await bridgeFactory.deploy()) as Bridge
+      bridge = (await bridgeFactory.deploy(
+        (
+          await ethers.getContract("SynthSwapper")
+        ).address,
+      )) as Bridge
 
       // Approve token transfer to Swap for adding liquidity and to Bridge for virtual swaps
       await asyncForEach(
