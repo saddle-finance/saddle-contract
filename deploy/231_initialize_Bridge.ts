@@ -48,5 +48,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["Bridge"]
-func.dependencies = ["SynthSwapper"]
+func.tags = ["InitializeBridge"]
+func.dependencies = ["Bridge", "SynthSwapper"]
