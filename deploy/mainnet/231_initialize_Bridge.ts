@@ -1,7 +1,7 @@
-import { CHAIN_ID } from "../utils/network"
+import { CHAIN_ID } from "../../utils/network"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { asyncForEach } from "../test/testUtils"
+import { asyncForEach } from "../../test/testUtils"
 import path from "path"
 import { utils } from "ethers"
 

@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers"
-import { isTestNetwork } from "../utils/network"
+import { isTestNetwork } from "../../utils/network"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 

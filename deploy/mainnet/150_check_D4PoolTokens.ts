@@ -1,7 +1,7 @@
 import { BigNumber } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { isTestNetwork } from "../utils/network"
+import { isTestNetwork } from "../../utils/network"
 
 const D4_TOKENS_ARGS: { [token: string]: any[] } = {
   ALUSD: ["Alchemix USD", "alUSD", "18"],
