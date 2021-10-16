@@ -23,6 +23,7 @@ let config: HardhatUserConfig = {
     mainnet: {
       url: process.env.ALCHEMY_API,
       gasPrice: 90 * 1000000000,
+      deploy: ["./deploy/mainnet/"],
     },
     ropsten: {
       url: process.env.ALCHEMY_API_ROPSTEN,
@@ -30,9 +31,23 @@ let config: HardhatUserConfig = {
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
+      deploy: ["./deploy/mainnet/"],
+    },
+    "arbitrum-testnet": {
+      url: "https://rinkeby.arbitrum.io/rpc",
+      accounts: {
+        mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
+      },
+      deploy: ["./deploy/arbitrum/"],
+    },
+    "arbitrum-mainnet": {
+      url: "https://arb1.arbitrum.io/rpc",
+      deploy: ["./deploy/arbitrum/"],
     },
   },
+  
   paths: {
+    sources: './contracts',
     artifacts: "./build/artifacts",
     cache: "./build/cache",
   },
