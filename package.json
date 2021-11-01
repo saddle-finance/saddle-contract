@@ -35,7 +35,7 @@
     "ethers": "^5.4.4",
     "ethlint": "^1.2.5",
     "hardhat": "^2.6.0",
-    "hardhat-deploy": "^0.7.11",
+    "hardhat-deploy": "^0.9.4",
     "hardhat-gas-reporter": "^1.0.4",
     "hardhat-spdx-license-identifier": "^2.0.3",
     "husky": "^7.0.1",
