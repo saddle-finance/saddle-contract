@@ -279,6 +279,8 @@ library MetaSwapUtils {
 
         if (tokenIndex == xp.length.sub(1)) {
             dy = dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
+            v.newY = v.newY.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
+            xp[tokenIndex] = xp[tokenIndex].mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
         }
         dy = dy.sub(1).div(self.tokenPrecisionMultipliers[tokenIndex]);
 
