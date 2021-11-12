@@ -412,9 +412,17 @@ library MetaSwapUtils {
             tokenIndexFrom < xp.length && tokenIndexTo < xp.length,
             "Token index out of range"
         );
-        uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]).add(
-            xp[tokenIndexFrom]
-        );
+        uint256 baseLPTokenIndex = xp.length.sub(1);
+
+        uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]);
+        if (tokenIndexFrom == baseLPTokenIndex) {
+            // When swapping from a base Swap token, scale up dx by its virtual price
+            x = x.mul(baseVirtualPrice).div(
+                BASE_VIRTUAL_PRICE_PRECISION
+            );
+        }
+        x = x.add(xp[tokenIndexFrom]);
+
         uint256 y = SwapUtils.getY(
             self._getAPrecise(),
             tokenIndexFrom,
@@ -424,7 +432,15 @@ library MetaSwapUtils {
         );
         dy = xp[tokenIndexTo].sub(y).sub(1);
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
-        dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
+        dy = dy.sub(dyFee);
+
+        if (tokenIndexTo == baseLPTokenIndex) {
+            // When swapping to a base Swap token, scale down dy by its virtual price
+            dy = dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
+                baseVirtualPrice
+            );
+        }
+        dy = dy.div(self.tokenPrecisionMultipliers[tokenIndexTo]);
     }
 
     /**
