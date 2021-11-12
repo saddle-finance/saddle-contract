@@ -499,8 +499,12 @@ library MetaSwapUtils {
                     .baseSwap
                     .calculateTokenAmount(baseInputs, true)
                     .mul(v.baseVirtualPrice)
-                    .div(BASE_VIRTUAL_PRICE_PRECISION)
-                    .add(xp[v.baseLPTokenIndex]);
+                    .div(BASE_VIRTUAL_PRICE_PRECISION);
+                // when adding to the base pool,you pay approx 50% of the swap fee
+                v.x = v.x.sub(
+                    v.x.mul(metaSwapStorage.baseSwap.getSwapFee())
+                    .div(2 * FEE_DENOMINATOR)
+                ).add(xp[v.baseLPTokenIndex]);
             } else {
                 // both from and to are from the base pool
                 return
