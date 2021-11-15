@@ -18,7 +18,7 @@ let config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-      hardfork: process.env.CODE_COVERAGE ? "berlin" : "london",
+      deploy: ["./deploy/mainnet/"],
     },
     mainnet: {
       url: process.env.ALCHEMY_API,
@@ -45,9 +45,8 @@ let config: HardhatUserConfig = {
       deploy: ["./deploy/arbitrum/"],
     },
   },
-  
   paths: {
-    sources: './contracts',
+    sources: "./contracts",
     artifacts: "./build/artifacts",
     cache: "./build/cache",
   },
