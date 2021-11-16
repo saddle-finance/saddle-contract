@@ -33,15 +33,16 @@ let config: HardhatUserConfig = {
       },
       deploy: ["./deploy/mainnet/"],
     },
-    "arbitrum-testnet": {
+    arbitrum_testnet: {
       url: "https://rinkeby.arbitrum.io/rpc",
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
       deploy: ["./deploy/arbitrum/"],
     },
-    "arbitrum-mainnet": {
+    arbitrum_mainnet: {
       url: "https://arb1.arbitrum.io/rpc",
+      gasPrice: ethers.utils.parseUnits("2", "gwei").toNumber(),
       deploy: ["./deploy/arbitrum/"],
     },
   },
@@ -104,6 +105,10 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
     ...config.networks,
     mainnet: {
       ...config.networks?.mainnet,
+      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
+    },
+    arbitrum_mainnet: {
+      ...config.networks?.arbitrum_mainnet,
       accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
     },
   }
