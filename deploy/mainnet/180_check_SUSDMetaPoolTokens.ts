@@ -1,10 +1,10 @@
-import { BigNumber } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { isTestNetwork } from "../utils/network"
+import { isTestNetwork } from "../../utils/network"
+import { BigNumber } from "ethers"
 
 const USD_TOKENS_ARGS: { [token: string]: any[] } = {
-  WCUSD: ["Wrapped Celo USD", "wCUSD", "18"],
+  SUSD: ["Synth sUSD", "sUSD", "18"],
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -34,5 +34,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["WCUSDMetaPoolTokens"]
+func.tags = ["SUSDMetaPoolTokens"]
 func.dependencies = ["USDPoolV2"]

@@ -1,11 +1,13 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { DeployFunction } from "hardhat-deploy/types"
-import { isTestNetwork } from "../utils/network"
 import { BigNumber } from "ethers"
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { isTestNetwork } from "../../utils/network"
 
-const VETH2_TOKENS_ARGS: { [token: string]: any[] } = {
-  WETH: ["Wrapped Ether", "WETH", "18"],
-  VETH2: ["validator-Eth2", "vETH2", "18"],
+const D4_TOKENS_ARGS: { [token: string]: any[] } = {
+  ALUSD: ["Alchemix USD", "alUSD", "18"],
+  FEI: ["Fei Protocol", "FEI", "18"],
+  FRAX: ["Frax", "FRAX", "18"],
+  LUSD: ["Liquity USD", "LUSD", "18"],
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -13,17 +15,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, execute } = deployments
   const { deployer } = await getNamedAccounts()
 
-  for (const token in VETH2_TOKENS_ARGS) {
+  for (const token in D4_TOKENS_ARGS) {
     await deploy(token, {
       from: deployer,
       log: true,
       contract: "GenericERC20",
-      args: VETH2_TOKENS_ARGS[token],
+      args: D4_TOKENS_ARGS[token],
       skipIfAlreadyDeployed: true,
     })
     // If it's on hardhat, mint test tokens
     if (isTestNetwork(await getChainId())) {
-      const decimals = VETH2_TOKENS_ARGS[token][2]
+      const decimals = D4_TOKENS_ARGS[token][2]
       await execute(
         token,
         { from: deployer, log: true },
@@ -35,4 +37,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["VETH2PoolTokens"]
+func.tags = ["D4PoolTokens"]
