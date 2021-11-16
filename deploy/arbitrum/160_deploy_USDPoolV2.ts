@@ -1,5 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
+import { ARBITRUM_MULTISIG_ADDRESS } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
@@ -54,6 +55,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     abi: (await get("LPToken")).abi, // LPToken ABI
     address: lpTokenAddress,
   })
+
+  await execute(
+    "SaddleArbUSDPool",
+    { from: deployer, log: true },
+    "transferOwnership",
+    ARBITRUM_MULTISIG_ADDRESS,
+  )
 }
 export default func
 func.tags = ["SaddleArbUSDPool"]
