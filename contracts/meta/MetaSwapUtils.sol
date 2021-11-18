@@ -440,10 +440,12 @@ library MetaSwapUtils {
                 baseVirtualPrice
             );
         }
-        dy = dy.div(self.tokenPrecisionMultipliers[tokenIndexTo]);
 
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
         dy = dy.sub(dyFee);
+
+        dyFee = dyFee.div(self.tokenPrecisionMultipliers[tokenIndexTo]);
+        dy = dy.div(self.tokenPrecisionMultipliers[tokenIndexTo]);
     }
 
     /**
