@@ -444,7 +444,6 @@ library MetaSwapUtils {
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
         dy = dy.sub(dyFee);
 
-        dyFee = dyFee.div(self.tokenPrecisionMultipliers[tokenIndexTo]);
         dy = dy.div(self.tokenPrecisionMultipliers[tokenIndexTo]);
     }
 
@@ -671,7 +670,9 @@ library MetaSwapUtils {
         );
         require(dy >= minDy, "Swap didn't result in min tokens");
 
-        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR);
+        uint256 dyAdminFee = dyFee.mul(self.adminFee).div(FEE_DENOMINATOR).div(
+            self.tokenPrecisionMultipliers[tokenIndexTo]
+        );
 
         self.balances[tokenIndexFrom] = self.balances[tokenIndexFrom].add(
             transferredDx
