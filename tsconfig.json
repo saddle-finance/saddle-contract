@@ -9,8 +9,8 @@
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["./scripts", "./build/typechain"],
+  "include": ["./deploy", "./test", "./scripts", "./build/typechain"],
   "files": [
-    "./hardhat.config.ts"
+    "./hardhat.config.ts",
   ]
 }
