@@ -1,16 +1,10 @@
 import { BigNumber, Signer, Wallet } from "ethers"
 import {
   MAX_UINT256,
-  TIME,
-  ZERO_ADDRESS,
   asyncForEach,
   deployContractWithLibraries,
-  getCurrentBlockTimestamp,
   getUserTokenBalance,
   getUserTokenBalances,
-  setNextTimestamp,
-  setTimestamp,
-  forceAdvanceOneBlock,
 } from "./testUtils"
 import { deployContract, solidity } from "ethereum-waffle"
 import { deployments } from "hardhat"
@@ -52,7 +46,7 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
 
   // Test Values
   const INITIAL_A_VALUE = 2000
-  const SWAP_FEE = 4e6  // 0.04%
+  const SWAP_FEE = 4e6 // 0.04%
   const ADMIN_FEE = 0 // 0%
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
@@ -156,17 +150,11 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
 
       // Let's do some swaps to inflate base pool virtual price
       for (let index = 0; index < 100; index++) {
-        await baseSwap
-          .connect(user1)
-          .swap(0, 1, String(1e20), 0, MAX_UINT256)
+        await baseSwap.connect(user1).swap(0, 1, String(1e20), 0, MAX_UINT256)
 
-        await baseSwap
-          .connect(user1)
-          .swap(1, 2, String(1e8), 0, MAX_UINT256)
+        await baseSwap.connect(user1).swap(1, 2, String(1e8), 0, MAX_UINT256)
 
-        await baseSwap
-          .connect(user1)
-          .swap(2, 0, String(1e8), 0, MAX_UINT256)
+        await baseSwap.connect(user1).swap(2, 0, String(1e8), 0, MAX_UINT256)
       }
 
       // that should be inflated enough
@@ -241,29 +229,33 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
   describe("addLiquidity", () => {
     it("Virtual price doesn't decrease after depositing only susd", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwap
-        .addLiquidity([String(AMOUNT), 0], 0, MAX_UINT256)
+      await metaSwap.addLiquidity([String(AMOUNT), 0], 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
     it("Virtual price doesn't decrease after depositing only baseLPToken", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwap
-        .addLiquidity([0, String(AMOUNT)], 0, MAX_UINT256)
+      await metaSwap.addLiquidity([0, String(AMOUNT)], 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
     it("Virtual price doesn't decrease after depositing only susd via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwapDeposit
-        .addLiquidity([String(AMOUNT), 0, 0, 0], 0, MAX_UINT256)
+      await metaSwapDeposit.addLiquidity(
+        [String(AMOUNT), 0, 0, 0],
+        0,
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
     it("Virtual price doesn't decrease after depositing only dai via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwapDeposit
-        .addLiquidity([0, String(AMOUNT), 0, 0], 0, MAX_UINT256)
+      await metaSwapDeposit.addLiquidity(
+        [0, String(AMOUNT), 0, 0],
+        0,
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
   })
@@ -277,89 +269,126 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
 
     it("Virtual price doesn't decrease after removeLiquidity via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwapDeposit.removeLiquidity(String(AMOUNT), [0, 0, 0, 0], MAX_UINT256)
+      await metaSwapDeposit.removeLiquidity(
+        String(AMOUNT),
+        [0, 0, 0, 0],
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
   })
 
   describe("removeLiquidityImbalance", () => {
-    it("Virtual price doesn't decrease after removeLiquidityImbalance susd", async() => {
+    it("Virtual price doesn't decrease after removeLiquidityImbalance susd", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwap.removeLiquidityImbalance([String(AMOUNT), 0], String(2 * AMOUNT), MAX_UINT256)
+      await metaSwap.removeLiquidityImbalance(
+        [String(AMOUNT), 0],
+        String(2 * AMOUNT),
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after removeLiquidityImbalance baseLPToken", async() => {
+    it("Virtual price doesn't decrease after removeLiquidityImbalance baseLPToken", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwap.removeLiquidityImbalance([0, String(AMOUNT)], String(2 * AMOUNT), MAX_UINT256)
+      await metaSwap.removeLiquidityImbalance(
+        [0, String(AMOUNT)],
+        String(2 * AMOUNT),
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after removeLiquidityImbalance susd via MetaSwapDeposit", async() => {
+    it("Virtual price doesn't decrease after removeLiquidityImbalance susd via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwapDeposit.removeLiquidityImbalance([String(AMOUNT), 0, 0, 0], String(2 * AMOUNT), MAX_UINT256)
+      await metaSwapDeposit.removeLiquidityImbalance(
+        [String(AMOUNT), 0, 0, 0],
+        String(2 * AMOUNT),
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after removeLiquidityImbalance dai via MetaSwapDeposit", async() => {
+    it("Virtual price doesn't decrease after removeLiquidityImbalance dai via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwapDeposit.removeLiquidityImbalance([0, String(AMOUNT), 0, 0], String(2 * AMOUNT), MAX_UINT256)
+      await metaSwapDeposit.removeLiquidityImbalance(
+        [0, String(AMOUNT), 0, 0],
+        String(2 * AMOUNT),
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
   })
 
   describe("removeLiquidityOneToken", () => {
-    it("Virtual price doesn't decrease after removeLiquidityOneToken susd", async() => {
+    it("Virtual price doesn't decrease after removeLiquidityOneToken susd", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.removeLiquidityOneToken(String(AMOUNT), 0, 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after removeLiquidityOneToken baseLPToken", async() => {
+    it("Virtual price doesn't decrease after removeLiquidityOneToken baseLPToken", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.removeLiquidityOneToken(String(AMOUNT), 1, 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after removeLiquidityOneToken susd via MetaSwapDeposit", async() => {
+    it("Virtual price doesn't decrease after removeLiquidityOneToken susd via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwapDeposit.removeLiquidityOneToken(String(AMOUNT), 0, 0, MAX_UINT256)
+      await metaSwapDeposit.removeLiquidityOneToken(
+        String(AMOUNT),
+        0,
+        0,
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after removeLiquidityOneToken dai via MetaSwapDeposit", async() => {
+    it("Virtual price doesn't decrease after removeLiquidityOneToken dai via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwapDeposit.removeLiquidityOneToken(String(AMOUNT), 1, 0, MAX_UINT256)
+      await metaSwapDeposit.removeLiquidityOneToken(
+        String(AMOUNT),
+        1,
+        0,
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
   })
 
   describe("swap", () => {
-    it("Virtual price doesn't decrease after swap susd -> baseLPToken", async() => {
+    it("Virtual price doesn't decrease after swap susd -> baseLPToken", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.swap(0, 1, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after swap baseLPToken -> susd", async() => {
+    it("Virtual price doesn't decrease after swap baseLPToken -> susd", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.swap(1, 0, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("susd -> baseLPToken -> susd: outcome not great not terrible", async() => {
+    it("susd -> baseLPToken -> susd: outcome not great not terrible", async () => {
       const [tokenFromBalanceBefore, tokenToBalanceBefore] =
         await getUserTokenBalances(user1, [susd, baseLPToken])
 
+      await metaSwap.connect(user1).swap(0, 1, String(AMOUNT), 0, MAX_UINT256)
+
+      const tokenToBalanceAfterFirst = await getUserTokenBalance(
+        user1,
+        baseLPToken,
+      )
+
       await metaSwap
         .connect(user1)
-        .swap(0, 1, String(AMOUNT), 0, MAX_UINT256)
-
-      const tokenToBalanceAfterFirst = await getUserTokenBalance(user1, baseLPToken)
-
-      await metaSwap
-        .connect(user1)
-        .swap(1, 0, String(tokenToBalanceAfterFirst.sub(tokenToBalanceBefore)), 0, MAX_UINT256)
+        .swap(
+          1,
+          0,
+          String(tokenToBalanceAfterFirst.sub(tokenToBalanceBefore)),
+          0,
+          MAX_UINT256,
+        )
 
       const [tokenFromBalanceAfterSecond, tokenToBalanceAfterSecond] =
         await getUserTokenBalances(user1, [susd, baseLPToken])
@@ -370,7 +399,10 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
       // can't get more than we started with
       expect(tokenFromBalanceAfterSecond).to.lt(tokenFromBalanceBefore)
 
-      const lossBP = tokenFromBalanceBefore.sub(tokenFromBalanceAfterSecond).mul(10000).div(String(AMOUNT))
+      const lossBP = tokenFromBalanceBefore
+        .sub(tokenFromBalanceAfterSecond)
+        .mul(10000)
+        .div(String(AMOUNT))
 
       // two small swaps should not result in more than 0.1% loss
       expect(lossBP).to.lt(10)
@@ -378,31 +410,31 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
   })
 
   describe("swapUnderlying", () => {
-    it("Virtual price doesn't decrease after swapUnderlying susd -> dai", async() => {
+    it("Virtual price doesn't decrease after swapUnderlying susd -> dai", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.swapUnderlying(0, 1, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after swapUnderlying dai -> susd", async() => {
+    it("Virtual price doesn't decrease after swapUnderlying dai -> susd", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.swapUnderlying(1, 0, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after swap susd -> dai via MetaSwapDeposit", async() => {
+    it("Virtual price doesn't decrease after swap susd -> dai via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwapDeposit.swap(0, 1, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("Virtual price doesn't decrease after swap dai -> susd via MetaSwapDeposit", async() => {
+    it("Virtual price doesn't decrease after swap dai -> susd via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwapDeposit.swap(1, 0, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
     })
 
-    it("susd -> dai -> susd: outcome not great not terrible", async() => {
+    it("susd -> dai -> susd: outcome not great not terrible", async () => {
       const [tokenFromBalanceBefore, tokenToBalanceBefore] =
         await getUserTokenBalances(user1, [susd, dai])
 
@@ -414,7 +446,13 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
 
       await metaSwap
         .connect(user1)
-        .swapUnderlying(1, 0, String(tokenToBalanceAfterFirst.sub(tokenToBalanceBefore)), 0, MAX_UINT256)
+        .swapUnderlying(
+          1,
+          0,
+          String(tokenToBalanceAfterFirst.sub(tokenToBalanceBefore)),
+          0,
+          MAX_UINT256,
+        )
 
       const [tokenFromBalanceAfterSecond, tokenToBalanceAfterSecond] =
         await getUserTokenBalances(user1, [susd, dai])
@@ -425,11 +463,13 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
       // can't get more than we started with
       expect(tokenFromBalanceAfterSecond).to.lt(tokenFromBalanceBefore)
 
-      const lossBP = tokenFromBalanceBefore.sub(tokenFromBalanceAfterSecond).mul(10000).div(String(AMOUNT))
+      const lossBP = tokenFromBalanceBefore
+        .sub(tokenFromBalanceAfterSecond)
+        .mul(10000)
+        .div(String(AMOUNT))
 
       // two small swaps should not result in more than 0.15% loss
       expect(lossBP).to.lt(15)
     })
-
   })
 })

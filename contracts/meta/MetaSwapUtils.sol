@@ -279,8 +279,12 @@ library MetaSwapUtils {
 
         if (tokenIndex == xp.length.sub(1)) {
             dy = dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
-            v.newY = v.newY.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
-            xp[tokenIndex] = xp[tokenIndex].mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
+            v.newY = v.newY.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
+                baseVirtualPrice
+            );
+            xp[tokenIndex] = xp[tokenIndex]
+                .mul(BASE_VIRTUAL_PRICE_PRECISION)
+                .div(baseVirtualPrice);
         }
         dy = dy.sub(1).div(self.tokenPrecisionMultipliers[tokenIndex]);
 
@@ -419,9 +423,7 @@ library MetaSwapUtils {
         uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]);
         if (tokenIndexFrom == baseLPTokenIndex) {
             // When swapping from a base Swap token, scale up dx by its virtual price
-            x = x.mul(baseVirtualPrice).div(
-                BASE_VIRTUAL_PRICE_PRECISION
-            );
+            x = x.mul(baseVirtualPrice).div(BASE_VIRTUAL_PRICE_PRECISION);
         }
         x = x.add(xp[tokenIndexFrom]);
 
@@ -436,9 +438,7 @@ library MetaSwapUtils {
 
         if (tokenIndexTo == baseLPTokenIndex) {
             // When swapping to a base Swap token, scale down dy by its virtual price
-            dy = dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
-                baseVirtualPrice
-            );
+            dy = dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
         }
 
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
@@ -503,10 +503,14 @@ library MetaSwapUtils {
                     .mul(v.baseVirtualPrice)
                     .div(BASE_VIRTUAL_PRICE_PRECISION);
                 // when adding to the base pool,you pay approx 50% of the swap fee
-                v.x = v.x.sub(
-                    v.x.mul(metaSwapStorage.baseSwap.getSwapFee())
-                    .div(2 * FEE_DENOMINATOR)
-                ).add(xp[v.baseLPTokenIndex]);
+                v.x = v
+                    .x
+                    .sub(
+                        v.x.mul(metaSwapStorage.baseSwap.getSwapFee()).div(
+                            2 * FEE_DENOMINATOR
+                        )
+                    )
+                    .add(xp[v.baseLPTokenIndex]);
             } else {
                 // both from and to are from the base pool
                 return
