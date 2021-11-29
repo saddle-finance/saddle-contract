@@ -213,14 +213,6 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Get the swap fee
-     * @return the swap fee, scaled to the FEE_DENOMINATOR
-     */
-    function getSwapFee() external view virtual returns (uint256) {
-        return swapStorage.swapFee;
-    }
-
-    /**
      * @notice Return address of the pooled token at given index. Reverts if tokenIndex is out of range.
      * @param index the index of the token
      * @return address of the token at given index

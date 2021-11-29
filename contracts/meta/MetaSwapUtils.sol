@@ -156,6 +156,14 @@ library MetaSwapUtils {
         return metaSwapStorage.baseVirtualPrice;
     }
 
+    function _getBaseSwapFee(ISwap baseSwap)
+        internal
+        view
+        returns (uint256 swapFee)
+    {
+        (, , , , swapFee, , ) = baseSwap.swapStorage();
+    }
+
     /**
      * @notice Calculate how much the user would receive when withdrawing via single token
      * @param self Swap struct to read from
@@ -506,7 +514,7 @@ library MetaSwapUtils {
                 v.x = v
                     .x
                     .sub(
-                        v.x.mul(metaSwapStorage.baseSwap.getSwapFee()).div(
+                        v.x.mul(_getBaseSwapFee(metaSwapStorage.baseSwap)).div(
                             2 * FEE_DENOMINATOR
                         )
                     )

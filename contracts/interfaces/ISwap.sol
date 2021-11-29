@@ -11,8 +11,6 @@ interface ISwap {
 
     function getAllowlist() external view returns (IAllowlist);
 
-    function getSwapFee() external view virtual returns (uint256);
-
     function getToken(uint8 index) external view returns (IERC20);
 
     function getTokenIndex(address tokenAddress) external view returns (uint8);
@@ -22,6 +20,19 @@ interface ISwap {
     function getVirtualPrice() external view returns (uint256);
 
     function isGuarded() external view returns (bool);
+
+    function swapStorage()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            address
+        );
 
     // min return calculation functions
     function calculateSwap(
