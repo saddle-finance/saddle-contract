@@ -12,7 +12,7 @@
     "@openzeppelin/contracts": "3.4.1",
     "@openzeppelin/contracts-upgradeable": "^3.4.1",
     "dotenv": "^10.0.0",
-    "synthetix": "2.45.2"
+    "synthetix": "2.54.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.10",
