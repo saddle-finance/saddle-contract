@@ -357,16 +357,55 @@ describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async ()
   })
 
   describe("swap", () => {
+    const expectedAdminFeeValueBaseLPToken = BigNumber.from(2e13)
+    const expectedAdminFeeValueSUSD = BigNumber.from(String(AMOUNT))
+      .mul(INFLATED_VP)
+      .div(String(1e18))
+      .mul(2e14)
+      .div(String(1e18))
+
     it("Virtual price doesn't decrease after swap susd -> baseLPToken", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.swap(0, 1, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      // We expect the increase in admin balance of base LP token to be valued at
+      // swap value * 50% * 0.04%
+      // Since the values aren't exact due to approximations, we test against +-0.01% delta
+      const adminFeeValue = (await metaSwap.getAdminBalance(1))
+        .mul(INFLATED_VP)
+        .div(String(1e18))
+      expect(adminFeeValue)
+        .gte(
+          expectedAdminFeeValueBaseLPToken
+            .mul(String(9999e14))
+            .div(String(1e18)),
+        )
+        .and.lte(
+          expectedAdminFeeValueBaseLPToken
+            .mul(String(10001e14))
+            .div(String(1e18)),
+        )
+      console.log(
+        `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueBaseLPToken}`,
+      )
     })
 
     it("Virtual price doesn't decrease after swap baseLPToken -> susd", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.swap(1, 0, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      // We expect the increase in admin balance of susd to be valued at
+      // swap value * 50% * 0.04%
+      // Since the values aren't exact due to approximations, we test against +-0.05% delta
+      const adminFeeValue = await metaSwap.getAdminBalance(0)
+      expect(adminFeeValue)
+        .gte(expectedAdminFeeValueSUSD.mul(String(9999e14)).div(String(1e18)))
+        .and.lte(
+          expectedAdminFeeValueSUSD.mul(String(10001e14)).div(String(1e18)),
+        )
+      console.log(
+        `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueSUSD}`,
+      )
     })
 
     it("susd -> baseLPToken -> susd: outcome not great not terrible", async () => {
@@ -410,28 +449,87 @@ describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async ()
   })
 
   describe("swapUnderlying", () => {
+    const expectedAdminFeeValueBaseLPToken = BigNumber.from(2e13)
+    const expectedAdminFeeValueSUSD = BigNumber.from(String(AMOUNT))
+      .mul(INFLATED_VP)
+      .div(String(1e18))
+      .mul(2e14)
+      .div(String(1e18))
+
     it("Virtual price doesn't decrease after swapUnderlying susd -> dai", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.swapUnderlying(0, 1, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      const adminFeeValue = (await metaSwap.getAdminBalance(1))
+        .mul(INFLATED_VP)
+        .div(String(1e18))
+      expect(adminFeeValue)
+        .gte(
+          expectedAdminFeeValueBaseLPToken
+            .mul(String(9999e14))
+            .div(String(1e18)),
+        )
+        .and.lte(
+          expectedAdminFeeValueBaseLPToken
+            .mul(String(10001e14))
+            .div(String(1e18)),
+        )
+      console.log(
+        `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueBaseLPToken}`,
+      )
     })
 
     it("Virtual price doesn't decrease after swapUnderlying dai -> susd", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.swapUnderlying(1, 0, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      const adminFeeValue = await metaSwap.getAdminBalance(0)
+      expect(adminFeeValue)
+        .gte(expectedAdminFeeValueSUSD.mul(String(9999e14)).div(String(1e18)))
+        .and.lte(
+          expectedAdminFeeValueSUSD.mul(String(10001e14)).div(String(1e18)),
+        )
+      console.log(
+        `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueSUSD}`,
+      )
     })
 
     it("Virtual price doesn't decrease after swap susd -> dai via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwapDeposit.swap(0, 1, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      const adminFeeValue = (await metaSwap.getAdminBalance(1))
+        .mul(INFLATED_VP)
+        .div(String(1e18))
+      expect(adminFeeValue)
+        .gte(
+          expectedAdminFeeValueBaseLPToken
+            .mul(String(9999e14))
+            .div(String(1e18)),
+        )
+        .and.lte(
+          expectedAdminFeeValueBaseLPToken
+            .mul(String(10001e14))
+            .div(String(1e18)),
+        )
+      console.log(
+        `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueBaseLPToken}`,
+      )
     })
 
     it("Virtual price doesn't decrease after swap dai -> susd via MetaSwapDeposit", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwapDeposit.swap(1, 0, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      const adminFeeValue = await metaSwap.getAdminBalance(0)
+      expect(adminFeeValue)
+        .gte(expectedAdminFeeValueSUSD.mul(String(9999e14)).div(String(1e18)))
+        .and.lte(
+          expectedAdminFeeValueSUSD.mul(String(10001e14)).div(String(1e18)),
+        )
+      console.log(
+        `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueSUSD}`,
+      )
     })
 
     it("susd -> dai -> susd: outcome not great not terrible", async () => {

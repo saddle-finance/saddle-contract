@@ -793,7 +793,7 @@ library MetaSwapUtils {
                     dx.mul(v.tokenPrecisionMultipliers[tokenIndexFrom])
                 );
             } else {
-                // Swapping from a base Swap token
+                // Swapping from one of the tokens hosted in the base Swap
                 // This case requires adding the underlying token to the base Swap, then
                 // using the base LP token to swap to the desired token
                 uint256[] memory baseAmounts = new uint256[](
@@ -801,7 +801,7 @@ library MetaSwapUtils {
                 );
                 baseAmounts[tokenIndexFrom - baseLPTokenIndex] = v.dx;
 
-                // Add liquidity to the underlying Swap contract and receive base LP token
+                // Add liquidity to the base Swap contract and receive base LP token
                 v.dx = baseSwap.addLiquidity(baseAmounts, 0, block.timestamp);
 
                 // Calculate the value of total amount of baseLPToken we end up with
@@ -823,16 +823,15 @@ library MetaSwapUtils {
                     xp
                 );
                 v.dy = xp[v.metaIndexTo].sub(y).sub(1);
+                if (tokenIndexTo >= baseLPTokenIndex) {
+                    // When swapping to a base Swap token, scale down dy by its virtual price
+                    v.dy = v.dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
+                        v.baseVirtualPrice
+                    );
+                }
                 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
                 v.dy = v.dy.sub(dyFee).div(
                     v.tokenPrecisionMultipliers[v.metaIndexTo]
-                );
-            }
-
-            if (tokenIndexTo >= baseLPTokenIndex) {
-                // When swapping to a base Swap token, scale down dy by its virtual price
-                v.dy = v.dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
-                    v.baseVirtualPrice
                 );
             }
 
