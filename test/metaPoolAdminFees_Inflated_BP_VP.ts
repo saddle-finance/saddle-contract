@@ -476,7 +476,11 @@ describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async ()
 
     it("Virtual price doesn't decrease after swapUnderlying dai -> susd", async () => {
       const expectedDepositedBaseLpTokenAmount =
-        await baseSwap.callStatic.addLiquidity([String(AMOUNT), 0, 0], 0, MAX_UINT256)
+        await baseSwap.callStatic.addLiquidity(
+          [String(AMOUNT), 0, 0],
+          0,
+          MAX_UINT256,
+        )
       const expectedSwapValue = expectedDepositedBaseLpTokenAmount
         .mul(INFLATED_VP)
         .div(String(1e18))
@@ -523,7 +527,11 @@ describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async ()
 
     it("Virtual price doesn't decrease after swap dai -> susd via MetaSwapDeposit", async () => {
       const expectedDepositedBaseLpTokenAmount =
-        await baseSwap.callStatic.addLiquidity([String(AMOUNT), 0, 0], 0, MAX_UINT256)
+        await baseSwap.callStatic.addLiquidity(
+          [String(AMOUNT), 0, 0],
+          0,
+          MAX_UINT256,
+        )
       const expectedSwapValue = expectedDepositedBaseLpTokenAmount
         .mul(INFLATED_VP)
         .div(String(1e18))
