@@ -450,11 +450,6 @@ describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async ()
 
   describe("swapUnderlying", () => {
     const expectedAdminFeeValueBaseLPToken = BigNumber.from(2e13)
-    const expectedAdminFeeValueSUSD = BigNumber.from(String(AMOUNT))
-      .mul(INFLATED_VP)
-      .div(String(1e18))
-      .mul(2e14)
-      .div(String(1e18))
 
     it("Virtual price doesn't decrease after swapUnderlying susd -> dai", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
@@ -480,6 +475,15 @@ describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async ()
     })
 
     it("Virtual price doesn't decrease after swapUnderlying dai -> susd", async () => {
+      const expectedDepositedBaseLpTokenAmount =
+        await baseSwap.callStatic.addLiquidity([String(AMOUNT), 0, 0], 0, MAX_UINT256)
+      const expectedSwapValue = expectedDepositedBaseLpTokenAmount
+        .mul(INFLATED_VP)
+        .div(String(1e18))
+      const expectedAdminFeeValueSUSD = expectedSwapValue
+        .mul(2e14)
+        .div(String(1e18))
+
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwap.swapUnderlying(1, 0, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
@@ -518,6 +522,15 @@ describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async ()
     })
 
     it("Virtual price doesn't decrease after swap dai -> susd via MetaSwapDeposit", async () => {
+      const expectedDepositedBaseLpTokenAmount =
+        await baseSwap.callStatic.addLiquidity([String(AMOUNT), 0, 0], 0, MAX_UINT256)
+      const expectedSwapValue = expectedDepositedBaseLpTokenAmount
+        .mul(INFLATED_VP)
+        .div(String(1e18))
+      const expectedAdminFeeValueSUSD = expectedSwapValue
+        .mul(2e14)
+        .div(String(1e18))
+
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
       await metaSwapDeposit.swap(1, 0, String(AMOUNT), 0, MAX_UINT256)
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
