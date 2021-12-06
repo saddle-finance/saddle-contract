@@ -358,11 +358,6 @@ describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async ()
 
   describe("swap", () => {
     const expectedAdminFeeValueBaseLPToken = BigNumber.from(2e13)
-    const expectedAdminFeeValueSUSD = BigNumber.from(String(AMOUNT))
-      .mul(INFLATED_VP)
-      .div(String(1e18))
-      .mul(2e14)
-      .div(String(1e18))
 
     it("Virtual price doesn't decrease after swap susd -> baseLPToken", async () => {
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
@@ -391,8 +386,28 @@ describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async ()
     })
 
     it("Virtual price doesn't decrease after swap baseLPToken -> susd", async () => {
+      const expectedDepositedBaseLpTokenAmount =
+        await baseSwap.callStatic.addLiquidity(
+          [String(AMOUNT), 0, 0],
+          0,
+          MAX_UINT256,
+        )
+
+      const expectedSwapValue = expectedDepositedBaseLpTokenAmount
+        .mul(INFLATED_VP)
+        .div(String(1e18))
+      const expectedAdminFeeValueSUSD = expectedSwapValue
+        .mul(2e14)
+        .div(String(1e18))
+
       const virtualPriceBefore = await metaSwap.getVirtualPrice()
-      await metaSwap.swap(1, 0, String(AMOUNT), 0, MAX_UINT256)
+      await metaSwap.swap(
+        1,
+        0,
+        expectedDepositedBaseLpTokenAmount,
+        0,
+        MAX_UINT256,
+      )
       expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
       // We expect the increase in admin balance of susd to be valued at
       // swap value * 50% * 0.04%
