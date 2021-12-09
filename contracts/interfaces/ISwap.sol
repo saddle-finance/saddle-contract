@@ -21,6 +21,19 @@ interface ISwap {
 
     function isGuarded() external view returns (bool);
 
+    function swapStorage()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            address
+        );
+
     // min return calculation functions
     function calculateSwap(
         uint8 tokenIndexFrom,

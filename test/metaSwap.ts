@@ -1286,13 +1286,14 @@ describe("Meta-Swap", async () => {
           0,
           String(1e5),
         )
-        expect(calculatedSwapReturn).to.eq(BigNumber.from("99702556568987205"))
+        // this estimation works way better, doesn't it?
+        expect(calculatedSwapReturn).to.eq(BigNumber.from("99682656211218516"))
 
         // Calculating swapping from a base token to a meta level token
-        // does not account for base pool's swap fees
+        // could be wrong by about half of the base pool swap fee, i.e. 0.02% in this example
         const minReturnWithNegativeSlippage = calculatedSwapReturn
-          .mul(999)
-          .div(1000)
+          .mul(9998)
+          .div(10000)
 
         const [tokenFromBalanceBefore, tokenToBalanceBefore] =
           await getUserTokenBalances(user1, [usdc, susd])
