@@ -515,7 +515,7 @@ library MetaSwapUtils {
                     .x
                     .sub(
                         v.x.mul(_getBaseSwapFee(metaSwapStorage.baseSwap)).div(
-                            2 * FEE_DENOMINATOR
+                            FEE_DENOMINATOR.mul(2)
                         )
                     )
                     .add(xp[v.baseLPTokenIndex]);
