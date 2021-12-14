@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./interfaces/ISwap.sol";
+import "./helper/BaseBoringBatchable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -13,41 +14,46 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * Users can use this contract to remove their liquidity from the old pools and add them to the new
  * ones with a single transaction.
  */
-contract GeneralizedSwapMigrator is Ownable {
+contract GeneralizedSwapMigrator is Ownable, BaseBoringBatchable {
     using SafeERC20 for IERC20;
 
     struct MigrationData {
+        address newPoolAddress;
         IERC20 oldPoolLPTokenAddress;
         IERC20 newPoolLPTokenAddress;
         IERC20[] underlyingTokens;
     }
 
     uint256 private constant MAX_UINT256 = 2**256 - 1;
-    mapping(address => mapping(address => MigrationData)) migrationMap;
+    mapping(address => MigrationData) migrationMap;
+
+    event AddMigrationData(address indexed oldPoolAddress, MigrationData mData);
+    event Migrate(
+        address indexed migrator,
+        address indexed oldPoolAddress,
+        uint256 oldLPTokenAmount,
+        uint256 newLPTokenAmount
+    );
 
     constructor() public Ownable() {}
 
     /**
      * @notice Add new migration data to the contract
      * @param oldPoolAddress pool address to migrate from
-     * @param newPoolAddress pool address to migrate to
      * @param mData MigrationData struct that contains information of the old and new pools
      * @param overwrite should overwrite existing migration data
      */
     function addMigrationData(
         address oldPoolAddress,
-        address newPoolAddress,
         MigrationData memory mData,
         bool overwrite
     ) external onlyOwner {
         // Check
         if (!overwrite) {
             require(
-                address(
-                    migrationMap[oldPoolAddress][newPoolAddress]
-                        .oldPoolLPTokenAddress
-                ) != address(0),
-                "cannot overwrite migrationData"
+                address(migrationMap[oldPoolAddress].oldPoolLPTokenAddress) ==
+                    address(0),
+                "cannot overwrite existing migration data"
             );
         }
         require(
@@ -59,36 +65,65 @@ contract GeneralizedSwapMigrator is Ownable {
             "newPoolLPTokenAddress == 0"
         );
 
+        for (uint8 i = 0; i < 32; i++) {
+            address oldPoolUnderlyingToken;
+            try ISwap(oldPoolAddress).getToken(i) returns (
+                IERC20 underlyingToken
+            ) {
+                oldPoolUnderlyingToken = address(underlyingToken);
+            } catch {
+                require(i > 0, "Failed to get tokens underlying Saddle pool.");
+                oldPoolUnderlyingToken = address(0);
+            }
+
+            try ISwap(mData.newPoolAddress).getToken(i) returns (
+                IERC20 underlyingToken
+            ) {
+                require(
+                    oldPoolUnderlyingToken == address(underlyingToken),
+                    "Failed to match tokens list"
+                );
+            } catch {
+                require(i > 0, "Failed to get tokens underlying Saddle pool.");
+                require(
+                    oldPoolUnderlyingToken == address(0),
+                    "Failed to match tokens list"
+                );
+                break;
+            }
+        }
+
         // Effect
-        migrationMap[oldPoolAddress][newPoolAddress] = mData;
+        migrationMap[oldPoolAddress] = mData;
 
         // Interaction
-        // Approve old USD LP Token to be used by the old USD pool
+        // Approve old LP Token to be used for withdraws.
         mData.oldPoolLPTokenAddress.safeApprove(oldPoolAddress, MAX_UINT256);
 
-        // Approve USD tokens to be used by the new USD pool
+        // Approve underlying tokens to be used for deposits.
         for (uint256 i = 0; i < mData.underlyingTokens.length; i++) {
-            mData.underlyingTokens[i].safeApprove(newPoolAddress, MAX_UINT256);
+            mData.underlyingTokens[i].safeApprove(
+                mData.newPoolAddress,
+                MAX_UINT256
+            );
         }
+
+        emit AddMigrationData(oldPoolAddress, mData);
     }
 
     /**
      * @notice Migrates saddle LP tokens from a pool to another
      * @param oldPoolAddress pool address to migrate from
-     * @param newPoolAddress pool address to migrate to
      * @param amount amount of LP tokens to migrate
      * @param minAmount of new LP tokens to receive
      */
     function migrate(
         address oldPoolAddress,
-        address newPoolAddress,
         uint256 amount,
         uint256 minAmount
     ) external returns (uint256) {
         // Check
-        MigrationData memory mData = migrationMap[oldPoolAddress][
-            newPoolAddress
-        ];
+        MigrationData memory mData = migrationMap[oldPoolAddress];
         require(
             address(mData.oldPoolLPTokenAddress) != address(0),
             "migration is not available"
@@ -109,7 +144,7 @@ contract GeneralizedSwapMigrator is Ownable {
             MAX_UINT256
         );
         // Add acquired liquidity to the new pool
-        uint256 mintedAmount = ISwap(newPoolAddress).addLiquidity(
+        uint256 mintedAmount = ISwap(mData.newPoolAddress).addLiquidity(
             amounts,
             minAmount,
             MAX_UINT256
@@ -117,6 +152,8 @@ contract GeneralizedSwapMigrator is Ownable {
 
         // Transfer new LP Token to the caller
         mData.newPoolLPTokenAddress.safeTransfer(msg.sender, mintedAmount);
+
+        emit Migrate(msg.sender, oldPoolAddress, amount, mintedAmount);
         return mintedAmount;
     }
 
