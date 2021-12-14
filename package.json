@@ -11,6 +11,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "3.4.1",
     "@openzeppelin/contracts-upgradeable": "^3.4.1",
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f2",
     "dotenv": "^10.0.0",
     "synthetix": "2.45.2"
   },
