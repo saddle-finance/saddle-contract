@@ -9,14 +9,14 @@
     "test": "test"
   },
   "dependencies": {
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f2",
     "@openzeppelin/contracts": "3.4.1",
     "@openzeppelin/contracts-upgradeable": "^3.4.1",
-    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f2",
     "dotenv": "^10.0.0",
     "synthetix": "2.45.2"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.10",
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.11",
     "@nomiclabs/hardhat-etherscan": "^2.1.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
@@ -33,7 +33,7 @@
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-unused-imports": "^1.1.1",
     "ethereum-waffle": "^3.3.0",
-    "ethers": "^5.4.4",
+    "ethers": "^5.5.2",
     "ethlint": "^1.2.5",
     "hardhat": "^2.6.6",
     "hardhat-deploy": "^0.7.11",
@@ -46,7 +46,7 @@
     "shelljs": "^0.8.4",
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "0.0.5",
-    "solidity-coverage": "^0.7.16",
+    "solidity-coverage": "^0.7.17",
     "solidity-docgen": "^0.5.13",
     "ts-generator": "^0.1.1",
     "ts-node": "^10.0.0",
