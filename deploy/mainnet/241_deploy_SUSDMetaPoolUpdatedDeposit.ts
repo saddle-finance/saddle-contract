@@ -39,7 +39,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await execute(
       "SaddleSUSDMetaPoolUpdatedDeposit",
-      { from: deployer, log: true },
+      { from: deployer, log: true, gasLimit: 1_000_000 },
       "initialize",
       (
         await get("SaddleUSDPoolV2")
