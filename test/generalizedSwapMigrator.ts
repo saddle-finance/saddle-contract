@@ -77,6 +77,23 @@ describe("GeneralizedSwapMigrator", () => {
     await setupTest()
   })
 
+  describe("migrationMap", () => {
+    it("Successfully reads migrationMap", async () => {
+      const migrationData: {
+        newPoolAddress: string
+        oldPoolLPTokenAddress: string
+        newPoolLPTokenAddress: string
+      } = await genSwapMigrator.migrationMap(oldUSDPool.address)
+      expect(migrationData.newPoolAddress).to.eq(newUSDPool.address)
+      expect(migrationData.newPoolLPTokenAddress).to.eq(
+        newUSDPoolLPToken.address,
+      )
+      expect(migrationData.oldPoolLPTokenAddress).to.eq(
+        oldUSDPoolLPToken.address,
+      )
+    })
+  })
+
   describe("migrate", () => {
     it("Successfully migrates USD pool LP token to a new pool", async () => {
       const oldLPTokenAmount = await oldUSDPoolLPToken.balanceOf(
