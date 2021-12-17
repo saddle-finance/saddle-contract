@@ -67,7 +67,6 @@ export default func
 func.tags = ["SaddleArbUSDPool"]
 func.dependencies = [
   "SwapUtils",
-  "SwapDeployer",
   "SwapFlashLoan",
   "USDPoolTokens",
 ]
