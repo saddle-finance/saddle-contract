@@ -25,7 +25,7 @@ contract GeneralizedSwapMigrator is Ownable, BaseBoringBatchable {
     }
 
     uint256 private constant MAX_UINT256 = 2**256 - 1;
-    mapping(address => MigrationData) migrationMap;
+    mapping(address => MigrationData) public migrationMap;
 
     event AddMigrationData(address indexed oldPoolAddress, MigrationData mData);
     event Migrate(
