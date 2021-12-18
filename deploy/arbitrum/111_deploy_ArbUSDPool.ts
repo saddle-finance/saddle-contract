@@ -65,9 +65,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["SaddleArbUSDPool"]
-func.dependencies = [
-  "SwapUtils",
-  "SwapDeployer",
-  "SwapFlashLoan",
-  "USDPoolTokens",
-]
+func.dependencies = ["SwapUtils", "SwapFlashLoan", "USDPoolTokens"]
