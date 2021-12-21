@@ -51,23 +51,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("LPToken")
       ).address,
     )
+
+    const lpTokenAddress = (await read("SaddleArbUSDPoolV2", "swapStorage"))
+      .lpToken
+    log(`Saddle Arbitrum USD Pool V2 LP Token at ${lpTokenAddress}`)
+
+    await save("SaddleArbUSDPoolV2LPToken", {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
+
+    await execute(
+      "SaddleArbUSDPoolV2",
+      { from: deployer, log: true },
+      "transferOwnership",
+      ARBITRUM_MULTISIG_ADDRESS,
+    )
   }
-
-  const lpTokenAddress = (await read("SaddleArbUSDPoolV2", "swapStorage"))
-    .lpToken
-  log(`Saddle Arbitrum USD Pool V2 LP Token at ${lpTokenAddress}`)
-
-  await save("SaddleArbUSDPoolV2LPToken", {
-    abi: (await get("LPToken")).abi, // LPToken ABI
-    address: lpTokenAddress,
-  })
-
-  await execute(
-    "SaddleArbUSDPoolV2",
-    { from: deployer, log: true },
-    "transferOwnership",
-    ARBITRUM_MULTISIG_ADDRESS,
-  )
 }
 export default func
 func.tags = ["SaddleArbUSDPoolV2"]
