@@ -18,8 +18,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await deploy("GeneralizedSwapMigrator", {
       from: deployer,
       log: true,
-      maxFeePerGas: ethers.utils.parseUnits("60", "gwei"),
-      maxPriorityFeePerGas: ethers.utils.parseUnits("1.5", "gwei"),
     })
 
     const contract: GeneralizedSwapMigrator = await ethers.getContract(
@@ -114,8 +112,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       {
         from: deployer,
         log: true,
-        maxFeePerGas: ethers.utils.parseUnits("60", "gwei"),
-        maxPriorityFeePerGas: ethers.utils.parseUnits("1.5", "gwei"),
       },
       "batch",
       batchCallData,
