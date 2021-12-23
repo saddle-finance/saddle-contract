@@ -2,9 +2,11 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { ethers } from "hardhat"
 import { GeneralizedSwapMigrator } from "../../build/typechain"
+import { MULTISIG_ADDRESS } from "../../utils/accounts"
+import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts } = hre
+  const { deployments, getNamedAccounts, getChainId } = hre
   const { execute, deploy, get, getOrNull, log, save } = deployments
   const { deployer } = await getNamedAccounts()
 
@@ -30,7 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           newPoolAddress: (await get("SaddleUSDPoolV2")).address,
           oldPoolLPTokenAddress: (await get("SaddleUSDPoolLPToken")).address,
           newPoolLPTokenAddress: (await get("SaddleUSDPoolV2LPToken")).address,
-          underlyingTokens: [
+          tokens: [
             (await get("DAI")).address,
             (await get("USDC")).address,
             (await get("USDT")).address,
@@ -50,7 +52,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           newPoolLPTokenAddress: (
             await get("SaddleSUSDMetaPoolUpdatedLPToken")
           ).address,
-          underlyingTokens: [
+          tokens: [
             (await get("SUSD")).address,
             (await get("SaddleUSDPoolV2LPToken")).address,
           ],
@@ -69,8 +71,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           newPoolLPTokenAddress: (
             await get("SaddleTBTCMetaPoolUpdatedLPToken")
           ).address,
-          underlyingTokens: [
-            (await get("TBTC")).address,
+          tokens: [
+            (await get("TBTCv2")).address,
             (await get("SaddleBTCPoolV2LPToken")).address,
           ],
         },
@@ -88,7 +90,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           newPoolLPTokenAddress: (
             await get("SaddleWCUSDMetaPoolUpdatedLPToken")
           ).address,
-          underlyingTokens: [
+          tokens: [
             (await get("WCUSD")).address,
             (await get("SaddleUSDPoolV2LPToken")).address,
           ],
@@ -97,11 +99,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ),
     ]
 
-    const batchCallData = batchCall.map((x) => x.data)
+    if ((await getChainId()) == CHAIN_ID.MAINNET) {
+      batchCall.push(
+        await contract.populateTransaction.transferOwnership(MULTISIG_ADDRESS),
+      )
+    }
+
+    const batchCallData = batchCall
+      .map((x) => x.data)
+      .filter((x): x is string => !!x)
 
     await execute(
       "GeneralizedSwapMigrator",
-      { from: deployer, log: true },
+      {
+        from: deployer,
+        log: true,
+      },
       "batch",
       batchCallData,
       true,

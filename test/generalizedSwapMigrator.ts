@@ -92,6 +92,19 @@ describe("GeneralizedSwapMigrator", () => {
         oldUSDPoolLPToken.address,
       )
     })
+
+    it("Successfully updates migrationMap", async () => {
+      await genSwapMigrator.addMigrationData(
+        oldUSDPool.address,
+        {
+          newPoolAddress: newUSDPool.address,
+          oldPoolLPTokenAddress: oldUSDPoolLPToken.address,
+          newPoolLPTokenAddress: newUSDPoolLPToken.address,
+          tokens: [DAI.address, USDC.address, USDT.address],
+        },
+        true,
+      )
+    })
   })
 
   describe("migrate", () => {

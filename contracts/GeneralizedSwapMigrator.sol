@@ -21,7 +21,7 @@ contract GeneralizedSwapMigrator is Ownable, BaseBoringBatchable {
         address newPoolAddress;
         IERC20 oldPoolLPTokenAddress;
         IERC20 newPoolLPTokenAddress;
-        IERC20[] underlyingTokens;
+        IERC20[] tokens;
     }
 
     uint256 private constant MAX_UINT256 = 2**256 - 1;
@@ -66,27 +66,24 @@ contract GeneralizedSwapMigrator is Ownable, BaseBoringBatchable {
         );
 
         for (uint8 i = 0; i < 32; i++) {
-            address oldPoolUnderlyingToken;
-            try ISwap(oldPoolAddress).getToken(i) returns (
-                IERC20 underlyingToken
-            ) {
-                oldPoolUnderlyingToken = address(underlyingToken);
+            address oldPoolToken;
+            try ISwap(oldPoolAddress).getToken(i) returns (IERC20 token) {
+                oldPoolToken = address(token);
             } catch {
                 require(i > 0, "Failed to get tokens underlying Saddle pool.");
-                oldPoolUnderlyingToken = address(0);
+                oldPoolToken = address(0);
             }
 
-            try ISwap(mData.newPoolAddress).getToken(i) returns (
-                IERC20 underlyingToken
-            ) {
+            try ISwap(mData.newPoolAddress).getToken(i) returns (IERC20 token) {
                 require(
-                    oldPoolUnderlyingToken == address(underlyingToken),
+                    oldPoolToken == address(token) &&
+                        oldPoolToken == address(mData.tokens[i]),
                     "Failed to match tokens list"
                 );
             } catch {
                 require(i > 0, "Failed to get tokens underlying Saddle pool.");
                 require(
-                    oldPoolUnderlyingToken == address(0),
+                    oldPoolToken == address(0) && i == mData.tokens.length,
                     "Failed to match tokens list"
                 );
                 break;
@@ -98,14 +95,12 @@ contract GeneralizedSwapMigrator is Ownable, BaseBoringBatchable {
 
         // Interaction
         // Approve old LP Token to be used for withdraws.
-        mData.oldPoolLPTokenAddress.safeApprove(oldPoolAddress, MAX_UINT256);
+        mData.oldPoolLPTokenAddress.approve(oldPoolAddress, MAX_UINT256);
 
         // Approve underlying tokens to be used for deposits.
-        for (uint256 i = 0; i < mData.underlyingTokens.length; i++) {
-            mData.underlyingTokens[i].safeApprove(
-                mData.newPoolAddress,
-                MAX_UINT256
-            );
+        for (uint256 i = 0; i < mData.tokens.length; i++) {
+            mData.tokens[i].safeApprove(mData.newPoolAddress, 0);
+            mData.tokens[i].safeApprove(mData.newPoolAddress, MAX_UINT256);
         }
 
         emit AddMigrationData(oldPoolAddress, mData);
@@ -140,7 +135,7 @@ contract GeneralizedSwapMigrator is Ownable, BaseBoringBatchable {
         // Remove liquidity from the old pool
         uint256[] memory amounts = ISwap(oldPoolAddress).removeLiquidity(
             amount,
-            new uint256[](mData.underlyingTokens.length),
+            new uint256[](mData.tokens.length),
             MAX_UINT256
         );
         // Add acquired liquidity to the new pool
