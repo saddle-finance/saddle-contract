@@ -24,7 +24,7 @@
     "@typechain/ethers-v5": "^8.0.5",
     "@typechain/hardhat": "^3.0.0",
     "@types/chai": "^4.2.20",
-    "@types/mocha": "^8.2.3",
+    "@types/mocha": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^4.26.0",
     "@typescript-eslint/parser": "^4.28.1",
     "chai": "^4.3.4",
