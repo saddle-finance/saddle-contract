@@ -14,6 +14,10 @@ import { ethers } from "ethers"
 
 dotenv.config()
 
+if (process.env.HARDHAT_FORK) {
+  process.env["HARDHAT_DEPLOY_FORK"] = process.env.HARDHAT_FORK
+}
+
 let config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
@@ -22,7 +26,6 @@ let config: HardhatUserConfig = {
     },
     mainnet: {
       url: process.env.ALCHEMY_API,
-      gasPrice: 100 * 1000000000,
       deploy: ["./deploy/mainnet/"],
     },
     ropsten: {
@@ -130,7 +133,7 @@ if (process.env.FORK_MAINNET === "true" && config.networks) {
     },
     external: {
       deployments: {
-        hardhat: ["deployments/mainnet"],
+        localhost: ["deployments/mainnet"],
       },
     },
   }
