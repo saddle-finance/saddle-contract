@@ -99,8 +99,8 @@ contract GeneralizedSwapMigrator is Ownable, BaseBoringBatchable {
 
         // Approve underlying tokens to be used for deposits.
         for (uint256 i = 0; i < mData.tokens.length; i++) {
-            mData.tokens[i].approve(mData.newPoolAddress, 0);
-            mData.tokens[i].approve(mData.newPoolAddress, MAX_UINT256);
+            mData.tokens[i].safeApprove(mData.newPoolAddress, 0);
+            mData.tokens[i].safeApprove(mData.newPoolAddress, MAX_UINT256);
         }
 
         emit AddMigrationData(oldPoolAddress, mData);
