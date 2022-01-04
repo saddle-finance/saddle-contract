@@ -48,7 +48,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("SaddleSUSDMetaPoolUpdated")
       ).address,
       (
-        await get("SaddleSUSDMetaPoolLPToken")
+        await get("SaddleSUSDMetaPoolUpdatedLPToken")
       ).address,
     )
   }
