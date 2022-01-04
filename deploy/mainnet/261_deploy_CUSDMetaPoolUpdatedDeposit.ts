@@ -50,7 +50,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("SaddleWCUSDMetaPoolUpdated")
       ).address,
       (
-        await get("SaddleWCUSDMetaPoolLPToken")
+        await get("SaddleWCUSDMetaPoolUpdatedLPToken")
       ).address,
     )
   }
