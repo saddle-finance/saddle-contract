@@ -4,6 +4,7 @@ import { ethers, network } from "hardhat"
 import { Artifact } from "hardhat/types"
 import { BytesLike } from "@ethersproject/bytes"
 import { Contract } from "@ethersproject/contracts"
+import { DeploymentsExtension } from "hardhat-deploy/dist/types"
 import { ERC20 } from "../build/typechain/ERC20"
 import { Swap } from "../build/typechain/Swap"
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
@@ -15,6 +16,28 @@ export enum TIME {
   SECONDS = 1,
   DAYS = 86400,
   WEEKS = 604800,
+}
+
+export const BIG_NUMBER_1E18 = BigNumber.from(10).pow(18)
+export const BIG_NUMBER_ZERO = BigNumber.from(0)
+
+export const CHAIN_ID = {
+  MAINNET: "1",
+  ROPSTEN: "3",
+  KOVAN: "42",
+  HARDHAT: "31337",
+}
+
+export function isMainnet(networkId: string): boolean {
+  return networkId == CHAIN_ID.MAINNET
+}
+
+export function isTestNetwork(networkId: string): boolean {
+  return (
+    networkId == CHAIN_ID.HARDHAT ||
+    networkId == CHAIN_ID.ROPSTEN ||
+    networkId == CHAIN_ID.KOVAN
+  )
 }
 
 // DEPLOYMENT helper functions
@@ -80,6 +103,14 @@ export function getTestMerkleProof(address: string): BytesLike[] {
     return ALLOWED_ACCOUNTS[address].proof
   }
   return []
+}
+
+export async function getDeployedContractByName(
+  deployments: DeploymentsExtension,
+  name: string,
+): Promise<Contract> {
+  const deployment = await deployments.get(name)
+  return ethers.getContractAt(deployment.abi, deployment.address)
 }
 
 // Contract calls
