@@ -11,9 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const arr = []
   console.table(
-    Object.keys(allContracts)
-      .sort()
-      .map((k) => [k, allContracts[k].address]),
+    Object.keys(allContracts).map((k) => [k, allContracts[k].address]),
   )
 }
 export default func

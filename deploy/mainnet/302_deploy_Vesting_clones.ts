@@ -3,7 +3,7 @@ import {
   MAX_UINT256,
   getCurrentBlockTimestamp,
 } from "../../test/testUtils"
-import { BigNumber, ethers } from "ethers"
+import { BigNumber } from "ethers"
 
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
