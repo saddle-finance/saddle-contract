@@ -1,18 +1,18 @@
+import { BigNumber, Signer } from "ethers"
+import {
+  Cloner,
+  GenericERC20WithGovernance,
+  Vesting,
+} from "../build/typechain/"
 import {
   ZERO_ADDRESS,
-  setTimestamp,
   getCurrentBlockTimestamp,
+  setTimestamp,
 } from "./testUtils"
-import { solidity } from "ethereum-waffle"
-import { deployments } from "hardhat"
 
-import {
-  Vesting,
-  GenericERC20WithGovernance,
-  Cloner,
-} from "../build/typechain/"
-import { BigNumber, Signer } from "ethers"
 import chai from "chai"
+import { deployments } from "hardhat"
+import { solidity } from "ethereum-waffle"
 
 chai.use(solidity)
 const { expect } = chai
@@ -59,12 +59,12 @@ describe("Vesting", () => {
       )
 
       await deploy("Cloner", {
-        from: deployer,
+        from: deployerAddress,
         log: true,
         skipIfAlreadyDeployed: true,
       })
       await deploy("Vesting", {
-        from: deployer,
+        from: deployerAddress,
         log: true,
         skipIfAlreadyDeployed: true,
       })
@@ -162,7 +162,7 @@ describe("Vesting", () => {
 
         // Let some time pass by so the vesting calculation starts
         const startTimestamp = await vestingClone.startTimestamp()
-        await setTimestamp(startTimestamp.add(3600))
+        await setTimestamp(startTimestamp.add(3600).toNumber())
 
         // The contract is still not filled with tokens. Below call should be reverted.
         await expect(
@@ -182,21 +182,21 @@ describe("Vesting", () => {
 
         // Before Cliff is reached
         expect(await vestingClone.vestedAmount()).to.eq(0)
-        await setTimestamp(startTimestamp.add(1800))
+        await setTimestamp(startTimestamp.add(1800).toNumber())
         expect(await vestingClone.vestedAmount()).to.eq(0)
 
         // After Cliff is reached
-        await setTimestamp(startTimestamp.add(3600))
+        await setTimestamp(startTimestamp.add(3600).toNumber())
         expect(await vestingClone.vestedAmount()).to.eq(
           totalVestedAmount.div(2),
         )
-        await setTimestamp(startTimestamp.add(5400))
+        await setTimestamp(startTimestamp.add(5400).toNumber())
         expect(await vestingClone.vestedAmount()).to.eq(
           totalVestedAmount.mul(3).div(4),
         )
 
         // After Duration is over
-        await setTimestamp(startTimestamp.add(7200))
+        await setTimestamp(startTimestamp.add(7200).toNumber())
         expect(await vestingClone.vestedAmount()).to.eq(totalVestedAmount)
       })
 
@@ -204,7 +204,7 @@ describe("Vesting", () => {
         const startTimestamp = await vestingClone.startTimestamp()
 
         // After Duration is over
-        await setTimestamp(startTimestamp.add(7200))
+        await setTimestamp(startTimestamp.add(7200).toNumber())
         expect(await vestingClone.vestedAmount()).to.eq(totalVestedAmount)
 
         // Claims everything
@@ -241,21 +241,21 @@ describe("Vesting", () => {
       const startTimestamp = await vestingClone.startTimestamp()
 
       // After Cliff is reached
-      await setTimestamp(startTimestamp.add(3600))
+      await setTimestamp(startTimestamp.add(3600).toNumber())
       expect(await vestingClone.vestedAmount()).to.eq(totalVestedAmount.div(2))
       await vestingClone.connect(beneficiary).release()
       expect(await dummyToken.balanceOf(beneficiaryAddress))
         .gte(totalVestedAmount.div(2))
         .and.lte("5001388888888888888888")
 
-      await setTimestamp(startTimestamp.add(5400))
+      await setTimestamp(startTimestamp.add(5400).toNumber())
       await vestingClone.connect(beneficiary).release()
       expect(await dummyToken.balanceOf(beneficiaryAddress))
         .gte(totalVestedAmount.mul(3).div(4))
         .and.lte("7501388888888888888888")
 
       // After Duration is over
-      await setTimestamp(startTimestamp.add(7200))
+      await setTimestamp(startTimestamp.add(7200).toNumber())
       await vestingClone.connect(beneficiary).release()
       expect(await dummyToken.balanceOf(beneficiaryAddress)).eq(
         totalVestedAmount,

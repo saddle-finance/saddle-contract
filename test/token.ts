@@ -1,18 +1,18 @@
 import {
   BIG_NUMBER_1E18,
   BIG_NUMBER_ZERO,
-  getCurrentBlockTimestamp,
   MAX_UINT256,
-  setTimestamp,
   ZERO_ADDRESS,
+  getCurrentBlockTimestamp,
+  setTimestamp,
 } from "./testUtils"
-import { solidity } from "ethereum-waffle"
+import { BigNumber, Signer } from "ethers"
+import { SDL, Vesting } from "../build/typechain/"
 import { deployments, ethers } from "hardhat"
 
-import { SDL, Vesting } from "../build/typechain/"
-import { BigNumber, Signer } from "ethers"
-import chai from "chai"
 import { DeployResult } from "hardhat-deploy/dist/types"
+import chai from "chai"
+import { solidity } from "ethereum-waffle"
 
 chai.use(solidity)
 const { expect } = chai
@@ -88,7 +88,7 @@ describe("Token", () => {
       ]
 
       await deploy("Vesting", {
-        from: deployer,
+        from: deployerAddress,
         log: true,
         skipIfAlreadyDeployed: true,
       })
@@ -267,7 +267,9 @@ describe("Token", () => {
     })
 
     it("Reverts when non-governance attempts to unpause after govCanUnpauseAfter", async () => {
-      await setTimestamp((await saddleToken.govCanUnpauseAfter()).add(1))
+      await setTimestamp(
+        (await saddleToken.govCanUnpauseAfter()).add(1).toNumber(),
+      )
       expect(await saddleToken.govCanUnpauseAfter()).to.lte(
         await getCurrentBlockTimestamp(),
       )
@@ -278,7 +280,9 @@ describe("Token", () => {
     })
 
     it("Succeeds when governance attempts to unpause after govCanUnpauseAfter", async () => {
-      await setTimestamp((await saddleToken.govCanUnpauseAfter()).add(1))
+      await setTimestamp(
+        (await saddleToken.govCanUnpauseAfter()).add(1).toNumber(),
+      )
       expect(await saddleToken.govCanUnpauseAfter()).to.lte(
         await getCurrentBlockTimestamp(),
       )
@@ -288,7 +292,9 @@ describe("Token", () => {
     })
 
     it("Succeeds when non-governance attempts to unpause after anyoneCanUnpauseAfter", async () => {
-      await setTimestamp((await saddleToken.anyoneCanUnpauseAfter()).add(1))
+      await setTimestamp(
+        (await saddleToken.anyoneCanUnpauseAfter()).add(1).toNumber(),
+      )
       expect(await saddleToken.anyoneCanUnpauseAfter()).to.lte(
         await getCurrentBlockTimestamp(),
       )
@@ -298,7 +304,9 @@ describe("Token", () => {
     })
 
     it("Reverts when attempting to call enableTransfer after it is already unpaused", async () => {
-      await setTimestamp((await saddleToken.anyoneCanUnpauseAfter()).add(1))
+      await setTimestamp(
+        (await saddleToken.anyoneCanUnpauseAfter()).add(1).toNumber(),
+      )
       expect(await saddleToken.anyoneCanUnpauseAfter()).to.lte(
         await getCurrentBlockTimestamp(),
       )
@@ -313,7 +321,9 @@ describe("Token", () => {
 
     describe("transfer after enableTransfer", () => {
       beforeEach(async () => {
-        await setTimestamp((await saddleToken.govCanUnpauseAfter()).add(1))
+        await setTimestamp(
+          (await saddleToken.govCanUnpauseAfter()).add(1).toNumber(),
+        )
         await saddleToken.connect(governance).enableTransfer()
       })
 
