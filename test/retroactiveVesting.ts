@@ -123,8 +123,6 @@ describe("Retroactive Vesting", () => {
     })
 
     it("Successfully verifies and claims 0 tokens when startTimestamp is in the future", async () => {
-      
-
       await retroactiveVesting
         .connect(user1)
         .verifyAndClaimReward(
