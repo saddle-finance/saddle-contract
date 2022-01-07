@@ -11,10 +11,10 @@
   "dependencies": {
     "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f2",
     "@openzeppelin/contracts": "3.4.1",
-    "@openzeppelin/contracts-upgradeable": "^3.4.1",
+    "@openzeppelin/contracts-upgradeable": "^3.4.2",
     "dotenv": "^10.0.0",
     "dotenv-cli": "^4.1.1",
-    "synthetix": "2.45.2"
+    "synthetix": "2.56.1"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.11",
@@ -24,14 +24,14 @@
     "@typechain/ethers-v5": "^8.0.5",
     "@typechain/hardhat": "^3.0.0",
     "@types/chai": "^4.2.20",
-    "@types/mocha": "^8.2.3",
+    "@types/mocha": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^4.26.0",
     "@typescript-eslint/parser": "^4.28.1",
     "chai": "^4.3.4",
     "eslint": "^7.25.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-json": "^3.0.0",
-    "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-unused-imports": "^1.1.1",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.5.2",
@@ -42,7 +42,7 @@
     "hardhat-spdx-license-identifier": "^2.0.3",
     "husky": "^7.0.1",
     "lint-staged": "^11.0.0",
-    "prettier": "^2.3.0",
+    "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.11",
     "shelljs": "^0.8.4",
     "solhint": "^3.3.6",
