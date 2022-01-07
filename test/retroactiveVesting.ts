@@ -1,5 +1,6 @@
 import {
   BIG_NUMBER_1E18,
+  forceAdvanceOneBlock,
   getCurrentBlockTimestamp,
   getDeployedContractByName,
   setNextTimestamp,
@@ -7,7 +8,7 @@ import {
   ZERO_ADDRESS,
 } from "./testUtils"
 import { solidity } from "ethereum-waffle"
-import { deployments } from "hardhat"
+import { deployments, ethers } from "hardhat"
 
 import {
   GenericERC20WithGovernance,
@@ -123,7 +124,20 @@ describe("Retroactive Vesting", () => {
     })
 
     it("Successfully verifies and claims 0 tokens when startTimestamp is in the future", async () => {
-      await retroactiveVesting
+      await forceAdvanceOneBlock()
+      await deployments.deploy("RetroactiveVestingFuture", {
+        from: deployerAddress,
+        contract: "RetroactiveVesting",
+        args: [
+          dummyToken.address,
+          merkleTree.merkleRoot,
+          (await getCurrentBlockTimestamp()) + 10000,
+        ],
+      })
+      const testContract: RetroactiveVesting = await ethers.getContract(
+        "RetroactiveVestingFuture",
+      )
+      await testContract
         .connect(user1)
         .verifyAndClaimReward(
           deployerAddress,
@@ -131,7 +145,7 @@ describe("Retroactive Vesting", () => {
           merkleTree.recipients[deployerAddress].proof,
         )
       expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
-        BIG_NUMBER_1E18.mul(50000),
+        BIG_NUMBER_1E18.mul(0),
       )
     })
 
