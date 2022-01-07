@@ -6,9 +6,9 @@ pragma experimental ABIEncoderV2;
 import "@boringcrypto/boring-solidity-e06e943/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity-e06e943/contracts/BoringBatchable.sol";
 import "@boringcrypto/boring-solidity-e06e943/contracts/BoringOwnable.sol";
-import "./libraries/SignedSafeMath.sol";
-import "./interfaces/IRewarder.sol";
-import "./interfaces/IMasterChef.sol";
+import "../libraries/SignedSafeMath.sol";
+import "../interfaces/IRewarder.sol";
+import "../interfaces/IMasterChef.sol";
 
 /// @notice The (older) MasterChef contract gives out a constant number of SADDLE tokens per block.
 /// It is the only address with minting rights for SADDLE.
