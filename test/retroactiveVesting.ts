@@ -122,6 +122,21 @@ describe("Retroactive Vesting", () => {
       ).to.be.revertedWith("could not verify merkleProof")
     })
 
+    it("Successfully verifies and claims 0 tokens when startTimestamp is in the future", async () => {
+      
+
+      await retroactiveVesting
+        .connect(user1)
+        .verifyAndClaimReward(
+          deployerAddress,
+          merkleTree.recipients[deployerAddress].amount,
+          merkleTree.recipients[deployerAddress].proof,
+        )
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(50000),
+      )
+    })
+
     it("Successfully claims when giving correct proof and amount", async () => {
       await retroactiveVesting
         .connect(user1)
