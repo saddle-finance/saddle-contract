@@ -1,4 +1,5 @@
 import {
+  BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
   getDeployedContractByName,
   setNextTimestamp,
@@ -12,7 +13,7 @@ import {
   GenericERC20WithGovernance,
   RetroactiveVesting,
 } from "../build/typechain/"
-import { BigNumber, Signer } from "ethers"
+import { Signer } from "ethers"
 import chai from "chai"
 import * as merkleTreeData from "./merkleTree.json"
 
@@ -86,7 +87,10 @@ describe("Retroactive Vesting", () => {
         "RetroactiveVesting",
       )) as RetroactiveVesting
 
-      await dummyToken.mint(retroactiveVesting.address, BigNumber.from(600000))
+      await dummyToken.mint(
+        retroactiveVesting.address,
+        BIG_NUMBER_1E18.mul(1_000_000),
+      )
     },
   )
 
@@ -126,7 +130,9 @@ describe("Retroactive Vesting", () => {
           merkleTree.recipients[deployerAddress].amount,
           merkleTree.recipients[deployerAddress].proof,
         )
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(50000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(50000),
+      )
     })
 
     it("Successfully claims for someone else when giving correct proof and amount", async () => {
@@ -135,7 +141,9 @@ describe("Retroactive Vesting", () => {
         merkleTree.recipients[deployerAddress].amount,
         merkleTree.recipients[deployerAddress].proof,
       )
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(50000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(50000),
+      )
     })
 
     it("Successfully claims after verifying once", async () => {
@@ -144,7 +152,9 @@ describe("Retroactive Vesting", () => {
         merkleTree.recipients[deployerAddress].amount,
         merkleTree.recipients[deployerAddress].proof,
       )
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(50000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(50000),
+      )
 
       // 1 year and 6 months past start timestamp
       await setNextTimestamp(startTimestamp + 1.5 * 52 * WEEK)
@@ -154,7 +164,9 @@ describe("Retroactive Vesting", () => {
         merkleTree.recipients[deployerAddress].amount,
         merkleTree.recipients[deployerAddress].proof,
       )
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(75000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(75000),
+      )
 
       // 2 years past start timestamp
       await setNextTimestamp(startTimestamp + 2 * 52 * WEEK)
@@ -164,7 +176,9 @@ describe("Retroactive Vesting", () => {
         merkleTree.recipients[deployerAddress].amount,
         merkleTree.recipients[deployerAddress].proof,
       )
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(100000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(100000),
+      )
 
       // Try claiming once more
       await setNextTimestamp(startTimestamp + 3 * 52 * WEEK)
@@ -173,7 +187,9 @@ describe("Retroactive Vesting", () => {
         merkleTree.recipients[deployerAddress].amount,
         merkleTree.recipients[deployerAddress].proof,
       )
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(100000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(100000),
+      )
     })
   })
 
@@ -190,43 +206,61 @@ describe("Retroactive Vesting", () => {
     it("Successfully claims reward by themselves", async () => {
       await setNextTimestamp(startTimestamp + 52 * WEEK)
       await retroactiveVesting.claimReward(deployerAddress)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(50000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(50000),
+      )
 
       await setNextTimestamp(startTimestamp + 1.5 * 52 * WEEK)
       await retroactiveVesting.claimReward(deployerAddress)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(75000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(75000),
+      )
 
       await setNextTimestamp(startTimestamp + 2 * 52 * WEEK)
       await retroactiveVesting.claimReward(deployerAddress)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(100000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(100000),
+      )
     })
 
     it("Successfully claims reward by themselves when providing zero address", async () => {
       await setNextTimestamp(startTimestamp + 52 * WEEK)
       await retroactiveVesting.claimReward(ZERO_ADDRESS)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(50000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(50000),
+      )
 
       await setNextTimestamp(startTimestamp + 1.5 * 52 * WEEK)
       await retroactiveVesting.claimReward(ZERO_ADDRESS)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(75000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(75000),
+      )
 
       await setNextTimestamp(startTimestamp + 2 * 52 * WEEK)
       await retroactiveVesting.claimReward(ZERO_ADDRESS)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(100000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(100000),
+      )
     })
 
     it("Successfully claims reward for someone else", async () => {
       await setNextTimestamp(startTimestamp + 52 * WEEK)
       await retroactiveVesting.connect(user1).claimReward(deployerAddress)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(50000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(50000),
+      )
 
       await setNextTimestamp(startTimestamp + 1.5 * 52 * WEEK)
       await retroactiveVesting.connect(user1).claimReward(deployerAddress)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(75000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(75000),
+      )
 
       await setNextTimestamp(startTimestamp + 2 * 52 * WEEK)
       await retroactiveVesting.connect(user1).claimReward(deployerAddress)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(100000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(100000),
+      )
     })
   })
 
@@ -250,7 +284,7 @@ describe("Retroactive Vesting", () => {
       // 1 year since start
       await setTimestamp(startTimestamp + 52 * WEEK)
       expect(await retroactiveVesting.vestedAmount(deployerAddress)).to.be.eq(
-        50000,
+        "49999995230463980463981",
       )
       await retroactiveVesting.claimReward(deployerAddress)
       expect(await retroactiveVesting.vestedAmount(deployerAddress)).to.be.eq(0)
@@ -258,7 +292,7 @@ describe("Retroactive Vesting", () => {
       // 1.5 years since start
       await setTimestamp(startTimestamp + 1.5 * 52 * WEEK)
       expect(await retroactiveVesting.vestedAmount(deployerAddress)).to.be.eq(
-        25000,
+        "24999998410154660154661",
       )
       await retroactiveVesting.claimReward(deployerAddress)
       expect(await retroactiveVesting.vestedAmount(deployerAddress)).to.be.eq(0)
@@ -266,7 +300,7 @@ describe("Retroactive Vesting", () => {
       // 2 years since start
       await setTimestamp(startTimestamp + 2 * 52 * WEEK)
       expect(await retroactiveVesting.vestedAmount(deployerAddress)).to.be.eq(
-        25000,
+        "24999998410154660154661",
       )
       await retroactiveVesting.claimReward(deployerAddress)
       expect(await retroactiveVesting.vestedAmount(deployerAddress)).to.be.eq(0)
@@ -279,15 +313,21 @@ describe("Retroactive Vesting", () => {
     it("Successfully claims reward for someone else", async () => {
       await setNextTimestamp(startTimestamp + 52 * WEEK)
       await retroactiveVesting.connect(user1).claimReward(deployerAddress)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(50000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(50000),
+      )
 
       await setNextTimestamp(startTimestamp + 1.5 * 52 * WEEK)
       await retroactiveVesting.connect(user1).claimReward(deployerAddress)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(75000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(75000),
+      )
 
       await setNextTimestamp(startTimestamp + 2 * 52 * WEEK)
       await retroactiveVesting.connect(user1).claimReward(deployerAddress)
-      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(100000)
+      expect(await dummyToken.balanceOf(deployerAddress)).to.be.eq(
+        BIG_NUMBER_1E18.mul(100000),
+      )
     })
   })
 })

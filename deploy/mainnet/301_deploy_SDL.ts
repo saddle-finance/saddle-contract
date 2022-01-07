@@ -3,7 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
-  const { deploy, get, execute } = deployments
+  const { deploy, get, execute, getOrNull } = deployments
   const { deployer } = await getNamedAccounts()
 
   await deploy("SDL", {
