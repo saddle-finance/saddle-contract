@@ -9,7 +9,10 @@
     "test": "test"
   },
   "dependencies": {
+    "@boringcrypto/boring-solidity-e06e943": "boringcrypto/BoringSolidity#e06e943",
     "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f2",
+    "@openzeppelin/contracts-4.2.0": "npm:@openzeppelin/contracts@4.2.0",
+    "@openzeppelin/contracts-upgradeable-4.2.0": "npm:@openzeppelin/contracts-upgradeable@4.2.0",
     "@openzeppelin/contracts": "3.4.1",
     "@openzeppelin/contracts-upgradeable": "3.4.1",
     "dotenv": "^10.0.0",

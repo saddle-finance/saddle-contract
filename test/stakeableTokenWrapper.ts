@@ -1,11 +1,11 @@
 import { Signer, Wallet } from "ethers"
-import { solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 
 import { GenericERC20 } from "../build/typechain/GenericERC20"
 import { IERC20 } from "../build/typechain/IERC20"
 import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
 import chai from "chai"
+import { solidity } from "ethereum-waffle"
 
 chai.use(solidity)
 const { expect } = chai
@@ -51,7 +51,9 @@ describe("StakeableTokenWrapper", () => {
       await basicToken.transfer(await signers[1].getAddress(), 1000)
       await basicToken.transfer(await signers[2].getAddress(), 10000)
 
-      tokenWrapper = (await deployWrapper(basicToken)) as StakeableTokenWrapper
+      tokenWrapper = (await deployWrapper(
+        basicToken as unknown as IERC20,
+      )) as StakeableTokenWrapper
     },
   )
 

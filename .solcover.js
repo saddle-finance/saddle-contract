@@ -13,6 +13,7 @@ module.exports = {
     'VirtualSwap/',
     'guarded/',
     'helper/',
+    'libraries/',
     'AmplificationUtilsV1.sol',
     'SwapFlashLoanV1.sol',
     'SwapUtilsV1.sol',
