@@ -48,7 +48,7 @@ let config: HardhatUserConfig = {
       gasPrice: ethers.utils.parseUnits("2", "gwei").toNumber(),
       deploy: ["./deploy/arbitrum/"],
     },
-    optimisim_testnet: {
+    optimism_testnet: {
       url: "https://kovan.optimism.io",
       chainId: 69,
       accounts: {
@@ -56,7 +56,7 @@ let config: HardhatUserConfig = {
       },
       deploy: ["./deploy/optimism/"],
     },
-    optimisim_mainnet: {
+    optimism_mainnet: {
       url: "https://mainnet.optimism.io",
       chainId: 10,
       deploy: ["./deploy/optimism/"],
