@@ -10,7 +10,11 @@ export const CHAIN_ID = {
 }
 
 export function isMainnet(networkId: string): boolean {
-  return networkId == CHAIN_ID.MAINNET || networkId == CHAIN_ID.ARBITRUM_MAINNET
+  return (
+    networkId == CHAIN_ID.MAINNET ||
+    networkId == CHAIN_ID.ARBITRUM_MAINNET ||
+    networkId == CHAIN_ID.OPTIMISM_MAINNET
+  )
 }
 
 export function isTestNetwork(networkId: string): boolean {
