@@ -72,7 +72,8 @@
     "deploy": "hardhat deploy",
     "start": "hardhat node --show-accounts",
     "fork": "dotenv -v FORK_MAINNET=true hardhat node --show-accounts --fork $ALCHEMY_API ",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "addresses": "node scripts/print-addresses.js"
   },
   "husky": {
     "hooks": {
