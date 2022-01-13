@@ -6,5 +6,6 @@ export const MULTISIG_ADDRESS = "0x3F8E527aF4e0c6e763e8f368AC679c44C45626aE"
 // https://arbitrum.gnosis-safe.io/app/#/safes/0x8e6e84DDab9d13A17806d34B097102605454D147/settings
 export const ARBITRUM_MULTISIG_ADDRESS =
   "0x8e6e84DDab9d13A17806d34B097102605454D147"
+// https://gnosis-safe.io/app/oeth:0x91804c72076aDd9fAB49b2c1e1A61A7503199599/settings
 export const OPTIMISM_MULTISIG_ADDRESS =
-  "0x00000000000000000000000000000000deadbeef" // TODO: Update this with real multisig address
+  "0x91804c72076aDd9fAB49b2c1e1A61A7503199599"
