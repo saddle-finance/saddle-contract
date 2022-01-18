@@ -47,7 +47,7 @@
     "lint-staged": "^11.0.0",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.11",
-    "shelljs": "^0.8.4",
+    "shelljs": "^0.8.5",
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "0.0.5",
     "solidity-coverage": "^0.7.17",
