@@ -138,6 +138,10 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
       ...config.networks?.arbitrum_mainnet,
       accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
     },
+    optimism_mainnet: {
+      ...config.networks?.optimism_mainnet,
+      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
+    },
   }
 }
 
