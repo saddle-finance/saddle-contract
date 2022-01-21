@@ -14,6 +14,7 @@ import { deployments, ethers } from "hardhat"
 import {
   BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
+  increaseTimestamp,
   MAX_UINT256,
   setTimestamp,
   ZERO_ADDRESS,
@@ -27,6 +28,7 @@ describe("SimpleRewarder", async () => {
   let signers: Array<Signer>
   let deployer: Signer
   let farmer: Signer
+  let lazyFarmer: Signer
   let miniChef: MiniChefV2
   let swapContract: Swap
   let simpleRewarder: SimpleRewarder
@@ -35,6 +37,7 @@ describe("SimpleRewarder", async () => {
   let rewardToken2: GenericERC20
   let deployerAddress: string
   let farmerAddress: string
+  let lazyFarmerAddress: string
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -43,8 +46,10 @@ describe("SimpleRewarder", async () => {
       signers = await ethers.getSigners()
       deployer = signers[0]
       farmer = signers[10]
+      lazyFarmer = signers[11]
       deployerAddress = await deployer.getAddress()
       farmerAddress = await farmer.getAddress()
+      lazyFarmerAddress = await lazyFarmer.getAddress()
       const genericERC20Factory = await ethers.getContractFactory(
         "GenericERC20",
       )
@@ -62,15 +67,17 @@ describe("SimpleRewarder", async () => {
       for (const token of tokens) {
         await token.mint(
           farmerAddress,
-          BigNumber.from(10).pow(await token.decimals()),
+          BigNumber.from(10)
+            .pow(await token.decimals())
+            .mul(2),
         )
         await token.connect(farmer).approve(swapContract.address, MAX_UINT256)
       }
       await swapContract
         .connect(farmer)
-        .addLiquidity([BIG_NUMBER_1E18, 1e6, 1e6], 0, MAX_UINT256)
-
+        .addLiquidity([BIG_NUMBER_1E18.mul(2), 2e6, 2e6], 0, MAX_UINT256)
       usdv2LpToken = await ethers.getContract("SaddleUSDPoolV2LPToken")
+
       rewardToken1 = (await genericERC20Factory.deploy(
         "Reward Token 1",
         "REWARD-1",
@@ -141,6 +148,7 @@ describe("SimpleRewarder", async () => {
 
   describe("onSaddleReward", () => {
     beforeEach(async () => {
+      // (IERC20 rewardToken, address owner, uint256 rewardPerSecond, IERC20 masterLpToken, uint256 pid)
       const data = ethers.utils.defaultAbiCoder.encode(
         ["address", "address", "uint256", "address", "uint256"],
         [
@@ -187,6 +195,94 @@ describe("SimpleRewarder", async () => {
           .div(BIG_NUMBER_1E18)
           .toNumber(),
       ).to.eq(2002)
+    })
+  })
+
+  describe("setRewardPerSecond", () => {
+    beforeEach(async () => {
+      // (IERC20 rewardToken, address owner, uint256 rewardPerSecond, IERC20 masterLpToken, uint256 pid)
+      const data = ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256", "address", "uint256"],
+        [
+          rewardToken2.address,
+          deployerAddress,
+          BIG_NUMBER_1E18.mul(2),
+          usdv2LpToken.address,
+          0,
+        ],
+      )
+      await simpleRewarder.init(data)
+      await rewardToken2.transfer(
+        simpleRewarder.address,
+        BIG_NUMBER_1E18.mul(100000),
+      )
+    })
+
+    it("Succesfully updates rewardPerSecond variable", async () => {
+      // rewardPerSecond was already set via init call
+      expect(await simpleRewarder.rewardPerSecond()).to.eq(
+        BIG_NUMBER_1E18.mul(2),
+      )
+      // Try updating it manually
+      await simpleRewarder.setRewardPerSecond(BIG_NUMBER_1E18)
+      // Confirm it was successful
+      expect(await simpleRewarder.rewardPerSecond()).to.eq(BIG_NUMBER_1E18)
+    })
+
+    it("Reverts when called by non-owner", async () => {
+      await expect(
+        simpleRewarder.connect(farmer).setRewardPerSecond(0),
+      ).to.be.revertedWith("Ownable: caller is not the owner")
+    })
+  })
+
+  describe("pendingToken & pendingTokens", () => {
+    beforeEach(async () => {
+      // Lazy farmer deposits before we set rewarder and never claims
+      await miniChef.connect(farmer).deposit(0, BIG_NUMBER_1E18, lazyFarmerAddress)
+
+      // (IERC20 rewardToken, address owner, uint256 rewardPerSecond, IERC20 masterLpToken, uint256 pid)
+      const data = ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256", "address", "uint256"],
+        [
+          rewardToken2.address,
+          deployerAddress,
+          BIG_NUMBER_1E18.mul(2),
+          usdv2LpToken.address,
+          0,
+        ],
+      )
+      await simpleRewarder.init(data)
+      await rewardToken2.transfer(
+        simpleRewarder.address,
+        BIG_NUMBER_1E18.mul(100000),
+      )
+
+      // Set rewarder of pid 0 to the SimpleRewarder contract
+      await miniChef.set(0, 1, simpleRewarder.address, true)
+
+      await miniChef.connect(farmer).harvest(0, farmerAddress)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
+    })
+
+    it("Successfully reads pendingToken", async () => {
+      expect(await simpleRewarder.callStatic.pendingToken(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(1000),
+      )
+      // Lazy Farmer does not get any rewardToken2 until he claims
+      expect(
+        await simpleRewarder.callStatic.pendingToken(lazyFarmerAddress),
+      ).to.eq(0)
+    })
+
+    it("Successfully reads pendingTokens", async () => {
+      expect(
+        await simpleRewarder.callStatic.pendingTokens(0, farmerAddress, 0),
+      ).to.eql([[rewardToken2.address], [BIG_NUMBER_1E18.mul(1000)]])
+
+      expect(
+        await simpleRewarder.callStatic.pendingTokens(0, lazyFarmerAddress, 0),
+      ).to.eql([[rewardToken2.address], [0]])
     })
   })
 })
