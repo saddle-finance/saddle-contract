@@ -5,7 +5,6 @@ import { BigNumber } from "ethers"
 
 const USD_TOKENS_ARGS: { [token: string]: any[] } = {
   FRAX: ["Frax", "FRAX", "18"],
-  DAI: ["Dai", "DAI", "18"],
   USDC: ["USD Coin", "USDC", "6"],
 }
 
@@ -36,4 +35,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["USDPoolTokens"]
+func.tags = ["FtmUSDPoolTokens"]
