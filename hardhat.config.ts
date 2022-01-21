@@ -61,6 +61,19 @@ let config: HardhatUserConfig = {
       chainId: 10,
       deploy: ["./deploy/optimism/"],
     },
+    fantom_testnet: {
+      url: "https://rpc.testnet.fantom.network/",
+      chainId: 4002,
+      accounts: {
+        mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
+      },
+      deploy: ["./deploy/fantom/"],
+    },
+    fantom_mainnet: {
+      url: "https://rpc.ftm.tools/",
+      chainId: 250,
+      deploy: ["./deploy/fantom/"],
+    },
   },
   paths: {
     sources: "./contracts",
@@ -115,6 +128,7 @@ let config: HardhatUserConfig = {
       1: 0, // use the same address as the main deployer on mainnet
       42161: 0, // use the same address on arbitrum mainnet
       10: 0, // use the same address on optimism mainnet
+      250: 0, // use the same address on fantom mainnet
     },
   },
   spdxLicenseIdentifier: {
@@ -140,6 +154,10 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
     },
     optimism_mainnet: {
       ...config.networks?.optimism_mainnet,
+      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
+    },
+    fantom_mainnet: {
+      ...config.networks?.fantom_mainnet,
       accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
     },
   }

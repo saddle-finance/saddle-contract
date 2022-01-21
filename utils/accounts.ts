@@ -9,3 +9,6 @@ export const ARBITRUM_MULTISIG_ADDRESS =
 // https://gnosis-safe.io/app/oeth:0x91804c72076aDd9fAB49b2c1e1A61A7503199599/settings
 export const OPTIMISM_MULTISIG_ADDRESS =
   "0x91804c72076aDd9fAB49b2c1e1A61A7503199599"
+// https://gnosis-safe.io/app/oeth:0x91804c72076aDd9fAB49b2c1e1A61A7503199599/settings
+export const FANTOM_MULTISIG_ADDRESS =
+  "0x0"
