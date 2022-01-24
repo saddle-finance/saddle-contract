@@ -430,4 +430,27 @@ describe("SimpleRewarder", async () => {
       )
     })
   })
+
+  describe("massUpdatePools", () => {
+    beforeEach(async () => {
+      await initializeRewarder()
+
+      // Set rewarder of pid 0 to the SimpleRewarder contract
+      // From this point, users must call harvest, deposit, or withdraw to trigger
+      // the rewarder to count their tokens.
+      await miniChef.set(0, 1, simpleRewarder.address, true)
+    })
+
+    it("Successfully updates MiniChef pools", async () => {
+      await miniChef.connect(farmer).harvest(0, farmerAddress)
+      // [accSaddlePerShare, lastRewardTime, allocPoint]
+      const accSaddlePerShareBefore = (await miniChef.poolInfo(0))[0]
+      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
+      await miniChef.massUpdatePools([0])
+      const accSaddlePerShareAfter = (await miniChef.poolInfo(0))[0]
+      expect(accSaddlePerShareAfter.sub(accSaddlePerShareBefore)).to.eq(
+        BigNumber.from(1001000000000000),
+      )
+    })
+  })
 })
