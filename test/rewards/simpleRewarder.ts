@@ -13,8 +13,8 @@ import chai from "chai"
 import { deployments, ethers } from "hardhat"
 import {
   BIG_NUMBER_1E18,
+  BIG_NUMBER_ZERO,
   getCurrentBlockTimestamp,
-  increaseTimestamp,
   MAX_UINT256,
   setTimestamp,
   ZERO_ADDRESS,
@@ -115,14 +115,60 @@ describe("SimpleRewarder", async () => {
     await setupTest()
   })
 
+  async function initializeRewarder() {
+    // (IERC20 rewardToken, address owner, uint256 rewardPerSecond, IERC20 masterLpToken, uint256 pid)
+    const data = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address", "uint256", "address", "uint256"],
+      [
+        rewardToken2.address,
+        deployerAddress,
+        BIG_NUMBER_1E18.mul(2),
+        usdv2LpToken.address,
+        0,
+      ],
+    )
+    await simpleRewarder.init(data)
+    await rewardToken2.transfer(
+      simpleRewarder.address,
+      BIG_NUMBER_1E18.mul(100000),
+    )
+  }
+
   describe("init", () => {
     it("Reverts when given masterLpToken does not match", async () => {
       const data = ethers.utils.defaultAbiCoder.encode(
         ["address", "address", "uint256", "address", "uint256"],
         [rewardToken2.address, deployerAddress, 200, rewardToken1.address, 0],
       )
-      expect(simpleRewarder.init(data)).to.be.revertedWith(
+      await expect(simpleRewarder.init(data)).to.be.revertedWith(
         "Rewarder: bad pid or masterLpToken",
+      )
+    })
+
+    it("Reverts when already initialized", async () => {
+      const data = ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256", "address", "uint256"],
+        [
+          rewardToken2.address,
+          deployerAddress,
+          BIG_NUMBER_1E18.mul(2),
+          usdv2LpToken.address,
+          0,
+        ],
+      )
+      await simpleRewarder.init(data)
+      await expect(simpleRewarder.init(data)).to.be.revertedWith(
+        "Rewarder: already initialized",
+      )
+    })
+
+    it("Reverts when using bad rewardToken address", async () => {
+      const data = ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256", "address", "uint256"],
+        [ZERO_ADDRESS, deployerAddress, 200, rewardToken1.address, 0],
+      )
+      await expect(simpleRewarder.init(data)).to.be.revertedWith(
+        "Rewarder: bad rewardToken",
       )
     })
 
@@ -148,22 +194,7 @@ describe("SimpleRewarder", async () => {
 
   describe("onSaddleReward", () => {
     beforeEach(async () => {
-      // (IERC20 rewardToken, address owner, uint256 rewardPerSecond, IERC20 masterLpToken, uint256 pid)
-      const data = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "address", "uint256"],
-        [
-          rewardToken2.address,
-          deployerAddress,
-          BIG_NUMBER_1E18.mul(2),
-          usdv2LpToken.address,
-          0,
-        ],
-      )
-      await simpleRewarder.init(data)
-      await rewardToken2.transfer(
-        simpleRewarder.address,
-        BIG_NUMBER_1E18.mul(100000),
-      )
+      await initializeRewarder()
     })
 
     it("Successfully calls on harvest", async () => {
@@ -200,22 +231,7 @@ describe("SimpleRewarder", async () => {
 
   describe("setRewardPerSecond", () => {
     beforeEach(async () => {
-      // (IERC20 rewardToken, address owner, uint256 rewardPerSecond, IERC20 masterLpToken, uint256 pid)
-      const data = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "address", "uint256"],
-        [
-          rewardToken2.address,
-          deployerAddress,
-          BIG_NUMBER_1E18.mul(2),
-          usdv2LpToken.address,
-          0,
-        ],
-      )
-      await simpleRewarder.init(data)
-      await rewardToken2.transfer(
-        simpleRewarder.address,
-        BIG_NUMBER_1E18.mul(100000),
-      )
+      await initializeRewarder()
     })
 
     it("Succesfully updates rewardPerSecond variable", async () => {
@@ -239,26 +255,15 @@ describe("SimpleRewarder", async () => {
   describe("pendingToken & pendingTokens", () => {
     beforeEach(async () => {
       // Lazy farmer deposits before we set rewarder and never claims
-      await miniChef.connect(farmer).deposit(0, BIG_NUMBER_1E18, lazyFarmerAddress)
+      await miniChef
+        .connect(farmer)
+        .deposit(0, BIG_NUMBER_1E18, lazyFarmerAddress)
 
-      // (IERC20 rewardToken, address owner, uint256 rewardPerSecond, IERC20 masterLpToken, uint256 pid)
-      const data = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "address", "uint256"],
-        [
-          rewardToken2.address,
-          deployerAddress,
-          BIG_NUMBER_1E18.mul(2),
-          usdv2LpToken.address,
-          0,
-        ],
-      )
-      await simpleRewarder.init(data)
-      await rewardToken2.transfer(
-        simpleRewarder.address,
-        BIG_NUMBER_1E18.mul(100000),
-      )
+      await initializeRewarder()
 
       // Set rewarder of pid 0 to the SimpleRewarder contract
+      // From this point, users must call harvest, deposit, or withdraw to trigger
+      // the rewarder to count their tokens.
       await miniChef.set(0, 1, simpleRewarder.address, true)
 
       await miniChef.connect(farmer).harvest(0, farmerAddress)
@@ -266,13 +271,21 @@ describe("SimpleRewarder", async () => {
     })
 
     it("Successfully reads pendingToken", async () => {
+      // Farmer who called harvest after rewarder was set should have pendingToken > 0
       expect(await simpleRewarder.callStatic.pendingToken(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(1000),
       )
-      // Lazy Farmer does not get any rewardToken2 until he claims
+      expect(await miniChef.callStatic.pendingSaddle(0, farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(500),
+      )
+      // Lazy Farmer does not get any rewardToken2 until he triggers harvest
+      // But he still gets some rewardToken1
       expect(
         await simpleRewarder.callStatic.pendingToken(lazyFarmerAddress),
       ).to.eq(0)
+      expect(
+        await miniChef.callStatic.pendingSaddle(0, lazyFarmerAddress),
+      ).to.eq(BIG_NUMBER_1E18.mul(502))
     })
 
     it("Successfully reads pendingTokens", async () => {
@@ -282,7 +295,112 @@ describe("SimpleRewarder", async () => {
 
       expect(
         await simpleRewarder.callStatic.pendingTokens(0, lazyFarmerAddress, 0),
-      ).to.eql([[rewardToken2.address], [0]])
+      ).to.eql([[rewardToken2.address], [BIG_NUMBER_ZERO]])
+    })
+  })
+
+  describe("withdraw", () => {
+    beforeEach(async () => {
+      await initializeRewarder()
+
+      // Set rewarder of pid 0 to the SimpleRewarder contract
+      // From this point, users must call harvest, deposit, or withdraw to trigger
+      // the rewarder to count their tokens.
+      await miniChef.set(0, 1, simpleRewarder.address, true)
+
+      await miniChef.connect(farmer).harvest(0, farmerAddress)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
+    })
+
+    it("Successfully withdraws and only harvests rewardToken2", async () => {
+      expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(0)
+      await miniChef.connect(farmer).withdraw(0, BIG_NUMBER_1E18, farmerAddress)
+      expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(6),
+      )
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(2002),
+      )
+    })
+  })
+
+  describe("withdrawAndHarvest", () => {
+    beforeEach(async () => {
+      await initializeRewarder()
+
+      // Set rewarder of pid 0 to the SimpleRewarder contract
+      // From this point, users must call harvest, deposit, or withdraw to trigger
+      // the rewarder to count their tokens.
+      await miniChef.set(0, 1, simpleRewarder.address, true)
+
+      await miniChef.connect(farmer).harvest(0, farmerAddress)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
+    })
+
+    it("Successfully withdraws and harvests reward tokens", async () => {
+      expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(0)
+      await miniChef
+        .connect(farmer)
+        .withdrawAndHarvest(0, BIG_NUMBER_1E18, farmerAddress)
+      expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(6),
+      )
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(1006),
+      )
+      expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(2002),
+      )
+    })
+  })
+
+  describe("emergencyWithdraw", () => {
+    beforeEach(async () => {
+      await initializeRewarder()
+
+      // Set rewarder of pid 0 to the SimpleRewarder contract
+      // From this point, users must call harvest, deposit, or withdraw to trigger
+      // the rewarder to count their tokens.
+      await miniChef.set(0, 1, simpleRewarder.address, true)
+
+      await miniChef.connect(farmer).harvest(0, farmerAddress)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
+    })
+
+    it("Successfully calls emergencyWithdraw", async () => {
+      expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(0)
+      await miniChef.connect(farmer).emergencyWithdraw(0, farmerAddress)
+      expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(6),
+      )
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      // Emergency withdraw does not withdraw rewardToken2
+      expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(2002),
+      )
     })
   })
 })
