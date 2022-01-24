@@ -99,6 +99,7 @@ describe("SimpleRewarder", async () => {
       // Add lpToken to minichef and sets main reward token's emision
       await miniChef.setSaddlePerSecond(BIG_NUMBER_1E18)
       await miniChef.add(1, usdv2LpToken.address, ZERO_ADDRESS)
+      expect(await miniChef.poolLength()).to.eq(1)
       await rewardToken1.transfer(miniChef.address, BIG_NUMBER_1E18.mul(10000))
 
       // Deposits some LP token to existing minichef contract
@@ -216,16 +217,42 @@ describe("SimpleRewarder", async () => {
       // Skip ahead 1000 seconds. We expect farmer to have about 1000e18 rewardToken1 and 2000e18 rewardToken2
       await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
       await miniChef.connect(farmer).harvest(0, farmerAddress)
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(1006),
+      )
+      expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(2002),
+      )
+    })
+  })
+
+  describe("deposit", () => {
+    beforeEach(async () => {
+      await initializeRewarder()
+    })
+
+    it("Successfully deposits more after the rewarder is set", async () => {
+      // Set rewarder of pid 0 to the SimpleRewarder contract
+      await miniChef.set(0, 1, simpleRewarder.address, true)
+      // Try harvesting. We expect farmer to receive little bit of rewardToken1 and 0 rewardToken2
+      await miniChef.connect(farmer).harvest(0, farmerAddress)
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(BIG_NUMBER_ZERO)
+
+      // Skip ahead 1000 seconds. We expect farmer to have about 1000e18 rewardToken1 and 2000e18 rewardToken2
+      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
+      await miniChef.connect(farmer).deposit(0, BIG_NUMBER_1E18, farmerAddress)
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(5),
+      )
+      expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(
+        BIG_NUMBER_1E18.mul(2002),
+      )
       expect(
-        (await rewardToken1.balanceOf(farmerAddress))
-          .div(BIG_NUMBER_1E18)
-          .toNumber(),
-      ).to.eq(1006)
-      expect(
-        (await rewardToken2.balanceOf(farmerAddress))
-          .div(BIG_NUMBER_1E18)
-          .toNumber(),
-      ).to.eq(2002)
+        (await miniChef.connect(farmer).userInfo(0, farmerAddress))[0],
+      ).to.eq(BIG_NUMBER_1E18.mul(2))
     })
   })
 
