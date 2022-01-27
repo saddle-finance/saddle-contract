@@ -174,11 +174,12 @@ describe("SimpleRewarder", async () => {
     })
 
     it("Successfully calls init", async () => {
+      const adminAddress = await signers[10].getAddress()
       const data = ethers.utils.defaultAbiCoder.encode(
         ["address", "address", "uint256", "address", "uint256"],
         [
           rewardToken2.address,
-          deployerAddress,
+          adminAddress,
           BIG_NUMBER_1E18.mul(2),
           usdv2LpToken.address,
           0,
@@ -190,6 +191,7 @@ describe("SimpleRewarder", async () => {
       expect(await simpleRewarder.rewardPerSecond()).to.eq(
         BIG_NUMBER_1E18.mul(2),
       )
+      expect(await simpleRewarder.owner()).to.eq(adminAddress)
     })
   })
 

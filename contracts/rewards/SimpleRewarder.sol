@@ -100,7 +100,8 @@ contract SimpleRewarder is IRewarder, BoringOwnable {
      */
     function init(bytes calldata data) public payable {
         require(rewardToken == IERC20(0), "Rewarder: already initialized");
-        (rewardToken, owner, rewardPerSecond, masterLpToken, pid) = abi.decode(
+        address _owner;
+        (rewardToken, _owner, rewardPerSecond, masterLpToken, pid) = abi.decode(
             data,
             (IERC20, address, uint256, IERC20, uint256)
         );
@@ -109,7 +110,8 @@ contract SimpleRewarder is IRewarder, BoringOwnable {
             IMiniChef(MINICHEF).lpToken(pid) == masterLpToken,
             "Rewarder: bad pid or masterLpToken"
         );
-        emit LogInit(rewardToken, owner, rewardPerSecond, masterLpToken);
+        transferOwnership(_owner, true, false);
+        emit LogInit(rewardToken, _owner, rewardPerSecond, masterLpToken);
     }
 
     /**
