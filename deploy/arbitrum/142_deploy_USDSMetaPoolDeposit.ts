@@ -3,7 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
-  const { execute, deploy, get, getOrNull, log } = deployments
+  const { execute, deploy, get, getOrNull, log, save } = deployments
   const { deployer } = await getNamedAccounts()
 
   const META_SWAP_DEPOSIT_NAME = "SaddleArbUSDSMetaPoolDeposit"
@@ -16,13 +16,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (metaPoolDeposit) {
     log(`reusing ${META_SWAP_DEPOSIT_NAME} at ${metaPoolDeposit.address}`)
   } else {
-    await deploy(META_SWAP_DEPOSIT_NAME, {
-      from: deployer,
-      log: true,
-      contract: "MetaSwapDeposit",
-      skipIfAlreadyDeployed: true,
-    })
-
     await execute(
       META_SWAP_DEPOSIT_NAME,
       { from: deployer, log: true },
@@ -37,6 +30,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get(META_POOL_LPTOKEN_NAME)
       ).address,
     )
+
+    await save(META_SWAP_DEPOSIT_NAME, await get("MetaSwapDeposit"))
   }
 }
 export default func

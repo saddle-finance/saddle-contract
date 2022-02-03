@@ -6,7 +6,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get, execute, getOrNull, log, save, read } = deployments
   const { deployer, libraryDeployer } = await getNamedAccounts()
 
-  const POOL_NAME = "SaddleArbUSDSMetaPool"
+  const META_POOL_NAME = "SaddleArbUSDSMetaPool"
+  const META_POOL_LPTOKEN_NAME = `${META_POOL_NAME}LPToken`
   const BASE_POOL_NAME = "SaddleArbUSDPoolV2"
 
   const TOKEN_ADDRESSES = [
@@ -21,9 +22,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const ADMIN_FEE = 0
 
   // Manually check if the pool is already deployed
-  const metaPool = await getOrNull(POOL_NAME)
+  const metaPool = await getOrNull(META_POOL_NAME)
   if (metaPool) {
-    log(`reusing ${POOL_NAME} at ${metaPool.address}`)
+    log(`reusing ${META_POOL_NAME} at ${metaPool.address}`)
   } else {
     await execute(
       "MetaSwap",
@@ -44,15 +45,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ).address,
     )
 
-    await save(POOL_NAME, {
-      abi: (await get("MetaSwap")).abi, // MetaSwap ABI
-      address: (await get("MetaSwap")).address, // MetaSwap address"),
-    })
+    await save(META_POOL_NAME, await get("MetaSwap"))
 
-    const lpTokenAddress = (await read(POOL_NAME, "swapStorage")).lpToken
-    log(`Saddle sUSD MetaSwap LP Token at ${lpTokenAddress}`)
+    const lpTokenAddress = (await read(META_POOL_NAME, "swapStorage")).lpToken
+    log(`Saddle ${META_POOL_LPTOKEN_NAME} at ${lpTokenAddress}`)
 
-    await save(`${POOL_NAME}LPToken`, {
+    await save(META_POOL_LPTOKEN_NAME, {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
