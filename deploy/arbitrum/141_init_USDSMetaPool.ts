@@ -41,6 +41,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       SWAP_FEE,
       ADMIN_FEE,
       (
+        await get("LPToken")
+      ).address,
+      (
         await get(BASE_POOL_NAME)
       ).address,
     )

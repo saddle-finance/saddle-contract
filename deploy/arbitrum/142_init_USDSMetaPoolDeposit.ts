@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log(`reusing ${META_SWAP_DEPOSIT_NAME} at ${metaPoolDeposit.address}`)
   } else {
     await execute(
-      META_SWAP_DEPOSIT_NAME,
+      "MetaSwapDeposit",
       { from: deployer, log: true },
       "initialize",
       (
