@@ -30,3 +30,10 @@ export function isTestNetwork(networkId: string): boolean {
     networkId == CHAIN_ID.FANTOM_TESTNET
   )
 }
+
+export const ALCHEMY_BASE_URL = {
+  [CHAIN_ID.MAINNET]: "https://eth-mainnet.alchemyapi.io/v2/",
+  [CHAIN_ID.ROPSTEN]: "https://eth-ropsten.alchemyapi.io/v2/",
+  [CHAIN_ID.ARBITRUM_MAINNET]: "https://arb-mainnet.g.alchemyapi.io/v2/",
+  [CHAIN_ID.ARBITRUM_TESTNET]: "https://arb-rinkeby.g.alchemyapi.io/v2/",
+}

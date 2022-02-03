@@ -71,7 +71,7 @@
     "coverage": "export CODE_COVERAGE=true && hardhat coverage --temp ./build/artifacts ; unset CODE_COVERAGE",
     "deploy": "hardhat deploy",
     "start": "hardhat node",
-    "fork": "dotenv -v FORK_MAINNET=true hardhat node --fork $ALCHEMY_API",
+    "fork": "dotenv -v FORK_MAINNET=true hardhat node --fork \"https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}\"",
     "prepare": "npm run build",
     "addresses": "node scripts/print-addresses.js"
   },
