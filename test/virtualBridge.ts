@@ -16,6 +16,7 @@ import { LPToken } from "../build/typechain/LPToken"
 import { Swap } from "../build/typechain/Swap"
 import chai from "chai"
 import dotenv from "dotenv"
+import { ALCHEMY_BASE_URL, CHAIN_ID } from "../utils/network"
 
 dotenv.config()
 chai.use(solidity)
@@ -131,7 +132,8 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       params: [
         {
           forking: {
-            jsonRpcUrl: process.env.ALCHEMY_API,
+            jsonRpcUrl:
+              ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
             blockNumber: 11598050,
           },
         },

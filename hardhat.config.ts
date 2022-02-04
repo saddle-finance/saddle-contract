@@ -11,6 +11,7 @@ import "hardhat-spdx-license-identifier"
 import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
 import { ethers } from "ethers"
+import { ALCHEMY_BASE_URL, CHAIN_ID } from "./utils/network"
 
 dotenv.config()
 
@@ -25,11 +26,11 @@ let config: HardhatUserConfig = {
       deploy: ["./deploy/mainnet/"],
     },
     mainnet: {
-      url: process.env.ALCHEMY_API,
+      url: ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
       deploy: ["./deploy/mainnet/"],
     },
     ropsten: {
-      url: process.env.ALCHEMY_API_ROPSTEN,
+      url: ALCHEMY_BASE_URL[CHAIN_ID.ROPSTEN] + process.env.ALCHEMY_API_KEY,
       gasPrice: ethers.utils.parseUnits("1.01", "gwei").toNumber(),
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
@@ -37,14 +38,20 @@ let config: HardhatUserConfig = {
       deploy: ["./deploy/mainnet/"],
     },
     arbitrum_testnet: {
-      url: "https://rinkeby.arbitrum.io/rpc",
+      url:
+        ALCHEMY_BASE_URL[CHAIN_ID.ARBITRUM_TESTNET] +
+        process.env.ALCHEMY_API_KEY,
+      chainId: 421611,
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
       deploy: ["./deploy/arbitrum/"],
     },
     arbitrum_mainnet: {
-      url: "https://arb1.arbitrum.io/rpc",
+      url:
+        ALCHEMY_BASE_URL[CHAIN_ID.ARBITRUM_MAINNET] +
+        process.env.ALCHEMY_API_KEY,
+      chainId: 42161,
       gasPrice: ethers.utils.parseUnits("2", "gwei").toNumber(),
       deploy: ["./deploy/arbitrum/"],
     },
@@ -173,7 +180,9 @@ if (process.env.FORK_MAINNET === "true" && config.networks) {
       hardhat: {
         ...config.networks.hardhat,
         forking: {
-          url: process.env.ALCHEMY_API ? process.env.ALCHEMY_API : "",
+          url: process.env.ALCHEMY_API_KEY
+            ? ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY
+            : throwAPIKeyNotFoundError(),
         },
         chainId: 1,
       },
@@ -184,6 +193,11 @@ if (process.env.FORK_MAINNET === "true" && config.networks) {
       },
     },
   }
+}
+
+function throwAPIKeyNotFoundError(): string {
+  throw Error("ALCHEMY_API_KEY environment variable is not set")
+  return ""
 }
 
 export default config
