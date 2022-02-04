@@ -132,8 +132,9 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
       params: [
         {
           forking: {
-            jsonRpcUrl:
-              ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
+            jsonRpcUrl: `${ALCHEMY_BASE_URL[CHAIN_ID.MAINNET]}${
+              process.env.ALCHEMY_API_KEY
+            }`,
             blockNumber: 11598050,
           },
         },
