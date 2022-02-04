@@ -10,7 +10,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     env:
-      ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
+      ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
       ALCHEMY_API_ROPSTEN: ${{ secrets.ALCHEMY_API_ROPSTEN }}
       MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
