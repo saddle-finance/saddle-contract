@@ -32,8 +32,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
-      ALCHEMY_API_ROPSTEN: ${{ secrets.ALCHEMY_API_ROPSTEN }}
+      ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
       MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
     - uses: actions/checkout@v2
@@ -55,8 +54,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     env:
-      ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
-      ALCHEMY_API_ROPSTEN: ${{ secrets.ALCHEMY_API_ROPSTEN }}
+      ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
       MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
     - uses: actions/checkout@v2
@@ -81,8 +79,7 @@ jobs:
   slither:
     runs-on: ubuntu-latest
     env:
-      ALCHEMY_API: ${{ secrets.ALCHEMY_API }}
-      ALCHEMY_API_ROPSTEN: ${{ secrets.ALCHEMY_API_ROPSTEN }}
+      ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
       MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
     - uses: actions/checkout@v2
