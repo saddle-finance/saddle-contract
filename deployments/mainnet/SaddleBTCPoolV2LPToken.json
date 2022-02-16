@@ -221,5 +221,6 @@
       "name": "Transfer",
       "type": "event"
     }
-  ]
+  ],
+  "numDeployments": 2
 }
