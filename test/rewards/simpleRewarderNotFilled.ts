@@ -360,7 +360,7 @@ describe("SimpleRewarder with MiniChefv2 but with ", async () => {
       await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
     })
 
-    it("Successfully calls emergencyWithdraw", async () => {
+    it("Successfully calls emergencyWithdraw and claims only rewardToken2", async () => {
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(5),
       )
