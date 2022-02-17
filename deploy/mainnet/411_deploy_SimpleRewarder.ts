@@ -2,6 +2,8 @@ import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { ZERO_ADDRESS } from "../../test/testUtils"
+import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
@@ -21,9 +23,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const PID = 5
     const tbtcMetaPoolLpToken = (await get("SaddleTBTCMetaPoolUpdatedLPToken"))
       .address
-    const rewardToken = "0x85Eee30c52B0b379b046Fb0F85F4f3Dc3009aFEC" // KEEP token
+    const rewardToken = (await get("KEEP")).address // KEEP token
     const rewardAdmin = "0xb78c0cf4c9e9bf4ba24b17065fa8c0ac71957653" // KEEP team's OpEx wallet
     const rewardPerSecond = BigNumber.from("413359788359788360") // 250k KEEP weekly
+
+    // Ensure LP token is added to MiniChefV2, uses arbitrary allocpoint
+    if ((await getChainId()) == CHAIN_ID.HARDHAT)
+      await execute(
+        "MiniChefV2",
+        { from: deployer, log: true },
+        "add",
+        1,
+        tbtcMetaPoolLpToken,
+        ZERO_ADDRESS,
+      )
 
     // Ensure pid is correct
     expect(await read("MiniChefV2", "lpToken", PID)).to.eq(tbtcMetaPoolLpToken)
