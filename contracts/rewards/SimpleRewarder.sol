@@ -95,7 +95,7 @@ contract SimpleRewarder is IRewarder, BoringOwnable {
 
     /**
      * @notice Serves as the constructor for clones, as clones can't have a regular constructor.
-     * Initializes state varialbes with the given parameter.
+     * Initializes state variables with the given parameter.
      * @param data abi encoded data in format of (IERC20 rewardToken, address owner, uint256 rewardPerSecond, IERC20 masterLpToken, uint256 pid).
      */
     function init(bytes calldata data) public payable {
@@ -176,7 +176,7 @@ contract SimpleRewarder is IRewarder, BoringOwnable {
     }
 
     /**
-     * @notice Returns pending reward tokens addresses and reward amounts for given address,
+     * @notice Returns pending reward tokens addresses and reward amounts for given address.
      * @dev Since SimpleRewarder supports only one additional reward, the returning arrays will only have one element.
      * @param user address of the user
      * @return rewardTokens array of reward tokens' addresses
