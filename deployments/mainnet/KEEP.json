@@ -1,5 +1,4 @@
 {
-  "address": "0x76204f8CFE8B95191A3d1CfA59E267EA65e06FAC",
   "abi": [
     {
       "constant": true,
@@ -222,5 +221,5 @@
       "type": "event"
     }
   ],
-  "numDeployments": 2
+  "address": "0x85eee30c52b0b379b046fb0f85f4f3dc3009afec"
 }
