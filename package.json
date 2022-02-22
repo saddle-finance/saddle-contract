@@ -44,7 +44,7 @@
     "hardhat-gas-reporter": "^1.0.6",
     "hardhat-spdx-license-identifier": "^2.0.3",
     "husky": "^7.0.4",
-    "lint-staged": "^11.0.0",
+    "lint-staged": "^12.3.4",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.11",
     "shelljs": "^0.8.4",
