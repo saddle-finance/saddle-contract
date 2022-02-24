@@ -2,6 +2,8 @@
 
 pragma solidity 0.6.12;
 
+//LPToken clone to facilitate the LiquidLoan Logic
+
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/ISwap.sol";
