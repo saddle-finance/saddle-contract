@@ -33,6 +33,9 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     using SwapUtils for SwapUtils.Swap;
     using AmplificationUtils for SwapUtils.Swap;
 
+    SwapUtils.userLoanInfo public userInfo;
+    
+    
     // Struct storing data responsible for automatic market maker functionalities. In order to
     // access this data, this contract uses SwapUtils library. For more details, see SwapUtils.sol
     SwapUtils.Swap public swapStorage;
@@ -41,6 +44,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     // getTokenIndex function also relies on this mapping to retrieve token index.
     mapping(address => uint8) private tokenIndexes;
 
+    
     /*** EVENTS ***/
 
     // events replicated from SwapUtils to make the ABI easier for dumb
@@ -106,6 +110,9 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _adminFee default adminFee to be initialized with
      * @param lpTokenTargetAddress the address of an existing LPToken contract to use as a target
      */
+
+    
+
     function initialize(
         IERC20[] memory _pooledTokens,
         uint8[] memory decimals,
@@ -387,8 +394,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     function addLiquidity(
         uint256[] calldata amounts,
         uint256 minToMint,
-        uint256 deadline,
-        bool isliquidLoan
+        uint256 deadline
     )
         external
         virtual
@@ -397,7 +403,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         deadlineCheck(deadline)
         returns (uint256)
     {
-        return swapStorage.addLiquidity(amounts, minToMint, isliquidLoan);
+        return swapStorage.addLiquidity(amounts, minToMint);
     }
 
     /**
