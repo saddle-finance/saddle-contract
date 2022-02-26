@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./AmplificationUtils.sol";
 import "./LPToken.sol";
-import "./LLToken.sol";
 import "./MathUtils.sol";
 
 /**
@@ -71,7 +70,6 @@ library SwapUtils {
         uint256 swapFee;
         uint256 adminFee;
         LPToken lpToken;
-        LLToken llToken;
         // contract references for all tokens being pooled
         IERC20[] pooledTokens;
         // multipliers for each pooled token's precision to get to POOL_PRECISION_DECIMALS
@@ -81,10 +79,6 @@ library SwapUtils {
         // the pool balance of each token, in the token's precision
         // the contract's actual token balance might differ
         uint256[] balances;
-        // the option to mortage your liquidity deposit
-        // Mortaging liquidity comes with a 6 month liquidity lock period
-        // only the pool manager can change that option(some pools are not suitable enough to use this utility)
-        bool mortage;
     }
 
     // Struct storing variables used in calculations in the
@@ -105,12 +99,36 @@ library SwapUtils {
         uint256 d2;
         uint256 preciseA;
         LPToken lpToken;
-        LLToken llToken;
         uint256 totalSupply;
-        uint256 totalSupplyb;
         uint256[] balances;
         uint256[] multipliers;
     }
+
+    // Struct that contains info about the pools ability to handle liquid loans
+    struct liquidLoansInfo {
+        //Declares pools ability to handle liquid loans
+        bool isLlenabled;
+        //Maintains different values from 1-8 that declares the % of loans that the LP can receive relevant to the deposited liquidity
+        uint256 loanType;
+
+    }
+
+    // Struct containing user loan info
+    struct userLoanInfo {
+        //oUSD to borrow
+        //addresses and their remaining to loan balance, it is uploaded every time the user deposits or withdraws liquidity
+        //address cant borrow more if it reaches 0
+        //address
+        mapping(address => uint) balanceRemain;
+        mapping(address => uint) LPTL;
+        // LP Tokens Locked
+        
+        // time available till the next loan in seconds
+        //requires previous loan to be paid on full
+        uint timeLimit;
+    }
+
+
 
     // the precision all pools tokens will be converted to
     uint8 public constant POOL_PRECISION_DECIMALS = 18;
@@ -132,6 +150,13 @@ library SwapUtils {
     uint256 private constant MAX_LOOP_LIMIT = 256;
 
     /*** VIEW & PURE FUNCTIONS ***/
+
+
+    
+
+
+   
+
 
     function _getAPrecise(Swap storage self) internal view returns (uint256) {
         return AmplificationUtils._getAPrecise(self);
@@ -726,6 +751,13 @@ library SwapUtils {
         return dy;
     }
 
+    function setLoanInfo(liquidLoansInfo storage _liquidLoansInfo,bool isttt, uint loant) external {
+        _liquidLoansInfo.isLlenabled = isttt;
+        _liquidLoansInfo.loanType = loant;
+
+
+    }
+
     /**
      * @notice Add liquidity to the pool
      * @param self Swap struct to read from and write to
@@ -737,15 +769,17 @@ library SwapUtils {
      */
     function addLiquidity(
         Swap storage self,
+        Swap storage userLoanInfo,
+        liquidLoansInfo storage _liquidLoansInfo,
         uint256[] memory amounts,
-        uint256 minToMint,
-        bool isliquidLoan
+        uint256 minToMint
     ) external returns (uint256) {
         IERC20[] memory pooledTokens = self.pooledTokens;
         require(
             amounts.length == pooledTokens.length,
             "Amounts must match pooled tokens"
         );
+
 
         // current state
         ManageLiquidityInfo memory v = ManageLiquidityInfo(
@@ -754,14 +788,11 @@ library SwapUtils {
             0,
             _getAPrecise(self),
             self.lpToken,
-            self.llToken,
-            0,
             0,
             self.balances,
             self.tokenPrecisionMultipliers
         );
         v.totalSupply = v.lpToken.totalSupply();
-        v.totalSupply = v.llToken.totalSupply();
 
         if (v.totalSupply != 0) {
             v.d0 = getD(_xp(v.balances, v.multipliers), v.preciseA);
@@ -835,11 +866,6 @@ library SwapUtils {
 
         // mint the user's LP tokens
         v.lpToken.mint(msg.sender, toMint);
-        // mint the equal on LL tokens
-        if (isliquidLoan == true) {
-            v.llToken.mint(msg.sender, toMint);
-
-        }
 
         emit AddLiquidity(
             msg.sender,
@@ -848,9 +874,10 @@ library SwapUtils {
             v.d1,
             v.totalSupply.add(toMint)
         );
-//mints exact same ammount of lp tokens
+
         return toMint;
-        
+
+      //  if ()
     }
 
     /**
@@ -864,14 +891,13 @@ library SwapUtils {
      */
     function removeLiquidity(
         Swap storage self,
+        Swap storage userLoanInfo,
+        liquidLoansInfo storage _liquidLoansInfo,
         uint256 amount,
         uint256[] calldata minAmounts
     ) external returns (uint256[] memory) {
-        //geo @dev addition
         LPToken lpToken = self.lpToken;
-        LLToken llToken = self.llToken;
         IERC20[] memory pooledTokens = self.pooledTokens;
-        require(amount <= llToken.balanceOf(msg.sender), "Only non collateralised assets can be removed");
         require(amount <= lpToken.balanceOf(msg.sender), ">LP.balanceOf");
         require(
             minAmounts.length == pooledTokens.length,
@@ -969,8 +995,6 @@ library SwapUtils {
             0,
             _getAPrecise(self),
             self.lpToken,
-            self.llToken,
-            0,
             0,
             self.balances,
             self.tokenPrecisionMultipliers
