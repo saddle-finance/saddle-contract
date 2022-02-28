@@ -57,6 +57,7 @@ library SwapUtils {
     );
     event NewAdminFee(uint256 newAdminFee);
     event NewSwapFee(uint256 newSwapFee);
+    event newIsLlenabled(bool newIsLlenabled);
 
     struct Swap {
         // variables around the ramp management of A,
@@ -109,7 +110,9 @@ library SwapUtils {
         //Declares pools ability to handle liquid loans
         bool isLlenabled;
         //Maintains different values from 1-8 that declares the % of loans that the LP can receive relevant to the deposited liquidity
+        //To be used later on when Liquid Loans cover non stablecoin native Liquidity Pools.
         uint256 loanType;
+        
 
     }
 
@@ -119,13 +122,17 @@ library SwapUtils {
         //addresses and their remaining to loan balance, it is uploaded every time the user deposits or withdraws liquidity
         //address cant borrow more if it reaches 0
         //address
-        mapping(address => uint) balanceRemain;
-        mapping(address => uint) LPTL;
+        //LP * 10 / 8
+        mapping(address => uint) balanceRemain; 
         // LP Tokens Locked
+        mapping(address => uint) LPTL;
         
+        //counter used on cases where a specific more than one one loans can be claimed
+        mapping(address => uint) nonce;
+
         // time available till the next loan in seconds
-        //requires previous loan to be paid on full
-        uint timeLimit;
+        //requires previous loan to be paid in full
+        mapping(address => uint256) timeLimit;
     }
 
 
@@ -148,6 +155,9 @@ library SwapUtils {
 
     // Constant value used as max loop limit
     uint256 private constant MAX_LOOP_LIMIT = 256;
+
+    //Default timelock value for Liquid Loans
+    uint256 private constant TIMELOCK = 3 days;
 
     /*** VIEW & PURE FUNCTIONS ***/
 
@@ -769,7 +779,7 @@ library SwapUtils {
      */
     function addLiquidity(
         Swap storage self,
-        Swap storage userLoanInfo,
+        userLoanInfo storage _userLoanInfo,
         liquidLoansInfo storage _liquidLoansInfo,
         uint256[] memory amounts,
         uint256 minToMint
@@ -877,7 +887,21 @@ library SwapUtils {
 
         return toMint;
 
-      //  if ()
+        require(_userLoanInfo.nonce[msg.sender] <= 1);
+        //requires nonce to be 0, no multyple loans are allowed at this stage
+        if (_liquidLoansInfo.isLlenabled == true) {
+            //80% Loan rate
+            _userLoanInfo.balanceRemain[msg.sender] = toMint / 10 * 8;
+            //Locks all LP generated tokens from this session
+            _userLoanInfo.LPTL[msg.sender] = toMint;
+            //increments nonce
+            _userLoanInfo.nonce[msg.sender] = _userLoanInfo.nonce[msg.sender] ++;
+            //initialize user timeLimit
+            _userLoanInfo.timeLimit[msg.sender] = block.timestamp;
+
+        }
+
+      
     }
 
     /**
@@ -891,7 +915,7 @@ library SwapUtils {
      */
     function removeLiquidity(
         Swap storage self,
-        Swap storage userLoanInfo,
+        userLoanInfo storage _userLoanInfo,
         liquidLoansInfo storage _liquidLoansInfo,
         uint256 amount,
         uint256[] calldata minAmounts
@@ -903,6 +927,16 @@ library SwapUtils {
             minAmounts.length == pooledTokens.length,
             "minAmounts must match poolTokens"
         );
+
+        if (_liquidLoansInfo.isLlenabled == true) {
+            require(_userLoanInfo.timeLimit[msg.sender] >= TIMELOCK);
+            require(_userLoanInfo.LPTL[msg.sender] != 0);
+            require(_userLoanInfo.LPTL[msg.sender] <= lpToken.balanceOf(msg.sender));
+            require(amount <= _userLoanInfo.LPTL[msg.sender]);
+            
+        }
+
+        
 
         uint256[] memory balances = self.balances;
         uint256 totalSupply = lpToken.totalSupply();
@@ -924,6 +958,17 @@ library SwapUtils {
         emit RemoveLiquidity(msg.sender, amounts, totalSupply.sub(amount));
 
         return amounts;
+
+        require(_liquidLoansInfo.isLlenabled == true);
+            //decrements nonce
+        _userLoanInfo.nonce[msg.sender] = _userLoanInfo.nonce[msg.sender] --;
+            //decrements burned LPToken amount
+        _userLoanInfo.LPTL[msg.sender] = - amount;
+            //Resets timeLimit to 0
+        _userLoanInfo.timeLimit[msg.sender] = 0;
+            //
+        _userLoanInfo.balanceRemain[msg.sender] = - amount / 10 * 8;
+        
     }
 
     /**
@@ -1105,4 +1150,10 @@ library SwapUtils {
 
         emit NewSwapFee(newSwapFee);
     }
+
+//    function setLiquidLoans(liquidLoansInfo storage _liquidLoansInfo, bool newIsLlenabled) external {
+//        _liquidLoansInfo.isLlenabled = newIsLlenabled;
+
+//        emit NewIsLlenabled(newIsLlenabled);
+ //   }
 }
