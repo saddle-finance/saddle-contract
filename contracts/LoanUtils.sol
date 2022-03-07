@@ -1,39 +1,55 @@
+// SPDX-License-Identifier: MIT
+
 //SPDX: MIT
 
 pragma solidity 0.6.12;
 
 //import "./oUSD.sol";
-import "@openzeppelin/contracts@3.3.0/access/Ownable.sol";
-import "@openzeppelin/contracts@3.3.0/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/ISwap.sol";
 
 import "./LPToken.sol";
-
-//import ierc receiver?
+import "./oUSD.sol";
 
 
 
 contract loanUtils is Ownable {
 
+// Nonce indication of the Liquid Loans a user currently holds, can only be 0 or 1 for now
 
+// LPL = LP locked
+
+// The amount of claimed oUSD after the LP was locked
+
+// The block.timestamp that the user received the Liquid Loan
   struct userLoan {
       uint nonce;
 
       uint LPL;
 
-      uint timelocked;
+      uint claimedUsd;
+
+      uint timer;
+
+//    uint timelimit;
   }
 
+ 
+//mapping that engulfs the userLoan struct
 
   mapping(address => userLoan) userLoans;
 
-    //Timelockperiods corresponding to % of stablecoin balance release 10-80%
+  //Timelockperiods corresponding to % of stablecoin release 10-80% relevant to LPValue
+  //to be implemented later, rn only the 14 days timelock is used with default 80%
 
+  uint256 private constant TIMELOCK3 = 14 days;
+/*
   uint256 private constant TIMELOCK1 = 3 days;
 
   uint256 private constant TIMELOCK2 = 7 days;
 
-  uint256 private constant TIMELOCK3 = 14 days;
+  
 
   uint256 private constant TIMELOCK4 = 21 days;
 
@@ -44,75 +60,99 @@ contract loanUtils is Ownable {
   uint256 private constant TIMELOCK7 = 180 days;
 
   uint256 private constant TIMELOCK8 = 360 days;
+  */
 
-//Each authorized Pool can get its address here
+//Each LPcontract authorized to participate in the LiquidLoan incentives can be added from here
   address LPToken1;
 
-  address UsdContract;
+//thy payable address to receive LPTokens that are used as collateral for oUSD loans
+  address payable thy;
 
-  address swapContract;
 
 
-  //set addresses for contracts
 
-  function setAdressSwap(address _swapContract) internal onlyOwner {
-        swapContract = _swapContract;
+
+  //set thy, to be governed with multysig
+  /*address set function used because other functions from the imported contracts are not
+  allowed to use <this> as a parameter*/
+  function setThy(address payable _thy) internal onlyOwner{
+    thy = _thy;
   }
 
-  function setAddressLP(address _LPToken1) internal onlyOwner{
-        LPToken1 = _LPToken1;
-    }
+  //Set LPToken1 address to be used in RequestLoan() and repayLoan() functions
+   function setLPToken1(address _LPToken1) internal onlyOwner{
+     LPToken1 = _LPToken1;
+   }
 
-  function setAddressUsd(address _usdcontract) internal onlyOwner{
-        UsdContract = _usdcontract;
-    }
-  //calls virtual price from ISwap interface
-  function callVirtualPrice(address account) external view returns (uint256){
-        ISwap iswap = ISwap(swapContract);
-        return ISwap.getVirtualPrice(account);
-  }
-  //Gets LP balance from LPToken contract
-  function getLPBalance(address account) external view returns (uint256){
-         LPToken lptoken = LPToken(LPToken1);
-         return lptoken.balanceOf(account);
-     }
+   //require initialisation of setLPToken1 before Request Loan, use states
 
-//requested amount in USD
-//Deposit address is checked for LP balance
-//lp 
-  function RequestLoan(uint requestedAmount, uint lplock, uint timeLock) public{
-        lpBalance = getLPBalance(msg.sender);
-        require(timelock < 9 && timelock != 0);
+ 
+ 
+
+
+  function RequestLoan(LPToken _LPToken, ISwap _ISwap, oUSD _oUSD, uint lplock, uint timelock) public{
+        uint lpBalance = _LPToken.balanceOf(msg.sender);
+        require(timelock <= 8 && timelock != 0);
         require(lplock <= lpBalance && lplock != 0);
-        //calculate virtual swap
-        virtualPrice = callVirtualPrice(msg.sender);
+        //calculate virtual price
+       
 
-
+        uint virtualPrice = _ISwap.getVirtualPrice();
         //move lp tokens with approve() + transferfrom()
-        LPToken lptoken = LPToken(LPToken1);
-        lptoken.approve(this, lplock);
-        lptoken.transferfrom(msg.sender, this, lplock);
+        _LPToken.approve(thy, lplock);
+        _LPToken.transferFrom(msg.sender, thy, lplock);
 
-        //update mapping
-        var userloans = userLoans[msg.sender];
-        userloans.LPL = lplock;
-        userloans.timelocked = ;
-        userloans.nonce = ++;
-        lockedLP(msg.sender) = lplock;
-
+        //update struct inside of mapping
+        
+        userLoans[msg.sender].LPL = lplock;
+        userLoans[msg.sender].timer = block.timestamp;
+        userLoans[msg.sender].nonce = userLoans[msg.sender].nonce ++;
         
         
         // lplock * virtualPrice / 10 * timelock
-        claimUSD = (lplock * virtualPrice) / (10 * timelock);
+        // default 80% for now
+        
+        uint claimUSD = (lplock * virtualPrice / 10) * 8;
 
         //mint USD
 
-        oUSD ousd = oUSD(UsdContract);
-        ousd.mint(msg.sender, claimUSD);
+       
+        _oUSD.mint(msg.sender, claimUSD);
+
+        //update mapping
+        userLoans[msg.sender].claimedUsd = claimUSD;
+  }
 
 
-        function repayLoan(){
+  function repayLoan(oUSD _oUSD, LPToken _LPToken, uint repayAmount) public { 
+        require(userLoans[msg.sender].timer >= TIMELOCK3);
+        require(repayAmount <= userLoans[msg.sender].LPL);
+        require(userLoans[msg.sender].nonce != 0 && userLoans[msg.sender].nonce == 1);
+        require(repayAmount <= userLoans[msg.sender].claimedUsd);
+//if repayAmount is equal to claimedUsd
+//burn all oUSD and unlock the LP tokens back to the user
+// decrement nonce as the Loan is repaid
 
+        if (repayAmount == userLoans[msg.sender].claimedUsd){
+          _oUSD.burnFrom(msg.sender, repayAmount);
+          _LPToken.approve(msg.sender, userLoans[msg.sender].LPL);
+          _LPToken.transferFrom(thy, msg.sender, userLoans[msg.sender].LPL);
+          userLoans[msg.sender].nonce = userLoans[msg.sender].nonce --;
+//else if the repayAmount is less than the amount Loaned
+//divideLocked LP tokens with claimedUSD to find the analogy at which the conversion took place at first
+//then multiply with repayAmount to find the value of LPTokens that need to be unlocked
+        }
+        else if (repayAmount <= userLoans[msg.sender].claimedUsd){
+          uint analogy = (userLoans[msg.sender].LPL / userLoans[msg.sender].claimedUsd) * repayAmount;
+          _oUSD.burnFrom(msg.sender, repayAmount);
+          _LPToken.approve(msg.sender, analogy);
+          _LPToken.transferFrom(thy, msg.sender, analogy);
+          //nonce is not decremented yet as loan is not considered fully repaid
+
+
+        }
+        else {
+          revert();
         }
 
 
@@ -120,7 +160,14 @@ contract loanUtils is Ownable {
 
 
 
-  }
+    }
+
+
+
+
+
+
+  
 
 
 
