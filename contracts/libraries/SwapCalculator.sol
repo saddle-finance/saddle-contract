@@ -171,15 +171,15 @@ contract SwapCalculator {
     /**
      * @notice Calculate the new balances of the tokens given the indexes of the token
      * that is swapped from (FROM) and the token that is swapped to (TO).
-     * This function is used as a helper function to calculate how much TO token
-     * the user should receive on swap.
+     * This function is used as a helper function to calculate how much FROM token
+     * the user will be required to transfer on swap.
      *
      * @param preciseA precise form of amplification coefficient
      * @param tokenIndexFrom index of FROM token
      * @param tokenIndexTo index of TO token
      * @param y the new total amount of TO token
      * @param xp balances of the tokens in the pool
-     * @return the amount of TO token that should remain in the pool
+     * @return the amount of FROM token that will be required
      */
     function getX(
         uint256 preciseA,
