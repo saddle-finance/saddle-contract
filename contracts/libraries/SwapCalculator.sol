@@ -22,16 +22,10 @@ contract SwapCalculator {
         uint256 indexFrom,
         uint256 indexTo,
         uint256 amount
-    ) external pure returns (uint256 dy) { 
+    ) external pure returns (uint256 dy) {
         // Calculate the swap
         uint256 x = amount.add(xp[indexFrom]);
-        uint256 y = getY(
-            a,
-            indexFrom,
-            indexTo,
-            x,
-            xp
-        );
+        uint256 y = getY(a, indexFrom, indexTo, x, xp);
         dy = xp[indexTo].sub(y).sub(1);
 
         // Simulate the swap fee
@@ -46,20 +40,14 @@ contract SwapCalculator {
         uint256 indexFrom,
         uint256 indexTo,
         uint256 amount
-    )  external pure returns (uint256 dx) {
+    ) external pure returns (uint256 dx) {
         // Simulate the swap fee
         uint256 dyFee = amount.mul(swapFee).div(FEE_DENOMINATOR.sub(swapFee));
         amount = amount.add(dyFee);
 
         // Calculate the swap
         uint256 y = xp[indexTo].sub(amount);
-        uint256 x = getX(
-            a,
-            indexFrom,
-            indexTo,
-            y,
-            xp
-        );
+        uint256 x = getX(a, indexFrom, indexTo, y, xp);
         dx = x.sub(xp[indexFrom]).add(1);
     }
 
@@ -98,18 +86,11 @@ contract SwapCalculator {
                 // dP = dP * D * D * D * ... overflow!
             }
             prevD = d;
-            d = nA
-                .mul(s)
-                .div(A_PRECISION)
-                .add(dP.mul(numTokens))
-                .mul(d)
-                .div(
-                    nA
-                        .sub(A_PRECISION)
-                        .mul(d)
-                        .div(A_PRECISION)
-                        .add(numTokens.add(1).mul(dP))
-                );
+            d = nA.mul(s).div(A_PRECISION).add(dP.mul(numTokens)).mul(d).div(
+                nA.sub(A_PRECISION).mul(d).div(A_PRECISION).add(
+                    numTokens.add(1).mul(dP)
+                )
+            );
             if (d.within1(prevD)) {
                 return d;
             }
@@ -209,5 +190,4 @@ contract SwapCalculator {
     ) internal pure returns (uint256) {
         return getY(preciseA, tokenIndexTo, tokenIndexFrom, y, xp);
     }
-
 }
