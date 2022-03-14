@@ -69,26 +69,23 @@ contract SwapCalculator is BaseBoringBatchable {
         ).div(10**BALANCE_DECIMALS.sub(decimalsArr[inputIndex]));
     }
 
-    function marginalPrice(
+    function relativePrice(
         address pool,
         uint256 inputIndex,
         uint256 outputIndex
-    ) external view returns (uint256) {
+    ) external view returns (uint256 price) {
         uint256[] memory decimalsArr = storedDecimals[pool];
         require(decimalsArr.length > 0, "Pool not added");
         require(
-            inputIndex > decimalsArr.length && outputIndex > decimalsArr.length,
+            inputIndex < decimalsArr.length && outputIndex < decimalsArr.length,
             "Invalid token index"
         );
         uint256[] memory balances = new uint256[](decimalsArr.length);
         for (uint256 i = 0; i < decimalsArr.length; i++) {
-            uint256 multiplier = 10 ^ BALANCE_DECIMALS.sub(decimalsArr[i]);
+            uint256 multiplier = 10**BALANCE_DECIMALS.sub(decimalsArr[i]);
             balances[i] = ISwap(pool).getTokenBalance(uint8(i)).mul(multiplier);
         }
-        return
-            marginalPriceCustom(balances, inputIndex, outputIndex).mul(
-                10**BALANCE_DECIMALS.sub(decimalsArr[outputIndex])
-            );
+        price = relativePriceCustom(balances, inputIndex, outputIndex);
     }
 
     function calculateSwapOutputCustom(
@@ -129,7 +126,7 @@ contract SwapCalculator is BaseBoringBatchable {
         inputAmount = x.sub(balances[inputIndex]).add(1);
     }
 
-    function marginalPriceCustom(
+    function relativePriceCustom(
         uint256[] memory balances,
         uint256 inputIndex,
         uint256 outputIndex

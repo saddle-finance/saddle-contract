@@ -41,7 +41,11 @@ describe("SwapCalculator", async () => {
       })
 
       await swap.addLiquidity(
-        [BIG_NUMBER_1E18, BigNumber.from(1e6), BigNumber.from(1e6)],
+        [
+          BIG_NUMBER_1E18.mul(100),
+          BigNumber.from(1e6).mul(100),
+          BigNumber.from(1e6).mul(100),
+        ],
         0,
         MAX_UINT256,
       )
@@ -56,17 +60,20 @@ describe("SwapCalculator", async () => {
 
   describe("calculateSwapOutputCustom", () => {
     it("Successfully calculates exact outputs using manual pool params", async () => {
-      // Deploy dummy tokens
       const expectedOutput =
         await swapCalculator.callStatic.calculateSwapOutputCustom(
-          [BIG_NUMBER_1E18, BIG_NUMBER_1E18, BIG_NUMBER_1E18],
+          [
+            BIG_NUMBER_1E18.mul(100),
+            BIG_NUMBER_1E18.mul(100),
+            BIG_NUMBER_1E18.mul(100),
+          ],
           20000, // 200 A
           4e6, // 4bps
           0,
           1,
           String(0.5e18),
         )
-      expect(expectedOutput).to.eq("498155850119905812")
+      expect(expectedOutput).to.eq("499787567165725477")
       expect(expectedOutput.div(String(1e12))).to.eq(
         await swap.calculateSwap(0, 1, String(0.5e18)),
       )
@@ -75,7 +82,6 @@ describe("SwapCalculator", async () => {
 
   describe("calculateSwapOutput", () => {
     it("Successfully calculates exact outputs using existing pool address", async () => {
-      // Deploy dummy tokens
       const expectedOutput =
         await swapCalculator.callStatic.calculateSwapOutput(
           swap.address,
@@ -83,7 +89,7 @@ describe("SwapCalculator", async () => {
           1,
           String(0.5e18),
         )
-      expect(expectedOutput).to.eq("498155")
+      expect(expectedOutput).to.eq("499787")
       expect(expectedOutput).to.eq(
         await swap.calculateSwap(0, 1, String(0.5e18)),
       )
@@ -95,12 +101,16 @@ describe("SwapCalculator", async () => {
       // Deploy dummy tokens
       const expectedInput =
         await swapCalculator.callStatic.calculateSwapInputCustom(
-          [BIG_NUMBER_1E18, BIG_NUMBER_1E18, BIG_NUMBER_1E18],
+          [
+            BIG_NUMBER_1E18.mul(100),
+            BIG_NUMBER_1E18.mul(100),
+            BIG_NUMBER_1E18.mul(100),
+          ],
           20000, // 200 A
           4e6, // 4bps
           0,
           1,
-          "498155850119905812",
+          "499787567165725477",
         )
       expect(expectedInput).to.eq(String(0.5e18))
     })
@@ -108,22 +118,33 @@ describe("SwapCalculator", async () => {
 
   describe("calculateSwapInput", () => {
     it("Successfully calculates exact inputs using existing pool address", async () => {
-      // Deploy dummy tokens
       const expectedInput = await swapCalculator.callStatic.calculateSwapInput(
         swap.address,
         0,
         1,
-        "498155",
+        "499787",
       )
       const estimatedGas = await swapCalculator.estimateGas.calculateSwapInput(
         swap.address,
         0,
         1,
-        "498155",
+        "499787",
       )
       console.log(`Estimated gas: ${estimatedGas}`)
-      // 499999142075192543 is close enough to 0.5e18
-      expect(expectedInput).to.eq("499999142075192543")
+      // 499999432579087226 is close enough to 0.5e18
+      // inaccurate due to rounding errors
+      expect(expectedInput).to.eq("499999432579087226")
+    })
+  })
+
+  describe("relativePrice", () => {
+    it("Successfully calculates exact inputs using existing pool address", async () => {
+      const expected = await swapCalculator.callStatic.relativePrice(
+        swap.address,
+        0,
+        1,
+      )
+      expect(expected).to.eq(String(1e18))
     })
   })
 })
