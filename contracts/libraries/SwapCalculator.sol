@@ -5,50 +5,161 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../MathUtils.sol";
+import "../interfaces/ISwap.sol";
+import "../helper/BaseBoringBatchable.sol";
 
-contract SwapCalculator {
+interface IERC20Decimals {
+    function decimals() external returns (uint8);
+}
+
+contract SwapCalculator is BaseBoringBatchable {
     using SafeMath for uint256;
     using MathUtils for uint256;
 
     // Constant values
+    uint256 private constant BALANCE_PRECISION = 1e18;
+    uint256 private constant BALANCE_DECIMALS = 18;
     uint256 private constant A_PRECISION = 100;
     uint256 private constant MAX_LOOP_LIMIT = 256;
+    uint256 private constant MAX_TOKENS_LENGTH = 8;
     uint256 private constant FEE_DENOMINATOR = 10**10;
 
-    function calculateSwapOutput(
-        uint256[] memory xp,
-        uint256 a,
-        uint256 swapFee,
-        uint256 indexFrom,
-        uint256 indexTo,
-        uint256 amount
-    ) external pure returns (uint256 dy) {
-        // Calculate the swap
-        uint256 x = amount.add(xp[indexFrom]);
-        uint256 y = getY(a, indexFrom, indexTo, x, xp);
-        dy = xp[indexTo].sub(y).sub(1);
+    mapping(address => uint256[]) public storedDecimals;
 
-        // Simulate the swap fee
-        uint256 dyFee = dy.mul(swapFee).div(FEE_DENOMINATOR);
-        dy = dy.sub(dyFee);
+    function calculateSwapOutput(
+        address pool,
+        uint256 inputIndex,
+        uint256 outputIndex,
+        uint256 inputAmount
+    ) external view returns (uint256 outputAmount) {
+        outputAmount = ISwap(pool).calculateSwap(
+            uint8(inputIndex),
+            uint8(outputIndex),
+            inputAmount
+        );
     }
 
     function calculateSwapInput(
-        uint256[] memory xp,
+        address pool,
+        uint256 inputIndex,
+        uint256 outputIndex,
+        uint256 outputAmount
+    ) external view returns (uint256 inputAmount) {
+        uint256[] memory decimalsArr = storedDecimals[pool];
+        require(decimalsArr.length > 0, "Pool not added");
+
+        uint256[] memory balances = new uint256[](decimalsArr.length);
+        for (uint256 i = 0; i < decimalsArr.length; i++) {
+            uint256 multiplier = 10**BALANCE_DECIMALS.sub(decimalsArr[i]);
+            balances[i] = ISwap(pool).getTokenBalance(uint8(i)).mul(multiplier);
+        }
+        outputAmount = outputAmount.mul(
+            10**BALANCE_DECIMALS.sub(decimalsArr[outputIndex])
+        );
+
+        (, , , , uint256 swapFee, , ) = ISwap(pool).swapStorage();
+
+        inputAmount = calculateSwapInputCustom(
+            balances,
+            ISwap(pool).getAPrecise(),
+            swapFee,
+            inputIndex,
+            outputIndex,
+            outputAmount
+        ).div(10**BALANCE_DECIMALS.sub(decimalsArr[inputIndex]));
+    }
+
+    function marginalPrice(
+        address pool,
+        uint256 inputIndex,
+        uint256 outputIndex
+    ) external view returns (uint256) {
+        uint256[] memory decimalsArr = storedDecimals[pool];
+        require(decimalsArr.length > 0, "Pool not added");
+        require(
+            inputIndex > decimalsArr.length && outputIndex > decimalsArr.length,
+            "Invalid token index"
+        );
+        uint256[] memory balances = new uint256[](decimalsArr.length);
+        for (uint256 i = 0; i < decimalsArr.length; i++) {
+            uint256 multiplier = 10 ^ BALANCE_DECIMALS.sub(decimalsArr[i]);
+            balances[i] = ISwap(pool).getTokenBalance(uint8(i)).mul(multiplier);
+        }
+        return
+            marginalPriceCustom(balances, inputIndex, outputIndex).mul(
+                10**BALANCE_DECIMALS.sub(decimalsArr[outputIndex])
+            );
+    }
+
+    function calculateSwapOutputCustom(
+        uint256[] memory balances,
         uint256 a,
         uint256 swapFee,
-        uint256 indexFrom,
-        uint256 indexTo,
-        uint256 amount
-    ) external pure returns (uint256 dx) {
+        uint256 inputIndex,
+        uint256 outputIndex,
+        uint256 inputAmount
+    ) public pure returns (uint256 outputAmount) {
+        // Calculate the swap
+        uint256 x = inputAmount.add(balances[inputIndex]);
+        uint256 y = getY(a, inputIndex, outputIndex, x, balances);
+        outputAmount = balances[outputIndex].sub(y).sub(1);
+
         // Simulate the swap fee
-        uint256 dyFee = amount.mul(swapFee).div(FEE_DENOMINATOR.sub(swapFee));
-        amount = amount.add(dyFee);
+        uint256 fee = outputAmount.mul(swapFee).div(FEE_DENOMINATOR);
+        outputAmount = outputAmount.sub(fee);
+    }
+
+    function calculateSwapInputCustom(
+        uint256[] memory balances,
+        uint256 a,
+        uint256 swapFee,
+        uint256 inputIndex,
+        uint256 outputIndex,
+        uint256 outputAmount
+    ) public pure returns (uint256 inputAmount) {
+        // Simulate the swap fee
+        uint256 fee = outputAmount.mul(swapFee).div(
+            FEE_DENOMINATOR.sub(swapFee)
+        );
+        outputAmount = outputAmount.add(fee);
 
         // Calculate the swap
-        uint256 y = xp[indexTo].sub(amount);
-        uint256 x = getX(a, indexFrom, indexTo, y, xp);
-        dx = x.sub(xp[indexFrom]).add(1);
+        uint256 y = balances[outputIndex].sub(outputAmount);
+        uint256 x = getX(a, inputIndex, outputIndex, y, balances);
+        inputAmount = x.sub(balances[inputIndex]).add(1);
+    }
+
+    function marginalPriceCustom(
+        uint256[] memory balances,
+        uint256 inputIndex,
+        uint256 outputIndex
+    ) public pure returns (uint256) {
+        for (uint256 i = 0; i < balances.length; i++) {
+            require(balances[i] > BALANCE_PRECISION, "Balance too low");
+        }
+        return
+            balances[outputIndex].mul(BALANCE_PRECISION).div(
+                balances[inputIndex]
+            );
+    }
+
+    function addPool(address pool) public {
+        uint256[] memory decimalsArr = new uint256[](MAX_TOKENS_LENGTH);
+
+        for (uint256 i = 0; i < MAX_TOKENS_LENGTH; i++) {
+            try ISwap(pool).getToken(uint8(i)) returns (IERC20 token) {
+                require(address(token) != address(0), "Token invalid");
+                decimalsArr[i] = IERC20Decimals(address(token)).decimals();
+            } catch {
+                assembly {
+                    mstore(decimalsArr, sub(mload(decimalsArr), sub(8, i)))
+                }
+                break;
+            }
+        }
+
+        require(decimalsArr.length > 0, "Pool not added");
+        storedDecimals[pool] = decimalsArr;
     }
 
     /**
