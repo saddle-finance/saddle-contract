@@ -21,8 +21,7 @@ describe("SwapCalculator", async () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
-
+      await deployments.fixture()
       signers = await ethers.getSigners()
       owner = signers[0]
       factory = await ethers.getContractFactory("SwapCalculator")

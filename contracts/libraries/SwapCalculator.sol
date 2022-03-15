@@ -85,7 +85,13 @@ contract SwapCalculator is BaseBoringBatchable {
             uint256 multiplier = 10**BALANCE_DECIMALS.sub(decimalsArr[i]);
             balances[i] = ISwap(pool).getTokenBalance(uint8(i)).mul(multiplier);
         }
-        price = relativePriceCustom(balances, inputIndex, outputIndex);
+
+        price = relativePriceCustom(
+            balances,
+            ISwap(pool).getAPrecise(),
+            inputIndex,
+            outputIndex
+        );
     }
 
     function calculateSwapOutputCustom(
@@ -128,15 +134,18 @@ contract SwapCalculator is BaseBoringBatchable {
 
     function relativePriceCustom(
         uint256[] memory balances,
+        uint256 a,
         uint256 inputIndex,
         uint256 outputIndex
-    ) public pure returns (uint256) {
-        for (uint256 i = 0; i < balances.length; i++) {
-            require(balances[i] > BALANCE_PRECISION, "Balance too low");
-        }
+    ) public pure returns (uint256 price) {
         return
-            balances[outputIndex].mul(BALANCE_PRECISION).div(
-                balances[inputIndex]
+            calculateSwapOutputCustom(
+                balances,
+                a,
+                0,
+                inputIndex,
+                outputIndex,
+                BALANCE_PRECISION
             );
     }
 
