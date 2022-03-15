@@ -143,7 +143,7 @@ describe("SwapCalculator", async () => {
         0,
         1,
       )
-      expect(expected).to.eq(String(1e18))
+      expect(expected).to.eq("999950246305788192")
     })
   })
 })
