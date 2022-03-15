@@ -149,7 +149,7 @@ contract SwapCalculator is BaseBoringBatchable {
             );
     }
 
-    function addPool(address pool) public {
+    function addPool(address pool) external payable {
         uint256[] memory decimalsArr = new uint256[](MAX_TOKENS_LENGTH);
 
         for (uint256 i = 0; i < MAX_TOKENS_LENGTH; i++) {
