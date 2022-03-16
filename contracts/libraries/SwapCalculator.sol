@@ -12,6 +12,11 @@ interface IERC20Decimals {
     function decimals() external returns (uint8);
 }
 
+/**
+ * @title SwapCalculator
+ * @notice A contract to help calculate exact input and output amounts for a swap. Supports pools with ISwap interfaces.
+ * Additionally includes functions to calculate with arbitrary balances, A parameter, and swap fee.
+ */
 contract SwapCalculator is BaseBoringBatchable {
     using SafeMath for uint256;
     using MathUtils for uint256;
@@ -62,7 +67,7 @@ contract SwapCalculator is BaseBoringBatchable {
         uint256 outputAmount
     ) external view returns (uint256 inputAmount) {
         uint256[] memory decimalsArr = storedDecimals[pool];
-        require(decimalsArr.length > 0, "Pool not added");
+        require(decimalsArr.length > 0, "Must call addPool() first");
 
         uint256[] memory balances = new uint256[](decimalsArr.length);
         for (uint256 i = 0; i < decimalsArr.length; i++) {
@@ -98,11 +103,8 @@ contract SwapCalculator is BaseBoringBatchable {
         uint256 outputIndex
     ) external view returns (uint256 price) {
         uint256[] memory decimalsArr = storedDecimals[pool];
-        require(decimalsArr.length > 0, "Pool not added");
-        require(
-            inputIndex < decimalsArr.length && outputIndex < decimalsArr.length,
-            "Invalid token index"
-        );
+        require(decimalsArr.length > 0, "Must call addPool() first");
+
         uint256[] memory balances = new uint256[](decimalsArr.length);
         for (uint256 i = 0; i < decimalsArr.length; i++) {
             uint256 multiplier = 10**BALANCE_DECIMALS.sub(decimalsArr[i]);
@@ -136,6 +138,10 @@ contract SwapCalculator is BaseBoringBatchable {
         uint256 outputIndex,
         uint256 inputAmount
     ) public pure returns (uint256 outputAmount) {
+        require(
+            inputIndex < balances.length && outputIndex < balances.length,
+            "Invalid token index"
+        );
         // Calculate the swap
         uint256 x = inputAmount.add(balances[inputIndex]);
         uint256 y = getY(a, inputIndex, outputIndex, x, balances);
@@ -165,6 +171,11 @@ contract SwapCalculator is BaseBoringBatchable {
         uint256 outputIndex,
         uint256 outputAmount
     ) public pure returns (uint256 inputAmount) {
+        require(
+            inputIndex < balances.length && outputIndex < balances.length,
+            "Invalid token index"
+        );
+
         // Simulate the swap fee
         uint256 fee = outputAmount.mul(swapFee).div(
             FEE_DENOMINATOR.sub(swapFee)
@@ -222,7 +233,7 @@ contract SwapCalculator is BaseBoringBatchable {
             }
         }
 
-        require(decimalsArr.length > 0, "Pool not added");
+        require(decimalsArr.length > 0, "Must call addPool() first");
         storedDecimals[pool] = decimalsArr;
     }
 
