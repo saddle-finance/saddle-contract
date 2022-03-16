@@ -26,6 +26,14 @@ contract SwapCalculator is BaseBoringBatchable {
 
     mapping(address => uint256[]) public storedDecimals;
 
+    /**
+     * @notice Calculate the expected output amount for given pool, indexes, and input amount
+     * @param pool address of a pool contract that implements ISwap
+     * @param inputIndex index of the input token in the pool
+     * @param outputIndex index of the output token in the pool
+     * @param inputAmount amount of input token to swap
+     * @return outputAmount expected output amount
+     */
     function calculateSwapOutput(
         address pool,
         uint256 inputIndex,
@@ -39,6 +47,14 @@ contract SwapCalculator is BaseBoringBatchable {
         );
     }
 
+    /**
+     * @notice Calculate the expected input amount for given pool, indexes, and out amount
+     * @param pool address of a pool contract that implements ISwap
+     * @param inputIndex index of the input token in the pool
+     * @param outputIndex index of the output token in the pool
+     * @param outputAmount desired amount of output token to receive on swap
+     * @return inputAmount expected input amount
+     */
     function calculateSwapInput(
         address pool,
         uint256 inputIndex,
@@ -69,6 +85,13 @@ contract SwapCalculator is BaseBoringBatchable {
         ).div(10**BALANCE_DECIMALS.sub(decimalsArr[inputIndex]));
     }
 
+    /**
+     * @notice Calculates the relative price between two assets in a pool
+     * @param pool address of a pool contract that implements ISwap
+     * @param inputIndex index of the input token in the pool
+     * @param outputIndex index of the output token in the pool
+     * @return price relative price of output tokens per one input token
+     */
     function relativePrice(
         address pool,
         uint256 inputIndex,
@@ -94,6 +117,17 @@ contract SwapCalculator is BaseBoringBatchable {
         );
     }
 
+    /**
+     * @notice Calculate the expected input amount for given balances, A, swap fee, indexes, and out amount
+     * @dev Uses 1e18 precision for balances, 1e2 for A, and 1e10 for swap fee
+     * @param balances array of balances
+     * @param a A parameter to be used in the calculation
+     * @param swapFee fee to be charged per swap
+     * @param inputIndex index of the input token in the pool
+     * @param outputIndex index of the output token in the pool
+     * @param inputAmount amount of input token to swap
+     * @return outputAmount expected output amount
+     */
     function calculateSwapOutputCustom(
         uint256[] memory balances,
         uint256 a,
@@ -112,6 +146,17 @@ contract SwapCalculator is BaseBoringBatchable {
         outputAmount = outputAmount.sub(fee);
     }
 
+    /**
+     * @notice Calculate the expected input amount for given balances, A, swap fee, indexes, and out amount
+     * @dev Uses 1e18 precision for balances, 1e2 for A, and 1e10 for swap fee
+     * @param balances array of balances
+     * @param a A parameter to be used in the calculation
+     * @param swapFee fee to be charged per swap
+     * @param inputIndex index of the input token in the pool
+     * @param outputIndex index of the output token in the pool
+     * @param outputAmount desired amount of output token to receive on swap
+     * @return inputAmount expected input amount
+     */
     function calculateSwapInputCustom(
         uint256[] memory balances,
         uint256 a,
@@ -132,6 +177,15 @@ contract SwapCalculator is BaseBoringBatchable {
         inputAmount = x.sub(balances[inputIndex]).add(1);
     }
 
+    /**
+     * @notice Calculate the relative price between two assets in given setup of balances and A
+     * @dev Uses 1e18 precision for balances, 1e2 for A
+     * @param balances array of balances
+     * @param a A parameter to be used in the calculation
+     * @param inputIndex index of the input token in the pool
+     * @param outputIndex index of the output token in the pool
+     * @return price relative price of output tokens per one input token
+     */
     function relativePriceCustom(
         uint256[] memory balances,
         uint256 a,
@@ -149,6 +203,10 @@ contract SwapCalculator is BaseBoringBatchable {
             );
     }
 
+    /**
+     * @notice Add and registers a new pool. This function exist to cache decimal information.
+     * @param pool address of a pool contract that implements ISwap
+     */
     function addPool(address pool) external payable {
         uint256[] memory decimalsArr = new uint256[](MAX_TOKENS_LENGTH);
 
