@@ -8,6 +8,7 @@ import { DeploymentsExtension } from "hardhat-deploy/dist/types"
 import { ERC20 } from "../build/typechain/ERC20"
 import { Swap } from "../build/typechain/Swap"
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
+import { CHAIN_ID } from "../utils/network"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -20,13 +21,6 @@ export enum TIME {
 
 export const BIG_NUMBER_1E18 = BigNumber.from(10).pow(18)
 export const BIG_NUMBER_ZERO = BigNumber.from(0)
-
-export const CHAIN_ID = {
-  MAINNET: "1",
-  ROPSTEN: "3",
-  KOVAN: "42",
-  HARDHAT: "31337",
-}
 
 export function isMainnet(networkId: string): boolean {
   return networkId == CHAIN_ID.MAINNET
