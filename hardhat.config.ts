@@ -111,6 +111,18 @@ let config: HardhatUserConfig = {
         version: "0.5.16",
       },
     ],
+    overrides: {
+      "contracts/helper/Multicall3.sol":
+      {
+        version: "0.8.12",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10000000,
+          },
+        },
+      }
+    },
   },
   typechain: {
     outDir: "./build/typechain/",
