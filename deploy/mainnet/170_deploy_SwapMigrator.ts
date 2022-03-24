@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { MULTISIG_ADDRESS } from "../../utils/accounts"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { isTestNetwork } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -25,7 +25,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     underlyingTokens: [DAI.address, USDC.address, USDT.address],
   }
 
-  const owner = isTestNetwork(await getChainId()) ? deployer : MULTISIG_ADDRESS
+  const owner = isTestNetwork(await getChainId())
+    ? deployer
+    : MULTISIG_ADDRESSES[await getChainId()]
 
   await deploy("SwapMigrator", {
     from: deployer,

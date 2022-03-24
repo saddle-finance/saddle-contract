@@ -2,7 +2,7 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { ethers } from "hardhat"
 import { GeneralizedSwapMigrator } from "../../build/typechain"
-import { MULTISIG_ADDRESS } from "../../utils/accounts"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -101,7 +101,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if ((await getChainId()) == CHAIN_ID.MAINNET) {
       batchCall.push(
-        await contract.populateTransaction.transferOwnership(MULTISIG_ADDRESS),
+        await contract.populateTransaction.transferOwnership(
+          MULTISIG_ADDRESSES[await getChainId()],
+        ),
       )
     }
 
