@@ -1,9 +1,9 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { MULTISIG_ADDRESS } from "../../utils/accounts"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts } = hre
+  const { deployments, getNamedAccounts, getChainId } = hre
   const { execute, deploy, get, getOrNull, log, read, save } = deployments
   const { deployer } = await getNamedAccounts()
 
@@ -36,6 +36,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       },
     })
 
+    await save("MetaSwapUpdated", await get("SaddleSUSDMetaPoolUpdated"))
+
     await execute(
       "SaddleSUSDMetaPoolUpdated",
       {
@@ -62,7 +64,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "SaddleSUSDMetaPoolUpdated",
       { from: deployer, log: true },
       "transferOwnership",
-      MULTISIG_ADDRESS,
+      MULTISIG_ADDRESSES[await getChainId()],
     )
   }
 

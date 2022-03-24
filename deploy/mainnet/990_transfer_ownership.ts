@@ -1,6 +1,6 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { MULTISIG_ADDRESS } from "../../utils/accounts"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { isMainnet } from "../../utils/network"
 import path from "path"
 
@@ -27,19 +27,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       // If the deployer still owns the contract, then transfer the ownership to the multisig
       if (currentOwner == deployer) {
         log(
-          `transferring the ownership of "${contract}" to the multisig: ${MULTISIG_ADDRESS}`,
+          `transferring the ownership of "${contract}" to the multisig: ${MULTISIG_ADDRESSES[currentChain]}`,
         )
         await execute(
           contract,
           { from: deployer, log: true },
           "transferOwnership",
-          MULTISIG_ADDRESS,
+          MULTISIG_ADDRESSES[currentChain],
         )
       }
       // If Multisig already owns the contract, skip
-      else if (currentOwner == MULTISIG_ADDRESS) {
+      else if (currentOwner == MULTISIG_ADDRESSES[currentChain]) {
         log(
-          `"${contract}" is already owned by the multisig: ${MULTISIG_ADDRESS}`,
+          `"${contract}" is already owned by the multisig: ${MULTISIG_ADDRESSES[currentChain]}`,
         )
       }
       // Someone else owns the contract

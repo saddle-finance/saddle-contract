@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { isMainnet, isTestNetwork } from "../../utils/network"
-import { MULTISIG_ADDRESS } from "../../utils/accounts"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
@@ -23,13 +23,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   })
 
   const currentOwner = await read("SwapDeployer", "owner")
+  const chainId = await getChainId()
 
-  if (isMainnet(await getChainId()) && currentOwner != MULTISIG_ADDRESS) {
+  if (isMainnet(chainId) && currentOwner != MULTISIG_ADDRESSES[chainId]) {
     await execute(
       "SwapDeployer",
       { from: deployer, log: true },
       "transferOwnership",
-      MULTISIG_ADDRESS,
+      MULTISIG_ADDRESSES[chainId],
     )
   }
 }
