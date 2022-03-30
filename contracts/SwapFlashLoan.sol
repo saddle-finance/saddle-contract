@@ -67,7 +67,7 @@ contract SwapFlashLoan is Swap {
         uint256 _fee,
         uint256 _adminFee,
         address lpTokenTargetAddress
-    ) public virtual override initializer {
+    ) public payable virtual override initializer {
         Swap.initialize(
             _pooledTokens,
             decimals,
@@ -100,7 +100,7 @@ contract SwapFlashLoan is Swap {
         IERC20 token,
         uint256 amount,
         bytes memory params
-    ) external nonReentrant {
+    ) external payable nonReentrant {
         uint8 tokenIndex = getTokenIndex(address(token));
         uint256 availableLiquidityBefore = token.balanceOf(address(this));
         uint256 protocolBalanceBefore = availableLiquidityBefore.sub(
@@ -151,7 +151,7 @@ contract SwapFlashLoan is Swap {
     function setFlashLoanFees(
         uint256 newFlashLoanFeeBPS,
         uint256 newProtocolFeeShareBPS
-    ) external onlyOwner {
+    ) external payable onlyOwner {
         require(
             newFlashLoanFeeBPS > 0 &&
                 newFlashLoanFeeBPS <= MAX_BPS &&

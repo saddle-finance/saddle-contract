@@ -185,7 +185,7 @@ contract MetaSwap is Swap {
         uint256 _fee,
         uint256 _adminFee,
         address lpTokenTargetAddress
-    ) public virtual override initializer {
+    ) public payable virtual override initializer {
         revert("use initializeMetaSwap() instead");
     }
 
@@ -222,7 +222,7 @@ contract MetaSwap is Swap {
         uint256 _adminFee,
         address lpTokenTargetAddress,
         ISwap baseSwap
-    ) external virtual initializer {
+    ) public payable virtual initializer {
         Swap.initialize(
             _pooledTokens,
             decimals,
@@ -280,6 +280,7 @@ contract MetaSwap is Swap {
         uint256 deadline
     )
         external
+        payable
         virtual
         override
         nonReentrant
@@ -345,6 +346,7 @@ contract MetaSwap is Swap {
         uint256 deadline
     )
         external
+        payable
         virtual
         override
         nonReentrant
@@ -377,6 +379,7 @@ contract MetaSwap is Swap {
         uint256 deadline
     )
         external
+        payable
         virtual
         override
         nonReentrant
@@ -410,6 +413,7 @@ contract MetaSwap is Swap {
         uint256 deadline
     )
         external
+        payable
         virtual
         override
         nonReentrant
