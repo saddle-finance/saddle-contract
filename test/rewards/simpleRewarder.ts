@@ -415,16 +415,20 @@ describe("SimpleRewarder", async () => {
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(5),
       )
-      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
-        BIG_NUMBER_1E18.mul(5),
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.satisfy(
+        (balance: BigNumber) =>
+          balance.eq(BIG_NUMBER_1E18.mul(5)) ||
+          balance.eq(BIG_NUMBER_1E18.mul(6)),
       )
       expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(0)
       await miniChef.connect(farmer).emergencyWithdraw(0, farmerAddress)
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(6),
       )
-      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
-        BIG_NUMBER_1E18.mul(5),
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.satisfy(
+        (balance: BigNumber) =>
+          balance.eq(BIG_NUMBER_1E18.mul(5)) ||
+          balance.eq(BIG_NUMBER_1E18.mul(6)),
       )
       // Emergency withdraw does not withdraw rewardToken2
       expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(
