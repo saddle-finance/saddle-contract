@@ -19,6 +19,15 @@ interface IMetaSwap {
 
     function isGuarded() external view returns (bool);
 
+    function metaSwapStorage()
+        external
+        view
+        returns (
+            address baseSwap,
+            uint256 baseVirtualPrice,
+            uint256 baseCacheLastUpdated
+        );
+
     // min return calculation functions
     function calculateSwap(
         uint8 tokenIndexFrom,

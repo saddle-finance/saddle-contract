@@ -21,7 +21,11 @@ interface ISwap {
 
     function getVirtualPrice() external view returns (uint256);
 
+    function owner() external view returns (address);
+
     function isGuarded() external view returns (bool);
+
+    function paused() external view returns (bool);
 
     function swapStorage()
         external

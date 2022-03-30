@@ -31,11 +31,10 @@ let config: HardhatUserConfig = {
     },
     ropsten: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.ROPSTEN] + process.env.ALCHEMY_API_KEY,
-      gasPrice: ethers.utils.parseUnits("1.01", "gwei").toNumber(),
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
-      deploy: ["./deploy/mainnet/"],
+      deploy: ["./deploy/ropsten/"],
     },
     arbitrum_testnet: {
       url:
@@ -112,8 +111,7 @@ let config: HardhatUserConfig = {
       },
     ],
     overrides: {
-      "contracts/helper/Multicall3.sol":
-      {
+      "contracts/helper/Multicall3.sol": {
         version: "0.8.12",
         settings: {
           optimizer: {
@@ -121,7 +119,7 @@ let config: HardhatUserConfig = {
             runs: 10000000,
           },
         },
-      }
+      },
     },
   },
   typechain: {
@@ -142,6 +140,7 @@ let config: HardhatUserConfig = {
       42161: 0, // use the same address on arbitrum mainnet
       10: 0, // use the same address on optimism mainnet
       250: 0, // use the same address on fantom mainnet
+      3: 0, // use the same address on ropsten
     },
     libraryDeployer: {
       default: 1, // use a different account for deploying libraries on the hardhat network
@@ -149,6 +148,7 @@ let config: HardhatUserConfig = {
       42161: 0, // use the same address on arbitrum mainnet
       10: 0, // use the same address on optimism mainnet
       250: 0, // use the same address on fantom mainnet
+      3: 0, // use the same address on ropsten
     },
   },
   spdxLicenseIdentifier: {
