@@ -5,7 +5,7 @@ import { BigNumber, ContractFactory, Signer } from "ethers"
 import { solidity } from "ethereum-waffle"
 
 import chai from "chai"
-import { deployments } from "hardhat"
+import { deployments, ethers } from "hardhat"
 import {
   PoolRegistry,
   PoolDataStruct,
@@ -49,50 +49,79 @@ describe("PermissionlessDeployer", async () => {
         "PermissionlessDeployer",
       )) as PermissionlessDeployer
       poolRegistry = (await ethers.getContract("PoolRegistry")) as PoolRegistry
-
-      // Deploys a community pool and registers it in the PoolRegistry
-      deploySwapInput = {
-        poolName: ethers.utils.formatBytes32String("FraxUSD"),
-        tokens: [
-          (await get("USDC")).address,
-          (await get("DAI")).address,
-          (await get("FRAX")).address,
-        ],
-        decimals: [6, 18, 18],
-        lpTokenName: "FraxUSD LP Token",
-        lpTokenSymbol: "FraxUSD",
-        a: BigNumber.from(1000),
-        fee: BigNumber.from(0.04e8), // 4bps
-        adminFee: BigNumber.from(50e8), // 50%
-        owner: deployerAddress,
-        typeOfAsset: PoolType.USD,
-      }
-      await permissionlessDeployer.deploySwap(deploySwapInput)
-
-      const poolData: PoolDataStruct = await poolRegistry.getPoolDataByName(
-        ethers.utils.formatBytes32String("FraxUSD"),
-      )
-
-      // Deploys a community meta pool and registers it in the PoolRegistry
-      deployMetaSwapInput = {
-        poolName: ethers.utils.formatBytes32String("sUSD-FraxUSD"),
-        tokens: [(await get("SUSD")).address, poolData.lpToken],
-        decimals: [18, 18],
-        lpTokenName: "sUSD-FraxUSD LP Token",
-        lpTokenSymbol: "sUSD-FraxUSD",
-        a: BigNumber.from(1000),
-        fee: BigNumber.from(0.04e8), // 4bps
-        adminFee: BigNumber.from(50e8), // 50%
-        owner: deployerAddress,
-        typeOfAsset: PoolType.USD,
-        baseSwap: poolData.poolAddress,
-      }
-      await permissionlessDeployer.deployMetaSwap(deployMetaSwapInput)
     },
   )
 
   beforeEach(async () => {
     await setupTest()
+  })
+
+  async function testDeploySwap() {
+    // Deploys a community pool and registers it in the PoolRegistry
+    deploySwapInput = {
+      poolName: ethers.utils.formatBytes32String("FraxUSD"),
+      tokens: [
+        (await get("USDC")).address,
+        (await get("DAI")).address,
+        (await get("FRAX")).address,
+      ],
+      decimals: [6, 18, 18],
+      lpTokenName: "FraxUSD LP Token",
+      lpTokenSymbol: "FraxUSD",
+      a: BigNumber.from(1000),
+      fee: BigNumber.from(0.04e8), // 4bps
+      adminFee: BigNumber.from(50e8), // 50%
+      owner: deployerAddress,
+      typeOfAsset: PoolType.USD,
+    }
+    await permissionlessDeployer.deploySwap(deploySwapInput)
+  }
+
+  async function testDeployMetaSwap() {
+    const poolData: PoolDataStruct = await poolRegistry.getPoolDataByName(
+      ethers.utils.formatBytes32String("FraxUSD"),
+    )
+
+    // Deploys a community meta pool and registers it in the PoolRegistry
+    deployMetaSwapInput = {
+      poolName: ethers.utils.formatBytes32String("sUSD-FraxUSD"),
+      tokens: [(await get("SUSD")).address, poolData.lpToken],
+      decimals: [18, 18],
+      lpTokenName: "sUSD-FraxUSD LP Token",
+      lpTokenSymbol: "sUSD-FraxUSD",
+      a: BigNumber.from(1000),
+      fee: BigNumber.from(0.04e8), // 4bps
+      adminFee: BigNumber.from(50e8), // 50%
+      owner: deployerAddress,
+      typeOfAsset: PoolType.USD,
+      baseSwap: poolData.poolAddress,
+    }
+    await permissionlessDeployer.deployMetaSwap(deployMetaSwapInput)
+  }
+
+  describe("deploySwap", () => {
+    it("Successfully deploys Swap", async () => {
+      await testDeploySwap()
+      const poolData: PoolDataStruct = await poolRegistry.getPoolDataByName(
+        ethers.utils.formatBytes32String("FraxUSD"),
+      )
+      expect(poolData.poolName).to.equal(
+        ethers.utils.formatBytes32String("FraxUSD"),
+      )
+    })
+  })
+
+  describe("deployMetaSwap", () => {
+    it("Successfully deploys Swap", async () => {
+      await testDeploySwap()
+      await testDeployMetaSwap()
+      const poolData: PoolDataStruct = await poolRegistry.getPoolDataByName(
+        ethers.utils.formatBytes32String("sUSD-FraxUSD"),
+      )
+      expect(poolData.poolName).to.equal(
+        ethers.utils.formatBytes32String("sUSD-FraxUSD"),
+      )
+    })
   })
 
   describe("poolRegistryCached", () => {

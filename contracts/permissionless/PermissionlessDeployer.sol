@@ -108,6 +108,11 @@ contract PermissionlessDeployer is AccessControl {
         payable
         returns (address deployedSwap)
     {
+        require(
+            poolRegistryCached.poolsIndexOfNamePlusOne(input.poolName) == 0,
+            "pool name already exists"
+        );
+
         address swapClone = clone(targetSwap);
 
         ISwap(swapClone).initialize(
@@ -149,6 +154,11 @@ contract PermissionlessDeployer is AccessControl {
         payable
         returns (address deployedMetaSwap, address deployedMetaSwapDeposit)
     {
+        require(
+            poolRegistryCached.poolsIndexOfNamePlusOne(input.poolName) == 0,
+            "pool name already exists"
+        );
+
         deployedMetaSwap = clone(targetMetaSwap);
         IMetaSwap(deployedMetaSwap).initializeMetaSwap(
             input.tokens,
