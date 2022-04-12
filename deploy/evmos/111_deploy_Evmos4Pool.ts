@@ -8,18 +8,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
-  const saddleEvmosUSDPool = await getOrNull("SaddleEvmosUSDPool")
-  if (saddleEvmosUSDPool) {
-    log(`reusing "EvmosUSDPoolTokens" at ${saddleEvmosUSDPool.address}`)
+  const saddleEvmos4Pool = await getOrNull("SaddleEvmos4Pool")
+  if (saddleEvmos4Pool) {
+    log(`reusing "Evmos4PoolTokens" at ${saddleEvmos4Pool.address}`)
   } else {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
       (await get("DAI")).address,
       (await get("USDC")).address,
-      (await get("USDT")).address
+      (await get("USDT")).address,
+      (await get("UST")).address
     ]
-    const TOKEN_DECIMALS = [18, 6]
-    const LP_TOKEN_NAME = "Saddle DAI/USDC.USDT"
+    const TOKEN_DECIMALS = [18, 6, 6, 18]
+    const LP_TOKEN_NAME = "Saddle 4pool"
     const LP_TOKEN_SYMBOL = "saddleEvmosUSD"
     const INITIAL_A = 400
     const SWAP_FEE = 4e6 // 4bps
@@ -41,22 +42,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ).address,
     )
 
-    await save("SaddleEvmosUSDPool", {
+    await save("SaddleEvmos4Pool", {
       abi: (await get("SwapFlashLoan")).abi,
       address: (await get("SwapFlashLoan")).address,
     })
 
-    const lpTokenAddress = (await read("SaddleEvmosUSDPool", "swapStorage"))
+    const lpTokenAddress = (await read("SaddleEvmos4Pool", "swapStorage"))
       .lpToken
     log(`Saddle Evmos USD Pool LP Token at ${lpTokenAddress}`)
 
-    await save("SaddleEvmosUSDPoolLPToken", {
+    await save("SaddleEvmos4PoolLPToken", {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
 
     await execute(
-      "SaddleEvmosUSDPool",
+      "SaddleEvmos4Pool",
       { from: deployer, log: true },
       "transferOwnership",
       MULTISIG_ADDRESSES[await getChainId()],
@@ -64,5 +65,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["SaddleEvmosUSDPool"]
-func.dependencies = ["SwapUtils", "SwapFlashLoan", "EvmosUSDPoolTokens"]
+func.tags = ["SaddleEvmos4Pool"]
+func.dependencies = ["SwapUtils", "SwapFlashLoan", "Evmos4PoolTokens"]

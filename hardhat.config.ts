@@ -80,6 +80,16 @@ let config: HardhatUserConfig = {
       chainId: 250,
       deploy: ["./deploy/fantom/"],
     },
+    evmos_testnet: {
+      url: "https://eth.bd.evmos.dev",
+      chainId: 9001,
+      deploy: ["./deploy/evmos/"],
+    },
+    evmos_mainnet: {
+      url: "https://eth.bd.evmos.org:",
+      chainId: 9000,
+      deploy: ["./deploy/evmos/"],
+    },
   },
   paths: {
     sources: "./contracts",
@@ -140,6 +150,7 @@ let config: HardhatUserConfig = {
       42161: 0, // use the same address on arbitrum mainnet
       10: 0, // use the same address on optimism mainnet
       250: 0, // use the same address on fantom mainnet
+      255: 0,// use the same address on evmos testnet
       3: 0, // use the same address on ropsten
     },
     libraryDeployer: {
@@ -148,6 +159,7 @@ let config: HardhatUserConfig = {
       42161: 0, // use the same address on arbitrum mainnet
       10: 0, // use the same address on optimism mainnet
       250: 0, // use the same address on fantom mainnet
+      255: 0,// use the same address on evmos testnet
       3: 0, // use the same address on ropsten
     },
   },
@@ -178,6 +190,10 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
     },
     fantom_mainnet: {
       ...config.networks?.fantom_mainnet,
+      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
+    },
+    evmos_mainnet: {
+      ...config.networks?.evmos_mainnet,
       accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
     },
   }
