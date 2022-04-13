@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "../interfaces/IVotingEscrow.sol";
+import "@openzeppelin/contracts-4.4.0/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-4.4.0/utils/math/Math.sol";
+import "../../interfaces/IVotingEscrow.sol";
 
 /** @title VeRBNRewards
     @notice Gauge like contract that simulates veRBN stake.
@@ -116,8 +116,14 @@ contract VeRBNRewards {
      * @param _lock should it lock rewards into veRBN
      * @return true
      */
-    function getRewardFor(address _account, bool _lock) external returns (bool) {
-        _getReward(_account, (whitelist[msg.sender] || msg.sender == _account) ? _lock : false);
+    function getRewardFor(address _account, bool _lock)
+        external
+        returns (bool)
+    {
+        _getReward(
+            _account,
+            (whitelist[msg.sender] || msg.sender == _account) ? _lock : false
+        );
         return true;
     }
 

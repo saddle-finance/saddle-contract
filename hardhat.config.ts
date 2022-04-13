@@ -7,6 +7,7 @@ import "hardhat-gas-reporter"
 import "solidity-coverage"
 import "hardhat-deploy"
 import "hardhat-spdx-license-identifier"
+import "@nomiclabs/hardhat-vyper"
 
 import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
@@ -121,6 +122,9 @@ let config: HardhatUserConfig = {
         },
       },
     },
+  },
+  vyper: {
+    compilers: [{ version: "0.2.15" }, { version: "0.2.7" }, { version: "0.3.1" }],
   },
   typechain: {
     outDir: "./build/typechain/",
