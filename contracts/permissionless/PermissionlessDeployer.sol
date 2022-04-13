@@ -14,6 +14,11 @@ import "../interfaces/IMasterRegistry.sol";
 
 /**
  * @title PermissionlessDeployer
+ * @notice Allows for anyone to indepentantly deploy pools and meta pools of given tokens. A user will set
+ * custom parameters for the pool such as the trading/admin fees, as well as the a-parameter.
+ *
+ * Ownership of the pools are given to the deploying address. Saddle will collect 50% of the trading fees earned
+ * by the pool.
  */
 contract PermissionlessDeployer is AccessControl {
     IMasterRegistry public immutable MASTER_REGISTRY;
@@ -31,12 +36,24 @@ contract PermissionlessDeployer is AccessControl {
 
     IPoolRegistry public poolRegistryCached;
 
+    /**
+     * @notice Emmited when a new pool is deployed
+     * @param deployer address of the deployer
+     * @param swapAddress address of the deployed pool
+     * @param pooledTokens, array of addresses of the tokens in the pool
+     */
     event NewSwapPool(
         address indexed deployer,
         address swapAddress,
         IERC20[] pooledTokens
     );
+
     event NewClone(address indexed target, address cloneAddress);
+
+    /**
+     * @notice Emmited when the pool registry cache is updated
+     * @param poolRegistry address of the current Saddle Pool Registry
+     */
     event PoolRegistryUpdated(address indexed poolRegistry);
     event TargetLPTokenUpdated(address indexed target);
     event TargetSwapUpdated(address indexed target);
@@ -44,30 +61,30 @@ contract PermissionlessDeployer is AccessControl {
     event TargetMetaSwapDepositUpdated(address indexed target);
 
     struct DeploySwapInput {
-        bytes32 poolName;
-        IERC20[] tokens;
-        uint8[] decimals;
-        string lpTokenName;
-        string lpTokenSymbol;
-        uint256 a;
-        uint256 fee;
-        uint256 adminFee;
-        address owner;
-        uint8 typeOfAsset;
+        bytes32 poolName; // name of the pool
+        IERC20[] tokens; // array of addresses of the tokens in the pool
+        uint8[] decimals; // array of decimals of the tokens in the pool
+        string lpTokenName; // full name of the LPToken
+        string lpTokenSymbol; // symbol of the LPToken
+        uint256 a; // a-parameter of the pool
+        uint256 fee; // trading fee of the pool
+        uint256 adminFee; // admin fee of the pool
+        address owner; // owner address of the pool
+        uint8 typeOfAsset; // USD/BTC/ETH/OTHER
     }
 
     struct DeployMetaSwapInput {
-        bytes32 poolName;
-        IERC20[] tokens;
-        uint8[] decimals;
-        string lpTokenName;
-        string lpTokenSymbol;
-        uint256 a;
-        uint256 fee;
-        uint256 adminFee;
-        address baseSwap;
-        address owner;
-        uint8 typeOfAsset;
+        bytes32 poolName; // name of the pool
+        IERC20[] tokens; // array of addresses of the tokens in the pool
+        uint8[] decimals; // array of decimals of the tokens in the pool
+        string lpTokenName; // full name of the LPToken
+        string lpTokenSymbol; // symbol of the LPToken
+        uint256 a; // a-parameter of the pool
+        uint256 fee; // trading fee of the pool
+        uint256 adminFee; // admin fee of the pool
+        address baseSwap; // address of the basepool
+        address owner; // owner address of the pool
+        uint8 typeOfAsset; // USD/BTC/ETH/OTHER
     }
 
     constructor(
@@ -98,11 +115,22 @@ contract PermissionlessDeployer is AccessControl {
         _;
     }
 
+    /**
+     * @notice Uses openzeppelin's clone mechanism to clone an existing a pool for cheaper deployments.
+     * @param target the address of the target pool to be cloned
+     * @return newClone an address of the cloned pool
+     */
     function clone(address target) public payable returns (address newClone) {
         newClone = Clones.clone(target);
         emit NewClone(target, newClone);
     }
 
+    /**
+     * @notice Deploys a new pool, adds an entry in the Saddle Pool Registry.
+     * @param input, a struct containing the input parameters for the pool to be deployed,
+     * must include a unique pool name.
+     * @return deployedSwap the address of the deployed pool.
+     */
     function deploySwap(DeploySwapInput memory input)
         external
         payable
@@ -149,6 +177,10 @@ contract PermissionlessDeployer is AccessControl {
         return swapClone;
     }
 
+    /**
+     * @notice Deploys a new meta pool.
+     * @param input, a DeployMetaSwapInput struct containing the input parameters for the meta pool.
+     */
     function deployMetaSwap(DeployMetaSwapInput memory input)
         external
         payable
@@ -216,6 +248,9 @@ contract PermissionlessDeployer is AccessControl {
         poolRegistryCached.addCommunityPool(poolData);
     }
 
+    /**
+     * @notice Updates cached address of the pool registry **should be onlymanager?
+     */
     function updatePoolRegistryCache() external {
         _updatePoolRegistryCache(address(MASTER_REGISTRY));
     }
@@ -242,6 +277,7 @@ contract PermissionlessDeployer is AccessControl {
             "Target LPToken cannot be 0"
         );
         targetLPToken = _targetLPToken;
+        emit TargetLPTokenUpdated(_targetLPToken);
     }
 
     function setTargetSwap(address _targetSwap) external payable onlyManager {

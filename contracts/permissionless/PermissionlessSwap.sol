@@ -15,14 +15,15 @@ import "./ShareProtocolFee.sol";
  * Users can burn pool tokens and withdraw their share of token(s).
  *
  * Each time a swap between the pooled tokens happens, a set fee incurs which effectively gets
- * distributed to the LPs.
+ * distributed to the LPs. Part of this fee is given to the creator of the pool as an Admin fee,
+ * the amount of which is set when the pool is created. Saddle will collect to 50% of these Admin fees.
  *
  * In case of emergencies, admin can pause additional deposits, swaps, or single-asset withdraws - which
  * stops the ratio of the tokens in the pool from changing.
  * Users can always withdraw their tokens via multi-asset withdraws.
  *
- * @dev Most of the logic is stored as a library `SwapUtils` for the sake of reducing contract's
- * deployment size.
+ * @dev Most of the logic is stored as a library `PermissionlessSwapUtils` for the sake of reducing
+ * contract's deployment size.
  */
 contract PermissionlessSwap is Swap, ShareProtocolFee {
     using PermissionlessSwapUtils for SwapUtils.Swap;
@@ -39,7 +40,33 @@ contract PermissionlessSwap is Swap, ShareProtocolFee {
     /*** ADMIN FUNCTIONS ***/
 
     /**
-     * @notice Withdraw all admin fees to the contract owner and the fee collector
+     * @notice Updates cached address of the fee collector
+     */
+    function initialize(
+        IERC20[] memory _pooledTokens,
+        uint8[] memory decimals,
+        string memory lpTokenName,
+        string memory lpTokenSymbol,
+        uint256 _a,
+        uint256 _fee,
+        uint256 _adminFee,
+        address lpTokenTargetAddress
+    ) public payable virtual override {
+        Swap.initialize(
+            _pooledTokens,
+            decimals,
+            lpTokenName,
+            lpTokenSymbol,
+            _a,
+            _fee,
+            _adminFee,
+            lpTokenTargetAddress
+        );
+        _updateFeeCollectorCache(MASTER_REGISTRY);
+    }
+
+    /**
+     * @notice Withdraw all admin fees to the contract owner and the fee collector.
      */
     function withdrawAdminFees()
         external

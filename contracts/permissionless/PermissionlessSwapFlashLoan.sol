@@ -72,6 +72,7 @@ contract PermissionlessSwapFlashLoan is PermissionlessSwap, FlashLoanEnabled {
         );
         // Set flashLoanFeeBPS to 8 and protocolFeeShareBPS to 0
         _setFlashLoanFees(8, 0);
+        _updateFeeCollectorCache(MASTER_REGISTRY);
     }
 
     /*** STATE MODIFYING FUNCTIONS ***/
