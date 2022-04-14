@@ -64,7 +64,6 @@ contract PermissionlessDeployer is AccessControl {
         bytes32 poolName; // name of the pool
         IERC20[] tokens; // array of addresses of the tokens in the pool
         uint8[] decimals; // array of decimals of the tokens in the pool
-        // string lpTokenName; // full name of the LPToken
         string lpTokenSymbol; // symbol of the LPToken
         uint256 a; // a-parameter of the pool
         uint256 fee; // trading fee of the pool
@@ -77,7 +76,6 @@ contract PermissionlessDeployer is AccessControl {
         bytes32 poolName; // name of the pool
         IERC20[] tokens; // array of addresses of the tokens in the pool
         uint8[] decimals; // array of decimals of the tokens in the pool
-        // string lpTokenName; // full name of the LPToken
         string lpTokenSymbol; // symbol of the LPToken
         uint256 a; // a-parameter of the pool
         uint256 fee; // trading fee of the pool
@@ -125,12 +123,16 @@ contract PermissionlessDeployer is AccessControl {
         emit NewClone(target, newClone);
     }
 
+    string LP_TOKEN_NAME0 = "Saddle ";
+    string LP_TOKEN_NAME1 = " LP Token";
+
     /**
      * @notice Deploys a new pool, adds an entry in the Saddle Pool Registry.
      * @param input, a struct containing the input parameters for the pool to be deployed,
      * must include a unique pool name.
      * @return deployedSwap the address of the deployed pool.
      */
+
     function deploySwap(DeploySwapInput memory input)
         external
         payable
@@ -147,7 +149,11 @@ contract PermissionlessDeployer is AccessControl {
             input.tokens,
             input.decimals,
             string(
-                abi.encodePacked("Saddle ", input.lpTokenSymbol, " LP Token")
+                abi.encodePacked(
+                    LP_TOKEN_NAME0,
+                    input.lpTokenSymbol,
+                    LP_TOKEN_NAME1
+                )
             ),
             input.lpTokenSymbol,
             input.a,
@@ -198,7 +204,11 @@ contract PermissionlessDeployer is AccessControl {
             input.tokens,
             input.decimals,
             string(
-                abi.encodePacked("Saddle ", input.lpTokenSymbol, " LP Token")
+                abi.encodePacked(
+                    LP_TOKEN_NAME0,
+                    input.lpTokenSymbol,
+                    LP_TOKEN_NAME1
+                )
             ),
             input.lpTokenSymbol,
             input.a,
