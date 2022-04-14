@@ -1,4 +1,4 @@
-# @version 0.2.15
+# @version 0.3.1
 """
 @title Voting Escrow Delegation
 @author Curve Finance
@@ -90,7 +90,7 @@ struct Point:
 IDENTITY_PRECOMPILE: constant(address) = 0x0000000000000000000000000000000000000004
 MAX_PCT: constant(uint256) = 10_000
 WEEK: constant(uint256) = 86400 * 7
-VOTING_ESCROW: constant(address) = 0x19854C9A5fFa8116f48f984bDF946fB9CEa9B5f7
+VOTING_ESCROW: immutable(address)
 
 
 balanceOf: public(HashMap[address, uint256])
@@ -131,7 +131,9 @@ grey_list: public(HashMap[address, HashMap[address, bool]])
 
 
 @external
-def __init__(_name: String[32], _symbol: String[32], _base_uri: String[128], _admin: address):
+def __init__(_voting_escrow: address, _name: String[32], _symbol: String[32], _base_uri: String[128], _admin: address):
+    VOTING_ESCROW = _voting_escrow
+    
     self.name = _name
     self.symbol = _symbol
     self.base_uri = _base_uri

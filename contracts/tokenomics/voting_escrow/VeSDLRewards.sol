@@ -6,11 +6,11 @@ import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-4.4.0/utils/math/Math.sol";
 import "../../interfaces/IVotingEscrow.sol";
 
-/** @title VeRBNRewards
-    @notice Gauge like contract that simulates veRBN stake.
+/** @title VeSDLRewards
+    @notice Gauge like contract that simulates veSDL stake.
  */
 
-contract VeRBNRewards {
+contract VeSDLRewards {
     using SafeERC20 for IERC20;
 
     IERC20 public rewardToken; // immutable are breaking coverage software should be added back after.
@@ -26,7 +26,7 @@ contract VeRBNRewards {
     address public gov;
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
-    // whitelisted addresses have right to claim and lock into veRBN on anothers behalf
+    // whitelisted addresses have right to claim and lock into veSDL on anothers behalf
     mapping(address => bool) public whitelist;
 
     event RewardAdded(uint256 reward);
@@ -94,8 +94,8 @@ contract VeRBNRewards {
         return _earnedReward(account);
     }
 
-    /** @notice use to update rewards on veRBN balance changes.
-        @dev called by veRBN
+    /** @notice use to update rewards on veSDL balance changes.
+        @dev called by veSDL
      *  @return true
      */
     function updateReward(address _account)
@@ -113,7 +113,7 @@ contract VeRBNRewards {
      *  Get rewards for an account
      * @dev rewards are transfer to _account
      * @param _account to claim rewards for
-     * @param _lock should it lock rewards into veRBN
+     * @param _lock should it lock rewards into veSDL
      * @return true
      */
     function getRewardFor(address _account, bool _lock)
@@ -130,7 +130,7 @@ contract VeRBNRewards {
     /**
      * @notice
      *  Get rewards
-     * @param _lock should it lock rewards into veRBN
+     * @param _lock should it lock rewards into veSDL
      * @return true
      */
     function getReward(bool _lock) external returns (bool) {
@@ -259,10 +259,6 @@ contract VeRBNRewards {
 
     function sweep(address _token) external returns (bool) {
         require(msg.sender == gov, "!authorized");
-        require(
-            _token != address(rewardToken) || veToken.is_unlocked(),
-            "!rewardToken"
-        );
 
         SafeERC20.safeTransfer(
             IERC20(_token),
