@@ -114,7 +114,7 @@ describe("PermissionlessDeployer", async () => {
         (await get(FRAX_CONTRACT_NAME)).address,
       ],
       decimals: [6, 18, 18],
-      lpTokenName: TEST_FRAX_LP_TOKEN_NAME,
+      // lpTokenName: TEST_FRAX_LP_TOKEN_NAME,
       lpTokenSymbol: TEST_FRAX_USD_POOL_NAME,
       a: SAMPLE_A_PARAM,
       fee: SAMPLE_TRADING_FEE,
@@ -135,7 +135,7 @@ describe("PermissionlessDeployer", async () => {
       poolName: BYTES32_FRAX_METAPOOL_NAME,
       tokens: [(await get(SUSD_CONTRACT_NAME)).address, poolData.lpToken],
       decimals: [18, 18],
-      lpTokenName: TEST_FRAX_USD_METAPOOL_NAME,
+      // lpTokenName: TEST_FRAX_USD_METAPOOL_NAME,
       lpTokenSymbol: TEST_FRAX_LP_META_TOKEN_NAME,
       a: SAMPLE_A_PARAM,
       fee: SAMPLE_TRADING_FEE,
@@ -247,6 +247,8 @@ describe("PermissionlessDeployer", async () => {
         )
 
       let baseLPToken: LPToken = await ethers.getContractAt(LP_TOKEN_NAME, poolData.lpToken)
+
+      expect(await baseLPToken.name()).to.be.eq(String(`Saddle ${await baseLPToken.symbol()} LP Token`))
       const actualPoolTokenAmount = await baseLPToken.balanceOf(deployerAddress)
 
       // The actual pool token amount is less than 4e18 due to the imbalance of the underlying tokens
@@ -297,6 +299,8 @@ describe("PermissionlessDeployer", async () => {
       // Approve transfer of base pool and meta pool token
 
       const metaLPToken = await ethers.getContractAt(LP_TOKEN_NAME, metaPoolData.lpToken)
+      expect(await metaLPToken.name()).to.be.eq(String(`Saddle ${await metaLPToken.symbol()} LP Token`))
+
       const sUSDContract = await ethers.getContractAt(GENERIC_ERC20_CONTRACT_NAME, metaPoolData.tokens[0])
       await baseLPToken.approve(permissionlessMetaSwapContract.address, MAX_UINT256)
       await sUSDContract.approve(permissionlessMetaSwapContract.address, MAX_UINT256)

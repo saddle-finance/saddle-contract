@@ -64,7 +64,7 @@ contract PermissionlessDeployer is AccessControl {
         bytes32 poolName; // name of the pool
         IERC20[] tokens; // array of addresses of the tokens in the pool
         uint8[] decimals; // array of decimals of the tokens in the pool
-        string lpTokenName; // full name of the LPToken
+        // string lpTokenName; // full name of the LPToken
         string lpTokenSymbol; // symbol of the LPToken
         uint256 a; // a-parameter of the pool
         uint256 fee; // trading fee of the pool
@@ -77,7 +77,7 @@ contract PermissionlessDeployer is AccessControl {
         bytes32 poolName; // name of the pool
         IERC20[] tokens; // array of addresses of the tokens in the pool
         uint8[] decimals; // array of decimals of the tokens in the pool
-        string lpTokenName; // full name of the LPToken
+        // string lpTokenName; // full name of the LPToken
         string lpTokenSymbol; // symbol of the LPToken
         uint256 a; // a-parameter of the pool
         uint256 fee; // trading fee of the pool
@@ -146,7 +146,9 @@ contract PermissionlessDeployer is AccessControl {
         ISwap(swapClone).initialize(
             input.tokens,
             input.decimals,
-            input.lpTokenName,
+            string(
+                abi.encodePacked("Saddle ", input.lpTokenSymbol, " LP Token")
+            ),
             input.lpTokenSymbol,
             input.a,
             input.fee,
@@ -195,7 +197,9 @@ contract PermissionlessDeployer is AccessControl {
         IMetaSwap(deployedMetaSwap).initializeMetaSwap(
             input.tokens,
             input.decimals,
-            input.lpTokenName,
+            string(
+                abi.encodePacked("Saddle ", input.lpTokenSymbol, " LP Token")
+            ),
             input.lpTokenSymbol,
             input.a,
             input.fee,
