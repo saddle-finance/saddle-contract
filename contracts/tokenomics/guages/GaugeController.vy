@@ -112,7 +112,7 @@ time_total: public(uint256)  # last scheduled time
 points_type_weight: public(HashMap[int128, HashMap[uint256, uint256]])  # type_id -> time -> type weight
 time_type_weight: public(uint256[1000000000])  # type_id -> last scheduled time (next week)
 
-voting_enabled: public(bool) # whether veRBN holders can currently vote on gauge weights
+voting_enabled: public(bool) # whether veSDL holders can currently vote on gauge weights
 
 @external
 def __init__(_token: address, _voting_escrow: address, _veboost_proxy: address, _admin: address):

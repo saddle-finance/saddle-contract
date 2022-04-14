@@ -45,7 +45,7 @@ interface ERC20:
     def approve(spender: address, amount: uint256) -> bool: nonpayable
 
 
-interface IVeRBNRewards:
+interface IVeSDLRewards:
     def updateReward(_account: address) -> bool: nonpayable
     def donate(_amount: uint256) -> bool: nonpayable
 
@@ -376,7 +376,7 @@ def _deposit_for(_from: address, _addr: address, _value: uint256, unlock_time: u
     """
     _locked: LockedBalance = locked_balance
     supply_before: uint256 = self.supply
-    IVeRBNRewards(self.reward_pool).updateReward(_addr) # Reward pool snapshot
+    IVeSDLRewards(self.reward_pool).updateReward(_addr) # Reward pool snapshot
 
     self.supply = supply_before + _value
     old_locked: LockedBalance = _locked
@@ -507,7 +507,7 @@ def withdraw():
     assert ERC20(self.token).transfer(msg.sender, value)
 
     if not _unlocked:
-      IVeRBNRewards(self.reward_pool).updateReward(msg.sender) # Reward pool snapshot
+      IVeSDLRewards(self.reward_pool).updateReward(msg.sender) # Reward pool snapshot
 
     log Withdraw(msg.sender, value, block.timestamp)
     log Supply(supply_before, supply_before - value)
@@ -528,7 +528,7 @@ def force_withdraw():
   time_left: uint256 = _locked.end - block.timestamp
   penalty_ratio: uint256 = min(MULTIPLIER * 3 / 4,  MULTIPLIER * time_left / MAXTIME)
   value: uint256 = convert(_locked.amount, uint256)
-  IVeRBNRewards(self.reward_pool).updateReward(msg.sender) # Reward pool snapshot
+  IVeSDLRewards(self.reward_pool).updateReward(msg.sender) # Reward pool snapshot
   old_locked: LockedBalance = _locked
   _locked.end = 0
   _locked.amount = 0
@@ -544,7 +544,7 @@ def force_withdraw():
   assert ERC20(self.token).transfer(msg.sender, value - penalty)
   if penalty != 0:
       assert ERC20(self.token).approve(self.reward_pool, penalty)
-      IVeRBNRewards(self.reward_pool).donate(penalty)
+      IVeSDLRewards(self.reward_pool).donate(penalty)
   log Withdraw(msg.sender, value, block.timestamp)
   log Supply(supply_before, supply_before - value)
 

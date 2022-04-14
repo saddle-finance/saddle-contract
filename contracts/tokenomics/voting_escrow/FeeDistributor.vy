@@ -15,7 +15,7 @@ interface VotingEscrow:
     def point_history(loc: uint256) -> Point: view
     def checkpoint(): nonpayable
 
-interface VeRBNRewards:
+interface VeSDLRewards:
     def getRewardFor(addr: address, lock: bool) -> bool: nonpayable
 
 interface WETH:
@@ -60,7 +60,7 @@ last_token_time: public(uint256)
 tokens_per_week: public(uint256[1000000000000000])
 
 voting_escrow: public(address)
-verbn_penalty_rewards: public(address)
+vesdl_penalty_rewards: public(address)
 token: public(address)
 total_received: public(uint256)
 token_last_balance: public(uint256)
@@ -77,7 +77,7 @@ is_killed: public(bool)
 @external
 def __init__(
     _voting_escrow: address,
-    _verbn_penalty_rewards: address,
+    _vesdl_penalty_rewards: address,
     _start_time: uint256,
     _token: address,
     _admin: address,
@@ -86,7 +86,7 @@ def __init__(
     """
     @notice Contract constructor
     @param _voting_escrow VotingEscrow contract address
-    @param _verbn_penalty_rewards VeRBN penalty rewards contract address
+    @param _vesdl_penalty_rewards VeSDL penalty rewards contract address
     @param _start_time Epoch time for fee distribution to start
     @param _token Fee token address (ETH)
     @param _admin Admin address
@@ -99,7 +99,7 @@ def __init__(
     self.time_cursor = t
     self.token = _token
     self.voting_escrow = _voting_escrow
-    self.verbn_penalty_rewards = _verbn_penalty_rewards
+    self.vesdl_penalty_rewards = _vesdl_penalty_rewards
     self.admin = _admin
     self.emergency_return = _emergency_return
 
@@ -363,7 +363,7 @@ def claim(_addr: address = msg.sender, _claimPRewards: bool = False, _lock: bool
       lock: bool = _lock
       if _addr != msg.sender:
         lock = False
-      VeRBNRewards(self.verbn_penalty_rewards).getRewardFor(_addr, lock)
+      VeSDLRewards(self.vesdl_penalty_rewards).getRewardFor(_addr, lock)
 
     return amount
 
