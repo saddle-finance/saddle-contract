@@ -33,6 +33,8 @@ contract PermissionlessDeployer is AccessControl {
     address public targetSwap;
     address public targetMetaSwap;
     address public targetMetaSwapDeposit;
+    string public constant LP_TOKEN_NAME0 = "Saddle ";
+    string public constant LP_TOKEN_NAME1 = " LP Token";
 
     IPoolRegistry public poolRegistryCached;
 
@@ -64,7 +66,6 @@ contract PermissionlessDeployer is AccessControl {
         bytes32 poolName; // name of the pool
         IERC20[] tokens; // array of addresses of the tokens in the pool
         uint8[] decimals; // array of decimals of the tokens in the pool
-        string lpTokenName; // full name of the LPToken
         string lpTokenSymbol; // symbol of the LPToken
         uint256 a; // a-parameter of the pool
         uint256 fee; // trading fee of the pool
@@ -77,7 +78,6 @@ contract PermissionlessDeployer is AccessControl {
         bytes32 poolName; // name of the pool
         IERC20[] tokens; // array of addresses of the tokens in the pool
         uint8[] decimals; // array of decimals of the tokens in the pool
-        string lpTokenName; // full name of the LPToken
         string lpTokenSymbol; // symbol of the LPToken
         uint256 a; // a-parameter of the pool
         uint256 fee; // trading fee of the pool
@@ -131,6 +131,7 @@ contract PermissionlessDeployer is AccessControl {
      * must include a unique pool name.
      * @return deployedSwap the address of the deployed pool.
      */
+
     function deploySwap(DeploySwapInput memory input)
         external
         payable
@@ -146,7 +147,13 @@ contract PermissionlessDeployer is AccessControl {
         ISwap(swapClone).initialize(
             input.tokens,
             input.decimals,
-            input.lpTokenName,
+            string(
+                abi.encodePacked(
+                    LP_TOKEN_NAME0,
+                    input.lpTokenSymbol,
+                    LP_TOKEN_NAME1
+                )
+            ),
             input.lpTokenSymbol,
             input.a,
             input.fee,
@@ -195,7 +202,13 @@ contract PermissionlessDeployer is AccessControl {
         IMetaSwap(deployedMetaSwap).initializeMetaSwap(
             input.tokens,
             input.decimals,
-            input.lpTokenName,
+            string(
+                abi.encodePacked(
+                    LP_TOKEN_NAME0,
+                    input.lpTokenSymbol,
+                    LP_TOKEN_NAME1
+                )
+            ),
             input.lpTokenSymbol,
             input.a,
             input.fee,
