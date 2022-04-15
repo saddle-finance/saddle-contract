@@ -3,11 +3,14 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { PoolRegistry } from "../../build/typechain"
 import { CHAIN_ID } from "../../utils/network"
+import { impersonateAccount } from "../../test/testUtils"
+import dotenv from "dotenv"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  dotenv.config()
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read } = deployments
-  const { deployer } = await getNamedAccounts()
+  let { deployer } = await getNamedAccounts()
 
   const permissionlessSwap = await getOrNull("PermissionlessSwapFlashLoan")
   const permissionlessMetaSwap = await getOrNull(
@@ -15,6 +18,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
   const permissionlessDeployer = await getOrNull("PermissionlessDeployer")
   const masterRegistryAddress = (await get("MasterRegistry")).address
+
+  if (process.env.FORK_MAINNET) {
+    deployer = "0x5BDb37d0Ddea3A90F233c7B7F6b9394B6b2eef34"
+    await impersonateAccount(deployer)
+    const signer = await hre.ethers.getSigner(deployer)
+    deployer = await signer.getAddress()
+  }
 
   if (permissionlessSwap == null) {
     await deploy("PermissionlessSwapFlashLoan", {
@@ -108,4 +118,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["PermissionlessSwaps"]
-func.skip = async (env) => (await env.getChainId()) == CHAIN_ID.MAINNET
+// func.skip = async (env) => (await env.getChainId()) == CHAIN_ID.MAINNET
