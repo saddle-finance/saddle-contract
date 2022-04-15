@@ -33,6 +33,8 @@ contract PermissionlessDeployer is AccessControl {
     address public targetSwap;
     address public targetMetaSwap;
     address public targetMetaSwapDeposit;
+    string public constant LP_TOKEN_NAME0 = "Saddle ";
+    string public constant LP_TOKEN_NAME1 = " LP Token";
 
     IPoolRegistry public poolRegistryCached;
 
@@ -122,9 +124,6 @@ contract PermissionlessDeployer is AccessControl {
         newClone = Clones.clone(target);
         emit NewClone(target, newClone);
     }
-
-    string LP_TOKEN_NAME0 = "Saddle ";
-    string LP_TOKEN_NAME1 = " LP Token";
 
     /**
      * @notice Deploys a new pool, adds an entry in the Saddle Pool Registry.
