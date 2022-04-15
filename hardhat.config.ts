@@ -82,12 +82,12 @@ let config: HardhatUserConfig = {
     },
     evmos_testnet: {
       url: "https://eth.bd.evmos.dev",
-      chainId: 9001,
+      chainId: 9000,
       deploy: ["./deploy/evmos/"],
     },
     evmos_mainnet: {
-      url: "https://eth.bd.evmos.org:",
-      chainId: 9000,
+      url: "https://eth.bd.evmos.org",
+      chainId: 9001,
       deploy: ["./deploy/evmos/"],
     },
   },
