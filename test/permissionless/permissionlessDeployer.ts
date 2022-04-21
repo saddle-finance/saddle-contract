@@ -1,29 +1,24 @@
 /* eslint-disable prettier/prettier */
 /*eslint max-len: ["error", { "code": 150 }]*/
 
-import { BigNumber, ContractFactory, Signer } from "ethers"
-import { solidity } from "ethereum-waffle"
-
 import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
+  IPoolRegistry,
+  LPToken,
+  MasterRegistry,
+  PermissionlessDeployer,
+  PermissionlessSwap,
   PoolRegistry,
-  PoolDataStruct,
-  PoolInputDataStruct,
-} from "../../build/typechain/PoolRegistry"
-import { MasterRegistry } from "../../build/typechain/MasterRegistry"
-import { LPToken, PermissionlessDeployer, PermissionlessSwap } from "../../build/typechain"
-import {
-  DeployMetaSwapInputStruct,
-  DeploySwapInputStruct,
-} from "../../build/typechain/PermissionlessDeployer"
+} from "../../build/typechain/"
 import { PoolType } from "../../utils/constants"
 import {
-  impersonateAccount,
   asyncForEach,
-  MAX_UINT256,
   getCurrentBlockTimestamp,
-  setNextTimestamp
+  MAX_UINT256,
+  setNextTimestamp,
 } from "../testUtils"
 
 chai.use(solidity)
@@ -50,11 +45,12 @@ const LP_TOKEN_NAME = "LPToken"
 const GENERIC_ERC20_CONTRACT_NAME = "GenericERC20"
 const PERMISSIONLESS_DEPLOYER_NAME = "PermissionlessDeployer"
 const PERMISSIONLESS_SWAPFLASHLOAN_NAME = "PermissionlessSwapFlashLoan"
-const BYTES32_FRAX_POOL_NAME = ethers.utils.formatBytes32String(TEST_FRAX_USD_POOL_NAME)
-const BYTES32_FRAX_METAPOOL_NAME = ethers.utils.formatBytes32String(TEST_FRAX_USD_METAPOOL_NAME)
-
-
-
+const BYTES32_FRAX_POOL_NAME = ethers.utils.formatBytes32String(
+  TEST_FRAX_USD_POOL_NAME,
+)
+const BYTES32_FRAX_METAPOOL_NAME = ethers.utils.formatBytes32String(
+  TEST_FRAX_USD_METAPOOL_NAME,
+)
 
 describe("PermissionlessDeployer", async () => {
   let signers: Array<Signer>
@@ -69,14 +65,14 @@ describe("PermissionlessDeployer", async () => {
   let registryFactory: ContractFactory
   let permissionlessDeployer: PermissionlessDeployer
   let permissionlessSwap: PermissionlessSwap
-  let deploySwapInput: DeploySwapInputStruct
-  let deployMetaSwapInput: DeployMetaSwapInputStruct
-  let usdv2Data: PoolDataStruct
-  let susdMetaV2Data: PoolDataStruct
-  let guardedBtcData: PoolDataStruct
-  let usdv2InputData: PoolInputDataStruct
-  let susdMetaV2InputData: PoolInputDataStruct
-  let guardedBtcInputData: PoolInputDataStruct
+  let deploySwapInput: PermissionlessDeployer.DeploySwapInputStruct
+  let deployMetaSwapInput: PermissionlessDeployer.DeployMetaSwapInputStruct
+  let usdv2Data: IPoolRegistry.PoolDataStruct
+  let susdMetaV2Data: IPoolRegistry.PoolDataStruct
+  let guardedBtcData: IPoolRegistry.PoolDataStruct
+  let usdv2InputData: IPoolRegistry.PoolInputDataStruct
+  let susdMetaV2InputData: IPoolRegistry.PoolInputDataStruct
+  let guardedBtcInputData: IPoolRegistry.PoolInputDataStruct
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -91,12 +87,15 @@ describe("PermissionlessDeployer", async () => {
       permissionlessDeployer = (await ethers.getContract(
         PERMISSIONLESS_DEPLOYER_NAME,
       )) as PermissionlessDeployer
-      poolRegistry = (await ethers.getContract(POOL_REGISTRY_NAME)) as PoolRegistry
-      masterRegistry = (await ethers.getContract(MASTER_REGISTRY_NAME)) as MasterRegistry
+      poolRegistry = (await ethers.getContract(
+        POOL_REGISTRY_NAME,
+      )) as PoolRegistry
+      masterRegistry = (await ethers.getContract(
+        MASTER_REGISTRY_NAME,
+      )) as MasterRegistry
       permissionlessSwap = (await ethers.getContract(
         PERMISSIONLESS_SWAPFLASHLOAN_NAME,
       )) as PermissionlessSwap
-
     },
   )
 
@@ -125,9 +124,10 @@ describe("PermissionlessDeployer", async () => {
   }
 
   async function testDeployMetaSwap() {
-    const poolData: PoolDataStruct = await poolRegistry.getPoolDataByName(
-      ethers.utils.formatBytes32String(TEST_FRAX_USD_POOL_NAME),
-    )
+    const poolData: IPoolRegistry.PoolDataStruct =
+      await poolRegistry.getPoolDataByName(
+        ethers.utils.formatBytes32String(TEST_FRAX_USD_POOL_NAME),
+      )
 
     // Deploys a community meta pool and registers it in the PoolRegistry
     deployMetaSwapInput = {
@@ -148,9 +148,10 @@ describe("PermissionlessDeployer", async () => {
   describe("deploySwap", () => {
     it("Successfully deploys MetaSwap", async () => {
       await testDeploySwap()
-      const poolData: PoolDataStruct = await poolRegistry.getPoolDataByName(
-        ethers.utils.formatBytes32String(TEST_FRAX_USD_POOL_NAME),
-      )
+      const poolData: IPoolRegistry.PoolDataStruct =
+        await poolRegistry.getPoolDataByName(
+          ethers.utils.formatBytes32String(TEST_FRAX_USD_POOL_NAME),
+        )
       expect(poolData.poolName).to.equal(
         ethers.utils.formatBytes32String(TEST_FRAX_USD_POOL_NAME),
       )
@@ -161,12 +162,9 @@ describe("PermissionlessDeployer", async () => {
     it("Successfully deploys Swap", async () => {
       await testDeploySwap()
       await testDeployMetaSwap()
-      const poolData: PoolDataStruct = await poolRegistry.getPoolDataByName(
-        BYTES32_FRAX_METAPOOL_NAME,
-      )
-      expect(poolData.poolName).to.equal(
-        BYTES32_FRAX_METAPOOL_NAME,
-      )
+      const poolData: IPoolRegistry.PoolDataStruct =
+        await poolRegistry.getPoolDataByName(BYTES32_FRAX_METAPOOL_NAME)
+      expect(poolData.poolName).to.equal(BYTES32_FRAX_METAPOOL_NAME)
     })
   })
 
@@ -222,41 +220,59 @@ describe("PermissionlessDeployer", async () => {
 
   describe("withdrawAdminFees", () => {
     it("Successfully withdraws accrued admin trading fees", async () => {
-
       await testDeploySwap()
       await testDeployMetaSwap()
 
-      const poolData: PoolDataStruct = await poolRegistry.getPoolDataByName(BYTES32_FRAX_POOL_NAME)
-      const permissionlessSwapContract = await ethers.getContractAt(PERMISSIONLESS_SWAP_NAME, poolData.poolAddress)
-
+      const poolData: IPoolRegistry.PoolDataStruct =
+        await poolRegistry.getPoolDataByName(BYTES32_FRAX_POOL_NAME)
+      const permissionlessSwapContract = await ethers.getContractAt(
+        PERMISSIONLESS_SWAP_NAME,
+        poolData.poolAddress,
+      )
 
       // Approve transfer of base pool tokens
       await asyncForEach(poolData.tokens, async (token) => {
-        const tokenContract = await ethers.getContractAt(GENERIC_ERC20_CONTRACT_NAME, token)
-        await tokenContract.approve(permissionlessSwapContract.address, MAX_UINT256)
+        const tokenContract = await ethers.getContractAt(
+          GENERIC_ERC20_CONTRACT_NAME,
+          token,
+        )
+        await tokenContract.approve(
+          permissionlessSwapContract.address,
+          MAX_UINT256,
+        )
       })
 
       // Add liquidity
-      await permissionlessSwapContract
-        .addLiquidity(
-          [String(3e6), String(3e18), String(3e18)],
-          0,
-          MAX_UINT256,
-        )
+      await permissionlessSwapContract.addLiquidity(
+        [String(3e6), String(3e18), String(3e18)],
+        0,
+        MAX_UINT256,
+      )
 
-      let baseLPToken: LPToken = await ethers.getContractAt(LP_TOKEN_NAME, poolData.lpToken)
+      const baseLPToken: LPToken = await ethers.getContractAt(
+        LP_TOKEN_NAME,
+        poolData.lpToken,
+      )
 
-      expect(await baseLPToken.name()).to.be.eq(String(`Saddle ${await baseLPToken.symbol()} LP Token`))
+      expect(await baseLPToken.name()).to.be.eq(
+        String(`Saddle ${await baseLPToken.symbol()} LP Token`),
+      )
       const actualPoolTokenAmount = await baseLPToken.balanceOf(deployerAddress)
 
       // The actual pool token amount is less than 4e18 due to the imbalance of the underlying tokens
       expect(actualPoolTokenAmount).to.eq(BigNumber.from(String(9e18)))
 
       // Function to return map of current token balances
-      async function getTokenBalances(tokenAddresses: string[], userAddress: string) {
+      async function getTokenBalances(
+        tokenAddresses: string[],
+        userAddress: string,
+      ) {
         const balances: BigNumber[] = []
         await asyncForEach(tokenAddresses, async (tokenAddress) => {
-          const tokenContract = await ethers.getContractAt(GENERIC_ERC20_CONTRACT_NAME, tokenAddress)
+          const tokenContract = await ethers.getContractAt(
+            GENERIC_ERC20_CONTRACT_NAME,
+            tokenAddress,
+          )
           const token_balance = await tokenContract.balanceOf(userAddress)
           balances.push(token_balance)
         })
@@ -267,23 +283,58 @@ describe("PermissionlessDeployer", async () => {
       for (let i = 0; i < 20; i++) {
         await permissionlessSwapContract.swap(0, 1, 1e6, 0, MAX_UINT256)
         await permissionlessSwapContract.swap(0, 2, 1e6, 0, MAX_UINT256)
-        await permissionlessSwapContract.swap(1, 0, String(1e18), 0, MAX_UINT256)
-        await permissionlessSwapContract.swap(1, 2, String(1e18), 0, MAX_UINT256)
-        await permissionlessSwapContract.swap(2, 0, String(1e18), 0, MAX_UINT256)
-        await permissionlessSwapContract.swap(2, 1, String(1e18), 0, MAX_UINT256)
+        await permissionlessSwapContract.swap(
+          1,
+          0,
+          String(1e18),
+          0,
+          MAX_UINT256,
+        )
+        await permissionlessSwapContract.swap(
+          1,
+          2,
+          String(1e18),
+          0,
+          MAX_UINT256,
+        )
+        await permissionlessSwapContract.swap(
+          2,
+          0,
+          String(1e18),
+          0,
+          MAX_UINT256,
+        )
+        await permissionlessSwapContract.swap(
+          2,
+          1,
+          String(1e18),
+          0,
+          MAX_UINT256,
+        )
       }
 
       // get balances of each token after the swaps
-      const feeCollectorBalances = await getTokenBalances(poolData.tokens, deployerAddress)
+      const feeCollectorBalances = await getTokenBalances(
+        poolData.tokens,
+        deployerAddress,
+      )
 
       // withdraw admin fees
       await permissionlessSwapContract.connect(user1).withdrawAdminFees()
 
       // expect correct changes in token balances after admin fee withdrawal
-      const feeCollectorBalancesWithFees = await getTokenBalances(poolData.tokens, deployerAddress)
-      const user1BalancesWithFees = await getTokenBalances(poolData.tokens, user1Address)
+      const feeCollectorBalancesWithFees = await getTokenBalances(
+        poolData.tokens,
+        deployerAddress,
+      )
+      const user1BalancesWithFees = await getTokenBalances(
+        poolData.tokens,
+        user1Address,
+      )
 
-      expect(user1BalancesWithFees.every((value) => value.gt(BigNumber.from(0)))).to.be.true
+      expect(
+        user1BalancesWithFees.every((value) => value.gt(BigNumber.from(0))),
+      ).to.be.true
 
       for (let i = 0; i < feeCollectorBalances.length; i++) {
         expect(feeCollectorBalances[i]).to.lt(feeCollectorBalancesWithFees[i])
@@ -291,33 +342,54 @@ describe("PermissionlessDeployer", async () => {
 
       // Metapool
 
-      const metaPoolData: PoolDataStruct = await poolRegistry.getPoolDataByName(BYTES32_FRAX_METAPOOL_NAME,)
-      const permissionlessMetaSwapContract = await ethers.getContractAt(PERMISSIONLESS_METASWAP_NAME, metaPoolData.poolAddress)
+      const metaPoolData: IPoolRegistry.PoolDataStruct =
+        await poolRegistry.getPoolDataByName(BYTES32_FRAX_METAPOOL_NAME)
+      const permissionlessMetaSwapContract = await ethers.getContractAt(
+        PERMISSIONLESS_METASWAP_NAME,
+        metaPoolData.poolAddress,
+      )
 
       // Approve transfer of base pool and meta pool token
 
-      const metaLPToken = await ethers.getContractAt(LP_TOKEN_NAME, metaPoolData.lpToken)
-      expect(await metaLPToken.name()).to.be.eq(String(`Saddle ${await metaLPToken.symbol()} LP Token`))
+      const metaLPToken = await ethers.getContractAt(
+        LP_TOKEN_NAME,
+        metaPoolData.lpToken,
+      )
+      expect(await metaLPToken.name()).to.be.eq(
+        String(`Saddle ${await metaLPToken.symbol()} LP Token`),
+      )
 
-      const sUSDContract = await ethers.getContractAt(GENERIC_ERC20_CONTRACT_NAME, metaPoolData.tokens[0])
-      await baseLPToken.approve(permissionlessMetaSwapContract.address, MAX_UINT256)
-      await sUSDContract.approve(permissionlessMetaSwapContract.address, MAX_UINT256)
+      const sUSDContract = await ethers.getContractAt(
+        GENERIC_ERC20_CONTRACT_NAME,
+        metaPoolData.tokens[0],
+      )
+      await baseLPToken.approve(
+        permissionlessMetaSwapContract.address,
+        MAX_UINT256,
+      )
+      await sUSDContract.approve(
+        permissionlessMetaSwapContract.address,
+        MAX_UINT256,
+      )
 
       // fast forward block 10 minutes to allow metapool to cache base pool vitrual price
       const currentTimestamp = await getCurrentBlockTimestamp()
       await setNextTimestamp(currentTimestamp + 60 * 10)
-      await ethers.provider.send('evm_mine', []);
+      await ethers.provider.send("evm_mine", [])
 
       // Add liquidity to metapool
-      await permissionlessMetaSwapContract
-        .addLiquidity(
-          [String(1e18), String(1e18)],
-          0,
-          MAX_UINT256
-        )
+      await permissionlessMetaSwapContract.addLiquidity(
+        [String(1e18), String(1e18)],
+        0,
+        MAX_UINT256,
+      )
 
-      expect(await sUSDContract.balanceOf(permissionlessMetaSwapContract.address)).to.eq(String(1e18))
-      expect(await baseLPToken.balanceOf(permissionlessMetaSwapContract.address)).to.eq(String(1e18))
+      expect(
+        await sUSDContract.balanceOf(permissionlessMetaSwapContract.address),
+      ).to.eq(String(1e18))
+      expect(
+        await baseLPToken.balanceOf(permissionlessMetaSwapContract.address),
+      ).to.eq(String(1e18))
 
       // Function to return map of current token balances
       async function getMetaTokenBalances(userAddress: string) {
@@ -331,27 +403,46 @@ describe("PermissionlessDeployer", async () => {
 
       // swap each token 20 times
       for (let i = 0; i < 20; i++) {
-        await permissionlessMetaSwapContract.swap(0, 1, String(1e18), 0, MAX_UINT256)
-        await permissionlessMetaSwapContract.swap(1, 0, String(1e18), 0, MAX_UINT256)
+        await permissionlessMetaSwapContract.swap(
+          0,
+          1,
+          String(1e18),
+          0,
+          MAX_UINT256,
+        )
+        await permissionlessMetaSwapContract.swap(
+          1,
+          0,
+          String(1e18),
+          0,
+          MAX_UINT256,
+        )
       }
 
       // // get balances of each token after the swaps
-      const metafeeCollectorBalances = await getMetaTokenBalances(deployerAddress)
+      const metafeeCollectorBalances = await getMetaTokenBalances(
+        deployerAddress,
+      )
 
       const metauser1Balances = await getMetaTokenBalances(user1Address)
-
 
       // withdraw admin fees
       await permissionlessMetaSwapContract.connect(user1).withdrawAdminFees()
 
       // expect correct changes in token balances after admin fee withdrawal
-      const metafeeCollectorBalancesWithFees = await getMetaTokenBalances(deployerAddress)
+      const metafeeCollectorBalancesWithFees = await getMetaTokenBalances(
+        deployerAddress,
+      )
       const metauser1BalancesWithFees = await getMetaTokenBalances(user1Address)
 
-      expect(metauser1BalancesWithFees.every((value) => value.gt(BigNumber.from(0)))).to.be.true
+      expect(
+        metauser1BalancesWithFees.every((value) => value.gt(BigNumber.from(0))),
+      ).to.be.true
 
       for (let i = 0; i < metafeeCollectorBalancesWithFees.length; i++) {
-        expect(metafeeCollectorBalancesWithFees[i]).to.gt(metafeeCollectorBalances[i])
+        expect(metafeeCollectorBalancesWithFees[i]).to.gt(
+          metafeeCollectorBalances[i],
+        )
       }
       for (let i = 0; i < metafeeCollectorBalancesWithFees.length; i++) {
         expect(metauser1BalancesWithFees[i]).to.gt(metauser1Balances[i])
