@@ -1,14 +1,15 @@
-import { BigNumber, Signer } from "ethers"
-import { MAX_UINT256, getUserTokenBalance, asyncForEach } from "./testUtils"
-import { solidity } from "ethereum-waffle"
-
-import { GenericERC20 } from "../build/typechain/GenericERC20"
-import { LPToken } from "../build/typechain/LPToken"
-import { FlashLoanBorrowerExample } from "../build/typechain/FlashLoanBorrowerExample"
-import { SwapFlashLoan } from "../build/typechain/SwapFlashLoan"
 import chai from "chai"
-import { deployments } from "hardhat"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, Signer } from "ethers"
 import { solidityPack } from "ethers/lib/utils"
+import { deployments } from "hardhat"
+import {
+  FlashLoanBorrowerExample,
+  GenericERC20,
+  LPToken,
+  SwapFlashLoan,
+} from "../build/typechain/"
+import { asyncForEach, getUserTokenBalance, MAX_UINT256 } from "./testUtils"
 
 chai.use(solidity)
 const { expect } = chai

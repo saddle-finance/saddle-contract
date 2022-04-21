@@ -1,18 +1,17 @@
+import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, Signer } from "ethers"
+import { deployments, ethers } from "hardhat"
+import { DeployResult } from "hardhat-deploy/dist/types"
+import { SDL, Vesting } from "../build/typechain/"
 import {
   BIG_NUMBER_1E18,
   BIG_NUMBER_ZERO,
-  MAX_UINT256,
-  ZERO_ADDRESS,
   getCurrentBlockTimestamp,
+  MAX_UINT256,
   setTimestamp,
+  ZERO_ADDRESS,
 } from "./testUtils"
-import { BigNumber, Signer } from "ethers"
-import { SDL, Vesting } from "../build/typechain/"
-import { deployments, ethers } from "hardhat"
-
-import { DeployResult } from "hardhat-deploy/dist/types"
-import chai from "chai"
-import { solidity } from "ethereum-waffle"
 
 chai.use(solidity)
 const { expect } = chai

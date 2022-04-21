@@ -1,25 +1,26 @@
+import chai from "chai"
+import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
+import { deployments } from "hardhat"
 import {
-  MAX_UINT256,
-  TIME,
-  ZERO_ADDRESS,
+  GenericERC20,
+  LPToken,
+  Swap,
+  SwapUtils,
+  TestSwapReturnValues,
+} from "../build/typechain/"
+import {
   asyncForEach,
+  forceAdvanceOneBlock,
   getCurrentBlockTimestamp,
   getUserTokenBalance,
   getUserTokenBalances,
+  MAX_UINT256,
   setNextTimestamp,
   setTimestamp,
-  forceAdvanceOneBlock,
+  TIME,
+  ZERO_ADDRESS,
 } from "./testUtils"
-import { solidity } from "ethereum-waffle"
-import { deployments } from "hardhat"
-
-import { GenericERC20 } from "../build/typechain/GenericERC20"
-import { LPToken } from "../build/typechain/LPToken"
-import { Swap } from "../build/typechain/Swap"
-import { SwapUtils } from "../build/typechain/SwapUtils"
-import { TestSwapReturnValues } from "../build/typechain/TestSwapReturnValues"
-import chai from "chai"
 
 chai.use(solidity)
 const { expect } = chai

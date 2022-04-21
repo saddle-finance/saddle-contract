@@ -1,11 +1,12 @@
-import { Signer, Wallet } from "ethers"
-import { deployments, ethers } from "hardhat"
-
-import { GenericERC20 } from "../build/typechain/GenericERC20"
-import { IERC20 } from "../build/typechain/IERC20"
-import { StakeableTokenWrapper } from "../build/typechain/StakeableTokenWrapper"
 import chai from "chai"
 import { solidity } from "ethereum-waffle"
+import { Signer, Wallet } from "ethers"
+import { deployments, ethers } from "hardhat"
+import {
+  GenericERC20,
+  IERC20,
+  StakeableTokenWrapper,
+} from "../build/typechain/"
 
 chai.use(solidity)
 const { expect } = chai
