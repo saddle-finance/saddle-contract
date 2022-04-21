@@ -40,7 +40,7 @@
     "ethers": "^5.6.4",
     "ethlint": "^1.2.5",
     "hardhat": "^2.9.3",
-    "hardhat-deploy": "https://gitpkg.now.sh/wighawag/hardhat-deploy?ce1312d0a7785e93be3f82e346644d7b72ceb375&scripts.postInstall=tsc",
+    "hardhat-deploy": "github:saddle-finance/hardhat-deploy",
     "hardhat-gas-reporter": "^1.0.8",
     "hardhat-spdx-license-identifier": "^2.0.3",
     "husky": "^7.0.4",
