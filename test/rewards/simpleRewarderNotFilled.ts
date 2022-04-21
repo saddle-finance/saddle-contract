@@ -1,16 +1,14 @@
-import { BigNumber, Signer } from "ethers"
-import { solidity } from "ethereum-waffle"
-
-import {
-  SimpleRewarder,
-  MiniChefV2,
-  GenericERC20,
-  Swap,
-  LPToken,
-} from "../../build/typechain"
-
 import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
+import {
+  GenericERC20,
+  LPToken,
+  MiniChefV2,
+  SimpleRewarder,
+  Swap,
+} from "../../build/typechain"
 import {
   BIG_NUMBER_1E18,
   BIG_NUMBER_ZERO,

@@ -1,10 +1,8 @@
-import { BigNumber, ContractFactory, Signer } from "ethers"
-import { solidity } from "ethereum-waffle"
-
-import { Swap, SwapCalculator, GenericERC20 } from "../build/typechain/"
-
 import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, ContractFactory, Signer } from "ethers"
 import { deployments } from "hardhat"
+import { GenericERC20, Swap, SwapCalculator } from "../build/typechain/"
 import { asyncForEach, BIG_NUMBER_1E18, MAX_UINT256 } from "./testUtils"
 
 chai.use(solidity)

@@ -1,25 +1,26 @@
+import chai from "chai"
+import { deployContract, solidity } from "ethereum-waffle"
 import { BigNumber, Signer, Wallet } from "ethers"
+import { deployments } from "hardhat"
+import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
+import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
+import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
+import MetaSwapDepositArtifact from "../build/artifacts/contracts/meta/MetaSwapDeposit.sol/MetaSwapDeposit.json"
 import {
-  MAX_UINT256,
+  GenericERC20,
+  LPToken,
+  MetaSwap,
+  MetaSwapDeposit,
+  Swap,
+} from "../build/typechain/"
+import {
   asyncForEach,
   deployContractWithLibraries,
   getCurrentBlockTimestamp,
   getUserTokenBalance,
   getUserTokenBalances,
+  MAX_UINT256,
 } from "./testUtils"
-import { deployContract, solidity } from "ethereum-waffle"
-import { deployments } from "hardhat"
-
-import { GenericERC20 } from "../build/typechain/GenericERC20"
-import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
-import { LPToken } from "../build/typechain/LPToken"
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import { Swap } from "../build/typechain/Swap"
-import { MetaSwap } from "../build/typechain/MetaSwap"
-import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
-import { MetaSwapDeposit } from "../build/typechain/MetaSwapDeposit"
-import MetaSwapDepositArtifact from "../build/artifacts/contracts/meta/MetaSwapDeposit.sol/MetaSwapDeposit.json"
-import chai from "chai"
 
 chai.use(solidity)
 const { expect } = chai
