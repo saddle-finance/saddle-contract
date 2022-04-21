@@ -6,17 +6,14 @@ import { solidity } from "ethereum-waffle"
 import { BigNumber, ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
+  IPoolRegistry,
   ISwapGuarded,
   ISwapGuarded__factory,
   MetaSwap,
+  PoolRegistry,
   Swap,
   Swap__factory,
 } from "../../build/typechain"
-import {
-  PoolDataStruct,
-  PoolInputDataStruct,
-  PoolRegistry,
-} from "../../build/typechain/"
 import { PoolType } from "../../utils/constants"
 import {
   BIG_NUMBER_1E18,
@@ -60,12 +57,12 @@ describe("Registry", async () => {
   let ownerAddress: string
   let poolRegistry: PoolRegistry
   let registryFactory: ContractFactory
-  let usdv2Data: PoolDataStruct
-  let susdMetaV2Data: PoolDataStruct
-  let guardedBtcData: PoolDataStruct
-  let usdv2InputData: PoolInputDataStruct
-  let susdMetaV2InputData: PoolInputDataStruct
-  let guardedBtcInputData: PoolInputDataStruct
+  let usdv2Data: IPoolRegistry.PoolDataStruct
+  let susdMetaV2Data: IPoolRegistry.PoolDataStruct
+  let guardedBtcData: IPoolRegistry.PoolDataStruct
+  let usdv2InputData: IPoolRegistry.PoolInputDataStruct
+  let susdMetaV2InputData: IPoolRegistry.PoolInputDataStruct
+  let guardedBtcInputData: IPoolRegistry.PoolInputDataStruct
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
