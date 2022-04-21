@@ -537,20 +537,28 @@ contract PoolRegistry is
         returns (uint256[] memory balances)
     {
         uint256 poolIndex = poolsIndexOfPlusOne[poolAddress] - 1;
-        uint256[] memory basePoolBalances = _getTokenBalances(
-            pools[poolIndex].basePoolAddress
-        );
+        address basePoolAddress = pools[poolIndex].basePoolAddress;
+        uint256[] memory basePoolBalances = _getTokenBalances(basePoolAddress);
         uint256 underlyingTokensLength = pools[poolIndex]
             .underlyingTokens
             .length;
         uint256 metaLPTokenIndex = underlyingTokensLength -
             basePoolBalances.length;
+        uint256 baseLPTokenBalance = ISwap(poolAddress).getTokenBalance(
+            uint8(metaLPTokenIndex)
+        );
+        uint256 baseLPTokenTotalSupply = LPToken(
+            pools[poolsIndexOfPlusOne[basePoolAddress] - 1].lpToken
+        ).totalSupply();
+
         balances = new uint256[](underlyingTokensLength);
         for (uint8 i = 0; i < metaLPTokenIndex; i++) {
             balances[i] = ISwap(poolAddress).getTokenBalance(i);
         }
         for (uint256 i = metaLPTokenIndex; i < underlyingTokensLength; i++) {
-            balances[i] = basePoolBalances[i - metaLPTokenIndex];
+            balances[i] = basePoolBalances[i - metaLPTokenIndex]
+                .mul(baseLPTokenBalance)
+                .div(baseLPTokenTotalSupply);
         }
     }
 }

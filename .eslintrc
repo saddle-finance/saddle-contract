@@ -1,13 +1,15 @@
 {
-  "plugins": ["unused-imports"],
-  "extends":  [
+  "plugins": [
+    "unused-imports"
+  ],
+  "extends": [
     "plugin:@typescript-eslint/recommended",
     "plugin:prettier/recommended",
     "plugin:json/recommended"
   ],
-  "parser":  "@typescript-eslint/parser",
+  "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaVersion":  2018,
+    "ecmaVersion": 2018,
     "sourceType": "module"
   },
   "env": {
@@ -16,6 +18,17 @@
   },
   "rules": {
     "@typescript-eslint/no-explicit-any": "off",
-    "unused-imports/no-unused-imports": "error"
+    "@typescript-eslint/no-unused-vars": "off",
+    "no-unused-vars": "off",
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "warn",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
+      }
+    ]
   }
 }

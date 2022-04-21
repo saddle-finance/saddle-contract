@@ -1,9 +1,8 @@
-import { constants } from "ethers"
-import { solidity } from "ethereum-waffle"
-
-import { TestMathUtils } from "../build/typechain/TestMathUtils"
 import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { constants } from "ethers"
 import { ethers } from "hardhat"
+import { TestMathUtils } from "../build/typechain/"
 
 chai.use(solidity)
 const { expect } = chai

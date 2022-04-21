@@ -1,12 +1,20 @@
 /* eslint-disable prettier/prettier */
 /*eslint max-len: ["error", { "code": 150 }]*/
 
-import { BigNumber, ContractFactory, Signer } from "ethers"
-import { ethers } from "hardhat"
-import { solidity } from "ethereum-waffle"
-
 import chai from "chai"
-import { deployments } from "hardhat"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, ContractFactory, Signer } from "ethers"
+import { deployments, ethers } from "hardhat"
+import {
+  IPoolRegistry,
+  ISwapGuarded,
+  ISwapGuarded__factory,
+  MetaSwap,
+  PoolRegistry,
+  Swap,
+  Swap__factory,
+} from "../../build/typechain"
+import { PoolType } from "../../utils/constants"
 import {
   BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
@@ -14,17 +22,34 @@ import {
   setTimestamp,
   ZERO_ADDRESS,
 } from "../testUtils"
-import {
-  PoolRegistry,
-  PoolDataStruct,
-  PoolInputDataStruct,
-} from "../../build/typechain/PoolRegistry"
-import { ISwapGuarded, MetaSwap, Swap } from "../../build/typechain"
-import { PoolType } from "../../utils/constants"
 
 chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
+
+const POOL_REGISTRY_CONTRACT_NAME = "PoolRegistry"
+const USD_POOL_CONTRACT_NAME = "SaddleUSDPoolV2"
+const USD_V2_LP_TOKEN_CONTRACT_NAME = "SaddleUSDPoolV2LPToken"
+const DAI_CONTRACT_NAME = "DAI"
+const USDC_CONTRACT_NAME = "USDC"
+const USDT_CONTRACT_NAME = "USDT"
+const SUSD_CONTRACT_NAME = "SUSD"
+const RENBTC_CONTRACT_NAME = "RENBTC"
+const WBTC_CONTRACT_NAME = "WBTC"
+const TBTC_CONTRACT_NAME = "TBTC"
+const SBTC_CONTRACT_NAME = "SBTC"
+
+const GENERIC_ERC20_CONTRACT_NAME = "GenericERC20"
+const SUSD_META_POOL_CONTRACT_NAME = "SaddleSUSDMetaPoolUpdated"
+const SUSD_META_POOL_DEPOSIT_CONTRACT_NAME = "SaddleSUSDMetaPoolUpdatedDeposit"
+const SUSD_META_POOL_LP_TOKEN_CONTRACT_NAME = "SaddleSUSDMetaPoolUpdatedLPToken"
+const BTC_POOL_CONTRACT_NAME = "SaddleBTCPool"
+const BTC_POOL_LP_TOKEN_NAME = "SaddleBTCPoolLPToken"
+
+const BYTES32_USDV2_POOL_NAME = ethers.utils.formatBytes32String("USDv2")
+const BYTES32_SUSD_META_POOL_NAME =
+  ethers.utils.formatBytes32String("sUSD meta v2")
+const BYTES32_BTC_POOL_NAME = ethers.utils.formatBytes32String("BTC_guarded")
 
 describe("Registry", async () => {
   let signers: Array<Signer>
@@ -32,12 +57,12 @@ describe("Registry", async () => {
   let ownerAddress: string
   let poolRegistry: PoolRegistry
   let registryFactory: ContractFactory
-  let usdv2Data: PoolDataStruct
-  let susdMetaV2Data: PoolDataStruct
-  let guardedBtcData: PoolDataStruct
-  let usdv2InputData: PoolInputDataStruct
-  let susdMetaV2InputData: PoolInputDataStruct
-  let guardedBtcInputData: PoolInputDataStruct
+  let usdv2Data: IPoolRegistry.PoolDataStruct
+  let susdMetaV2Data: IPoolRegistry.PoolDataStruct
+  let guardedBtcData: IPoolRegistry.PoolDataStruct
+  let usdv2InputData: IPoolRegistry.PoolInputDataStruct
+  let susdMetaV2InputData: IPoolRegistry.PoolInputDataStruct
+  let guardedBtcInputData: IPoolRegistry.PoolInputDataStruct
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -46,17 +71,19 @@ describe("Registry", async () => {
       signers = await ethers.getSigners()
       owner = signers[0]
       ownerAddress = await owner.getAddress()
-      registryFactory = await ethers.getContractFactory("PoolRegistry")
+      registryFactory = await ethers.getContractFactory(
+        POOL_REGISTRY_CONTRACT_NAME,
+      )
       poolRegistry = (await registryFactory.deploy(
         ownerAddress,
         ownerAddress,
       )) as PoolRegistry
 
       usdv2InputData = {
-        poolAddress: (await get("SaddleUSDPoolV2")).address,
+        poolAddress: (await get(USD_POOL_CONTRACT_NAME)).address,
         typeOfAsset: PoolType.USD,
-        poolName: ethers.utils.formatBytes32String("USDv2"),
-        targetAddress: (await get("SaddleUSDPoolV2")).address,
+        poolName: BYTES32_USDV2_POOL_NAME,
+        targetAddress: (await get(USD_POOL_CONTRACT_NAME)).address,
         metaSwapDepositAddress: ZERO_ADDRESS,
         isSaddleApproved: true,
         isRemoved: false,
@@ -64,15 +91,15 @@ describe("Registry", async () => {
       }
 
       usdv2Data = {
-        poolAddress: (await get("SaddleUSDPoolV2")).address,
-        lpToken: (await get("SaddleUSDPoolV2LPToken")).address,
+        poolAddress: (await get(USD_POOL_CONTRACT_NAME)).address,
+        lpToken: (await get(USD_V2_LP_TOKEN_CONTRACT_NAME)).address,
         typeOfAsset: PoolType.USD,
-        poolName: ethers.utils.formatBytes32String("USDv2"),
-        targetAddress: (await get("SaddleUSDPoolV2")).address,
+        poolName: BYTES32_USDV2_POOL_NAME,
+        targetAddress: (await get(USD_POOL_CONTRACT_NAME)).address,
         tokens: [
-          (await get("DAI")).address,
-          (await get("USDC")).address,
-          (await get("USDT")).address,
+          (await get(DAI_CONTRACT_NAME)).address,
+          (await get(USDC_CONTRACT_NAME)).address,
+          (await get(USDT_CONTRACT_NAME)).address,
         ],
         underlyingTokens: [],
         basePoolAddress: ZERO_ADDRESS,
@@ -83,46 +110,48 @@ describe("Registry", async () => {
       }
 
       susdMetaV2InputData = {
-        poolAddress: (await get("SaddleSUSDMetaPoolUpdated")).address,
+        poolAddress: (await get(SUSD_META_POOL_CONTRACT_NAME)).address,
         typeOfAsset: PoolType.USD,
-        poolName: ethers.utils.formatBytes32String("sUSD meta v2"),
-        targetAddress: (await get("SaddleSUSDMetaPoolUpdated")).address,
-        metaSwapDepositAddress: (await get("SaddleSUSDMetaPoolUpdatedDeposit"))
-          .address,
+        poolName: BYTES32_SUSD_META_POOL_NAME,
+        targetAddress: (await get(SUSD_META_POOL_CONTRACT_NAME)).address,
+        metaSwapDepositAddress: (
+          await get(SUSD_META_POOL_DEPOSIT_CONTRACT_NAME)
+        ).address,
         isSaddleApproved: true,
         isRemoved: false,
         isGuarded: false,
       }
 
       susdMetaV2Data = {
-        poolAddress: (await get("SaddleSUSDMetaPoolUpdated")).address,
-        lpToken: (await get("SaddleSUSDMetaPoolUpdatedLPToken")).address,
+        poolAddress: (await get(SUSD_META_POOL_CONTRACT_NAME)).address,
+        lpToken: (await get(SUSD_META_POOL_LP_TOKEN_CONTRACT_NAME)).address,
         typeOfAsset: PoolType.USD,
-        poolName: ethers.utils.formatBytes32String("sUSD meta v2"),
-        targetAddress: (await get("SaddleSUSDMetaPoolUpdated")).address,
+        poolName: BYTES32_SUSD_META_POOL_NAME,
+        targetAddress: (await get(SUSD_META_POOL_CONTRACT_NAME)).address,
         tokens: [
-          (await get("SUSD")).address,
-          (await get("SaddleUSDPoolV2LPToken")).address,
+          (await get(SUSD_CONTRACT_NAME)).address,
+          (await get(USD_V2_LP_TOKEN_CONTRACT_NAME)).address,
         ],
         underlyingTokens: [
-          (await get("SUSD")).address,
-          (await get("DAI")).address,
-          (await get("USDC")).address,
-          (await get("USDT")).address,
+          (await get(SUSD_CONTRACT_NAME)).address,
+          (await get(DAI_CONTRACT_NAME)).address,
+          (await get(USDC_CONTRACT_NAME)).address,
+          (await get(USDT_CONTRACT_NAME)).address,
         ],
-        basePoolAddress: (await get("SaddleUSDPoolV2")).address,
-        metaSwapDepositAddress: (await get("SaddleSUSDMetaPoolUpdatedDeposit"))
-          .address,
+        basePoolAddress: (await get(USD_POOL_CONTRACT_NAME)).address,
+        metaSwapDepositAddress: (
+          await get(SUSD_META_POOL_DEPOSIT_CONTRACT_NAME)
+        ).address,
         isSaddleApproved: true,
         isRemoved: false,
         isGuarded: false,
       }
 
       guardedBtcInputData = {
-        poolAddress: (await get("SaddleBTCPool")).address,
+        poolAddress: (await get(BTC_POOL_CONTRACT_NAME)).address,
         typeOfAsset: PoolType.BTC,
-        poolName: ethers.utils.formatBytes32String("BTC guarded pool"),
-        targetAddress: (await get("SaddleBTCPool")).address,
+        poolName: BYTES32_BTC_POOL_NAME,
+        targetAddress: (await get(BTC_POOL_CONTRACT_NAME)).address,
         metaSwapDepositAddress: ZERO_ADDRESS,
         isSaddleApproved: true,
         isRemoved: false,
@@ -130,16 +159,16 @@ describe("Registry", async () => {
       }
 
       guardedBtcData = {
-        poolAddress: (await get("SaddleBTCPool")).address,
-        lpToken: (await get("SaddleBTCPoolLPToken")).address,
+        poolAddress: (await get(BTC_POOL_CONTRACT_NAME)).address,
+        lpToken: (await get(BTC_POOL_LP_TOKEN_NAME)).address,
         typeOfAsset: PoolType.BTC,
-        poolName: ethers.utils.formatBytes32String("BTC guarded pool"),
-        targetAddress: (await get("SaddleBTCPool")).address,
+        poolName: BYTES32_BTC_POOL_NAME,
+        targetAddress: (await get(BTC_POOL_CONTRACT_NAME)).address,
         tokens: [
-          (await get("TBTC")).address,
-          (await get("WBTC")).address,
-          (await get("RENBTC")).address,
-          (await get("SBTC")).address,
+          (await get(TBTC_CONTRACT_NAME)).address,
+          (await get(WBTC_CONTRACT_NAME)).address,
+          (await get(RENBTC_CONTRACT_NAME)).address,
+          (await get(SBTC_CONTRACT_NAME)).address,
         ],
         underlyingTokens: [],
         basePoolAddress: ZERO_ADDRESS,
@@ -150,11 +179,14 @@ describe("Registry", async () => {
       }
 
       for (const token of usdv2Data.tokens) {
-        const tokenContract = await ethers.getContractAt("GenericERC20", token)
+        const tokenContract = await ethers.getContractAt(
+          GENERIC_ERC20_CONTRACT_NAME,
+          token,
+        )
         await tokenContract.approve(usdv2Data.poolAddress, MAX_UINT256)
       }
       const usdPoolContract = (await ethers.getContract(
-        "SaddleUSDPoolV2",
+        USD_POOL_CONTRACT_NAME,
       )) as Swap
       await usdPoolContract.addLiquidity(
         [String(1e18), String(1e6), String(1e6)],
@@ -165,11 +197,14 @@ describe("Registry", async () => {
       await setTimestamp((await getCurrentBlockTimestamp()) + 600)
 
       for (const token of susdMetaV2Data.tokens) {
-        const tokenContract = await ethers.getContractAt("GenericERC20", token)
+        const tokenContract = await ethers.getContractAt(
+          GENERIC_ERC20_CONTRACT_NAME,
+          token,
+        )
         await tokenContract.approve(susdMetaV2Data.poolAddress, MAX_UINT256)
       }
       const susdPoolContract = (await ethers.getContract(
-        "SaddleSUSDMetaPoolUpdated",
+        SUSD_META_POOL_CONTRACT_NAME,
       )) as MetaSwap
       await susdPoolContract.addLiquidity(
         [String(1e18), String(1e18)],
@@ -219,7 +254,7 @@ describe("Registry", async () => {
       await poolRegistry.addPool(susdMetaV2Data)
       let fetchedByAddress = await poolRegistry.getPoolData(
         (
-          await get("SaddleUSDPoolV2")
+          await get(USD_POOL_CONTRACT_NAME)
         ).address,
       )
       let fetchedByIndex = await poolRegistry.getPoolDataAtIndex(0)
@@ -228,7 +263,7 @@ describe("Registry", async () => {
 
       fetchedByAddress = await poolRegistry.callStatic.getPoolData(
         (
-          await get("SaddleSUSDMetaPoolUpdated")
+          await get(SUSD_META_POOL_CONTRACT_NAME)
         ).address,
       )
       fetchedByIndex = await poolRegistry.callStatic.getPoolDataAtIndex(1)
@@ -240,7 +275,7 @@ describe("Registry", async () => {
       await poolRegistry.addPool(guardedBtcInputData)
       const fetchedByAddress = await poolRegistry.getPoolData(
         (
-          await get("SaddleBTCPool")
+          await get(BTC_POOL_CONTRACT_NAME)
         ).address,
       )
       const fetchedByIndex = await poolRegistry.getPoolDataAtIndex(0)
@@ -324,7 +359,9 @@ describe("Registry", async () => {
       )
       expect(underlyingBalances).to.deep.equal([
         BIG_NUMBER_1E18,
-        ...basePoolBalances,
+        BigNumber.from("333333333333333333"),
+        BigNumber.from("333333"),
+        BigNumber.from("333333"),
       ])
     })
   })
@@ -344,15 +381,16 @@ describe("Registry", async () => {
       await poolRegistry.addPool(susdMetaV2Data)
 
       // tokens
-      const dai = (await get("DAI")).address
-      const usdc = (await get("USDC")).address
-      const saddleUSDLPToken = (await get("SaddleUSDPoolV2LPToken")).address
-      const susd = (await get("SUSD")).address
+      const dai = (await get(DAI_CONTRACT_NAME)).address
+      const usdc = (await get(USDC_CONTRACT_NAME)).address
+      const saddleUSDLPToken = (await get(USD_V2_LP_TOKEN_CONTRACT_NAME))
+        .address
+      const susd = (await get(SUSD_CONTRACT_NAME)).address
 
       // pools
-      const usdv2Pool = (await get("SaddleUSDPoolV2")).address
-      const susdPool = (await get("SaddleSUSDMetaPoolUpdated")).address
-      const susdPoolDeposit = (await get("SaddleSUSDMetaPoolUpdatedDeposit"))
+      const usdv2Pool = (await get(USD_POOL_CONTRACT_NAME)).address
+      const susdPool = (await get(SUSD_META_POOL_CONTRACT_NAME)).address
+      const susdPoolDeposit = (await get(SUSD_META_POOL_DEPOSIT_CONTRACT_NAME))
         .address
 
       expect(
@@ -395,7 +433,7 @@ describe("Registry", async () => {
     it("Successfully fetches swapStorage from a regular Swap", async () => {
       await poolRegistry.addPool(usdv2Data)
       const swap = (await ethers.getContractAt(
-        "Swap",
+        Swap__factory.abi,
         usdv2Data.poolAddress,
       )) as Swap
       expect(await poolRegistry.getSwapStorage(usdv2Data.poolAddress)).to.eql(
@@ -406,7 +444,7 @@ describe("Registry", async () => {
     it("Successfully fetches swapStorage from a guarded Swap", async () => {
       await poolRegistry.addPool(guardedBtcInputData)
       const guardedSwap = (await ethers.getContractAt(
-        "ISwapGuarded",
+        ISwapGuarded__factory.abi,
         guardedBtcInputData.poolAddress,
       )) as ISwapGuarded
       const swapStorage = [...(await guardedSwap.swapStorage())]

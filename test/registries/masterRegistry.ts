@@ -1,10 +1,9 @@
-import { BigNumber, ContractFactory, ethers, Signer } from "ethers"
-import { solidity } from "ethereum-waffle"
-
 import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, ContractFactory, ethers, Signer } from "ethers"
 import { deployments } from "hardhat"
+import { MasterRegistry } from "../../build/typechain/"
 import { ZERO_ADDRESS } from "../testUtils"
-import { MasterRegistry } from "../../build/typechain/MasterRegistry"
 
 chai.use(solidity)
 const { expect } = chai
