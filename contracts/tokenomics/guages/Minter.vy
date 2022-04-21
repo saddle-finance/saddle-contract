@@ -44,7 +44,7 @@ event ApplyOwnership:
 # General constants
 WEEK: constant(uint256) = 86400 * 7
 
-# 250K RBN / WEEK
+# 250K SDL / WEEK
 INITIAL_RATE: constant(uint256) = 250_000 * 10 ** 18 / WEEK
 # Weekly
 MAX_ABS_RATE: constant(uint256) = 10_000_000 * 10 ** 18
@@ -236,7 +236,7 @@ def recover_balance(_coin: address) -> bool:
 def commit_next_emission(_rate_per_week: uint256):
   """
   @notice Commit a new rate for the following week (we update by weeks).
-          _rate_per_week should have no decimals (ex: if we want to reward 600_000 RBN over the course of a week, we pass in 600_000 * 10 ** 18)
+          _rate_per_week should have no decimals (ex: if we want to reward 600_000 SDL over the course of a week, we pass in 600_000 * 10 ** 18)
   """
   assert msg.sender == self.admin # dev: admin only
   assert _rate_per_week <= MAX_ABS_RATE # dev: preventing fatfinger

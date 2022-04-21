@@ -67,7 +67,7 @@
     "lint:fix:json": "eslint --ext json deployments/ && prettier --write deployments/**/*.json",
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "lint:fix:sol": "prettier --write 'contracts/**/*.sol' && solhint 'contracts/**/*.sol' --fix",
-    "build": "hardhat compile",
+    "build": "hardhat compile --no-typechain && hardhat typechain",
     "test": "hardhat test",
     "coverage": "hardhat coverage --temp ./build/artifacts",
     "deploy": "hardhat deploy",

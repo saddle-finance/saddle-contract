@@ -90,7 +90,7 @@ TOKENLESS_PRODUCTION: constant(uint256) = 40
 WEEK: constant(uint256) = 604800
 
 MINTER: immutable(address)
-RBN_TOKEN: immutable(address)
+SDL_TOKEN: immutable(address)
 CONTROLLER: immutable(address)
 VOTING_ESCROW: immutable(address)
 VEBOOST_PROXY: immutable(address)
@@ -157,11 +157,11 @@ def __init__(_lp_token: address, _minter: address, _admin: address):
     @param _admin Admin who can kill the gauge
     """
 
-    rbn_token: address = Minter(_minter).token()
+    sdl_token: address = Minter(_minter).token()
     controller: address = Minter(_minter).controller()
 
     MINTER = _minter
-    RBN_TOKEN = rbn_token
+    SDL_TOKEN = sdl_token
     CONTROLLER = controller
     VOTING_ESCROW = Controller(controller).voting_escrow()
     VEBOOST_PROXY = Controller(controller).veboost_proxy()
@@ -793,11 +793,11 @@ def minter() -> address:
 
 @view
 @external
-def rbn_token() -> address:
+def sdl_token() -> address:
   """
   @notice Query the crv token
   """
-  return RBN_TOKEN
+  return SDL_TOKEN
 
 @view
 @external

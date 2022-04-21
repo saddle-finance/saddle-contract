@@ -20,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (
         await get("SDL")
       ).address, // TODO: determine which token to use for fee distribution
-      MULTISIG_ADDRESSES[await getChainId()], // admin that can trigger clawback
+      deployer, // admin that can trigger clawback and kill the contract
       MULTISIG_ADDRESSES[await getChainId()], // emergency admin that receieves all of the fee tokens
     ],
   })
