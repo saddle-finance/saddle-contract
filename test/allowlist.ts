@@ -1,16 +1,15 @@
+import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { Signer } from "ethers"
+import { formatBytes32String } from "ethers/lib/utils"
+import { deployments } from "hardhat"
+import { Allowlist } from "../build/typechain/"
 import {
-  ZERO_ADDRESS,
   asyncForEach,
   getTestMerkleAllowedAccounts,
   getTestMerkleRoot,
+  ZERO_ADDRESS,
 } from "./testUtils"
-import { solidity } from "ethereum-waffle"
-import { deployments } from "hardhat"
-
-import { Allowlist } from "../build/typechain/Allowlist"
-import { Signer } from "ethers"
-import chai from "chai"
-import { formatBytes32String } from "ethers/lib/utils"
 
 chai.use(solidity)
 const { expect } = chai

@@ -1,24 +1,10 @@
 /* eslint-disable prettier/prettier */
 /*eslint max-len: ["error", { "code": 150 }]*/
 
-import { BigNumber, ContractFactory, Signer } from "ethers"
-import { ethers } from "hardhat"
-import { solidity } from "ethereum-waffle"
-
 import chai from "chai"
-import { deployments } from "hardhat"
-import {
-  BIG_NUMBER_1E18,
-  getCurrentBlockTimestamp,
-  MAX_UINT256,
-  setTimestamp,
-  ZERO_ADDRESS,
-} from "../testUtils"
-import {
-  PoolRegistry,
-  PoolDataStruct,
-  PoolInputDataStruct,
-} from "../../build/typechain/PoolRegistry"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, ContractFactory, Signer } from "ethers"
+import { deployments, ethers } from "hardhat"
 import {
   ISwapGuarded,
   ISwapGuarded__factory,
@@ -26,7 +12,19 @@ import {
   Swap,
   Swap__factory,
 } from "../../build/typechain"
+import {
+  PoolDataStruct,
+  PoolInputDataStruct,
+  PoolRegistry,
+} from "../../build/typechain/"
 import { PoolType } from "../../utils/constants"
+import {
+  BIG_NUMBER_1E18,
+  getCurrentBlockTimestamp,
+  MAX_UINT256,
+  setTimestamp,
+  ZERO_ADDRESS,
+} from "../testUtils"
 
 chai.use(solidity)
 const { expect } = chai
