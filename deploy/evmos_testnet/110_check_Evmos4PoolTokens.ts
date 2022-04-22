@@ -7,7 +7,7 @@ const USD_TOKENS_ARGS: { [token: string]: any[] } = {
   test_DAI: ["Test Dai Stablecoin", "test-DAI", "18"],
   test_USDC: ["Test USD Coin", "test-USDC", "6"],
   test_USDT: ["Test ether USD", "test-USDT", "6"],
-  test_UST: ["Test UST Token", "test-UST", "18"]
+  test_UST: ["Test UST Token", "test-UST", "18"],
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -36,8 +36,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           BigNumber.from(10).pow(decimals).mul(1000000),
         )
       }
-    }
-    else {
+    } else {
       log(`reusing ${token} at ${token_contracts.address}`)
     }
   }

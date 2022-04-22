@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (await get("test_DAI")).address,
       (await get("test_USDC")).address,
       (await get("test_USDT")).address,
-      (await get("test_UST")).address
+      (await get("test_UST")).address,
     ]
     const TOKEN_DECIMALS = [18, 6, 6, 18]
     const LP_TOKEN_NAME = "Saddle 4pool"
