@@ -167,7 +167,7 @@ def __init__(_lp_token: address, _minter: address, _admin: address):
     VEBOOST_PROXY = Controller(controller).veboost_proxy()
 
     lp_symbol: String[26] = ERC20Extended(_lp_token).symbol()
-    name: String[64] = concat("Ribbon.fi ", lp_symbol, " Gauge Deposit")
+    name: String[64] = concat("Saddle ", lp_symbol, " Gauge Deposit")
     NAME = name
     SYMBOL = concat(lp_symbol, "-gauge")
     DOMAIN_SEPARATOR = keccak256(

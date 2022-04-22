@@ -4,7 +4,7 @@ import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
 import { ethers, network } from "hardhat"
 import { DeploymentsExtension } from "hardhat-deploy/dist/types"
 import { Artifact } from "hardhat/types"
-import { ERC20, IERC20, Swap } from "../build/typechain/"
+import { IERC20, Swap } from "../build/typechain/"
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
 import { CHAIN_ID } from "../utils/network"
 
