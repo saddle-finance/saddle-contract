@@ -25,7 +25,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "VotingEscrow",
       { from: deployer, log: true },
       "set_reward_pool",
-      MULTISIG_ADDRESSES[await getChainId()], // ownership admin
+      (
+        await get("VeSDLRewards")
+      ).address, // ownership admin
     )
   }
 }
