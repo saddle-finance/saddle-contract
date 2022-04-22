@@ -1,7 +1,7 @@
 import { asyncForEach, impersonateAccount } from "../../test/testUtils"
 
 import { DeployFunction } from "hardhat-deploy/types"
-import { GenericERC20 } from "../../build/typechain/GenericERC20"
+import { GenericERC20 } from "../../build/typechain/"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import dotenv from "dotenv"
 import { ethers } from "hardhat"

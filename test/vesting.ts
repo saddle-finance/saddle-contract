@@ -1,18 +1,17 @@
+import chai from "chai"
+import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
+import { deployments } from "hardhat"
 import {
   Cloner,
   GenericERC20WithGovernance,
   Vesting,
 } from "../build/typechain/"
 import {
-  ZERO_ADDRESS,
   getCurrentBlockTimestamp,
   setTimestamp,
+  ZERO_ADDRESS,
 } from "./testUtils"
-
-import chai from "chai"
-import { deployments } from "hardhat"
-import { solidity } from "ethereum-waffle"
 
 chai.use(solidity)
 const { expect } = chai

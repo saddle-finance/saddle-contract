@@ -1,22 +1,18 @@
+import chai from "chai"
+import dotenv from "dotenv"
+import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer, utils } from "ethers"
+import { deployments, ethers, network } from "hardhat"
+import { Bridge, GenericERC20, LPToken, Swap } from "../build/typechain/"
+import { ALCHEMY_BASE_URL, CHAIN_ID } from "../utils/network"
 import {
-  MAX_UINT256,
   asyncForEach,
   getUserTokenBalances,
   impersonateAccount,
   increaseTimestamp,
+  MAX_UINT256,
   setTimestamp,
 } from "./testUtils"
-import { solidity } from "ethereum-waffle"
-import { deployments, ethers, network } from "hardhat"
-
-import { Bridge } from "../build/typechain/Bridge"
-import { GenericERC20 } from "../build/typechain/GenericERC20"
-import { LPToken } from "../build/typechain/LPToken"
-import { Swap } from "../build/typechain/Swap"
-import chai from "chai"
-import dotenv from "dotenv"
-import { ALCHEMY_BASE_URL, CHAIN_ID } from "../utils/network"
 
 dotenv.config()
 chai.use(solidity)

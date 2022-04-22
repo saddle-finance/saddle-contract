@@ -1,12 +1,20 @@
 /* eslint-disable prettier/prettier */
 /*eslint max-len: ["error", { "code": 150 }]*/
 
-import { BigNumber, ContractFactory, Signer } from "ethers"
-import { ethers } from "hardhat"
-import { solidity } from "ethereum-waffle"
-
 import chai from "chai"
-import { deployments } from "hardhat"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, ContractFactory, Signer } from "ethers"
+import { deployments, ethers } from "hardhat"
+import {
+  IPoolRegistry,
+  ISwapGuarded,
+  ISwapGuarded__factory,
+  MetaSwap,
+  PoolRegistry,
+  Swap,
+  Swap__factory,
+} from "../../build/typechain"
+import { PoolType } from "../../utils/constants"
 import {
   BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
@@ -14,19 +22,6 @@ import {
   setTimestamp,
   ZERO_ADDRESS,
 } from "../testUtils"
-import {
-  PoolRegistry,
-  PoolDataStruct,
-  PoolInputDataStruct,
-} from "../../build/typechain/PoolRegistry"
-import {
-  ISwapGuarded,
-  ISwapGuarded__factory,
-  MetaSwap,
-  Swap,
-  Swap__factory,
-} from "../../build/typechain"
-import { PoolType } from "../../utils/constants"
 
 chai.use(solidity)
 const { expect } = chai
@@ -62,12 +57,12 @@ describe("Registry", async () => {
   let ownerAddress: string
   let poolRegistry: PoolRegistry
   let registryFactory: ContractFactory
-  let usdv2Data: PoolDataStruct
-  let susdMetaV2Data: PoolDataStruct
-  let guardedBtcData: PoolDataStruct
-  let usdv2InputData: PoolInputDataStruct
-  let susdMetaV2InputData: PoolInputDataStruct
-  let guardedBtcInputData: PoolInputDataStruct
+  let usdv2Data: IPoolRegistry.PoolDataStruct
+  let susdMetaV2Data: IPoolRegistry.PoolDataStruct
+  let guardedBtcData: IPoolRegistry.PoolDataStruct
+  let usdv2InputData: IPoolRegistry.PoolInputDataStruct
+  let susdMetaV2InputData: IPoolRegistry.PoolInputDataStruct
+  let guardedBtcInputData: IPoolRegistry.PoolInputDataStruct
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {

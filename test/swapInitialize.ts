@@ -1,11 +1,9 @@
-import { Signer } from "ethers"
-import { ZERO_ADDRESS } from "./testUtils"
-import { solidity } from "ethereum-waffle"
-import { deployments } from "hardhat"
-
-import { GenericERC20 } from "../build/typechain/GenericERC20"
-import { Swap } from "../build/typechain/Swap"
 import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { Signer } from "ethers"
+import { deployments } from "hardhat"
+import { GenericERC20, Swap } from "../build/typechain/"
+import { ZERO_ADDRESS } from "./testUtils"
 
 chai.use(solidity)
 const { expect } = chai
