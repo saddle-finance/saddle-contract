@@ -51,7 +51,7 @@ contract PermissionlessSwap is Swap, ShareProtocolFee {
         uint256 _fee,
         uint256 _adminFee,
         address lpTokenTargetAddress
-    ) public payable virtual override {
+    ) public payable virtual override initializer {
         Swap.initialize(
             _pooledTokens,
             decimals,
@@ -76,7 +76,7 @@ contract PermissionlessSwap is Swap, ShareProtocolFee {
     {
         require(
             msg.sender == owner() || msg.sender == feeCollector,
-            "Caller is not authroized"
+            "Caller is not authorized"
         );
         PermissionlessSwapUtils.withdrawAdminFees(
             swapStorage,
