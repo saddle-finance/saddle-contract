@@ -44,6 +44,31 @@ contract PermissionlessMetaSwap is MetaSwap, ShareProtocolFee {
 
     /*** ADMIN FUNCTIONS ***/
 
+    function initializeMetaSwap(
+        IERC20[] memory _pooledTokens,
+        uint8[] memory decimals,
+        string memory lpTokenName,
+        string memory lpTokenSymbol,
+        uint256 _a,
+        uint256 _fee,
+        uint256 _adminFee,
+        address lpTokenTargetAddress,
+        ISwap baseSwap
+    ) public payable virtual override initializer {
+        MetaSwap.initializeMetaSwap(
+            _pooledTokens,
+            decimals,
+            lpTokenName,
+            lpTokenSymbol,
+            _a,
+            _fee,
+            _adminFee,
+            lpTokenTargetAddress,
+            baseSwap
+        );
+        _updateFeeCollectorCache(MASTER_REGISTRY);
+    }
+
     /**
      * @notice Withdraw all admin fees to the contract owner and the fee collector
      */
@@ -55,7 +80,7 @@ contract PermissionlessMetaSwap is MetaSwap, ShareProtocolFee {
     {
         require(
             msg.sender == owner() || msg.sender == feeCollector,
-            "Caller is not authroized"
+            "Caller is not authorized"
         );
         PermissionlessSwapUtils.withdrawAdminFees(
             swapStorage,
