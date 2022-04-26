@@ -52,15 +52,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       abi: (await get("SwapFlashLoan")).abi,
       address: usdSwapAddress,
     })
+
+    const lpTokenAddress = (await read("SaddleUSDPoolV2", "swapStorage"))
+      .lpToken
+    log(`USD pool V2 LP Token at ${lpTokenAddress}`)
+
+    await save("SaddleUSDPoolV2LPToken", {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
   }
-
-  const lpTokenAddress = (await read("SaddleUSDPoolV2", "swapStorage")).lpToken
-  log(`USD pool V2 LP Token at ${lpTokenAddress}`)
-
-  await save("SaddleUSDPoolV2LPToken", {
-    abi: (await get("LPToken")).abi, // LPToken ABI
-    address: lpTokenAddress,
-  })
 }
 export default func
 func.tags = ["USDPoolV2"]
