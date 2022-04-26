@@ -25,9 +25,11 @@ abstract contract ShareProtocolFee {
         internal
         virtual
     {
-        feeCollector = masterRegistry.resolveNameToLatestAddress(
+        address _feeCollector = masterRegistry.resolveNameToLatestAddress(
             FEE_COLLECTOR_NAME
         );
+        require(_feeCollector != address(0), "Fee collector cannot be empty");
+        feeCollector = _feeCollector;
     }
 
     /**

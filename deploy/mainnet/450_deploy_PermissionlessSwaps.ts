@@ -75,8 +75,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
 
     // 1. Grant COMMUNITY_MANAGER_ROLE to PermissionlessDeployer
-    // 2. Grant DEFAULT_ADMIN_ROLE to Multisig on this chain
-    // 3. Renounce DEFAULT_ADMIN_ROLE from deployer
+    // 2. Grant COMMUNITY_MANAGER_ROLE to deployer account
+    // 3. Grant DEFAULT_ADMIN_ROLE to Multisig on this chain
     const batchCall = [
       await poolRegistry.populateTransaction.grantRole(
         await poolRegistry.COMMUNITY_MANAGER_ROLE(),
@@ -85,12 +85,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ).address,
       ),
       await poolRegistry.populateTransaction.grantRole(
+        await poolRegistry.COMMUNITY_MANAGER_ROLE(),
+        deployer,
+      ),
+      await poolRegistry.populateTransaction.grantRole(
         await poolRegistry.DEFAULT_ADMIN_ROLE(),
         MULTISIG_ADDRESSES[await getChainId()],
-      ),
-      await poolRegistry.populateTransaction.renounceRole(
-        await poolRegistry.DEFAULT_ADMIN_ROLE(),
-        deployer,
       ),
     ]
 
