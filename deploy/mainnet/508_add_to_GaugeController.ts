@@ -8,18 +8,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get, getOrNull, execute, read, log } = deployments
   const { deployer } = await getNamedAccounts()
 
-  await deploy("GaugeController", {
-    from: deployer,
-    log: true,
-    skipIfAlreadyDeployed: true,
-    args: [
-      (await get("SDL")).address,
-      (await get("VotingEscrow")).address,
-      (await get("DelegationProxy")).address,
-      MULTISIG_ADDRESSES[await getChainId()], // admin
-    ],
-  })
-
   // read n_gauge_types
   const n_gauge_types = await read("GaugeController", "n_gauge_types")
   if (n_gauge_types.toNumber() < 1) {
@@ -48,7 +36,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const deploymentName = `LiquidityGaugeV5_${lpToken}`
     const lpTokenAddress = (await get(lpToken)).address
 
-    if ((await getOrNull(deploymentName)) === null) {
+    if ((await getOrNull(deploymentName)) == null) {
       const result = await deploy(deploymentName, {
         from: deployer,
         log: true,
@@ -64,9 +52,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       await execute(
         "GaugeController",
         { from: deployer },
-        "add_gauge",
+        "add_gauge(address,int128)",
         result.address,
-        1,
+        0,
       )
     } else {
       log(

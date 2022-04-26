@@ -55,7 +55,10 @@ describe("VotingEscrow", () => {
       veSDL = await ethers.getContract("VotingEscrow")
 
       // Ensure test setup is correct
-      await sdl.enableTransfer()
+      if (await sdl.paused()) {
+        await sdl.enableTransfer()
+      }
+
       await sdl.approve(veSDL.address, MAX_UINT256)
       expect(await veSDL.reward_pool()).to.eq(
         (await ethers.getContract("VeSDLRewards")).address,

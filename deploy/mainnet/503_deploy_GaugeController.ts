@@ -1,7 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
-import { BIG_NUMBER_1E18 } from "../../test/testUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
