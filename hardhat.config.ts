@@ -86,12 +86,20 @@ let config: HardhatUserConfig = {
       deploy: ["./deploy/evmos_testnet/"],
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
-      }
+      },
     },
     evmos_mainnet: {
       url: "https://eth.bd.evmos.org",
       chainId: 9001,
       deploy: ["./deploy/evmos/"],
+    },
+    kava_testnet: {
+      url: "https://evm.evm-alpha.kava.io",
+      chainId: 2221,
+      deploy: ["./deploy/kava_testnet/"],
+      accounts: {
+        mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
+      },
     },
   },
   paths: {
@@ -153,8 +161,9 @@ let config: HardhatUserConfig = {
       42161: 0, // use the same address on arbitrum mainnet
       10: 0, // use the same address on optimism mainnet
       250: 0, // use the same address on fantom mainnet
-      9000: 0,// use the same address on evmos testnet
-      9001: 0,// use the same address on evmos mainnnet
+      9000: 0, // use the same address on evmos testnet
+      9001: 0, // use the same address on evmos mainnnet
+      2221: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
     },
     libraryDeployer: {
@@ -163,8 +172,9 @@ let config: HardhatUserConfig = {
       42161: 0, // use the same address on arbitrum mainnet
       10: 0, // use the same address on optimism mainnet
       250: 0, // use the same address on fantom mainnet
-      9000: 0,// use the same address on evmos testnet
-      9001: 0,// use the same address on evmos mainnnet
+      9000: 0, // use the same address on evmos testnet
+      9001: 0, // use the same address on evmos mainnnet
+      2221: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
     },
   },
