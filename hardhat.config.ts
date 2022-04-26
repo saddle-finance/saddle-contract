@@ -86,10 +86,10 @@ let config: HardhatUserConfig = {
       deploy: ["./deploy/evmos_testnet/"],
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
-      }
+      },
     },
     evmos_mainnet: {
-      url: "https://eth.bd.evmos.org",
+      url: "https://eth.bd.evmos.org:8545",
       chainId: 9001,
       deploy: ["./deploy/evmos/"],
     },
@@ -153,8 +153,8 @@ let config: HardhatUserConfig = {
       42161: 0, // use the same address on arbitrum mainnet
       10: 0, // use the same address on optimism mainnet
       250: 0, // use the same address on fantom mainnet
-      9000: 0,// use the same address on evmos testnet
-      9001: 0,// use the same address on evmos mainnnet
+      9000: 0, // use the same address on evmos testnet
+      9001: 0, // use the same address on evmos mainnnet
       3: 0, // use the same address on ropsten
     },
     libraryDeployer: {
@@ -163,8 +163,8 @@ let config: HardhatUserConfig = {
       42161: 0, // use the same address on arbitrum mainnet
       10: 0, // use the same address on optimism mainnet
       250: 0, // use the same address on fantom mainnet
-      9000: 0,// use the same address on evmos testnet
-      9001: 0,// use the same address on evmos mainnnet
+      9000: 0, // use the same address on evmos testnet
+      9001: 0, // use the same address on evmos mainnnet
       3: 0, // use the same address on ropsten
     },
   },
