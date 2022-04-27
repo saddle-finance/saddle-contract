@@ -102,6 +102,7 @@ describe("Liquidity Gauge V5", () => {
     )
     await minter.update_mining_parameters()
 
+    // Imitate multisig setting gauge weights
     await gaugeController.change_gauge_weight(gauge.address, 10000)
 
     // Skip to the week after when the weights apply
