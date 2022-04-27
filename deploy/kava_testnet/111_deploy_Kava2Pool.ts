@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (await get("USDC")).address,
       (await get("USDT")).address,
     ]
-    const TOKEN_DECIMALS = [18, 6, 6, 18]
+    const TOKEN_DECIMALS = [6, 6]
     const LP_TOKEN_NAME = "Saddle 2pool"
     const LP_TOKEN_SYMBOL = "saddleKavaUSD"
     const INITIAL_A = 400
@@ -26,7 +26,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await execute(
       "SwapFlashLoan",
-      { from: deployer, log: true, waitConfirmations: 3 },
+      { from: deployer, log: true },
       "initialize",
       TOKEN_ADDRESSES,
       TOKEN_DECIMALS,
