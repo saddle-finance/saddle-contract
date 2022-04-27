@@ -8,19 +8,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
-  const saddleEvmos4Pool = await getOrNull("SaddleEvmos4Pool")
-  if (saddleEvmos4Pool) {
-    log(`reusing "Evmos4PoolTokens" at ${saddleEvmos4Pool.address}`)
+  const saddleEvmos3pool = await getOrNull("SaddleEvmos3pool")
+  if (saddleEvmos3pool) {
+    log(`reusing "Evmos3poolTokens" at ${saddleEvmos3pool.address}`)
   } else {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
       (await get("DAI")).address,
       (await get("USDC")).address,
       (await get("USDT")).address,
-      (await get("UST")).address,
     ]
-    const TOKEN_DECIMALS = [18, 6, 6, 18]
-    const LP_TOKEN_NAME = "Saddle 4pool"
+    const TOKEN_DECIMALS = [18, 6, 6]
+    const LP_TOKEN_NAME = "Saddle 3pool"
     const LP_TOKEN_SYMBOL = "saddleEvmosUSD"
     const INITIAL_A = 400
     const SWAP_FEE = 4e6 // 4bps
@@ -42,22 +41,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ).address,
     )
 
-    await save("SaddleEvmos4Pool", {
+    await save("SaddleEvmos3pool", {
       abi: (await get("SwapFlashLoan")).abi,
       address: (await get("SwapFlashLoan")).address,
     })
 
-    const lpTokenAddress = (await read("SaddleEvmos4Pool", "swapStorage"))
+    const lpTokenAddress = (await read("SaddleEvmos3pool", "swapStorage"))
       .lpToken
     log(`Saddle Evmos USD Pool LP Token at ${lpTokenAddress}`)
 
-    await save("SaddleEvmos4PoolLPToken", {
+    await save("SaddleEvmos3poolLPToken", {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
 
     await execute(
-      "SaddleEvmos4Pool",
+      "SaddleEvmos3pool",
       { from: deployer, log: true },
       "transferOwnership",
       MULTISIG_ADDRESSES[await getChainId()],
@@ -65,5 +64,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["SaddleEvmos4Pool"]
-func.dependencies = ["SwapUtils", "SwapFlashLoan", "Evmos4PoolTokens"]
+func.tags = ["SaddleEvmos3pool"]
+func.dependencies = ["SwapUtils", "SwapFlashLoan", "Evmos3poolTokens"]
