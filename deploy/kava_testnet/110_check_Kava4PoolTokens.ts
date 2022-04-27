@@ -4,10 +4,8 @@ import { isTestNetwork } from "../../utils/network"
 import { BigNumber } from "ethers"
 
 const USD_TOKENS_ARGS: { [token: string]: any[] } = {
-  test_DAI: ["Test Frax Stablecoin", "test-FRAX", "18"],
-  test_USDC: ["Test USD Coin", "test-USDC", "6"],
-  test_USDT: ["Test ether USD", "test-USDT", "6"],
-  test_UST: ["Test UST Token", "test-UST", "18"],
+  test_USDC: ["USD Coin", "USDC", "6"],
+  test_USDT: ["Tether USD", "USDT", "6"],
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -42,4 +40,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["Kava4PoolTokens"]
+func.tags = ["Kava2PoolTokens"]
