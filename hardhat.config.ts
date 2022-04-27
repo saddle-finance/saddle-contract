@@ -12,6 +12,7 @@ import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
 import { ethers } from "ethers"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "./utils/network"
+import { PROD_DEPLOYER_ADDRESS } from "./utils/accounts"
 
 dotenv.config()
 
@@ -24,6 +25,7 @@ let config: HardhatUserConfig = {
   networks: {
     hardhat: {
       deploy: ["./deploy/mainnet/"],
+      autoImpersonate: true,
     },
     mainnet: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
@@ -228,6 +230,12 @@ if (process.env.FORK_MAINNET === "true" && config.networks) {
             : throwAPIKeyNotFoundError(),
         },
         chainId: 1,
+      },
+    },
+    namedAccounts: {
+      ...config.namedAccounts,
+      deployer: {
+        1: PROD_DEPLOYER_ADDRESS,
       },
     },
     external: {
