@@ -23,13 +23,18 @@ const WEEK = 86400 * 7
 const MAXTIME = 86400 * 365 * 4
 const LOCK_START_TIMESTAMP = 2362003200
 
+// Helper function to calculate user's expected veSDL amount on the frontend
 function calculateLockAmount(
   totalAmount: BigNumberish,
   currentTimestamp: BigNumberish,
   expireTimestamp: BigNumberish,
 ) {
+  const roundedExpireTimestamp = BigNumber.from(expireTimestamp)
+    .div(WEEK)
+    .mul(WEEK)
+
   return BigNumber.from(totalAmount)
-    .mul(BigNumber.from(expireTimestamp).sub(currentTimestamp))
+    .mul(BigNumber.from(roundedExpireTimestamp).sub(currentTimestamp))
     .div(MAXTIME)
 }
 
@@ -330,6 +335,17 @@ describe("VotingEscrow", () => {
         LOCK_START_TIMESTAMP + MAXTIME / 2,
       )
 
+      // Frontend expected amount is slightly different from the actual amount
+      // due to the difference in slope calculation. This is good enough since the
+      // errors are marginal for UI display.
+      const expectedLockAmount = calculateLockAmount(
+        BIG_NUMBER_1E18.mul(10_000_000),
+        await getCurrentBlockTimestamp(),
+        LOCK_START_TIMESTAMP + MAXTIME / 2,
+      )
+      expect(expectedLockAmount).to.eq("4965753424657534246575342")
+
+      // Actual veSDL amount
       expect(await veSDL["balanceOf(address)"](deployerAddress)).to.eq(
         "4965753424657534230240000",
       )

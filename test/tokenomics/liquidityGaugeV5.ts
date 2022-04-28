@@ -169,4 +169,31 @@ describe("Liquidity Gauge V5", () => {
       expect(await sdl.balanceOf(users[10])).to.eq("71428335222978079984708")
     })
   })
+
+  describe("withdraw", () => {
+    it(`Successfully withdraws LP token`, async () => {
+      // Deposit from 2 different accounts to ensure the rewards are boosted correctly
+
+      // Deposit from an account with max boost
+      // Expect working balance to be same as the deposit amount
+      await gauge["deposit(uint256)"](BIG_NUMBER_1E18)
+      await gauge.connect(signers[10])["deposit(uint256)"](BIG_NUMBER_1E18)
+
+      // A day passes
+      await increaseTimestamp(86400)
+
+      expect(await gauge.callStatic.claimable_tokens(deployerAddress)).to.eq(
+        "25510617441421012800930",
+      )
+      expect(await gauge.callStatic.claimable_tokens(users[10])).to.eq(
+        "10204081632653061205028",
+      )
+
+      // Withdraw LP tokens
+      await gauge.connect(signers[10])["withdraw(uint256)"](BIG_NUMBER_1E18)
+
+      expect(await lpToken.balanceOf(users[10])).to.eq(BIG_NUMBER_1E18)
+      expect(await gauge.balanceOf(users[10])).to.eq(0)
+    })
+  })
 })
