@@ -54,13 +54,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
-
-    await execute(
-      "SaddleEvmos3pool",
-      { from: deployer, log: true },
-      "transferOwnership",
-      MULTISIG_ADDRESSES[await getChainId()],
-    )
   }
 }
 export default func
