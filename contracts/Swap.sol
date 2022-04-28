@@ -115,7 +115,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _fee,
         uint256 _adminFee,
         address lpTokenTargetAddress
-    ) public virtual initializer {
+    ) public payable virtual initializer {
         __OwnerPausable_init();
         __ReentrancyGuard_init();
         // Check _pooledTokens and precisions parameter
@@ -367,6 +367,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 deadline
     )
         external
+        payable
         virtual
         nonReentrant
         whenNotPaused
@@ -390,6 +391,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 deadline
     )
         external
+        payable
         virtual
         nonReentrant
         whenNotPaused
@@ -415,6 +417,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 deadline
     )
         external
+        payable
         virtual
         nonReentrant
         deadlineCheck(deadline)
@@ -439,6 +442,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 deadline
     )
         external
+        payable
         virtual
         nonReentrant
         whenNotPaused
@@ -469,6 +473,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 deadline
     )
         external
+        payable
         virtual
         nonReentrant
         whenNotPaused
@@ -483,7 +488,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
     /**
      * @notice Withdraw all admin fees to the contract owner
      */
-    function withdrawAdminFees() external onlyOwner {
+    function withdrawAdminFees() external payable virtual onlyOwner {
         swapStorage.withdrawAdminFees(owner());
     }
 
@@ -491,7 +496,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @notice Update the admin fee. Admin fee takes portion of the swap fee.
      * @param newAdminFee new admin fee to be applied on future transactions
      */
-    function setAdminFee(uint256 newAdminFee) external onlyOwner {
+    function setAdminFee(uint256 newAdminFee) external payable onlyOwner {
         swapStorage.setAdminFee(newAdminFee);
     }
 
@@ -499,7 +504,7 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @notice Update the swap fee to be applied on swaps
      * @param newSwapFee new swap fee to be applied on future transactions
      */
-    function setSwapFee(uint256 newSwapFee) external onlyOwner {
+    function setSwapFee(uint256 newSwapFee) external payable onlyOwner {
         swapStorage.setSwapFee(newSwapFee);
     }
 
@@ -510,14 +515,18 @@ contract Swap is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
      * @param futureA the new A to ramp towards
      * @param futureTime timestamp when the new A should be reached
      */
-    function rampA(uint256 futureA, uint256 futureTime) external onlyOwner {
+    function rampA(uint256 futureA, uint256 futureTime)
+        external
+        payable
+        onlyOwner
+    {
         swapStorage.rampA(futureA, futureTime);
     }
 
     /**
      * @notice Stop ramping A immediately. Reverts if ramp A is already stopped.
      */
-    function stopRampA() external onlyOwner {
+    function stopRampA() external payable onlyOwner {
         swapStorage.stopRampA();
     }
 }
