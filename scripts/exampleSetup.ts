@@ -3,7 +3,7 @@ import { ethers } from "hardhat"
 import { solidity } from "ethereum-waffle"
 
 const { expect } = chai
-import { GaugeController, SDL } from "../build/typechain/"
+import { GaugeController, SDL, HelperContract } from "../build/typechain/"
 
 chai.use(solidity)
 
@@ -16,6 +16,12 @@ async function main() {
     "GaugeController",
   )) as GaugeController
   const sdl = (await ethers.getContract("SDL")) as SDL
+  const helperContract = (await ethers.getContract(
+    "HelperContract",
+  )) as HelperContract
+  const usdv2Gauge = await ethers.getContract(
+    "LiquidityGaugeV5_SaddleUSDPoolV2LPToken",
+  )
 
   // The deploy scripts should have already added a default gauge type
   expect((await gaugeController.n_gauge_types()).toNumber()).to.eq(1)
@@ -27,6 +33,12 @@ async function main() {
 
   // I can also console.log here
   console.log((await sdl.balanceOf(await signers[0].getAddress())).toString())
+
+  // Test calling helperContract that reads in series
+  console.log(
+    (await helperContract.gaugeToPoolAddress(usdv2Gauge.address)).toString(),
+  )
+  console.log(await helperContract.gaugeToPoolData(usdv2Gauge.address))
 
   // You can freely modify timestamps and the state of the contracts to your liking.
   // below is pseudocode example and will not work without importing the correct types
