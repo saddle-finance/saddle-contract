@@ -5,7 +5,7 @@ import { ethers } from "hardhat"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
-  const { execute, get, getOrNull, log, read, save } = deployments
+  const { execute, get, getOrNull, log, read, save, deploy } = deployments
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
@@ -39,8 +39,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       }
     })
 
+    await deploy("SaddleEvmosBTCPool", {
+      from: deployer,
+      log: true,
+      contract: "SwapFlashLoan",
+      libraries: {
+        SwapUtils: (await get("SwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
+      },
+      skipIfAlreadyDeployed: true,
+      waitConfirmations: 3,
+    })
+
     await execute(
-      "SwapFlashLoan",
+      "SaddleEvmosBTCPool",
       { from: deployer, log: true, waitConfirmations: 3 },
       "initialize",
       TOKEN_ADDRESSES,
@@ -55,20 +67,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ).address,
     )
 
-    await save("SaddleEvmosBTC", {
-      abi: (await get("SwapFlashLoan")).abi,
-      address: (await get("SwapFlashLoan")).address,
-    })
-
-    const lpTokenAddress = (await read("SaddleEvmosBTC", "swapStorage")).lpToken
+    const lpTokenAddress = (await read("SaddleEvmosBTCPool", "swapStorage"))
+      .lpToken
     log(`Saddle Evmos USD Pool LP Token at ${lpTokenAddress}`)
 
-    await save("SaddleEvmosBTCLPToken", {
+    await save("SaddleEvmosBTCPoolLPToken", {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
   }
 }
 export default func
-func.tags = ["SaddleEvmosBTC"]
+func.tags = ["SaddleEvmosBTCPool"]
 func.dependencies = ["SwapUtils", "SwapFlashLoan", "EvmosBTCTokens"]
