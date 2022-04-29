@@ -14,7 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
       (await get("TBTCv2")).address,
-      (await get("SaddleEvmosBTCLPToken")).address,
+      (await get("SaddleEvmosBTCPoolLPToken")).address,
     ]
     const TOKEN_DECIMALS = [18, 18]
     const LP_TOKEN_NAME = "Saddle tBTCv2/saddleWRenSBTC"
@@ -56,7 +56,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("LPToken")
       ).address,
       (
-        await get("SaddleUSDPoolV2")
+        await get("SaddleEvmosBTCPool")
       ).address,
     )
   }
@@ -74,7 +74,7 @@ func.tags = ["TBTCMetaPool"]
 func.dependencies = [
   "LPToken",
   "TBTCMetaPoolTokens",
-  "SaddleEvmosBTC",
+  "SaddleEvmosBTCPool",
   "MetaSwapUtils",
   "AmplificationUtils",
 ]

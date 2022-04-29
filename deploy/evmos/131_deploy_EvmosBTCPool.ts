@@ -23,7 +23,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const LP_TOKEN_SYMBOL = "saddleEvmosWRenBTC"
     const INITIAL_A = 400
     const SWAP_FEE = 4e6 // 4bps
-    const ADMIN_FEE = 0
+    const ADMIN_FEE = 50e8 // 50%
 
     // Ensure token decimals are correct before deploying
     // Evmos explorer has some delay in updating the decimals so double check
