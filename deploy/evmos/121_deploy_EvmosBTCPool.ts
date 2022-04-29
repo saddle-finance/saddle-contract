@@ -1,5 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
+import { asyncForEach } from "../../test/testUtils"
+import { ethers } from "hardhat"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
@@ -22,6 +24,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const INITIAL_A = 400
     const SWAP_FEE = 4e6 // 4bps
     const ADMIN_FEE = 0
+
+    // Ensure token decimals are correct before deploying
+    // Evmos explorer has some delay in updating the decimals so double check
+    await asyncForEach(TOKEN_ADDRESSES, async (tokenAddress, index) => {
+      const token = await ethers.getContractAt("GenericERC20", tokenAddress)
+      const decimals = await token.decimals()
+      if (decimals.toNumber() !== TOKEN_DECIMALS[index]) {
+        throw new Error(
+          `Token ${tokenAddress} has ${decimals.toNumber()} decimals, expected ${
+            TOKEN_DECIMALS[index]
+          }`,
+        )
+      }
+    })
 
     await execute(
       "SwapFlashLoan",
