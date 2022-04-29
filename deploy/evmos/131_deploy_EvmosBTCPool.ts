@@ -2,6 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { asyncForEach } from "../../test/testUtils"
 import { ethers } from "hardhat"
+import { GenericERC20 } from "../../build/typechain"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
@@ -28,14 +29,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // Ensure token decimals are correct before deploying
     // Evmos explorer has some delay in updating the decimals so double check
     await asyncForEach(TOKEN_ADDRESSES, async (tokenAddress, index) => {
-      const token = await ethers.getContractAt("GenericERC20", tokenAddress)
+      const token = (await ethers.getContractAt(
+        "GenericERC20",
+        tokenAddress,
+      )) as GenericERC20
       const decimals = await token.decimals()
-      if (decimals.toNumber() !== TOKEN_DECIMALS[index]) {
+      if (decimals !== TOKEN_DECIMALS[index]) {
         throw new Error(
-          `Token ${tokenAddress} has ${decimals.toNumber()} decimals, expected ${
-            TOKEN_DECIMALS[index]
-          }`,
+          `Token ${tokenAddress} has ${decimals} decimals, expected ${TOKEN_DECIMALS[index]}`,
         )
+      } else {
+        log(`Confirmed token ${tokenAddress} has ${decimals} decimals`)
       }
     })
 
@@ -48,12 +52,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         AmplificationUtils: (await get("AmplificationUtils")).address,
       },
       skipIfAlreadyDeployed: true,
-      waitConfirmations: 3,
     })
 
     await execute(
       "SaddleEvmosBTCPool",
-      { from: deployer, log: true, waitConfirmations: 3 },
+      { from: deployer, log: true },
       "initialize",
       TOKEN_ADDRESSES,
       TOKEN_DECIMALS,
