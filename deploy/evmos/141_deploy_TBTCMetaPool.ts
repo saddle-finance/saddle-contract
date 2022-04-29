@@ -21,7 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const LP_TOKEN_SYMBOL = "saddletBTC"
     const INITIAL_A = 100
     const SWAP_FEE = 4e6 // 4bps
-    const ADMIN_FEE = 0
+    const ADMIN_FEE = 50e8 // 50%
 
     await deploy("SaddleTBTCMetaPool", {
       from: deployer,
