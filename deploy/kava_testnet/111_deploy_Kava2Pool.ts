@@ -1,6 +1,5 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
@@ -10,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Manually check if the pool is already deployed
   const saddleKava2pool = await getOrNull("SaddleKava2pool")
   if (saddleKava2pool) {
-    log(`reusing "Evmos2poolTokens" at ${saddleKava2pool.address}`)
+    log(`reusing "Kava2poolTokens" at ${saddleKava2pool.address}`)
   } else {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
@@ -47,19 +46,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const lpTokenAddress = (await read("SaddleKava2pool", "swapStorage"))
       .lpToken
-    log(`Saddle Evmos USD Pool LP Token at ${lpTokenAddress}`)
+    log(`Saddle Kava USD Pool LP Token at ${lpTokenAddress}`)
 
     await save("SaddleKava2poolLPToken", {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
-
-    await execute(
-      "SaddleKava2pool",
-      { from: deployer, log: true },
-      "transferOwnership",
-      MULTISIG_ADDRESSES[await getChainId()],
-    )
   }
 }
 export default func
