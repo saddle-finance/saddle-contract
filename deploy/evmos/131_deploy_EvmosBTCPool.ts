@@ -4,15 +4,19 @@ import { asyncForEach } from "../../test/testUtils"
 import { ethers } from "hardhat"
 import { GenericERC20 } from "../../build/typechain"
 
+// Contract names saved as deployments json files
+const BTC_POOL_NAME = "SaddleEvmosBTCPool"
+const BTC_POOL_LP_TOKEN_NAME = `${BTC_POOL_NAME}LPToken`
+
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
   const { execute, get, getOrNull, log, read, save, deploy } = deployments
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
-  const SaddleEvmosBTC = await getOrNull("SaddleEvmosBTC")
+  const SaddleEvmosBTC = await getOrNull(BTC_POOL_NAME)
   if (SaddleEvmosBTC) {
-    log(`reusing "EvmoswBTCTokens" at ${SaddleEvmosBTC.address}`)
+    log(`reusing "${BTC_POOL_NAME}" at ${SaddleEvmosBTC.address}`)
   } else {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
@@ -43,7 +47,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       }
     })
 
-    await deploy("SaddleEvmosBTCPool", {
+    await deploy(BTC_POOL_NAME, {
       from: deployer,
       log: true,
       contract: "SwapFlashLoan",
@@ -55,7 +59,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     })
 
     await execute(
-      "SaddleEvmosBTCPool",
+      BTC_POOL_NAME,
       { from: deployer, log: true },
       "initialize",
       TOKEN_ADDRESSES,
@@ -70,16 +74,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ).address,
     )
 
-    const lpTokenAddress = (await read("SaddleEvmosBTCPool", "swapStorage"))
-      .lpToken
+    const lpTokenAddress = (await read(BTC_POOL_NAME, "swapStorage")).lpToken
     log(`Saddle Evmos USD Pool LP Token at ${lpTokenAddress}`)
 
-    await save("SaddleEvmosBTCPoolLPToken", {
+    await save(BTC_POOL_LP_TOKEN_NAME, {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
   }
 }
 export default func
-func.tags = ["SaddleEvmosBTCPool"]
+func.tags = [BTC_POOL_NAME]
 func.dependencies = ["SwapUtils", "SwapFlashLoan", "EvmosBTCTokens"]
