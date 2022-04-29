@@ -13,8 +13,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   } else {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
-      (await get("USDC")).address,
-      (await get("USDT")).address,
+      (await get("test_USDC")).address,
+      (await get("test_USDT")).address,
     ]
     const TOKEN_DECIMALS = [6, 6]
     const LP_TOKEN_NAME = "Saddle 2pool"
