@@ -26,7 +26,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await execute(
       "SwapFlashLoan",
-      { from: deployer, log: true, waitConfirmations: 3 },
+      { from: deployer, log: true },
       "initialize",
       TOKEN_ADDRESSES,
       TOKEN_DECIMALS,
