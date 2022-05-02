@@ -14,7 +14,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       AmplificationUtils: (await get("AmplificationUtils")).address,
     },
     skipIfAlreadyDeployed: true,
-    waitConfirmations: 3,
   })
 }
 export default func

@@ -14,7 +14,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       from: libraryDeployer,
       log: true,
       skipIfAlreadyDeployed: true,
-      waitConfirmations: 3,
     })
 
     await execute(
