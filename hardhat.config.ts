@@ -289,7 +289,7 @@ task("deploy", async (taskArgs, hre, runSuper) => {
       Object.keys(newDeployments).map((k) => [k, newDeployments[k].address]),
     )
   } else {
-    console.warn("No new deployments found")
+    console.warn("\nNo new deployments found")
   }
 })
 
