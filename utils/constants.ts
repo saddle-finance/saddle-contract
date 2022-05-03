@@ -1,6 +1,6 @@
 export enum PoolType {
-    BTC,
-    ETH,
-    USD,
-    OTHERS,
+  BTC,
+  ETH,
+  USD,
+  OTHERS,
 }

@@ -10,7 +10,7 @@ export const CHAIN_ID = {
   FANTOM_MAINNET: "250",
   FANTOM_TESTNET: "4002",
   EVMOS_TESTNET: "9000",
-  EVMOS_MAINNET: "9001"
+  EVMOS_MAINNET: "9001",
 }
 
 export function isMainnet(networkId: string): boolean {
