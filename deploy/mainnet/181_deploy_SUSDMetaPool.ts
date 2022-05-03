@@ -67,16 +67,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "transferOwnership",
       MULTISIG_ADDRESSES[await getChainId()],
     )
+
+    const lpTokenAddress = (await read("SaddleSUSDMetaPool", "swapStorage"))
+      .lpToken
+    log(`Saddle sUSD MetaSwap LP Token at ${lpTokenAddress}`)
+
+    await save("SaddleSUSDMetaPoolLPToken", {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
   }
-
-  const lpTokenAddress = (await read("SaddleSUSDMetaPool", "swapStorage"))
-    .lpToken
-  log(`Saddle sUSD MetaSwap LP Token at ${lpTokenAddress}`)
-
-  await save("SaddleSUSDMetaPoolLPToken", {
-    abi: (await get("LPToken")).abi, // LPToken ABI
-    address: lpTokenAddress,
-  })
 }
 export default func
 func.tags = ["SUSDMetaPool"]
