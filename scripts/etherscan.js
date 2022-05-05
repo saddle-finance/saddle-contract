@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 require("dotenv").config()
 const fetch = require("node-fetch")
+const NETWORKS = require("./utils").DEPLOYMENTS_TO_NETWORK
 
 const ALLOWED_ARGS = ["--contract", "--action", "--network", "--help"]
 const ALLOWED_ACTIONS = { getContractLibraries }
@@ -27,12 +28,16 @@ async function getContractLibraries() {
     if (!contract) {
       throw new Error("Please provide '--contract'")
     }
-    if (network !== "mainnet") {
-      throw new Error("Only '--network=mainnet' is supported")
+    const { apiKeyName, explorerApi } = NETWORKS[network] || {}
+    if (!apiKeyName || !explorerApi) {
+      throw new Error(`Unable to process network: ${network}`)
     }
 
-    const etherscanKey = process.env.ETHERSCAN_API || "apiKey" // rate limit may not matter here
-    const etherscanUrl = `https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${contract}&apikey=${etherscanKey}`
+    const etherscanKey = process.env[apiKeyName]
+    if (!etherscanKey) {
+      throw new Error(`Please provide ${apiKeyName} in .env`)
+    }
+    const etherscanUrl = `${explorerApi}/api?module=contract&action=getsourcecode&address=${contract}&apikey=${etherscanKey}`
 
     const response = await fetch(etherscanUrl)
     if (!response.ok) throw new Error("getContractLibraries: Bad response")
