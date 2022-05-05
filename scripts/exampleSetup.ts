@@ -3,7 +3,14 @@ import { ethers } from "hardhat"
 import { solidity } from "ethereum-waffle"
 
 const { expect } = chai
-import { GaugeController, SDL, HelperContract } from "../build/typechain/"
+import { GaugeController, SDL, HelperContract, VotingEscrow, Minter } from "../build/typechain/"
+import {
+  BIG_NUMBER_1E18,
+  getCurrentBlockTimestamp,
+  increaseTimestamp,
+  MAX_UINT256,
+  setTimestamp
+} from "../test/testUtils"
 
 chai.use(solidity)
 
@@ -16,6 +23,11 @@ async function main() {
     "GaugeController",
   )) as GaugeController
   const sdl = (await ethers.getContract("SDL")) as SDL
+  const veSDL = (await ethers.getContract("VotingEscrow")) as VotingEscrow
+  const minter = (await ethers.getContract("Minter")) as Minter
+  const WEEK = 86400 * 7
+  const YEAR = WEEK * 52
+  const MAXTIME = 86400 * 365 * 4
   const helperContract = (await ethers.getContract(
     "HelperContract",
   )) as HelperContract
@@ -32,33 +44,55 @@ async function main() {
   expect((await gaugeController.n_gauges()).toNumber()).to.eq(7)
 
   // I can also console.log here
-  console.log((await sdl.balanceOf(await signers[0].getAddress())).toString())
+  console.log('sdl balnce of signer[0]: ',
+    (await sdl.balanceOf(await signers[0].getAddress())).toString()
+  )
 
   // Test calling helperContract that reads in series
-  console.log(
+  console.log('usdv2Gauge.address: ',
     (await helperContract.gaugeToPoolAddress(usdv2Gauge.address)).toString(),
   )
-  console.log(await helperContract.gaugeToPoolData(usdv2Gauge.address))
+  // console.log(await helperContract.gaugeToPoolData(usdv2Gauge.address))
 
   // You can freely modify timestamps and the state of the contracts to your liking.
-  // below is pseudocode example and will not work without importing the correct types
-  //
-  // // Ensure sdl is not paused
-  // if (await sdl.paused()) {
-  //   await sdl.enableTransfer()
-  // }
-  // await sdl.approve(veSDL.address, MAX_UINT256)
+  // For how you want to set up the contracts, please refer to test files in test/tokenomics
+
+
+  // Ensure sdl is not paused
+  if (await sdl.paused()) {
+    await sdl.enableTransfer()
+  }
+  await sdl.approve(veSDL.address, MAX_UINT256)
 
   // Create max lock with 10M SDL
-  // await veSDL.create_lock(
-  //   BIG_NUMBER_1E18.mul(10_000_000),
-  //   await getCurrentBlockTimestamp() + 4 years,
-  // )
-  //
-  // Force mine 1 block and then skip timestamp to specified time
-  // await setTimestamp( await getCurrentBlockTimestamp() + 2 years)
+  await veSDL.create_lock(
+    BIG_NUMBER_1E18.mul(10_000_000),
+    await getCurrentBlockTimestamp() + 4 * YEAR,
+  )
+  console.log('(10M SDL/4 Year) lock created at timestamp: ', await getCurrentBlockTimestamp())
 
-  // For how you want to set up the contracts, please refer to test files in test/tokenomics
+  // Force mine 1 block and then skip timestamp to specified time
+  await setTimestamp(await getCurrentBlockTimestamp() + 2 * YEAR)
+
+  await setTimestamp(
+    Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
+  )
+  await minter.update_mining_parameters()
+
+  console.log('gauge_weights: ', (await gaugeController.get_gauge_weight(usdv2Gauge.address)).toString())
+  console.log('gauge_relative_weights: ', (await gaugeController["gauge_relative_weight(address)"](usdv2Gauge.address)).toString())
+
+  // // Imitate multisig setting gauge weights
+  await gaugeController.change_gauge_weight(usdv2Gauge.address, 10000)
+
+  // // Skip to the week after when the weights apply
+  await setTimestamp(
+    Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
+  )
+  console.log('timestamp set at', await getCurrentBlockTimestamp())
+  console.log('gauge_weight: ', (await gaugeController.get_gauge_weight(usdv2Gauge.address)).toString())
+  console.log('gauge_relative_weight: ', (await gaugeController["gauge_relative_weight(address)"](usdv2Gauge.address)).toString())
+
 }
 
 main()
