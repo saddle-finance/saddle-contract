@@ -190,6 +190,16 @@ export async function impersonateAccount(
   return ethers.provider.getSigner(address)
 }
 
+export async function setEtherBalance(
+  address: string,
+  amount: number,
+): Promise<any> {
+  return ethers.provider.send("hardhat_setBalance", [
+    address,
+    `0x${amount.toString(16)}`,
+  ])
+}
+
 export async function asyncForEach<T>(
   array: Array<T>,
   callback: (item: T, index: number) => void,
