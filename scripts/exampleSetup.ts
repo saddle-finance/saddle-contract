@@ -3,13 +3,18 @@ import { ethers } from "hardhat"
 import { solidity } from "ethereum-waffle"
 
 const { expect } = chai
-import { GaugeController, SDL, HelperContract, VotingEscrow, Minter } from "../build/typechain/"
+import {
+  GaugeController,
+  SDL,
+  HelperContract,
+  VotingEscrow,
+  Minter,
+} from "../build/typechain/"
 import {
   BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
-  increaseTimestamp,
   MAX_UINT256,
-  setTimestamp
+  setTimestamp,
 } from "../test/testUtils"
 
 chai.use(solidity)
@@ -31,9 +36,57 @@ async function main() {
   const helperContract = (await ethers.getContract(
     "HelperContract",
   )) as HelperContract
-  const usdv2Gauge = await ethers.getContract(
-    "LiquidityGaugeV5_SaddleUSDPoolV2LPToken",
-  )
+  const gauge_map = new Map<string, string>([
+    [
+      "LiquidityGaugeV5_SaddleALETHPoolLPToken",
+      (await ethers.getContract("LiquidityGaugeV5_SaddleALETHPoolLPToken"))
+        .address,
+    ],
+    [
+      "LiquidityGaugeV5_SaddleBTCPoolV2LPToken",
+      (await ethers.getContract("LiquidityGaugeV5_SaddleBTCPoolV2LPToken"))
+        .address,
+    ],
+    [
+      "LiquidityGaugeV5_SaddleD4PoolLPToken",
+      (await ethers.getContract("LiquidityGaugeV5_SaddleD4PoolLPToken"))
+        .address,
+    ],
+    [
+      "LiquidityGaugeV5_SaddleSUSDMetaPoolUpdatedLPToken",
+      (
+        await ethers.getContract(
+          "LiquidityGaugeV5_SaddleSUSDMetaPoolUpdatedLPToken",
+        )
+      ).address,
+    ],
+    [
+      "LiquidityGaugeV5_SaddleTBTCMetaPoolUpdatedLPToken",
+      (
+        await ethers.getContract(
+          "LiquidityGaugeV5_SaddleTBTCMetaPoolUpdatedLPToken",
+        )
+      ).address,
+    ],
+    [
+      "LiquidityGaugeV5_SaddleUSDPoolV2LPToken",
+      (
+        await ethers.getContract("LiquidityGaugeV5_SaddleUSDPoolV2LPToken")
+      ).address.toString(),
+    ],
+    [
+      "LiquidityGaugeV5_SaddleWCUSDMetaPoolUpdatedLPToken",
+      (
+        await ethers.getContract(
+          "LiquidityGaugeV5_SaddleWCUSDMetaPoolUpdatedLPToken",
+        )
+      ).address.toString(),
+    ],
+  ])
+  // array of all keys in gauge_addresses
+  const gauge_names = Array.from(gauge_map.keys())
+  // array of all values in gauge_addresses
+  const gauge_addresses = Array.from(gauge_map.values())
 
   // The deploy scripts should have already added a default gauge type
   expect((await gaugeController.n_gauge_types()).toNumber()).to.eq(1)
@@ -44,19 +97,20 @@ async function main() {
   expect((await gaugeController.n_gauges()).toNumber()).to.eq(7)
 
   // I can also console.log here
-  console.log('sdl balnce of signer[0]: ',
-    (await sdl.balanceOf(await signers[0].getAddress())).toString()
+  console.log(
+    "sdl balnce of signer[0]: ",
+    (await sdl.balanceOf(await signers[0].getAddress())).toString(),
   )
 
   // Test calling helperContract that reads in series
-  console.log('usdv2Gauge.address: ',
-    (await helperContract.gaugeToPoolAddress(usdv2Gauge.address)).toString(),
+  console.log(
+    "usdv2Gauge.address: ",
+    await helperContract.gaugeToPoolAddress(gauge_addresses[5]),
   )
-  // console.log(await helperContract.gaugeToPoolData(usdv2Gauge.address))
+  console.log(await helperContract.gaugeToPoolData(gauge_addresses[5]))
 
   // You can freely modify timestamps and the state of the contracts to your liking.
   // For how you want to set up the contracts, please refer to test files in test/tokenomics
-
 
   // Ensure sdl is not paused
   if (await sdl.paused()) {
@@ -67,32 +121,63 @@ async function main() {
   // Create max lock with 10M SDL
   await veSDL.create_lock(
     BIG_NUMBER_1E18.mul(10_000_000),
-    await getCurrentBlockTimestamp() + 4 * YEAR,
+    (await getCurrentBlockTimestamp()) + 4 * YEAR,
   )
-  console.log('(10M SDL/4 Year) lock created at timestamp: ', await getCurrentBlockTimestamp())
+  console.log(
+    "(10M SDL/4 Year) lock created at timestamp: ",
+    await getCurrentBlockTimestamp(),
+  )
 
   // Force mine 1 block and then skip timestamp to specified time
-  await setTimestamp(await getCurrentBlockTimestamp() + 2 * YEAR)
+  await setTimestamp((await getCurrentBlockTimestamp()) + 2 * YEAR)
 
   await setTimestamp(
     Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
   )
   await minter.update_mining_parameters()
 
-  console.log('gauge_weights: ', (await gaugeController.get_gauge_weight(usdv2Gauge.address)).toString())
-  console.log('gauge_relative_weights: ', (await gaugeController["gauge_relative_weight(address)"](usdv2Gauge.address)).toString())
+  let i
+  for (i = 0; i < gauge_names.length; i++) {
+    console.log(
+      gauge_names[i],
+      "gauge_weight: ",
+      (await gaugeController.get_gauge_weight(gauge_addresses[i])).toString(),
+    )
+    console.log(
+      gauge_names[i],
+      "relative_weights: ",
+      (
+        await gaugeController["gauge_relative_weight(address)"](
+          gauge_addresses[i],
+        )
+      ).toString(),
+    )
 
-  // // Imitate multisig setting gauge weights
-  await gaugeController.change_gauge_weight(usdv2Gauge.address, 10000)
+    // // Imitate multisig setting gauge weights
+    await gaugeController.change_gauge_weight(gauge_addresses[i], 10000)
+  }
 
   // // Skip to the week after when the weights apply
   await setTimestamp(
     Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
   )
-  console.log('timestamp set at', await getCurrentBlockTimestamp())
-  console.log('gauge_weight: ', (await gaugeController.get_gauge_weight(usdv2Gauge.address)).toString())
-  console.log('gauge_relative_weight: ', (await gaugeController["gauge_relative_weight(address)"](usdv2Gauge.address)).toString())
-
+  console.log("timestamp set at", await getCurrentBlockTimestamp())
+  for (i = 0; i < gauge_names.length; i++) {
+    console.log(
+      gauge_names[i],
+      "gauge_weight: ",
+      (await gaugeController.get_gauge_weight(gauge_addresses[i])).toString(),
+    )
+    console.log(
+      gauge_names[i],
+      "relative_weights: ",
+      (
+        await gaugeController["gauge_relative_weight(address)"](
+          gauge_addresses[i],
+        )
+      ).toString(),
+    )
+  }
 }
 
 main()
