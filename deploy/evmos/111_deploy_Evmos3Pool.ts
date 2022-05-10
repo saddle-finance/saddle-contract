@@ -2,14 +2,14 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts } = hre
+  const { deployments, getNamedAccounts, getChainId } = hre
   const { execute, get, getOrNull, log, read, save } = deployments
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
-  const SaddleUSDPoolV2 = await getOrNull("SaddleUSDPoolV2")
-  if (SaddleUSDPoolV2) {
-    log(`reusing "SaddleUSDPoolV2" at ${SaddleUSDPoolV2.address}`)
+  const saddleEvmos3pool = await getOrNull("SaddleEvmos3pool")
+  if (saddleEvmos3pool) {
+    log(`reusing "Evmos3poolTokens" at ${saddleEvmos3pool.address}`)
   } else {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
@@ -18,9 +18,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (await get("USDT")).address,
     ]
     const TOKEN_DECIMALS = [18, 6, 6]
-    const LP_TOKEN_NAME = "Saddle DAI/USDC/USDT V2"
-    const LP_TOKEN_SYMBOL = "saddleUSD-V2"
-    const INITIAL_A = 200
+    const LP_TOKEN_NAME = "Saddle 3pool"
+    const LP_TOKEN_SYMBOL = "saddleEvmosUSD"
+    const INITIAL_A = 400
     const SWAP_FEE = 4e6 // 4bps
     const ADMIN_FEE = 0
 
@@ -39,28 +39,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("LPToken")
       ).address,
     )
-    log(
-      `deployed USD pool V2 (targeting "SwapFlashLoan") at ${
-        (await get("SwapFlashLoan")).address
-      }`,
-    )
-    await save("SaddleUSDPoolV2", await get("SwapFlashLoan"))
 
-    const lpTokenAddress = (await read("SaddleUSDPoolV2", "swapStorage"))
+    await save("SaddleEvmos3pool", {
+      abi: (await get("SwapFlashLoan")).abi,
+      address: (await get("SwapFlashLoan")).address,
+    })
+
+    const lpTokenAddress = (await read("SaddleEvmos3pool", "swapStorage"))
       .lpToken
-    log(`USD pool V2 LP Token at ${lpTokenAddress}`)
+    log(`Saddle Evmos USD Pool LP Token at ${lpTokenAddress}`)
 
-    await save("SaddleUSDPoolV2LPToken", {
+    await save("SaddleEvmos3poolLPToken", {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
   }
 }
 export default func
-func.tags = ["USDPoolV2"]
-func.dependencies = [
-  "SwapUtils",
-  "SwapDeployer",
-  "SwapFlashLoan",
-  "USDPoolTokens",
-]
+func.tags = ["SaddleEvmos3pool"]
+func.dependencies = ["SwapUtils", "SwapFlashLoan", "Evmos3poolTokens"]

@@ -8,11 +8,12 @@ import "solidity-coverage"
 import "hardhat-deploy"
 import "hardhat-spdx-license-identifier"
 
-import { HardhatUserConfig } from "hardhat/config"
+import { HardhatUserConfig, task } from "hardhat/config"
 import dotenv from "dotenv"
 import { ethers } from "ethers"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "./utils/network"
 import { PROD_DEPLOYER_ADDRESS } from "./utils/accounts"
+import { Deployment } from "hardhat-deploy/dist/types"
 
 dotenv.config()
 
@@ -91,7 +92,7 @@ let config: HardhatUserConfig = {
       },
     },
     evmos_mainnet: {
-      url: "https://eth.bd.evmos.org",
+      url: "https://eth.bd.evmos.org:8545",
       chainId: 9001,
       deploy: ["./deploy/evmos/"],
     },
@@ -250,5 +251,56 @@ function throwAPIKeyNotFoundError(): string {
   throw Error("ALCHEMY_API_KEY environment variable is not set")
   return ""
 }
+
+// Override the default deploy task
+task("deploy", async (taskArgs, hre, runSuper) => {
+  const { all } = hre.deployments
+  /*
+   * Pre-deployment actions
+   */
+
+  // Load exiting deployments
+  const existingDeployments: { [p: string]: Deployment } = await all()
+  // Create hard copy of existing deployment name to address mapping
+  const existingDeploymentToAddressMap: { [p: string]: string } = Object.keys(
+    existingDeployments,
+  ).reduce((acc: { [p: string]: string }, key) => {
+    acc[key] = existingDeployments[key].address
+    return acc
+  }, {})
+
+  /*
+   * Run super task
+   */
+  await runSuper(taskArgs)
+
+  /*
+   * Post-deployment actions
+   */
+  const updatedDeployments: { [p: string]: Deployment } = await all()
+
+  // Filter out any existing deployments that have not changed
+  const newDeployments: { [p: string]: Deployment } = Object.keys(
+    updatedDeployments,
+  ).reduce((acc: { [p: string]: Deployment }, key) => {
+    if (
+      !existingDeploymentToAddressMap.hasOwnProperty(key) ||
+      existingDeploymentToAddressMap[key] !== updatedDeployments[key].address
+    ) {
+      acc[key] = updatedDeployments[key]
+    }
+    return acc
+  }, {})
+
+  // Print the new deployments to the console
+  if (Object.keys(newDeployments).length > 0) {
+    console.log("\nNew deployments:")
+    console.table(
+      Object.keys(newDeployments).map((k) => [k, newDeployments[k].address]),
+    )
+  } else {
+    console.warn("\nNo new deployments found")
+  }
+})
 
 export default config

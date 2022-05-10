@@ -1,30 +1,29 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getNamedAccounts } = hre
   const { execute, deploy, get, getOrNull, log, read, save } = deployments
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
-  const saddleSUSDMetaPool = await getOrNull("SaddleSUSDMetaPool")
-  if (saddleSUSDMetaPool) {
-    log(`reusing "SaddleSUSDMetaPool" at ${saddleSUSDMetaPool.address}`)
+  const saddleTBTCMetaPool = await getOrNull("SaddleTBTCMetaPool")
+  if (saddleTBTCMetaPool) {
+    log(`reusing "SaddleTBTCMetaPool" at ${saddleTBTCMetaPool.address}`)
   } else {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
-      (await get("SUSD")).address,
-      (await get("SaddleUSDPoolV2LPToken")).address,
+      (await get("TBTCv2")).address,
+      (await get("SaddleEvmosBTCPoolLPToken")).address,
     ]
     const TOKEN_DECIMALS = [18, 18]
-    const LP_TOKEN_NAME = "Saddle sUSD/saddleUSD-V2"
-    const LP_TOKEN_SYMBOL = "saddleSUSD"
+    const LP_TOKEN_NAME = "Saddle tBTCv2/saddleWRenSBTC"
+    const LP_TOKEN_SYMBOL = "saddletBTC"
     const INITIAL_A = 100
     const SWAP_FEE = 4e6 // 4bps
-    const ADMIN_FEE = 0
+    const ADMIN_FEE = 50e8 // 50%
 
-    await deploy("SaddleSUSDMetaPool", {
+    await deploy("SaddleTBTCMetaPool", {
       from: deployer,
       log: true,
       contract: "MetaSwap",
@@ -37,10 +36,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     })
 
     // Save the first deployment as MetaSwapUpdated
-    await save("MetaSwap", await get("SaddleSUSDMetaPool"))
+    await save("MetaSwap", await get("SaddleTBTCMetaPool"))
 
     await execute(
-      "SaddleSUSDMetaPool",
+      "SaddleTBTCMetaPool",
       {
         from: deployer,
         log: true,
@@ -57,32 +56,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("LPToken")
       ).address,
       (
-        await get("SaddleUSDPoolV2")
+        await get("SaddleEvmosBTCPool")
       ).address,
     )
-
-    await execute(
-      "SaddleSUSDMetaPool",
-      { from: deployer, log: true },
-      "transferOwnership",
-      MULTISIG_ADDRESSES[await getChainId()],
-    )
-
-    const lpTokenAddress = (await read("SaddleSUSDMetaPool", "swapStorage"))
-      .lpToken
-    log(`Saddle sUSD MetaSwap LP Token at ${lpTokenAddress}`)
-
-    await save("SaddleSUSDMetaPoolLPToken", {
-      abi: (await get("LPToken")).abi, // LPToken ABI
-      address: lpTokenAddress,
-    })
   }
+  const lpTokenAddress = (await read("SaddleTBTCMetaPool", "swapStorage"))
+    .lpToken
+  log(`Saddle tBTC MetaSwap LP Token at ${lpTokenAddress}`)
+
+  await save("SaddleTBTCMetaPoolLPToken", {
+    abi: (await get("LPToken")).abi, // LPToken ABI
+    address: lpTokenAddress,
+  })
 }
 export default func
-func.tags = ["SUSDMetaPool"]
+func.tags = ["TBTCMetaPool"]
 func.dependencies = [
-  "SUSDMetaPoolTokens",
-  "USDPoolV2",
+  "LPToken",
+  "TBTCMetaPoolTokens",
+  "SaddleEvmosBTCPool",
   "MetaSwapUtils",
   "AmplificationUtils",
 ]

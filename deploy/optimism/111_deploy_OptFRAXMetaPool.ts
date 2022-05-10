@@ -66,16 +66,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "transferOwnership",
       OPTIMISM_MULTISIG_ADDRESS,
     )
+
+    const lpTokenAddress = (await read("SaddleOptFRAXMetaPool", "swapStorage"))
+      .lpToken
+    log(`Saddle FRAX MetaSwap LP Token at ${lpTokenAddress}`)
+
+    await save("SaddleOptFRAXMetaPoolLPToken", {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
   }
-
-  const lpTokenAddress = (await read("SaddleOptFRAXMetaPool", "swapStorage"))
-    .lpToken
-  log(`Saddle FRAX MetaSwap LP Token at ${lpTokenAddress}`)
-
-  await save("SaddleOptFRAXMetaPoolLPToken", {
-    abi: (await get("LPToken")).abi, // LPToken ABI
-    address: lpTokenAddress,
-  })
 }
 export default func
 func.tags = ["SaddleOptFRAXMetaPool"]
