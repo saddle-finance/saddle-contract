@@ -3,7 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
-  const { execute, deploy, get, getOrNull, log } = deployments
+  const { execute, deploy, get, getOrNull, log, save } = deployments
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (saddleSUSDMetaPool) {
     log(`reusing "SaddleSUSDMetaPoolDeposit" at ${saddleSUSDMetaPool.address}`)
   } else {
-    await deploy("SaddleSUSDMetaPoolDeposit", {
+    const result = await deploy("SaddleSUSDMetaPoolDeposit", {
       from: deployer,
       log: true,
       contract: "MetaSwapDeposit",
@@ -32,6 +32,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("SaddleSUSDMetaPoolLPToken")
       ).address,
     )
+
+    if ((await getOrNull("MetaSwapDeposit")) == null) {
+      await save("MetaSwapDeposit", result)
+    }
   }
 }
 export default func
