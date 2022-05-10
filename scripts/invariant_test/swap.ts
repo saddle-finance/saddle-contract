@@ -1,7 +1,7 @@
 import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
-import { deployments, network } from "hardhat"
+import { deployments } from "hardhat"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
 import { GenericERC20, LPToken, Swap } from "../../build/typechain/"
 import {
@@ -48,81 +48,75 @@ describe("Swap", async () => {
   let swapStorage: SwapStorage
   let depositAmounts: BigNumber[]
 
-  // fork mainnet
-  before(async () => {
-    await network.provider.request({
-      method: "hardhat_reset",
-      params: [
-        {
-          forking: {
-            jsonRpcUrl: FORKING_JSON_RPC_URL,
-          },
-        },
-      ],
-    })
-  })
+  const setupTest = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      await deployments.fixture([], {
+        keepExistingDeployments: true,
+        fallbackToGlobal: false,
+      })
+      signers = await ethers.getSigners()
+      users = await Promise.all(
+        signers.map(async (signer) => await signer.getAddress()),
+      )
 
-  const setupTest = deployments.createFixture(async ({ ethers }) => {
-    signers = await ethers.getSigners()
-    users = await Promise.all(
-      signers.map(async (signer) => await signer.getAddress()),
-    )
+      await setEtherBalance(users[1], 1e20)
 
-    await setEtherBalance(users[1], 1e20)
+      // Try to get the swap contract at the address
+      swap = await ethers.getContractAt("Swap", SWAP_ADDRESS)
+      owner = await impersonateAccount(await swap.owner())
+      await setEtherBalance(await owner.getAddress(), 1e20)
 
-    // Try to get the swap contract at the address
-    swap = await ethers.getContractAt("Swap", SWAP_ADDRESS)
-    owner = await impersonateAccount(await swap.owner())
-    await setEtherBalance(await owner.getAddress(), 1e20)
-
-    // If it is paused, unpause it
-    if (await swap.paused()) {
-      await swap.connect(owner).unpause()
-    }
-
-    for (let i = 0; i < 10; i++) {
-      try {
-        pooledTokens.push(
-          await ethers.getContractAt("GenericERC20", await swap.getToken(i)),
-        )
-        pooledTokenDecimals.push(await pooledTokens[i].decimals())
-      } catch (e) {
-        break
+      // If it is paused, unpause it
+      if (await swap.paused()) {
+        await swap.connect(owner).unpause()
       }
-    }
-    depositAmounts = pooledTokenDecimals.map((decimals) => {
-      return BigNumber.from(10).pow(decimals).mul(DEPOSIT_AMOUNT)
-    })
 
-    // Pooled tokens should be greater than 0. If not, its not a valid swap contract or its not initialized yet
-    expect(pooledTokens.length).to.be.greaterThan(0)
-    expect(pooledTokens.length).to.be.eq(TOKEN_HOLDERS.length)
-    console.log(`pooledTokens: ${pooledTokens}`)
+      for (let i = 0; i < 10; i++) {
+        try {
+          pooledTokens.push(
+            await ethers.getContractAt("GenericERC20", await swap.getToken(i)),
+          )
+          pooledTokenDecimals.push(await pooledTokens[i].decimals())
+        } catch (e) {
+          break
+        }
+      }
+      depositAmounts = pooledTokenDecimals.map((decimals) => {
+        return BigNumber.from(10).pow(decimals).mul(DEPOSIT_AMOUNT)
+      })
 
-    // Transfer pooled tokens from TOKEN_HOLDERS to users[1] for testing
-    await asyncForEach(pooledTokens, async (token, i) => {
-      const impersonatedSigner = await impersonateAccount(TOKEN_HOLDERS[i])
-      await setEtherBalance(await impersonatedSigner.getAddress(), 1e20)
-      await token
-        .connect(impersonatedSigner)
-        .transfer(users[1], await token.balanceOf(TOKEN_HOLDERS[i]))
-      // Check that the transfer was successful and the balance is greater than 0
-      expect(await token.balanceOf(users[1])).to.be.gt(0)
-      await token.connect(signers[1]).approve(swap.address, MAX_UINT256)
-    })
+      // Pooled tokens should be greater than 0. If not, its not a valid swap contract or its not initialized yet
+      expect(pooledTokens.length).to.be.greaterThan(0)
+      expect(pooledTokens.length).to.be.eq(TOKEN_HOLDERS.length)
+      console.log(`pooledTokens: ${pooledTokens}`)
 
-    swapStorage = await swap.swapStorage()
-    swapToken = (await ethers.getContractAt(
-      "LPToken",
-      swapStorage.lpToken,
-    )) as LPToken
+      // Transfer pooled tokens from TOKEN_HOLDERS to users[1] for testing
+      await asyncForEach(pooledTokens, async (token, i) => {
+        const impersonatedSigner = await impersonateAccount(TOKEN_HOLDERS[i])
+        await setEtherBalance(await impersonatedSigner.getAddress(), 1e20)
+        await token
+          .connect(impersonatedSigner)
+          .transfer(users[1], await token.balanceOf(TOKEN_HOLDERS[i]))
+        // Check that the transfer was successful and the balance is greater than 0
+        expect(await token.balanceOf(users[1])).to.be.gt(0)
+        await token.connect(signers[1]).approve(swap.address, MAX_UINT256)
+      })
 
-    // Add some liquidity to the swap contract and set up for tests
-    await swap.connect(signers[1]).addLiquidity(depositAmounts, 0, MAX_UINT256)
+      swapStorage = await swap.swapStorage()
+      swapToken = (await ethers.getContractAt(
+        "LPToken",
+        swapStorage.lpToken,
+      )) as LPToken
 
-    // Approve lp token to be burned for when removing liquidity
-    await swapToken.connect(signers[1]).approve(swap.address, MAX_UINT256)
-  })
+      // Add some liquidity to the swap contract and set up for tests
+      await swap
+        .connect(signers[1])
+        .addLiquidity(depositAmounts, 0, MAX_UINT256)
+
+      // Approve lp token to be burned for when removing liquidity
+      await swapToken.connect(signers[1]).approve(swap.address, MAX_UINT256)
+    },
+  )
 
   beforeEach(async () => {
     await setupTest()

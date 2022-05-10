@@ -1,7 +1,7 @@
 import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { BigNumber, Contract, Signer } from "ethers"
-import { deployments, network } from "hardhat"
+import { deployments } from "hardhat"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
 import { GenericERC20, LPToken, MetaSwap, Swap } from "../../build/typechain/"
 import {
@@ -51,123 +51,115 @@ describe("MetaSwap", async () => {
   let swapStorage: SwapStorage
   let depositAmounts: BigNumber[]
 
-  // fork mainnet
-  before(async () => {
-    await network.provider.request({
-      method: "hardhat_reset",
-      params: [
-        {
-          forking: {
-            jsonRpcUrl: FORKING_JSON_RPC_URL,
-          },
-        },
-      ],
-    })
-  })
+  const setupTest = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      await deployments.fixture([], {
+        keepExistingDeployments: true,
+        fallbackToGlobal: false,
+      })
+      signers = await ethers.getSigners()
+      users = await Promise.all(
+        signers.map(async (signer) => await signer.getAddress()),
+      )
 
-  const setupTest = deployments.createFixture(async ({ ethers }) => {
-    signers = await ethers.getSigners()
-    users = await Promise.all(
-      signers.map(async (signer) => await signer.getAddress()),
-    )
+      await setEtherBalance(users[1], 1e20)
 
-    await setEtherBalance(users[1], 1e20)
+      // Try to get the swap contract at the address
+      metaSwap = await ethers.getContractAt("MetaSwap", META_SWAP_ADDRESS)
+      owner = await impersonateAccount(await metaSwap.owner())
+      await setEtherBalance(await owner.getAddress(), 1e20)
 
-    // Try to get the swap contract at the address
-    metaSwap = await ethers.getContractAt("MetaSwap", META_SWAP_ADDRESS)
-    owner = await impersonateAccount(await metaSwap.owner())
-    await setEtherBalance(await owner.getAddress(), 1e20)
-
-    // If it is paused, unpause it
-    if (await metaSwap.paused()) {
-      await metaSwap.connect(owner).unpause()
-    }
-
-    for (let i = 0; i < 10; i++) {
-      try {
-        pooledTokens.push(
-          await ethers.getContractAt(
-            "GenericERC20",
-            await metaSwap.getToken(i),
-          ),
-        )
-        pooledTokenDecimals.push(await pooledTokens[i].decimals())
-      } catch (e) {
-        break
+      // If it is paused, unpause it
+      if (await metaSwap.paused()) {
+        await metaSwap.connect(owner).unpause()
       }
-    }
-    depositAmounts = pooledTokenDecimals.map((decimals) => {
-      return BigNumber.from(10).pow(decimals).mul(DEPOSIT_AMOUNT)
-    })
 
-    // Pooled tokens should be greater than 0. If not, its not a valid swap contract or its not initialized yet
-    expect(pooledTokens.length).to.be.greaterThan(0)
-    expect(pooledTokens.length).to.be.eq(TOKEN_HOLDERS.length)
-
-    // Transfer pooled tokens from TOKEN_HOLDERS to users[1] for testing
-    await asyncForEach(pooledTokens, async (token, i) => {
-      const impersonatedSigner = await impersonateAccount(TOKEN_HOLDERS[i])
-      await setEtherBalance(await impersonatedSigner.getAddress(), 1e20)
-      await token
-        .connect(impersonatedSigner)
-        .transfer(users[1], await token.balanceOf(TOKEN_HOLDERS[i]))
-      // Check that the transfer was successful and the balance is greater than 0
-      expect(await token.balanceOf(users[1])).to.be.gt(0)
-      await token.connect(signers[1]).approve(metaSwap.address, MAX_UINT256)
-    })
-
-    swapStorage = await metaSwap.swapStorage()
-    swapToken = (await ethers.getContractAt(
-      "LPToken",
-      swapStorage.lpToken,
-    )) as LPToken
-
-    // Add some liquidity to the swap contract and set up for tests
-    await metaSwap
-      .connect(signers[1])
-      .addLiquidity(depositAmounts, 0, MAX_UINT256)
-
-    // Approve lp token to be burned for when removing liquidity
-    await swapToken.connect(signers[1]).approve(metaSwap.address, MAX_UINT256)
-
-    // Get base swap information
-    baseSwap = (await ethers.getContractAt(
-      "Swap",
-      (
-        await (metaSwap as Contract as MetaSwap).metaSwapStorage()
-      ).baseSwap,
-    )) as Swap
-    const baseSwapStorage = await baseSwap.swapStorage()
-    const baseSwapToken = (await ethers.getContractAt(
-      "LPToken",
-      baseSwapStorage.lpToken,
-    )) as LPToken
-
-    // Approve base swap lp token to be burned for when removing liquidity
-    await baseSwapToken
-      .connect(signers[1])
-      .approve(baseSwap.address, MAX_UINT256)
-
-    // Get base tokens and decimals. Then approve base tokens to be swapped using swapUnderlying
-    for (let i = 0; i < 10; i++) {
-      try {
-        baseTokens.push(
-          await ethers.getContractAt(
-            "GenericERC20",
-            await baseSwap.getToken(i),
-          ),
-        )
-        baseTokenDecimals.push(await baseTokens[i].decimals())
-        await baseTokens[i]
-          .connect(signers[1])
-          .approve(metaSwap.address, MAX_UINT256)
-      } catch (e) {
-        break
+      for (let i = 0; i < 10; i++) {
+        try {
+          pooledTokens.push(
+            await ethers.getContractAt(
+              "GenericERC20",
+              await metaSwap.getToken(i),
+            ),
+          )
+          pooledTokenDecimals.push(await pooledTokens[i].decimals())
+        } catch (e) {
+          break
+        }
       }
-    }
+      depositAmounts = pooledTokenDecimals.map((decimals) => {
+        return BigNumber.from(10).pow(decimals).mul(DEPOSIT_AMOUNT)
+      })
 
-    unwrappedTokenDecimals = [pooledTokenDecimals[0], ...baseTokenDecimals]
-  })
+      // Pooled tokens should be greater than 0. If not, its not a valid swap contract or its not initialized yet
+      expect(pooledTokens.length).to.be.greaterThan(0)
+      expect(pooledTokens.length).to.be.eq(TOKEN_HOLDERS.length)
+
+      // Transfer pooled tokens from TOKEN_HOLDERS to users[1] for testing
+      await asyncForEach(pooledTokens, async (token, i) => {
+        const impersonatedSigner = await impersonateAccount(TOKEN_HOLDERS[i])
+        await setEtherBalance(await impersonatedSigner.getAddress(), 1e20)
+        await token
+          .connect(impersonatedSigner)
+          .transfer(users[1], await token.balanceOf(TOKEN_HOLDERS[i]))
+        // Check that the transfer was successful and the balance is greater than 0
+        expect(await token.balanceOf(users[1])).to.be.gt(0)
+        await token.connect(signers[1]).approve(metaSwap.address, MAX_UINT256)
+      })
+
+      swapStorage = await metaSwap.swapStorage()
+      swapToken = (await ethers.getContractAt(
+        "LPToken",
+        swapStorage.lpToken,
+      )) as LPToken
+
+      // Add some liquidity to the swap contract and set up for tests
+      await metaSwap
+        .connect(signers[1])
+        .addLiquidity(depositAmounts, 0, MAX_UINT256)
+
+      // Approve lp token to be burned for when removing liquidity
+      await swapToken.connect(signers[1]).approve(metaSwap.address, MAX_UINT256)
+
+      // Get base swap information
+      baseSwap = (await ethers.getContractAt(
+        "Swap",
+        (
+          await (metaSwap as Contract as MetaSwap).metaSwapStorage()
+        ).baseSwap,
+      )) as Swap
+      const baseSwapStorage = await baseSwap.swapStorage()
+      const baseSwapToken = (await ethers.getContractAt(
+        "LPToken",
+        baseSwapStorage.lpToken,
+      )) as LPToken
+
+      // Approve base swap lp token to be burned for when removing liquidity
+      await baseSwapToken
+        .connect(signers[1])
+        .approve(baseSwap.address, MAX_UINT256)
+
+      // Get base tokens and decimals. Then approve base tokens to be swapped using swapUnderlying
+      for (let i = 0; i < 10; i++) {
+        try {
+          baseTokens.push(
+            await ethers.getContractAt(
+              "GenericERC20",
+              await baseSwap.getToken(i),
+            ),
+          )
+          baseTokenDecimals.push(await baseTokens[i].decimals())
+          await baseTokens[i]
+            .connect(signers[1])
+            .approve(metaSwap.address, MAX_UINT256)
+        } catch (e) {
+          break
+        }
+      }
+
+      unwrappedTokenDecimals = [pooledTokenDecimals[0], ...baseTokenDecimals]
+    },
+  )
 
   beforeEach(async () => {
     await setupTest()
