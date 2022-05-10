@@ -25,7 +25,6 @@ let config: HardhatUserConfig = {
   networks: {
     hardhat: {
       deploy: ["./deploy/mainnet/"],
-      blockGasLimit: 300000000000000,
     },
     mainnet: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,

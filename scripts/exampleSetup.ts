@@ -119,9 +119,14 @@ async function main() {
   await sdl.approve(veSDL.address, MAX_UINT256)
 
   // Create max lock with 10M SDL
+  const create_lock_gas_estimate = await veSDL.estimateGas.create_lock(
+    BIG_NUMBER_1E18.mul(10_000_000),
+    (await getCurrentBlockTimestamp()) + 4 * YEAR,
+  )
   await veSDL.create_lock(
     BIG_NUMBER_1E18.mul(10_000_000),
     (await getCurrentBlockTimestamp()) + 4 * YEAR,
+    { gasLimit: create_lock_gas_estimate },
   )
   console.log(
     "(10M SDL/4 Year) lock created at timestamp: ",
@@ -136,12 +141,22 @@ async function main() {
   )
   await minter.update_mining_parameters()
 
+  let get_gauge_weight_gas_estimate =
+    await gaugeController.estimateGas.get_gauge_weight(gauge_addresses[0])
+  let get_relative_gauge_weight_gas_estimate =
+    await gaugeController.estimateGas["gauge_relative_weight(address)"](
+      gauge_addresses[0],
+    )
   let i
   for (i = 0; i < gauge_names.length; i++) {
     console.log(
       gauge_names[i],
       "gauge_weight: ",
-      (await gaugeController.get_gauge_weight(gauge_addresses[i])).toString(),
+      (
+        await gaugeController.get_gauge_weight(gauge_addresses[i], {
+          gasLimit: get_gauge_weight_gas_estimate,
+        })
+      ).toString(),
     )
     console.log(
       gauge_names[i],
@@ -149,6 +164,7 @@ async function main() {
       (
         await gaugeController["gauge_relative_weight(address)"](
           gauge_addresses[i],
+          { gasLimit: get_relative_gauge_weight_gas_estimate },
         )
       ).toString(),
     )
@@ -162,11 +178,20 @@ async function main() {
     Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
   )
   console.log("timestamp set at", await getCurrentBlockTimestamp())
+  get_gauge_weight_gas_estimate =
+    await gaugeController.estimateGas.get_gauge_weight(gauge_addresses[0])
+  get_relative_gauge_weight_gas_estimate = await gaugeController.estimateGas[
+    "gauge_relative_weight(address)"
+  ](gauge_addresses[0])
   for (i = 0; i < gauge_names.length; i++) {
     console.log(
       gauge_names[i],
       "gauge_weight: ",
-      (await gaugeController.get_gauge_weight(gauge_addresses[i])).toString(),
+      (
+        await gaugeController.get_gauge_weight(gauge_addresses[i], {
+          gasLimit: get_gauge_weight_gas_estimate,
+        })
+      ).toString(),
     )
     console.log(
       gauge_names[i],
@@ -174,6 +199,7 @@ async function main() {
       (
         await gaugeController["gauge_relative_weight(address)"](
           gauge_addresses[i],
+          { gasLimit: get_relative_gauge_weight_gas_estimate },
         )
       ).toString(),
     )
