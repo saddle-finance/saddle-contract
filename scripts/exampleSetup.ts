@@ -148,6 +148,11 @@ async function main() {
       gauge_addresses[0],
     )
   let i
+  const change_gauge_weight_gas_estimate =
+    await gaugeController.estimateGas.change_gauge_weight(
+      gauge_addresses[0],
+      10000,
+    )
   for (i = 0; i < gauge_names.length; i++) {
     console.log(
       gauge_names[i],
@@ -170,7 +175,9 @@ async function main() {
     )
 
     // // Imitate multisig setting gauge weights
-    await gaugeController.change_gauge_weight(gauge_addresses[i], 10000)
+    await gaugeController.change_gauge_weight(gauge_addresses[i], 10000, {
+      gasLimit: change_gauge_weight_gas_estimate,
+    })
   }
 
   // // Skip to the week after when the weights apply
