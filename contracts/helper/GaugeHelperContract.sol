@@ -18,6 +18,7 @@ interface ILiquidityGaugeV5 {
     function reward_count() external view returns (uint256);
     function reward_tokens(uint256) external view returns (address);
     function reward_data(address) external view returns (Reward memory);
+    function claimable_reward(address, address) external view returns (uint256);
     
 }
 
@@ -72,5 +73,19 @@ contract GaugeHelperContract {
             rewardData[i] = ILiquidityGaugeV5(gauge).reward_data(rewardTokens[i]);
         }
         return rewardData;
+    }
+
+    function getClaimableRewards(address gauge, address user) public view returns (uint256[] memory) { 
+        uint256 rewardCount = ILiquidityGaugeV5(gauge).reward_count();
+        address[] memory rewardTokens = new address[](rewardCount);
+        for (uint256 i = 0; i < rewardCount; i++) {
+            rewardTokens[i] = ILiquidityGaugeV5(gauge).reward_tokens(i);
+        }
+        // call reward_data() will all reward token addresses
+        uint256[] memory claimableRewards = new uint256[](rewardCount);
+        for (uint256 i = 0; i < rewardCount; i++) {
+            claimableRewards[i] = ILiquidityGaugeV5(gauge).claimable_reward(user, rewardTokens[i]);
+        }
+        return claimableRewards;
     }
 }
