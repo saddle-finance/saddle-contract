@@ -12,11 +12,9 @@ async function main() {
   )) as GaugeHelperContract
 
   // get all gauge rewards from helper contract
-  const result = (
-    await GaugeHelperContract.getGaugeRewards(
-      "0xfaAddC93baf78e89DCf37bA67943E1bE8F37Bb8c",
-    )
-  ).toString()
+  const result = await GaugeHelperContract.getGaugeRewards(
+    "0x457cCf29090fe5A24c19c1bc95F492168C0EaFdb",
+  )
   console.log("gauge rewards: ", result)
 }
 

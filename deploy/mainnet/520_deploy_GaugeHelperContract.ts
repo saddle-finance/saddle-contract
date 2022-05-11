@@ -7,7 +7,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { libraryDeployer } = await getNamedAccounts()
 
   // read the current admin
-  await deploy("HelperContract", {
+  await deploy("GaugeHelperContract", {
     from: libraryDeployer,
     log: true,
     skipIfAlreadyDeployed: true,

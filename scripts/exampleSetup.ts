@@ -104,7 +104,7 @@ async function main() {
 
   // Test calling GaugeHelperContract that reads in series
   console.log(
-    "usdv2Gauge.address: ",
+    "usdv2pool address: ",
     await GaugeHelperContract.gaugeToPoolAddress(gauge_addresses[5]),
   )
   console.log(await GaugeHelperContract.gaugeToPoolData(gauge_addresses[5]))
