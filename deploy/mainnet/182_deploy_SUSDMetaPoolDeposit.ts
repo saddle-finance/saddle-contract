@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ).address,
     )
 
-    if ((await getOrNull("MetaSwapDeposit")) == null) {
+    if ((await getOrNull("MetaSwapDeposit")) === null) {
       await save("MetaSwapDeposit", result)
     }
   }

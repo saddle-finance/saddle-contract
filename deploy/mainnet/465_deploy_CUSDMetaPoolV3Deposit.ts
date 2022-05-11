@@ -31,7 +31,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     const newPoolEvent = receipt?.events?.find(
-      (e: any) => e["event"] == "NewClone",
+      (e: any) => e["event"] === "NewClone",
     )
     const deployedAddress = newPoolEvent["args"]["cloneAddress"]
     log(

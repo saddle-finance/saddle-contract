@@ -5,8 +5,8 @@ import { PoolType } from "../../utils/constants"
 import { IPoolRegistry } from "../../build/typechain/"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
-  const { deploy, get, getOrNull, execute, read, log } = deployments
+  const { deployments, getNamedAccounts, ethers } = hre
+  const { get, execute, log } = deployments
   const { deployer } = await getNamedAccounts()
 
   const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")

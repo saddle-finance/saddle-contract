@@ -7,7 +7,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { execute, deploy, get, getOrNull, log, save } = deployments
   const { deployer } = await getNamedAccounts()
 
-  if ((await getChainId()) == CHAIN_ID.MAINNET) {
+  if ((await getChainId()) === CHAIN_ID.MAINNET) {
     log("Cannot add to migrator on mainnet. Need to be executed by a multisig.")
     return
   }
