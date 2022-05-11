@@ -8,7 +8,7 @@ interface ILiquidityGaugeV5 {
     function lp_token() external view returns (address);
     // reward_count
     function reward_count() external view returns (uint256);
-    function reward_tokens() external view returns (address[] calldata);
+    function reward_tokens() external view returns (address[] memory);
     // function reward_data() external view returns (Reward[]);
     
 }
@@ -60,11 +60,11 @@ contract GaugeHelperContract {
             ).getPoolData(gaugeToPoolAddress(gauge));
     }
 
-    function getGaugeRewards(address gauge) public view returns (address[] calldata) { //Reward[] memory
+    function getGaugeRewards(address gauge) public view returns (address[] memory) { //Reward[] memory
         uint256 reward_count = ILiquidityGaugeV5(gauge).reward_count();
         address[] storage rewardTokenAddresses;
         for (uint256 i = 0; i < 8; i++) {
-            rewardTokenAddresses.push(ILiquidityGaugeV5.reward_tokens(i));
+            rewardTokenAddresses[i] = ILiquidityGaugeV5.reward_tokens(i);
         }
         return rewardTokenAddresses;
         // call reward_data() will all reward token addresses
