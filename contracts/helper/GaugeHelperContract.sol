@@ -6,17 +6,29 @@ import "../interfaces/IPoolRegistry.sol";
 
 interface ILiquidityGaugeV5 {
     function lp_token() external view returns (address);
+    // reward_count
+    function reward_count() external view returns (uint256);
+    function reward_tokens() external view returns (address[] calldata);
+    // function reward_data() external view returns (Reward[]);
+    
 }
 
 interface ILPToken {
     function owner() external view returns (address);
 }
 
-contract HelperContract {
+contract GaugeHelperContract {
     IMasterRegistry public immutable MASTER_REGISTRY;
     bytes32 public constant POOL_REGISTRY_NAME =
         0x506f6f6c52656769737472790000000000000000000000000000000000000000;
-
+    struct Reward {
+        address token; 
+        address distributor; 
+        uint256 period_finish; 
+        uint256 rate; 
+        uint256 last_update; 
+        uint256 integral; 
+    }
     constructor(address _masterRegistry) public {
         MASTER_REGISTRY = IMasterRegistry(_masterRegistry);
     }
@@ -46,5 +58,19 @@ contract HelperContract {
             IPoolRegistry(
                 MASTER_REGISTRY.resolveNameToLatestAddress(POOL_REGISTRY_NAME)
             ).getPoolData(gaugeToPoolAddress(gauge));
+    }
+
+    function getGaugeRewards(address gauge) public view returns (address[] calldata) { //Reward[] memory
+        uint256 reward_count = ILiquidityGaugeV5(gauge).reward_count();
+        address[] storage rewardTokenAddresses;
+        for (uint256 i = 0; i < 8; i++) {
+            rewardTokenAddresses.push(ILiquidityGaugeV5.reward_tokens(i));
+        }
+        return rewardTokenAddresses;
+        // call reward_data() will all reward token addresses
+        // Reward[8] memory rewardData;
+        // for (uint256 i = 0; i < 8; i++) {
+        //     rewardData[i] = ILiquidityGaugeV5.reward_data(rewardTokenAddresses[i]);
+        // }
     }
 }
