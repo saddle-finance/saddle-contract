@@ -10,11 +10,11 @@ const BASE_POOL_NAME = "SaddleUSDPoolV2"
 // Constructor arguments
 const TOKEN_NAMES = ["SUSD", `${BASE_POOL_NAME}LPToken`]
 const TOKEN_DECIMALS = [18, 18]
-const LP_TOKEN_NAME = "Saddle sUSD/saddleUSD-V2"
-const LP_TOKEN_SYMBOL = "saddleSUSD"
+const LP_TOKEN_NAME = "Saddle sUSD/saddleUSD-V2 V3 LP Token"
+const LP_TOKEN_SYMBOL = "saddleSUSD-V3"
 const INITIAL_A = 100
 const SWAP_FEE = 4e6 // 4bps
-const ADMIN_FEE = 0
+const ADMIN_FEE = 50e8
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre

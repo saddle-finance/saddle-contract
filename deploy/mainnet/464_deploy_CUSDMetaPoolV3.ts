@@ -9,11 +9,11 @@ const BASE_POOL_NAME = "SaddleUSDPoolV2"
 // Constructor arguments
 const TOKEN_NAMES = ["WCUSD", `${BASE_POOL_NAME}LPToken`]
 const TOKEN_DECIMALS = [18, 18]
-const LP_TOKEN_NAME = "Saddle wCUSD/saddleUSD-V2"
-const LP_TOKEN_SYMBOL = "saddleWCUSD"
+const LP_TOKEN_NAME = "Saddle wCUSD/saddleUSD-V2 V3 LP Token"
+const LP_TOKEN_SYMBOL = "saddleWCUSD-V3"
 const INITIAL_A = 100
 const SWAP_FEE = 4e6 // 4bps
-const ADMIN_FEE = 0
+const ADMIN_FEE = 50e8
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
@@ -77,9 +77,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = [META_POOL_NAME]
-func.dependencies = [
-  "LPToken",
-  "USDMetaPool",
-  "TBTCMetaPoolTokens",
-  "BTCPoolV2",
-]
+func.dependencies = ["LPToken", "WCUSDMetaPoolTokens", "USDPoolV2"]
