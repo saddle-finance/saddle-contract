@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       poolAddress: (await get("SaddleSUSDMetaPoolV3")).address,
       typeOfAsset: PoolType.USD,
       poolName: ethers.utils.formatBytes32String("sUSD-USDv2_v3"),
-      targetAddress: (await get("MetaSwapDeposit")).address,
+      targetAddress: (await get("MetaSwapV3")).address,
       metaSwapDepositAddress: (await get("SaddleSUSDMetaPoolV3Deposit"))
         .address,
       isSaddleApproved: true,
@@ -29,7 +29,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       poolAddress: (await get("SaddleTBTCMetaPoolV3")).address,
       typeOfAsset: PoolType.BTC,
       poolName: ethers.utils.formatBytes32String("tBTCv2-BTCv2_v3"),
-      targetAddress: (await get("MetaSwapDeposit")).address,
+      targetAddress: (await get("MetaSwapV3")).address,
       metaSwapDepositAddress: (await get("SaddleTBTCMetaPoolV3Deposit"))
         .address,
       isSaddleApproved: true,
@@ -41,7 +41,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       poolAddress: (await get("SaddleWCUSDMetaPoolV3")).address,
       typeOfAsset: PoolType.USD,
       poolName: ethers.utils.formatBytes32String("WCUSD-USDv2_v3"),
-      targetAddress: (await get("MetaSwapDeposit")).address,
+      targetAddress: (await get("MetaSwapV3")).address,
       metaSwapDepositAddress: (await get("SaddleWCUSDMetaPoolV3Deposit"))
         .address,
       isSaddleApproved: true,
