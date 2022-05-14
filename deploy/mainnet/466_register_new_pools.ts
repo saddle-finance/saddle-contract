@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       metaSwapDepositAddress: (await get("SaddleTBTCMetaPoolV3Deposit"))
         .address,
       isSaddleApproved: true,
-      isRemoved: true,
+      isRemoved: false,
       isGuarded: false,
     },
     {
@@ -63,9 +63,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           async (pool) => await poolRegistry.populateTransaction.addPool(pool),
         ),
       )
-      const batchCallData = batchCall
-        .map((x) => x.data)
-        .filter((x): x is string => !!x)
+      const batchCallData = batchCall.map((x) => x.data).filter(Boolean)
 
       await execute(
         "PoolRegistry",

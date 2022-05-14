@@ -76,9 +76,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ),
   ]
 
-  const batchCallData = batchCall
-    .map((x) => x.data)
-    .filter((x): x is string => !!x)
+  const batchCallData = batchCall.map((x) => x.data).filter(Boolean)
 
   await execute(
     "GeneralizedSwapMigrator",
