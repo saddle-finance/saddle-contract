@@ -9,7 +9,6 @@ import {
   GaugeHelperContract,
   GenericERC20,
   VotingEscrow,
-  Minter,
 } from "../build/typechain/"
 import {
   asyncForEach,
@@ -31,14 +30,13 @@ async function main() {
   )) as GaugeController
   const sdl = (await ethers.getContract("SDL")) as SDL
   const veSDL = (await ethers.getContract("VotingEscrow")) as VotingEscrow
-  const minter = (await ethers.getContract("Minter")) as Minter
+  const DAY = 86400
   const WEEK = 86400 * 7
   const YEAR = WEEK * 52
-  const MAXTIME = 86400 * 365 * 4
   const GaugeHelperContract = (await ethers.getContract(
     "GaugeHelperContract",
   )) as GaugeHelperContract
-  //   let rewardToken1: GenericERC20
+  //  Deploy dummy reward tokens
   const genericERC20Factory = await ethers.getContractFactory("GenericERC20")
   const rewardToken1 = (await genericERC20Factory.deploy(
     "Gauge Reward Token 1",
@@ -51,15 +49,14 @@ async function main() {
     "RT2",
     18,
   )) as GenericERC20
-  await rewardToken1.mint(signers[0].address, BIG_NUMBER_1E18.mul(1_000_000))
+  await rewardToken2.mint(signers[0].address, BIG_NUMBER_1E18.mul(1_000_000))
   console.log(
     "rewardToken1 address, rewardToken1 balance of signer[0]",
     rewardToken1.address,
     (await rewardToken1.balanceOf(signers[0].address)).toString(),
   )
-  await rewardToken2.mint(signers[0].address, BIG_NUMBER_1E18.mul(1_000_000))
   console.log(
-    "rewardToken2 address, rewardToken1 balance of signer[0]",
+    "rewardToken2 address, rewardToken2 balance of signer[0]",
     rewardToken2.address,
     (await rewardToken2.balanceOf(signers[0].address)).toString(),
   )
@@ -72,7 +69,13 @@ async function main() {
   // all of the existing LP tokens and added them to the gauge controller
   expect((await gaugeController.n_gauges()).toNumber()).to.eq(7)
 
-  // I can also console.log here
+  // Ensure sdl is not paused
+  if (await sdl.paused()) {
+    await sdl.enableTransfer()
+  }
+  await sdl.connect(signers[1]).approve(veSDL.address, MAX_UINT256)
+
+  // Transfer SDL from deployer to signer[1]
   console.log(
     "sdl balnce of signer[0]: ",
     (await sdl.balanceOf(await signers[0].getAddress())).toString(),
@@ -82,7 +85,8 @@ async function main() {
     "sdl balnce of signer[1]: ",
     (await sdl.balanceOf(await signers[1].getAddress())).toString(),
   )
-  // get lp tokens for signers
+
+  // Setup contracts to add liquidity to swap pool
   const USD_V2_SWAP_NAME = "SaddleUSDPoolV2"
   const USD_V2_LP_TOKEN_NAME = `${USD_V2_SWAP_NAME}LPToken`
   const USD_V2_GAUGE_NAME = `LiquidityGaugeV5_${USD_V2_LP_TOKEN_NAME}`
@@ -90,22 +94,19 @@ async function main() {
   const lpToken = await ethers.getContract(USD_V2_LP_TOKEN_NAME)
   const gauge = await ethers.getContract(USD_V2_GAUGE_NAME)
 
-  // get lp token on signer[0] by adding liquidity to swap
+  // get lp token on signer[0] by adding liquidity to swap pool
   await asyncForEach(["DAI", "USDT", "USDC"], async (token) => {
     await (await ethers.getContract(token)).approve(swap.address, MAX_UINT256)
   })
-  console.log("...adding liquidity")
   await swap.addLiquidity(
     [BIG_NUMBER_1E18, ethers.BigNumber.from(1e6), ethers.BigNumber.from(1e6)],
     0,
     MAX_UINT256,
   )
-  // transfer lp tokens
+  // transfer lp tokens from deployer to signers
   await lpToken.transfer(signers[1].address, BIG_NUMBER_1E18)
   await lpToken.transfer(signers[2].address, BIG_NUMBER_1E18)
   console.log(
-    "signer 0 bal: ",
-    (await lpToken.balanceOf(signers[0].address)).toString(),
     "signer 1 bal: ",
     (await lpToken.balanceOf(signers[1].address)).toString(),
     "signer 2 bal: ",
@@ -114,12 +115,6 @@ async function main() {
   await lpToken.connect(signers[0]).approve(gauge.address, MAX_UINT256)
   await lpToken.connect(signers[1]).approve(gauge.address, MAX_UINT256)
   await lpToken.connect(signers[2]).approve(gauge.address, MAX_UINT256)
-
-  // Ensure sdl is not paused
-  if (await sdl.paused()) {
-    await sdl.enableTransfer()
-  }
-  await sdl.connect(signers[1]).approve(veSDL.address, MAX_UINT256)
 
   // Create max lock with 10M SDL for signer[0] to get boost
   const create_lock_gas_estimate = await veSDL
@@ -189,20 +184,6 @@ async function main() {
     gasLimit: change_gauge_weight_gas_estimate,
   })
 
-  // Force mine 1 block and then skip timestamp to specified time
-  // await setTimestamp((await getCurrentBlockTimestamp()) + 2 * YEAR)
-
-  // await setTimestamp(
-  //   Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
-  // )
-  // await minter.update_mining_parameters()
-  // A day passes
-
-  // // skip a year ahead
-  // await setTimestamp(
-  //   Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * YEAR,
-  // )
-
   console.log(
     "claimable rewards for signer[1]:",
     (
@@ -221,8 +202,8 @@ async function main() {
       )
     ).toString(),
   )
-  // advance 1 day
-  await increaseTimestamp(86400)
+  // advance timestamp 1 day
+  await increaseTimestamp(DAY)
 
   console.log(
     "claimable rewards for signer[1] after a day",

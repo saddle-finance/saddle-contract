@@ -676,6 +676,7 @@ def add_reward(_reward_token: address, _distributor: address):
 
     self.reward_data[_reward_token].distributor = _distributor
     self.reward_tokens[reward_count] = _reward_token
+    self.reward_data[_reward_token].token = _reward_token
     self.reward_count = reward_count + 1
 
 
