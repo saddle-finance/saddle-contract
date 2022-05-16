@@ -673,6 +673,7 @@ def add_reward(_reward_token: address, _distributor: address):
     reward_count: uint256 = self.reward_count
     assert reward_count < MAX_REWARDS
     assert self.reward_data[_reward_token].distributor == ZERO_ADDRESS
+    assert _reward_token != ZERO_ADDRESS
 
     self.reward_data[_reward_token].distributor = _distributor
     self.reward_tokens[reward_count] = _reward_token
