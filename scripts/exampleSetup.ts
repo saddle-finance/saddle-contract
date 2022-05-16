@@ -33,7 +33,7 @@ async function main() {
   const WEEK = 86400 * 7
   const YEAR = WEEK * 52
   const MAXTIME = 86400 * 365 * 4
-  const GaugeHelperContract = (await ethers.getContract(
+  const gaugeHelperContract = (await ethers.getContract(
     "GaugeHelperContract",
   )) as GaugeHelperContract
   const gauge_map = new Map<string, string>([
@@ -102,12 +102,12 @@ async function main() {
     (await sdl.balanceOf(await signers[0].getAddress())).toString(),
   )
 
-  // Test calling GaugeHelperContract that reads in series
+  // Test calling gaugeHelperContract that reads in series
   console.log(
     "usdv2pool address: ",
-    await GaugeHelperContract.gaugeToPoolAddress(gauge_addresses[5]),
+    await gaugeHelperContract.gaugeToPoolAddress(gauge_addresses[5]),
   )
-  console.log(await GaugeHelperContract.gaugeToPoolData(gauge_addresses[5]))
+  console.log(await gaugeHelperContract.gaugeToPoolData(gauge_addresses[5]))
 
   // You can freely modify timestamps and the state of the contracts to your liking.
   // For how you want to set up the contracts, please refer to test files in test/tokenomics
