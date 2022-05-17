@@ -23,7 +23,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const LP_TOKEN_SYMBOL = "saddleEvmos4pool"
     const INITIAL_A = 400
     const SWAP_FEE = 4e6 // 4bps
-    const ADMIN_FEE = 0
+    const ADMIN_FEE = 5e9 // 50% of the 4bps
 
     await execute(
       "SwapFlashLoan",
@@ -48,7 +48,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const lpTokenAddress = (await read("SaddleEvmos4pool", "swapStorage"))
       .lpToken
-    log(`Saddle Evmos  4Pool LP Token at ${lpTokenAddress}`)
+    log(`Saddle Evmos 4Pool LP Token at ${lpTokenAddress}`)
 
     await save("SaddleEvmos4poolLPToken", {
       abi: (await get("LPToken")).abi, // LPToken ABI
