@@ -6,7 +6,7 @@ const { expect } = chai
 import {
   GaugeController,
   SDL,
-  HelperContract,
+  GaugeHelperContract,
   VotingEscrow,
   Minter,
 } from "../build/typechain/"
@@ -33,9 +33,9 @@ async function main() {
   const WEEK = 86400 * 7
   const YEAR = WEEK * 52
   const MAXTIME = 86400 * 365 * 4
-  const helperContract = (await ethers.getContract(
-    "HelperContract",
-  )) as HelperContract
+  const gaugeHelperContract = (await ethers.getContract(
+    "GaugeHelperContract",
+  )) as GaugeHelperContract
   const gauge_map = new Map<string, string>([
     [
       "LiquidityGaugeV5_SaddleALETHPoolLPToken",
@@ -102,12 +102,12 @@ async function main() {
     (await sdl.balanceOf(await signers[0].getAddress())).toString(),
   )
 
-  // Test calling helperContract that reads in series
+  // Test calling gaugeHelperContract that reads in series
   console.log(
-    "usdv2Gauge.address: ",
-    await helperContract.gaugeToPoolAddress(gauge_addresses[5]),
+    "usdv2pool address: ",
+    await gaugeHelperContract.gaugeToPoolAddress(gauge_addresses[5]),
   )
-  console.log(await helperContract.gaugeToPoolData(gauge_addresses[5]))
+  console.log(await gaugeHelperContract.gaugeToPoolData(gauge_addresses[5]))
 
   // You can freely modify timestamps and the state of the contracts to your liking.
   // For how you want to set up the contracts, please refer to test files in test/tokenomics
