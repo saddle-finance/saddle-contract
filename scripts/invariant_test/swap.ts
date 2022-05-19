@@ -16,20 +16,12 @@ import {
 chai.use(solidity)
 const { expect } = chai
 
-// const SWAP_ADDRESS = "0x101CD330D088634B6F64c2eb4276e63Bf1BbfDE3"
-// const TOKEN_HOLDERS = [
-//   "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643",
-//   "0x0a59649758aa4d66e25f08dd01271e891fe52199",
-//   "0x5754284f345afc66a98fbb0a0afe71e0f007b949",
-//   "0xd632f22692fac7611d2aa1c0d552930d43caed3b",
-// ]
-
-const SWAP_ADDRESS = "0x101CD330D088634B6F64c2eb4276e63Bf1BbfDE3"
+const SWAP_ADDRESS = "0xC69DDcd4DFeF25D8a793241834d4cc4b3668EAD6"
 const TOKEN_HOLDERS = [
-  "0xb60c61dbb7456f024f9338c739b02be68e3f545c", // AMM
-  "0xcffad3200574698b78f32232aa9d63eabd290703", // AMM
-  "0xa7a93fd0a276fc1c0197a5b5623ed117786eed06", // AMM
-  "0x9a315bdf513367c0377fb36545857d12e85813ef", // LUSD stability pool
+  "0x43b4fdfd4ff969587185cdb6f0bd875c5fc83f8c", // AMM
+  "0x9928e4046d7c6513326ccea028cd3e7a91c7590a", // AMM
+  "0xd632f22692fac7611d2aa1c0d552930d43caed3b", // AMM
+  "0x66017d22b0f8556afdd19fc67041899eb65a21bb", // LUSD stability pool
 ]
 
 const FORKING_JSON_RPC_URL =
