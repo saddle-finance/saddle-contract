@@ -2,8 +2,8 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 
 // Contract names saved as deployments json files
-const FRAX4POOL_NAME = "Saddle4Pool"
-const FRAX4POOL_LP_TOKEN_NAME = `${FRAX4POOL_NAME}LPToken`
+const BASE_POOL_NAME = "Saddle4Pool"
+const BASE_POOL_LP_TOKEN_NAME = `${BASE_POOL_NAME}LPToken`
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
@@ -11,9 +11,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
-  const saddle4pool = await getOrNull(FRAX4POOL_NAME)
+  const saddle4pool = await getOrNull(BASE_POOL_NAME)
   if (saddle4pool) {
-    log(`reusing "4poolTokens" at ${saddle4pool.address}`)
+    log(`reusing ${BASE_POOL_NAME} Tokens at ${saddle4pool.address}`)
   } else {
     // Constructor arguments
     const TOKEN_ADDRESSES = [
@@ -51,27 +51,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const newPoolEvent = receipt?.events?.find(
       (e: any) => e["event"] == "NewSwapPool",
     )
-    const frax4poolSwapAddress = newPoolEvent["args"]["swapAddress"]
+    const deployedAddress = newPoolEvent["args"]["swapAddress"]
     log(
-      `deployed saddle4pool (targeting "SwapFlashLoan") at ${frax4poolSwapAddress}`,
+      `deployed ${BASE_POOL_NAME} (targeting "SwapFlashLoan") at ${deployedAddress}`,
     )
-    await save("Saddle4Pool", {
+    await save(BASE_POOL_NAME, {
       abi: (await get("SwapFlashLoan")).abi,
-      address: frax4poolSwapAddress,
+      address: deployedAddress,
+    })
+
+    const lpTokenAddress = (await read(BASE_POOL_NAME, "swapStorage")).lpToken
+    log(`${LP_TOKEN_NAME} at ${lpTokenAddress}`)
+
+    await save(BASE_POOL_LP_TOKEN_NAME, {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
     })
   }
-
-  const lpTokenAddress = (await read("Saddle4Pool", "swapStorage")).lpToken
-  log(`Saddle 4Pool LP Token at ${lpTokenAddress}`)
-
-  await save(FRAX4POOL_LP_TOKEN_NAME, {
-    abi: (await get("LPToken")).abi, // LPToken ABI
-    address: lpTokenAddress,
-  })
 }
-
 export default func
-func.tags = [FRAX4POOL_NAME]
+func.tags = [BASE_POOL_NAME]
 func.dependencies = [
   "SwapUtils",
   "SwapFlashLoan",
