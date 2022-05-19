@@ -1,9 +1,18 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 
-// Contract names saved as deployments json files
+// Deployment Names
 const BASE_POOL_NAME = "Saddle4Pool"
 const BASE_POOL_LP_TOKEN_NAME = `${BASE_POOL_NAME}LPToken`
+
+// Constructor arguments
+const TOKEN_NAMES = ["DAI", "USDC", "USDT", "FRAX"]
+const TOKEN_DECIMALS = [18, 6, 6, 18]
+const LP_TOKEN_NAME = "Saddle DAI/USDC/USDT/FRAX LP Token"
+const LP_TOKEN_SYMBOL = "saddle4pool"
+const INITIAL_A = 500
+const SWAP_FEE = 3e6 // 3bps
+const ADMIN_FEE = 5e9 // 50% of the 3bps
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
@@ -15,19 +24,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (saddle4pool) {
     log(`reusing ${BASE_POOL_NAME} Tokens at ${saddle4pool.address}`)
   } else {
-    // Constructor arguments
-    const TOKEN_ADDRESSES = [
-      (await get("DAI")).address,
-      (await get("USDC")).address,
-      (await get("USDT")).address,
-      (await get("FRAX")).address,
-    ]
-    const TOKEN_DECIMALS = [18, 6, 6, 18]
-    const LP_TOKEN_NAME = "Saddle DAI/USDC/USDT/FRAX"
-    const LP_TOKEN_SYMBOL = "saddle4pool"
-    const INITIAL_A = 500
-    const SWAP_FEE = 3e6 // 3bps
-    const ADMIN_FEE = 5e9 // 50% of the 3bps
+    const TOKEN_ADDRESSES = await Promise.all(
+      TOKEN_NAMES.map(async (name) => (await get(name)).address),
+    )
 
     const receipt = await execute(
       "SwapDeployer",
