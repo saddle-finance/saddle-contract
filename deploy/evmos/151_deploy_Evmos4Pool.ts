@@ -5,8 +5,17 @@ import { ethers } from "hardhat"
 import { GenericERC20 } from "../../build/typechain"
 
 // Contract names saved as deployments json files
-const FRAX4POOL_NAME = "SaddleEvmos4Pool"
-const FRAX4POOL_LP_TOKEN_NAME = `${FRAX4POOL_NAME}LPToken`
+const BASE_POOL_NAME = "SaddleEvmos4Pool"
+const BASE_POOL_LP_TOKEN_NAME = `${BASE_POOL_NAME}LPToken`
+
+// Constructor arguments
+const TOKEN_NAMES = ["DAI", "USDC", "USDT", "FRAX"]
+const TOKEN_DECIMALS = [18, 6, 6, 18]
+const LP_TOKEN_NAME = "Saddle madDAI/madUSDC/madUSDT/FRAX LP Token"
+const LP_TOKEN_SYMBOL = "saddleEvmos4pool"
+const INITIAL_A = 400
+const SWAP_FEE = 4e6 // 4bps
+const ADMIN_FEE = 5e9 // 50% of the 4bps
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
@@ -18,19 +27,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (saddleEvmos4pool) {
     log(`reusing "Evmos4poolTokens" at ${saddleEvmos4pool.address}`)
   } else {
-    // Constructor arguments
-    const TOKEN_ADDRESSES = [
-      (await get("DAI")).address,
-      (await get("USDC")).address,
-      (await get("USDT")).address,
-      (await get("FRAX")).address,
-    ]
-    const TOKEN_DECIMALS = [18, 6, 6, 18]
-    const LP_TOKEN_NAME = "Saddle 4pool"
-    const LP_TOKEN_SYMBOL = "saddleEvmos4pool"
-    const INITIAL_A = 400
-    const SWAP_FEE = 4e6 // 4bps
-    const ADMIN_FEE = 5e9 // 50% of the 4bps
+    const TOKEN_ADDRESSES = await Promise.all(
+      TOKEN_NAMES.map(async (name) => (await get(name)).address),
+    )
 
     // Ensure token decimals are correct before deploying
     // Evmos explorer has some delay in updating the decimals so double check
@@ -49,7 +48,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       }
     })
 
-    await deploy(FRAX4POOL_NAME, {
+    await deploy(BASE_POOL_NAME, {
       from: deployer,
       log: true,
       contract: "SwapFlashLoan",
@@ -61,7 +60,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     })
 
     await execute(
-      FRAX4POOL_NAME,
+      BASE_POOL_NAME,
       { from: deployer, log: true },
       "initialize",
       TOKEN_ADDRESSES,
@@ -76,15 +75,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ).address,
     )
 
-    const lpTokenAddress = (await read(FRAX4POOL_NAME, "swapStorage")).lpToken
-    log(`Saddle Evmos 4Pool LP Token at ${lpTokenAddress}`)
+    const lpTokenAddress = (await read(BASE_POOL_NAME, "swapStorage")).lpToken
+    log(`deployed ${BASE_POOL_LP_TOKEN_NAME} at ${lpTokenAddress}`)
 
-    await save(FRAX4POOL_LP_TOKEN_NAME, {
+    await save(BASE_POOL_LP_TOKEN_NAME, {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
   }
 }
 export default func
-func.tags = [FRAX4POOL_NAME]
+func.tags = [BASE_POOL_NAME]
 func.dependencies = ["SwapUtils", "SwapFlashLoan", "Evmos4poolTokens"]
