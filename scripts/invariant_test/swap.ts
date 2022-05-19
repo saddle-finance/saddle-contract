@@ -23,6 +23,7 @@ const TOKEN_HOLDERS = [
   "0xd632f22692fac7611d2aa1c0d552930d43caed3b", // AMM
   "0x66017d22b0f8556afdd19fc67041899eb65a21bb", // LUSD stability pool
 ]
+
 const FORKING_JSON_RPC_URL =
   ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY
 const DEPOSIT_AMOUNT = 1_000
@@ -148,7 +149,7 @@ describe("Swap", async () => {
   describe("removeLiquidityImbalance", () => {
     for (let i = 0; i < TOKEN_HOLDERS.length; i++) {
       it("Virtual price doesn't decrease after removeLiquidityImbalance", async () => {
-        const amounts = [...depositAmounts]
+        const amounts = [...depositAmounts.map((amount) => amount.div(2))]
         amounts[i] = BIG_NUMBER_ZERO
         const virtualPriceBefore = await swap.getVirtualPrice()
         await swap
