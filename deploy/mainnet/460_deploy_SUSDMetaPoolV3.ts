@@ -1,33 +1,36 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
-import { getChainId } from "hardhat"
+
+// Deployment names
+const META_POOL_NAME = "SaddleSUSDMetaPoolV3"
+const META_POOL_LP_TOKEN_NAME = `${META_POOL_NAME}LPToken`
+const BASE_POOL_NAME = "SaddleUSDPoolV2"
+
+// Constructor arguments
+const TOKEN_NAMES = ["SUSD", `${BASE_POOL_NAME}LPToken`]
+const TOKEN_DECIMALS = [18, 18]
+const LP_TOKEN_NAME = "Saddle sUSD/saddleUSD-V2 V3 LP Token"
+const LP_TOKEN_SYMBOL = "saddleSUSD-V3"
+const INITIAL_A = 100
+const SWAP_FEE = 4e6 // 4bps
+const ADMIN_FEE = 50e8
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts } = hre
+  const { deployments, getNamedAccounts, getChainId } = hre
   const { execute, deploy, get, getOrNull, log, read, save } = deployments
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
-  const metaPool = await getOrNull("SaddleOptFRAXMetaPool")
+  const metaPool = await getOrNull(META_POOL_NAME)
   if (metaPool) {
-    log(`reusing "SaddleOptFRAXMetaPool" at ${metaPool.address}`)
+    log(`reusing ${META_POOL_NAME} at ${metaPool.address}`)
   } else {
-    // Constructor arguments
-    const TOKEN_ADDRESSES = [
-      (await get("FRAX")).address,
-      (await get("SaddleOptUSDPoolLPToken")).address,
-    ]
-    const TOKEN_DECIMALS = [18, 18]
-    const LP_TOKEN_NAME = "Saddle FRAX/saddleOptUSD"
-    const LP_TOKEN_SYMBOL = "saddleOptFraxUSD"
-    const INITIAL_A = 100
-    const SWAP_FEE = 4e6 // 4bps
-    const ADMIN_FEE = 0
+    const TOKEN_ADDRESSES = await Promise.all(
+      TOKEN_NAMES.map(async (name) => (await get(name)).address),
+    )
 
-    // This is the first time deploying MetaSwap contract.
-    // Next time, we can just deploy a proxy that targets this.
-    await deploy("SaddleOptFRAXMetaPool", {
+    await deploy(META_POOL_NAME, {
       from: deployer,
       log: true,
       contract: "MetaSwap",
@@ -39,8 +42,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       },
     })
 
+    await save("MetaSwapV3", await get(META_POOL_NAME))
+
     await execute(
-      "SaddleOptFRAXMetaPool",
+      META_POOL_NAME,
       {
         from: deployer,
         log: true,
@@ -57,32 +62,31 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("LPToken")
       ).address,
       (
-        await get("SaddleOptUSDPool")
+        await get(BASE_POOL_NAME)
       ).address,
     )
 
     await execute(
-      "SaddleOptFRAXMetaPool",
+      META_POOL_NAME,
       { from: deployer, log: true },
       "transferOwnership",
       MULTISIG_ADDRESSES[await getChainId()],
     )
 
-    const lpTokenAddress = (await read("SaddleOptFRAXMetaPool", "swapStorage"))
-      .lpToken
-    log(`Saddle FRAX MetaSwap LP Token at ${lpTokenAddress}`)
+    const lpTokenAddress = (await read(META_POOL_NAME, "swapStorage")).lpToken
+    log(`deployed ${META_POOL_LP_TOKEN_NAME} at ${lpTokenAddress}`)
 
-    await save("SaddleOptFRAXMetaPoolLPToken", {
+    await save(`${META_POOL_LP_TOKEN_NAME}`, {
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
   }
 }
 export default func
-func.tags = ["SaddleOptFRAXMetaPool"]
+func.tags = [META_POOL_NAME]
 func.dependencies = [
-  "SaddleOptFRAXMetaPoolTokens",
-  "SaddleOptUSDPool",
+  "SUSDMetaPoolTokens",
+  "USDPoolV2",
   "MetaSwapUtils",
   "AmplificationUtils",
 ]
