@@ -23,9 +23,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
-  const saddleEvmos4pool = await getOrNull("SaddleEvmos4pool")
-  if (saddleEvmos4pool) {
-    log(`reusing "Evmos4poolTokens" at ${saddleEvmos4pool.address}`)
+  const basePool = await getOrNull(BASE_POOL_NAME)
+  if (basePool) {
+    log(`reusing ${BASE_POOL_NAME} at ${basePool.address}`)
   } else {
     const TOKEN_ADDRESSES = await Promise.all(
       TOKEN_NAMES.map(async (name) => (await get(name)).address),
