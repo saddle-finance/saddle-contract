@@ -191,7 +191,7 @@ describe("MetaSwap", async () => {
   describe("removeLiquidityImbalance", () => {
     for (let i = 0; i < TOKEN_HOLDERS.length; i++) {
       it("Virtual price doesn't decrease after removeLiquidityImbalance", async () => {
-        const amounts = [...depositAmounts]
+        const amounts = [...depositAmounts.map((amount) => amount.div(2))]
         amounts[i] = BIG_NUMBER_ZERO
         const virtualPriceBefore = await metaSwap.getVirtualPrice()
         await metaSwap
