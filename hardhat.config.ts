@@ -100,6 +100,11 @@ let config: HardhatUserConfig = {
       url: "https://evm.evm-alpha.kava.io",
       chainId: 2221,
       deploy: ["./deploy/kava_testnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://explorer.evm-alpha.kava.io",
+        },
+      },
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
