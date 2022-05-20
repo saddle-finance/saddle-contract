@@ -92,9 +92,15 @@ let config: HardhatUserConfig = {
       },
     },
     evmos_mainnet: {
+      live: true,
       url: "https://eth.bd.evmos.org:8545",
       chainId: 9001,
       deploy: ["./deploy/evmos/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://evm.evmos.org",
+        },
+      },
     },
   },
   paths: {
