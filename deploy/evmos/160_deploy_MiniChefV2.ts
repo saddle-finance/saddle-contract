@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       from: deployer,
       log: true,
       skipIfAlreadyDeployed: true,
-      args: [(await get("DAI")).address],
+      args: [(await get("SDL")).address],
     })
 
     const minichef: MiniChefV2 = await ethers.getContract("MiniChefV2")
