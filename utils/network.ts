@@ -11,7 +11,8 @@ export const CHAIN_ID = {
   FANTOM_TESTNET: "4002",
   EVMOS_TESTNET: "9000",
   EVMOS_MAINNET: "9001",
-  KAVA_TESTNET: "2221"
+  KAVA_TESTNET: "2221",
+  KAVA_MAINNET: "2222",
 }
 
 export function isMainnet(networkId: string): boolean {
@@ -20,7 +21,8 @@ export function isMainnet(networkId: string): boolean {
     networkId == CHAIN_ID.ARBITRUM_MAINNET ||
     networkId == CHAIN_ID.OPTIMISM_MAINNET ||
     networkId == CHAIN_ID.FANTOM_MAINNET ||
-    networkId == CHAIN_ID.EVMOS_MAINNET
+    networkId == CHAIN_ID.EVMOS_MAINNET ||
+    networkId == CHAIN_ID.KAVA_MAINNET
   )
 }
 

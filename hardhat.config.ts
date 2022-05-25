@@ -115,6 +115,16 @@ let config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
     },
+    kava_mainnet: {
+      url: "https://evm.kava.io",
+      chainId: 2222,
+      deploy: ["./deploy/kava_mainnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://explorer.kava.io",
+        },
+      },
+    },
   },
   paths: {
     sources: "./contracts",
