@@ -1,22 +1,24 @@
+import {
+  BIG_NUMBER_1E18,
+  MAX_UINT256,
+  asyncForEach,
+  getCurrentBlockTimestamp,
+  increaseTimestamp,
+} from "../test/testUtils"
+import {
+  GaugeController,
+  GaugeHelperContract,
+  GenericERC20,
+  Minter,
+  SDL,
+  VotingEscrow,
+} from "../build/typechain/"
+
 import chai from "chai"
 import { ethers } from "hardhat"
 import { solidity } from "ethereum-waffle"
 
 const { expect } = chai
-import {
-  GaugeController,
-  SDL,
-  GaugeHelperContract,
-  GenericERC20,
-  VotingEscrow,
-} from "../build/typechain/"
-import {
-  asyncForEach,
-  BIG_NUMBER_1E18,
-  getCurrentBlockTimestamp,
-  MAX_UINT256,
-  increaseTimestamp,
-} from "../test/testUtils"
 
 chai.use(solidity)
 
@@ -30,6 +32,7 @@ async function main() {
   )) as GaugeController
   const sdl = (await ethers.getContract("SDL")) as SDL
   const veSDL = (await ethers.getContract("VotingEscrow")) as VotingEscrow
+  const minter = (await ethers.getContract("Minter")) as Minter
   const DAY = 86400
   const WEEK = 86400 * 7
   const YEAR = WEEK * 52
@@ -73,16 +76,17 @@ async function main() {
   if (await sdl.paused()) {
     await sdl.enableTransfer()
   }
+  await sdl.transfer(minter.address, BIG_NUMBER_1E18.mul(1_000_000))
   await sdl.connect(signers[1]).approve(veSDL.address, MAX_UINT256)
 
   // Transfer SDL from deployer to signer[1]
   console.log(
-    "sdl balnce of signer[0]: ",
+    "sdl balance of signer[0]: ",
     (await sdl.balanceOf(await signers[0].getAddress())).toString(),
   )
   await sdl.transfer(signers[1].address, BIG_NUMBER_1E18.mul(1_000_000))
   console.log(
-    "sdl balnce of signer[1]: ",
+    "sdl balance of signer[1]: ",
     (await sdl.balanceOf(await signers[1].getAddress())).toString(),
   )
 
@@ -179,8 +183,8 @@ async function main() {
   await gauge.connect(signers[2])["deposit(uint256)"](BIG_NUMBER_1E18)
   // Gauge weight is changed mid-week but will apply next week
   const change_gauge_weight_gas_estimate =
-    await gaugeController.estimateGas.change_gauge_weight(gauge.address, 0)
-  await gaugeController.change_gauge_weight(gauge.address, 0, {
+    await gaugeController.estimateGas.change_gauge_weight(gauge.address, 100000)
+  await gaugeController.change_gauge_weight(gauge.address, 100000, {
     gasLimit: change_gauge_weight_gas_estimate,
   })
 
@@ -204,7 +208,6 @@ async function main() {
   )
   // advance timestamp 1 day
   await increaseTimestamp(DAY)
-
   console.log(
     "claimable rewards for signer[1] after a day",
     (
@@ -223,6 +226,9 @@ async function main() {
       )
     ).toString(),
   )
+
+  // // Skip to the week after when the weights apply
+  await increaseTimestamp(WEEK)
 }
 
 main()
