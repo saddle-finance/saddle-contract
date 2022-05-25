@@ -102,6 +102,19 @@ let config: HardhatUserConfig = {
         },
       },
     },
+    kava_testnet: {
+      url: "https://evm.evm-alpha.kava.io",
+      chainId: 2221,
+      deploy: ["./deploy/kava_testnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://explorer.evm-alpha.kava.io",
+        },
+      },
+      accounts: {
+        mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
+      },
+    },
   },
   paths: {
     sources: "./contracts",
@@ -164,6 +177,7 @@ let config: HardhatUserConfig = {
       250: 0, // use the same address on fantom mainnet
       9000: 0, // use the same address on evmos testnet
       9001: 0, // use the same address on evmos mainnnet
+      2221: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
     },
     libraryDeployer: {
@@ -174,6 +188,7 @@ let config: HardhatUserConfig = {
       250: 0, // use the same address on fantom mainnet
       9000: 0, // use the same address on evmos testnet
       9001: 0, // use the same address on evmos mainnnet
+      2221: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
     },
   },
