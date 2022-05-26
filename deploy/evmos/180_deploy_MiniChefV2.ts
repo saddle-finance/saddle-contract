@@ -1,4 +1,3 @@
-import { BIG_NUMBER_1E18 } from "../../test/testUtils"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { MiniChefV2 } from "../../build/typechain"
@@ -23,11 +22,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const minichef: MiniChefV2 = await ethers.getContract("MiniChefV2")
 
-    // Total LM rewards is 30,000,000 but only 12,500,000 is allocated in the beginning
-    // Evmos's portion is 500_000
-    const TOTAL_LM_REWARDS = BIG_NUMBER_1E18.mul(500_000)
-    // 2 months (8 weeks)
-    // const lmRewardsPerSecond = TOTAL_LM_REWARDS.div(2 * 4 * 7 * 24 * 3600)
     const lmRewardsPerSecond = 0
 
     const batchCall = [
@@ -40,28 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       await minichef.populateTransaction.add(
         0,
         (
-          await get("SaddleEvmos3poolLPToken")
-        ).address,
-        "0x0000000000000000000000000000000000000000",
-      ),
-      await minichef.populateTransaction.add(
-        0,
-        (
-          await get("SaddleEvmos4PoolLPToken")
-        ).address,
-        "0x0000000000000000000000000000000000000000",
-      ),
-      await minichef.populateTransaction.add(
-        0,
-        (
-          await get("SaddleEvmosBTCPoolLPToken")
-        ).address,
-        "0x0000000000000000000000000000000000000000",
-      ),
-      await minichef.populateTransaction.add(
-        0,
-        (
-          await get("SaddleTBTCMetaPoolLPToken")
+          await get("SaddleEvmosFrax3PoolLPToken")
         ).address,
         "0x0000000000000000000000000000000000000000",
       ),
