@@ -13,6 +13,7 @@ import {
   BIG_NUMBER_1E18,
   BIG_NUMBER_ZERO,
   getCurrentBlockTimestamp,
+  increaseTimestamp,
   MAX_UINT256,
   setTimestamp,
   ZERO_ADDRESS,
@@ -327,7 +328,7 @@ describe("SimpleRewarder", async () => {
   })
 
   describe("withdraw", () => {
-    beforeEach(async () => {
+    it("Successfully withdraws and only harvests rewardToken2", async () => {
       await initializeRewarder()
 
       // Set rewarder of pid 0 to the SimpleRewarder contract
@@ -336,10 +337,8 @@ describe("SimpleRewarder", async () => {
       await miniChef.set(0, 1, simpleRewarder.address, true)
 
       await miniChef.connect(farmer).harvest(0, farmerAddress)
-      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
-    })
+      await increaseTimestamp(1000)
 
-    it("Successfully withdraws and only harvests rewardToken2", async () => {
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(5),
       )
@@ -361,7 +360,7 @@ describe("SimpleRewarder", async () => {
   })
 
   describe("withdrawAndHarvest", () => {
-    beforeEach(async () => {
+    it("Successfully withdraws and harvests reward tokens", async () => {
       await initializeRewarder()
 
       // Set rewarder of pid 0 to the SimpleRewarder contract
@@ -370,10 +369,8 @@ describe("SimpleRewarder", async () => {
       await miniChef.set(0, 1, simpleRewarder.address, true)
 
       await miniChef.connect(farmer).harvest(0, farmerAddress)
-      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
-    })
+      await increaseTimestamp(1000)
 
-    it("Successfully withdraws and harvests reward tokens", async () => {
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(5),
       )
