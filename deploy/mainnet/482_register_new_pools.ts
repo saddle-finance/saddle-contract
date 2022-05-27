@@ -14,18 +14,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const pools: IPoolRegistry.PoolInputDataStruct[] = [
     {
-      // sUSD meta pool v3
+      // 4 pool will not be used on the frontend
       poolAddress: (await get("Saddle4Pool")).address,
       typeOfAsset: PoolType.USD,
       poolName: ethers.utils.formatBytes32String("4pool"),
       targetAddress: (await get("SwapFlashLoan")).address,
       metaSwapDepositAddress: ZERO_ADDRESS,
       isSaddleApproved: true,
-      isRemoved: false,
+      isRemoved: true, // Mark as removed since this pool will not be featued
       isGuarded: false,
     },
     {
-      // tBTCv2 meta pool v3
+      // frax 3 pool that will featured on the frontend
       poolAddress: (await get("SaddleFrax3Pool")).address,
       typeOfAsset: PoolType.USD,
       poolName: ethers.utils.formatBytes32String("frax3pool"),
