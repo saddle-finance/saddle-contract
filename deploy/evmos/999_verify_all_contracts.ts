@@ -3,10 +3,13 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getChainId } = hre
+  const { deployments, getChainId, network } = hre
   const { log } = deployments
 
-  if ((await getChainId()) === CHAIN_ID.EVMOS_MAINNET) {
+  if (
+    (await getChainId()) === CHAIN_ID.EVMOS_MAINNET &&
+    network.name !== "hardhat"
+  ) {
     await hre.run("etherscan-verify")
   } else {
     log(
