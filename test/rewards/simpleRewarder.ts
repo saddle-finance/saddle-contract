@@ -384,8 +384,10 @@ describe("SimpleRewarder", async () => {
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(6),
       )
-      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
-        BIG_NUMBER_1E18.mul(1006),
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.satisfy(
+        (balance: BigNumber) =>
+          balance.eq(BIG_NUMBER_1E18.mul(1006)) ||
+          balance.eq(BIG_NUMBER_1E18.mul(1007)),
       )
       expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(2002),
