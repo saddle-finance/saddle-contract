@@ -14,6 +14,7 @@ import { ethers } from "ethers"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "./utils/network"
 import { PROD_DEPLOYER_ADDRESS } from "./utils/accounts"
 import { Deployment } from "hardhat-deploy/dist/types"
+import { HttpNetworkUserConfig } from "hardhat/types"
 
 dotenv.config()
 
@@ -228,8 +229,35 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
   }
 }
 
-if (process.env.FORK_MAINNET === "true" && config.networks) {
-  console.log("FORK_MAINNET is set to true")
+if (process.env.FORK_NETWORK && config.networks) {
+  const forkNetworkName = process.env.FORK_NETWORK as string
+  console.log(`FORK_NETWORK is set to ${forkNetworkName}`)
+
+  if (!config.networks[forkNetworkName]) {
+    throw new Error(
+      `FORK_NETWORK is set to ${forkNetworkName}, but no network with that name is defined in the config.`,
+    )
+  }
+  if (!(config.networks[forkNetworkName] as HttpNetworkUserConfig).url) {
+    throw new Error(
+      `FORK_NETWORK is set to ${forkNetworkName}, but no url is defined for that network in the config.`,
+    )
+  }
+  if (!CHAIN_ID[forkNetworkName.toUpperCase()]) {
+    throw new Error(
+      `FORK_NETWORK is set to ${forkNetworkName}, but no chainId is defined for that network in the CHAIN_ID constant.`,
+    )
+  }
+  const forkingURL = (config.networks[forkNetworkName] as HttpNetworkUserConfig)
+    .url as string
+  const forkingChainId = parseInt(CHAIN_ID[forkNetworkName.toUpperCase()])
+  const externalDeploymentsFolder = `deployments/${forkNetworkName.toLowerCase()}`
+  const deployPaths = config.networks[forkNetworkName]?.deploy as string[]
+
+  console.log(
+    `Attempting to fork ${forkNetworkName} from ${forkingURL} with chainID of ${forkingChainId}. External deployments folder is ${externalDeploymentsFolder}`,
+  )
+
   config = {
     ...config,
     networks: {
@@ -237,30 +265,24 @@ if (process.env.FORK_MAINNET === "true" && config.networks) {
       hardhat: {
         ...config.networks.hardhat,
         forking: {
-          url: process.env.ALCHEMY_API_KEY
-            ? ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY
-            : throwAPIKeyNotFoundError(),
+          url: forkingURL,
         },
-        chainId: 1,
+        chainId: forkingChainId,
+        deploy: deployPaths,
       },
     },
     namedAccounts: {
       ...config.namedAccounts,
       deployer: {
-        1: PROD_DEPLOYER_ADDRESS,
+        [String(forkingChainId)]: PROD_DEPLOYER_ADDRESS,
       },
     },
     external: {
       deployments: {
-        localhost: ["deployments/mainnet"],
+        localhost: [externalDeploymentsFolder],
       },
     },
   }
-}
-
-function throwAPIKeyNotFoundError(): string {
-  throw Error("ALCHEMY_API_KEY environment variable is not set")
-  return ""
 }
 
 // Override the default deploy task
