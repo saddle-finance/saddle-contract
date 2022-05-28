@@ -53,15 +53,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       abi: (await get("SwapFlashLoan")).abi,
       address: D4SwapAddress,
     })
+
+    const lpTokenAddress = (await read("SaddleD4Pool", "swapStorage")).lpToken
+    log(`D4 pool LP Token at ${lpTokenAddress}`)
+
+    await save("SaddleD4PoolLPToken", {
+      abi: (await get("TBTC")).abi, // Generic ERC20 ABI
+      address: lpTokenAddress,
+    })
   }
-
-  const lpTokenAddress = (await read("SaddleD4Pool", "swapStorage")).lpToken
-  log(`D4 pool LP Token at ${lpTokenAddress}`)
-
-  await save("SaddleD4PoolLPToken", {
-    abi: (await get("TBTC")).abi, // Generic ERC20 ABI
-    address: lpTokenAddress,
-  })
 }
 export default func
 func.tags = ["D4Pool"]
