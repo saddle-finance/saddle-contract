@@ -1,4 +1,4 @@
-export const CHAIN_ID = {
+export const CHAIN_ID: Record<string, string> = {
   MAINNET: "1",
   ROPSTEN: "3",
   KOVAN: "42",
@@ -11,7 +11,7 @@ export const CHAIN_ID = {
   FANTOM_TESTNET: "4002",
   EVMOS_TESTNET: "9000",
   EVMOS_MAINNET: "9001",
-  KAVA_TESTNET: "2221"
+  KAVA_TESTNET: "2221",
 }
 
 export function isMainnet(networkId: string): boolean {
