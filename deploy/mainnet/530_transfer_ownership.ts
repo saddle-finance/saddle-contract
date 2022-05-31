@@ -26,14 +26,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // check GaugeController admin
   if ((await read("GaugeController", "admin")) === deployer) {
     await execute(
-      "VotingEscrow",
+      "GaugeController",
       { from: deployer, log: true },
       "commit_transfer_ownership",
       MULTISIG_ADDRESSES[await getChainId()], // ownership admin
     )
 
     await execute(
-      "VotingEscrow",
+      "GaugeController",
       { from: deployer, log: true },
       "apply_transfer_ownership",
     )
