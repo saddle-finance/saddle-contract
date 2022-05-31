@@ -6,7 +6,7 @@ import { BIG_NUMBER_1E18 } from "../../test/testUtils"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const { deployer, multisig } = await getNamedAccounts()
 
   // read n_gauge_types
   const n_gauge_types = await read("GaugeController", "n_gauge_types")
@@ -14,7 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // add a new gauge type
     await execute(
       "GaugeController",
-      { from: deployer, log: true },
+      { from: multisig, log: true },
       "add_type(string,uint256)",
       "Gauge",
       BIG_NUMBER_1E18,
@@ -51,7 +51,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       await execute(
         "GaugeController",
-        { from: deployer },
+        { from: multisig },
         "add_gauge(address,int128)",
         result.address,
         0,

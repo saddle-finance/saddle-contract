@@ -13,7 +13,7 @@ import { HardhatUserConfig, task } from "hardhat/config"
 import dotenv from "dotenv"
 import { ethers } from "ethers"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "./utils/network"
-import { PROD_DEPLOYER_ADDRESS } from "./utils/accounts"
+import { MULTISIG_ADDRESSES, PROD_DEPLOYER_ADDRESS } from "./utils/accounts"
 import { Deployment } from "hardhat-deploy/dist/types"
 import { HttpNetworkUserConfig } from "hardhat/types"
 
@@ -200,6 +200,13 @@ let config: HardhatUserConfig = {
       2221: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
     },
+    multisig: {
+      default: 0,
+      1: MULTISIG_ADDRESSES[1],
+      42161: MULTISIG_ADDRESSES[42161],
+      10: MULTISIG_ADDRESSES[10],
+      250: MULTISIG_ADDRESSES[250],
+    },
   },
   spdxLicenseIdentifier: {
     overwrite: false,
@@ -283,6 +290,9 @@ if (process.env.FORK_NETWORK && config.networks) {
       ...config.namedAccounts,
       deployer: {
         [String(forkingChainId)]: PROD_DEPLOYER_ADDRESS,
+      },
+      multisig: {
+        [String(forkingChainId)]: MULTISIG_ADDRESSES[forkingChainId.toString()],
       },
     },
     external: {
