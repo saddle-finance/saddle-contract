@@ -57,16 +57,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       abi: (await get("SaddleSUSDMetaPool")).abi,
       address: btcSwapAddress,
     })
+
+    const lpTokenAddress = (await read("SaddleTBTCMetaPool", "swapStorage"))
+      .lpToken
+    log(`Saddle tBTC v2 MetaSwap LP Token at ${lpTokenAddress}`)
+
+    await save("SaddleTBTCMetaPoolLPToken", {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
   }
-
-  const lpTokenAddress = (await read("SaddleTBTCMetaPool", "swapStorage"))
-    .lpToken
-  log(`Saddle tBTC v2 MetaSwap LP Token at ${lpTokenAddress}`)
-
-  await save("SaddleTBTCMetaPoolLPToken", {
-    abi: (await get("LPToken")).abi, // LPToken ABI
-    address: lpTokenAddress,
-  })
 }
 export default func
 func.tags = ["TBTCMetaPool"]

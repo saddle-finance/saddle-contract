@@ -41,4 +41,6 @@ Temporary Items
 .env
 deployments/localhost/
 deployments/optimistic/
+
+# VS Code
 .vscode/

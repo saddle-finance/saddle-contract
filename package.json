@@ -72,7 +72,8 @@
     "coverage": "hardhat coverage --temp ./build/artifacts",
     "deploy": "hardhat deploy",
     "start": "hardhat node",
-    "fork": "dotenv -v FORK_MAINNET=true hardhat node --fork \"https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}\"",
+    "fork:mainnet": "dotenv -v FORK_NETWORK=mainnet hardhat node",
+    "fork:evmos_mainnet": "dotenv -v FORK_NETWORK=evmos_mainnet hardhat node",
     "prepare": "npm run build",
     "addresses": "node scripts/print-addresses.js"
   },

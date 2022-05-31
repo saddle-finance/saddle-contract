@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { OPTIMISM_MULTISIG_ADDRESS } from "../../utils/accounts"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
+import { getChainId } from "hardhat"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
@@ -64,18 +65,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "SaddleOptFRAXMetaPool",
       { from: deployer, log: true },
       "transferOwnership",
-      OPTIMISM_MULTISIG_ADDRESS,
+      MULTISIG_ADDRESSES[await getChainId()],
     )
+
+    const lpTokenAddress = (await read("SaddleOptFRAXMetaPool", "swapStorage"))
+      .lpToken
+    log(`Saddle FRAX MetaSwap LP Token at ${lpTokenAddress}`)
+
+    await save("SaddleOptFRAXMetaPoolLPToken", {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
   }
-
-  const lpTokenAddress = (await read("SaddleOptFRAXMetaPool", "swapStorage"))
-    .lpToken
-  log(`Saddle FRAX MetaSwap LP Token at ${lpTokenAddress}`)
-
-  await save("SaddleOptFRAXMetaPoolLPToken", {
-    abi: (await get("LPToken")).abi, // LPToken ABI
-    address: lpTokenAddress,
-  })
 }
 export default func
 func.tags = ["SaddleOptFRAXMetaPool"]
