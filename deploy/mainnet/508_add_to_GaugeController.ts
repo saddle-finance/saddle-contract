@@ -54,7 +54,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       await execute(
         "GaugeController",
-        { from: deployer },
+        { from: deployer, log: true },
         "add_gauge(address,int128)",
         result.address,
         initialWeight,

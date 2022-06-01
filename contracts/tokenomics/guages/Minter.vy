@@ -45,11 +45,10 @@ event ApplyOwnership:
 WEEK: constant(uint256) = 86400 * 7
 
 # 250K SDL / WEEK
-INITIAL_RATE: constant(uint256) = 250_000 * 10 ** 18 / WEEK
+INITIAL_RATE: constant(uint256) = 2_500_000 * 10 ** 18 / WEEK
 # Weekly
 MAX_ABS_RATE: constant(uint256) = 10_000_000 * 10 ** 18
 RATE_REDUCTION_TIME: constant(uint256) = WEEK * 2
-INFLATION_DELAY: constant(uint256) = 86400
 
 mining_epoch: public(int128)
 start_epoch_time: public(uint256)
@@ -78,7 +77,7 @@ def __init__(_token: address, _controller: address, _emergency_return: address, 
     self.emergency_return = _emergency_return
     self.admin = _admin
 
-    self.start_epoch_time = block.timestamp + INFLATION_DELAY - RATE_REDUCTION_TIME
+    self.start_epoch_time = block.timestamp - RATE_REDUCTION_TIME
     self.mining_epoch = -1
     self.is_start = True
     self.committed_rate = MAX_UINT256
