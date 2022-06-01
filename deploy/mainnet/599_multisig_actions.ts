@@ -21,7 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // Time related constants
   const DAY = 86400
-  const WEEK = 86400 * 7
+  const WEEK = DAY * 7
   const YEAR = WEEK * 52
 
   // Multisig account is the account that will be used as ownership admin in vesdl contracts.
@@ -40,6 +40,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     MINICHEFV2_CONTRACT_NAME,
   )) as MiniChefV2
 
+  // First, skip this file if
+  // 1. we are not forking mainnet
+  // 2. if all contracts are intialized already
+  if (process.env.FORK_NETWORK !== "mainnet") {
+    log(`Not running on forked mainnet, skipping...`)
+    return
+  }
+  if (!(await sdl.paused())) {
+    log(
+      `SDL contract is already unpaused. Assuming veSDL related contracts are all initialized and skipping...`,
+    )
+    return
+  }
+
   /************************ SEQ 1 ************************/
   // SEQ 1 on-chain actions are done by the deploy scripts
 
@@ -53,13 +67,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   /************************ SEQ 2 ************************/
   // Below calls should be called by the multisig account with apesafe
-
-  if (!(await sdl.paused())) {
-    log(
-      `SDL contract is already paused. Assuming veSDL related contracts are all initialized.`,
-    )
-    return
-  }
 
   /* SEQ 20000 */
   // Enable transfer
@@ -87,8 +94,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   /* SEQ 21200 */
   // Bridge & send SDL to MiniChef on other chains
   // TODO: Calculate how much to send to minichef
-  // TODO: Send tokens to other chains
   await sdl.connect(multisigSigner).transfer(minichef.address, 0)
+  // TODO: Send tokens to other chains
   console.log(`SEQ 21200: Sent SDL to MiniChef on mainnet`)
 
   /* SEQ 21300 */
@@ -134,5 +141,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 
 // Only run this in hardhat
-func.skip = async (env) => env.network.name !== "hardhat"
 export default func
