@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (await get("VotingEscrow")).address,
       (await get("VeSDLRewards")).address,
       await getCurrentBlockTimestamp(), // TODO: use prod timestamp
-      (await get("SaddleD4PoolLPToken")).address,
+      (await get("SushiSwapPairSDLFRAX")).address,
       deployer, // admin that can trigger clawback and kill the contract
       MULTISIG_ADDRESSES[await getChainId()], // emergency admin that receieves all of the fee tokens
     ],
