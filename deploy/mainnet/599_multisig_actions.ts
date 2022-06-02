@@ -8,6 +8,7 @@ import {
   setEtherBalance,
 } from "../../test/testUtils"
 import { GaugeController, MiniChefV2, Minter, SDL } from "../../build/typechain"
+import { timestampToUTCString } from "../../utils/time"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
@@ -71,7 +72,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   /* SEQ 20000 */
   // Enable transfer
   await sdl.connect(multisigSigner).enableTransfer()
-  console.log(`SEQ 20000: SDL is now unpaused`)
+  log(`SEQ 20000: SDL is now unpaused`)
 
   /* SEQ 21100 */
   // Pause MiniChef rewards on mainnet
@@ -89,14 +90,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ]
   const batchCallData = batchCall.map((x) => x.data).filter(Boolean) as string[]
   await minichef.connect(multisigSigner).batch(batchCallData, true)
-  console.log(`SEQ 21100: MiniChef rewards are paused on mainnet`)
+  log(`SEQ 21100: MiniChef rewards are paused on mainnet`)
 
   /* SEQ 21200 */
   // Bridge & send SDL to MiniChef on other chains
   // TODO: Calculate how much to send to minichef
   await sdl.connect(multisigSigner).transfer(minichef.address, 0)
   // TODO: Send tokens to other chains
-  console.log(`SEQ 21200: Sent SDL to MiniChef on mainnet`)
+  log(`SEQ 21200: Sent SDL to MiniChef on mainnet`)
 
   /* SEQ 21300 */
   // Send SDL to Minter contract
@@ -104,7 +105,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await sdl
     .connect(multisigSigner)
     .transfer(minter.address, BIG_NUMBER_1E18.mul(10_000_000))
-  console.log(`SEQ 21300: Sent SDL to Minter on mainnet`)
+  log(`SEQ 21300: Sent SDL to Minter on mainnet`)
 
   /* SEQ 21400 */
   // Initialize Minter rate and kick off the minter epoch
@@ -116,14 +117,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (rewardRate.eq(0)) {
     await minter.connect(multisigSigner).update_mining_parameters()
   }
-  console.log(`SEQ 21400: Initialized minter and kicked off reward rate epoch.`)
+  log(`SEQ 21400: Initialized minter and kicked off reward rate epoch.`)
 
   rewardRate = await minter.rate()
   const formattedWeeklyRate = ethers.utils.formatUnits(
     rewardRate.mul(WEEK).toString(),
     18,
   )
-  console.log(`Weekly SDL distribution rate via Minter: ${formattedWeeklyRate}`)
+  log(`Weekly SDL distribution rate via Minter: ${formattedWeeklyRate}`)
 
   // Call checkpoint in case we need to manually advance the epoch
   await gaugeController.checkpoint()
@@ -131,13 +132,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Future epoch's timestamp.
   const gaugeStartTime = await gaugeController.time_total()
   const minterStartTime = await minter.start_epoch_time()
-  console.log(
-    `GaugeController: The intial weights will kick in @ ${gaugeStartTime}`,
+  log(
+    `GaugeController: The intial weights will kick in @ ${gaugeStartTime} (${timestampToUTCString(gaugeStartTime)})`,
   )
-  console.log(
-    `Minter: rate epoch started at @ ${minterStartTime}. New rates can be applied every 2 weeks from the start timestamp.`,
+  log(
+    `Minter: rate epoch started at @ ${minterStartTime} (${timestampToUTCString(minterStartTime)}). New rates can be applied every 2 weeks from the start timestamp.`,
   )
-  console.log(`All SEQ 2 multisig actions completed! \n`)
+  log(`All SEQ 2 multisig actions completed! \n`)
 }
 
 // Only run this in hardhat
