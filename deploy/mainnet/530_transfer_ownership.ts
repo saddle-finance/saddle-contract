@@ -7,18 +7,33 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get, getOrNull, execute, read, log } = deployments
   const { deployer } = await getNamedAccounts()
 
-  // read the current admin
-  const admin = await read("VotingEscrow", "admin")
-  if (admin === deployer) {
+  // check VotingEscrow admin
+  if ((await read("VotingEscrow", "admin")) === deployer) {
     await execute(
       "VotingEscrow",
-      { from: deployer, log: true, waitConfirmations: 10 },
+      { from: deployer, log: true },
       "commit_transfer_ownership",
       MULTISIG_ADDRESSES[await getChainId()], // ownership admin
     )
 
     await execute(
       "VotingEscrow",
+      { from: deployer, log: true },
+      "apply_transfer_ownership",
+    )
+  }
+
+  // check GaugeController admin
+  if ((await read("GaugeController", "admin")) === deployer) {
+    await execute(
+      "GaugeController",
+      { from: deployer, log: true },
+      "commit_transfer_ownership",
+      MULTISIG_ADDRESSES[await getChainId()], // ownership admin
+    )
+
+    await execute(
+      "GaugeController",
       { from: deployer, log: true },
       "apply_transfer_ownership",
     )
