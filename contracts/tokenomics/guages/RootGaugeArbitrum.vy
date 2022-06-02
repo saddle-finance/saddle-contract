@@ -158,8 +158,10 @@ def checkpoint() -> bool:
                 # using commited_rate. Because we are generating the emissions for the upcoming week, 
                 # so there is a possibility the new rate has not yet been applied.
                 period_emission = gauge_weight * rate * (next_epoch_time - period_time) / 10**18
-                rate = Minter(MINTER).committed_rate()
-                assert rate != MAX_UINT256, "Minter rate is not committed"
+                # If no new rate is commited to Minter contract, use the current rate
+                new_rate: uint256 = Minter(MINTER).committed_rate()
+                if (new_rate == MAX_UINT256):
+                    new_rate = rate
                 period_emission += gauge_weight * rate * (period_time + WEEK - next_epoch_time) / 10**18
 
                 self.start_epoch_time = next_epoch_time
