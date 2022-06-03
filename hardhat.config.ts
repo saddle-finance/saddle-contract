@@ -231,7 +231,15 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
 
 if (process.env.FORK_NETWORK && config.networks) {
   const forkNetworkName = process.env.FORK_NETWORK as string
+  const blockNumber = process.env.FORK_BLOCK_NUMBER
+    ? parseInt(process.env.FORK_BLOCK_NUMBER)
+    : undefined
   console.log(`FORK_NETWORK is set to ${forkNetworkName}`)
+  console.log(
+    `FORK_BLOCK_NUMBER is set to ${
+      blockNumber ? blockNumber : "undefined (using latest block number)"
+    }`,
+  )
 
   if (!config.networks[forkNetworkName]) {
     throw new Error(
@@ -266,6 +274,7 @@ if (process.env.FORK_NETWORK && config.networks) {
         ...config.networks.hardhat,
         forking: {
           url: forkingURL,
+          blockNumber: blockNumber,
         },
         chainId: forkingChainId,
         deploy: deployPaths,
