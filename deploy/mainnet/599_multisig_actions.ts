@@ -133,10 +133,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const gaugeStartTime = await gaugeController.time_total()
   const minterStartTime = await minter.start_epoch_time()
   log(
-    `GaugeController: The intial weights will kick in @ ${gaugeStartTime} (${timestampToUTCString(gaugeStartTime)})`,
+    `GaugeController: The intial weights will kick in @ ${gaugeStartTime} (${timestampToUTCString(
+      gaugeStartTime,
+    )})`,
   )
   log(
-    `Minter: rate epoch started at @ ${minterStartTime} (${timestampToUTCString(minterStartTime)}). New rates can be applied every 2 weeks from the start timestamp.`,
+    `Minter: rate epoch started at @ ${minterStartTime} (${timestampToUTCString(
+      minterStartTime,
+    )}). New rates can be applied every 2 weeks from the start timestamp.`,
   )
   log(`All SEQ 2 multisig actions completed! \n`)
 }
