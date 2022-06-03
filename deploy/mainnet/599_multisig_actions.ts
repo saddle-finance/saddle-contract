@@ -19,6 +19,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const MINTER_CONTRACT_NAME = "Minter"
   const GAUGECONTROLLER_CONTRACT_NAME = "GaugeController"
   const MINICHEFV2_CONTRACT_NAME = "MiniChefV2"
+  const ARBL1GATEWAYROUTER_CONTRACT_NAME = "ArbL1GatewayRouter"
+  const EVMOSNOMADERC20BRIDGE_CONTRACT_NAME = "EvmosNomadERC20Bridge"
+  const OPTIMISMGATEWAY_CONTRACT_NAME = "OptimismGateway"
 
   // Time related constants
   const DAY = 86400
@@ -40,6 +43,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const minichef = (await ethers.getContract(
     MINICHEFV2_CONTRACT_NAME,
   )) as MiniChefV2
+
+  const arbL1GatewaytRouterContract = (await ethers.getContract(ARBL1GATEWAYROUTER_CONTRACT_NAME))
+  const evmosNomadErc20BridgeContract = (await ethers.getContract(EVMOSNOMADERC20BRIDGE_CONTRACT_NAME))
+  const optimismGatewayContract = (await ethers.getContract(OPTIMISMGATEWAY_CONTRACT_NAME))
+
 
   // First, skip this file if
   // 1. we are not forking mainnet
@@ -95,9 +103,32 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   /* SEQ 21200 */
   // Bridge & send SDL to MiniChef on other chains
   // TODO: Calculate how much to send to minichef
+  const amountToSend = 1e9
   await sdl.connect(multisigSigner).transfer(minichef.address, 0)
-  // TODO: Send tokens to other chains
   log(`SEQ 21200: Sent SDL to MiniChef on mainnet`)
+
+  // outboundTransfer(address _token, address _to, uint256 _amount, uint256 _maxGas, uint256 _gasPriceBid, bytes _data)
+  // arbitrum
+  await sdl.connect(multisigSigner).approve(arbL1GatewaytRouterContract.address, amountToSend)
+  // await arbl1GatewaytRouterContract.connect(multisigSigner).outboundTransfer(sdl.address, multisig,
+  //   amountToSend, 1000000, 990000000, "0x", { value: 1e15 })
+
+  // evmos
+  // send(address _token, uint256 _amount, uint32 _destination, bytes32 _recipient, bool _enableFast)
+  // evmos destination is 1702260083
+  await sdl.connect(multisigSigner).approve(evmosNomadErc20BridgeContract.address, amountToSend)
+  // todo: fix bytes32 _recipient (not sure what to put here as the address of multisig is too long)
+  // await evmosNomadErc20BridgeContract.connect(multisigSigner).send(sdl.address, amountToSend,
+  //   1702260083, ethers.utils.formatBytes32String(multisig), false)
+
+  // optimism
+  // function depositERC20To( address _l1Token, address _l2Token, address to, uint256 _amount, uint32 _l2Gas, bytes calldata _data )
+  // sdl address on L2: 0xae31207ac34423c41576ff59bfb4e036150f9cf7
+  const sdlAddressOnOP = '0xae31207ac34423c41576ff59bfb4e036150f9cf7'
+  await sdl.connect(multisigSigner).approve(optimismGatewayContract.address, amountToSend)
+  await optimismGatewayContract.connect(multisigSigner).depositERC20To(sdl.address, sdlAddressOnOP, multisig,
+    amountToSend, 200000, "0x")
+
 
   /* SEQ 21300 */
   // Send SDL to Minter contract
