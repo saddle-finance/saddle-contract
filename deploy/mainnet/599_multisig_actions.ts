@@ -9,6 +9,7 @@ import {
 } from "../../test/testUtils"
 import { GaugeController, MiniChefV2, Minter, SDL } from "../../build/typechain"
 import { timestampToUTCString } from "../../utils/time"
+import { BigNumber } from "ethers"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
@@ -22,6 +23,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const ARBL1GATEWAYROUTER_CONTRACT_NAME = "ArbL1GatewayRouter"
   const EVMOSNOMADERC20BRIDGE_CONTRACT_NAME = "EvmosNomadERC20Bridge"
   const OPTIMISMGATEWAY_CONTRACT_NAME = "OptimismGateway"
+
+  // L2 Addresses
+  const ARB_MINICHEF_ADDRESS = "0x2069043d7556B1207a505eb459D18d908DF29b55"
+  const EVMOS_MINICHEF_ADDRESS = "0x0232e0b6df048c8CC4037c52Bc90cf943c9C8cC6"
+
+  const NOMAD_EVMOS_MAINNET_DESTINATION_CODE = "1702260083"
 
   // Time related constants
   const DAY = 86400
@@ -44,10 +51,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     MINICHEFV2_CONTRACT_NAME,
   )) as MiniChefV2
 
-  const arbL1GatewaytRouterContract = (await ethers.getContract(ARBL1GATEWAYROUTER_CONTRACT_NAME))
-  const evmosNomadErc20BridgeContract = (await ethers.getContract(EVMOSNOMADERC20BRIDGE_CONTRACT_NAME))
-  const optimismGatewayContract = (await ethers.getContract(OPTIMISMGATEWAY_CONTRACT_NAME))
-
+  const arbL1GatewaytRouterContract = await ethers.getContract(
+    ARBL1GATEWAYROUTER_CONTRACT_NAME,
+  )
+  const evmosNomadErc20BridgeContract = await ethers.getContract(
+    EVMOSNOMADERC20BRIDGE_CONTRACT_NAME,
+  )
+  const optimismGatewayContract = await ethers.getContract(
+    OPTIMISMGATEWAY_CONTRACT_NAME,
+  )
 
   // First, skip this file if
   // 1. we are not forking mainnet
@@ -102,33 +114,80 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   /* SEQ 21200 */
   // Bridge & send SDL to MiniChef on other chains
-  // TODO: Calculate how much to send to minichef
-  const amountToSend = 1e9
-  await sdl.connect(multisigSigner).transfer(minichef.address, 0)
+  // TODO: Calculate how much to send to mainnet minichef
+  const amountToSendMainnetMinichef = BIG_NUMBER_1E18
+  await sdl
+    .connect(multisigSigner)
+    .transfer(minichef.address, amountToSendMainnetMinichef)
   log(`SEQ 21200: Sent SDL to MiniChef on mainnet`)
 
   // outboundTransfer(address _token, address _to, uint256 _amount, uint256 _maxGas, uint256 _gasPriceBid, bytes _data)
   // arbitrum
-  await sdl.connect(multisigSigner).approve(arbL1GatewaytRouterContract.address, amountToSend)
-  // await arbL1GatewaytRouterContract.connect(multisigSigner).outboundTransfer(sdl.address, multisig,
-  //   amountToSend, 1000000, 990000000, "0x", { value: 1e15 })
+  // TODO: Calculate how much to send to Arbitrum minichef
+  const amountToSendArbitrumMinichef = BIG_NUMBER_1E18
+  const gasLimitL2 = BigNumber.from(1000000)
+  const gasPriceL2 = BigNumber.from(990000000)
+  const maxSubmisstionCostL2 = BigNumber.from(10000000000000)
+  const sdlGatewayAddress = await arbL1GatewaytRouterContract
+    .connect(multisigSigner)
+    .getGateway(sdl.address)
+  await sdl
+    .connect(multisigSigner)
+    .approve(sdlGatewayAddress, amountToSendArbitrumMinichef)
+  await arbL1GatewaytRouterContract
+    .connect(multisigSigner)
+    .outboundTransfer(
+      sdl.address,
+      ARB_MINICHEF_ADDRESS,
+      amountToSendArbitrumMinichef,
+      gasLimitL2,
+      gasPriceL2,
+      ethers.utils.defaultAbiCoder.encode(
+        ["uint256", "bytes"],
+        [maxSubmisstionCostL2, []],
+      ),
+      { value: 1e15 },
+    )
+  log(`Successfully initiated bridging SDL to Arbitrum's Minichef`)
 
   // evmos
   // send(address _token, uint256 _amount, uint32 _destination, bytes32 _recipient, bool _enableFast)
   // evmos destination is 1702260083
-  await sdl.connect(multisigSigner).approve(evmosNomadErc20BridgeContract.address, amountToSend)
-  // todo: fix bytes32 _recipient (not sure what to put here as the address of multisig is too long)
-  // await evmosNomadErc20BridgeContract.connect(multisigSigner).send(sdl.address, amountToSend,
-  //   1702260083, ethers.utils.formatBytes32String(multisig), false)
+  // TODO: Calculate how much to send to Evmos minichef
+  const amountToSendEvmosMinichef = BIG_NUMBER_1E18
+  await sdl
+    .connect(multisigSigner)
+    .approve(evmosNomadErc20BridgeContract.address, amountToSendEvmosMinichef)
+  await evmosNomadErc20BridgeContract
+    .connect(multisigSigner)
+    .send(
+      sdl.address,
+      amountToSendEvmosMinichef,
+      NOMAD_EVMOS_MAINNET_DESTINATION_CODE,
+      ethers.utils.hexZeroPad(EVMOS_MINICHEF_ADDRESS, 32),
+      false,
+    )
+  log(`Successfully initiated bridging SDL to Evmos's Minichef`)
 
-  // optimism
+  // Note: Since there are no minichef on Optimism network, we dont need to bridge any SDL
+  // If we were to bridge, it would look similar to this.
+  // Optimism Router
   // function depositERC20To( address _l1Token, address _l2Token, address to, uint256 _amount, uint32 _l2Gas, bytes calldata _data )
-  // sdl address on L2: 0xae31207ac34423c41576ff59bfb4e036150f9cf7
-  const sdlAddressOnOP = '0xae31207ac34423c41576ff59bfb4e036150f9cf7'
-  await sdl.connect(multisigSigner).approve(optimismGatewayContract.address, amountToSend)
-  await optimismGatewayContract.connect(multisigSigner).depositERC20To(sdl.address, sdlAddressOnOP, multisig,
-    amountToSend, 200000, "0x")
-
+  // const sdlAddressOnOP = "0xae31207ac34423c41576ff59bfb4e036150f9cf7"
+  // await sdl
+  //   .connect(multisigSigner)
+  //   .approve(optimismGatewayContract.address, amountToSend)
+  // await optimismGatewayContract
+  //   .connect(multisigSigner)
+  //   .depositERC20To(
+  //     sdl.address,
+  //     OP_SDL_ADDRESS,
+  //     OP_MINICHEF_ADDRESS,
+  //     amountToSend,
+  //     200000,
+  //     "0x",
+  //   )
+  // log(`Initiated bridging SDL to Optimism`)
 
   /* SEQ 21300 */
   // Send SDL to Minter contract
@@ -164,10 +223,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const gaugeStartTime = await gaugeController.time_total()
   const minterStartTime = await minter.start_epoch_time()
   log(
-    `GaugeController: The intial weights will kick in @ ${gaugeStartTime} (${timestampToUTCString(gaugeStartTime)})`,
+    `GaugeController: The intial weights will kick in @ ${gaugeStartTime} (${timestampToUTCString(
+      gaugeStartTime,
+    )})`,
   )
   log(
-    `Minter: rate epoch started at @ ${minterStartTime} (${timestampToUTCString(minterStartTime)}). New rates can be applied every 2 weeks from the start timestamp.`,
+    `Minter: rate epoch started at @ ${minterStartTime} (${timestampToUTCString(
+      minterStartTime,
+    )}). New rates can be applied every 2 weeks from the start timestamp.`,
   )
   log(`All SEQ 2 multisig actions completed! \n`)
 }
