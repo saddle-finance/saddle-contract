@@ -15,6 +15,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
 
+  // If we are not on forked mainnet, skip this file
+  if (process.env.FORK_NETWORK !== "mainnet") {
+    log(`Not running on forked mainnet, skipping...`)
+    return
+  }
+
   // Contract name constants
   const SDL_CONTRACT_NAME = "SDL"
   const MINTER_CONTRACT_NAME = "Minter"
@@ -61,13 +67,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     OPTIMISMGATEWAY_CONTRACT_NAME,
   )
 
-  // First, skip this file if
-  // 1. we are not forking mainnet
-  // 2. if all contracts are intialized already
-  if (process.env.FORK_NETWORK !== "mainnet") {
-    log(`Not running on forked mainnet, skipping...`)
-    return
-  }
+  // If SDL is already unpaused, skip this file
   if (!(await sdl.paused())) {
     log(
       `SDL contract is already unpaused. Assuming veSDL related contracts are all initialized and skipping...`,
