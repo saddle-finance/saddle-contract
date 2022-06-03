@@ -53,6 +53,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     process.env.FORK_NETWORK &&
     process.env.FUND_FORK_NETWORK
   ) {
+    // Give the deployer tokens from each token holder for testing
     for (const [tokenName, holders] of Object.entries(tokenToAccountsMap)) {
       const contract = (await ethers.getContract(tokenName)) as GenericERC20
 
@@ -70,6 +71,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
       })
     }
+    // Give the deployer some ether to use for testing
+    await setEtherBalance(deployer, 1e20)
   } else {
     log(`skipping ${path.basename(__filename)}`)
   }
