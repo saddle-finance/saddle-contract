@@ -110,7 +110,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // outboundTransfer(address _token, address _to, uint256 _amount, uint256 _maxGas, uint256 _gasPriceBid, bytes _data)
   // arbitrum
   await sdl.connect(multisigSigner).approve(arbL1GatewaytRouterContract.address, amountToSend)
-  // await arbl1GatewaytRouterContract.connect(multisigSigner).outboundTransfer(sdl.address, multisig,
+  // await arbL1GatewaytRouterContract.connect(multisigSigner).outboundTransfer(sdl.address, multisig,
   //   amountToSend, 1000000, 990000000, "0x", { value: 1e15 })
 
   // evmos
