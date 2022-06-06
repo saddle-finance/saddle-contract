@@ -202,8 +202,8 @@ def checkpoint() -> bool:
             # Instead of sending tokens to bridge, send tokens directly to 
             # ChildChainStreamer. In prod, this call is replaced by a 
             # raw_call() to the chain-specific bridge contract.
-            assert child_chain_streamer != ZERO_ADDRESS # dev: needs to be set with setter
-            ERC20(sdl_token).transfer(child_chain_streamer, new_emissions)
+            assert self.child_chain_streamer != ZERO_ADDRESS # dev: needs to be set with setter
+            ERC20(sdl_token).transfer(self.child_chain_streamer, new_emissions)
 
     return True
 
