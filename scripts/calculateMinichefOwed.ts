@@ -1,14 +1,15 @@
 import { ethers, deployments, network } from "hardhat"
 import { BigNumber } from "ethers"
 import fetch from "node-fetch"
+import { MiniChefV2, SDL } from "../build/typechain"
 
 interface TimeToRateMap {
   [timestamp: number]: BigNumber
 }
 
 async function main() {
-  const latestBlockTimestamp = (await ethers.provider.getBlock("latest"))
-    .timestamp
+  const latestBlock = await ethers.provider.getBlock("latest")
+  const latestBlockTimestamp = latestBlock.timestamp
 
   const etherscanAPIUrl = network.verify?.etherscan?.apiUrl
   const etherscanAPIKey = network.verify?.etherscan?.apiKey
@@ -18,7 +19,7 @@ async function main() {
     )
   }
 
-  const minichef = await ethers.getContract("MiniChefV2")
+  const minichef = (await ethers.getContract("MiniChefV2")) as MiniChefV2
   const creationTxHash = (await deployments.get("MiniChefV2"))
     .transactionHash as string
   const creationBlockNumber = (
@@ -28,9 +29,24 @@ async function main() {
     await ethers.provider.getBlock(creationBlockNumber)
   ).timestamp
 
+  // Check current Saddle per second rate
+  const currentSaddleRate = await minichef.saddlePerSecond()
+  if (currentSaddleRate.gt(0)) {
+    console.warn(
+      "\x1b[33m%s\x1b[0m",
+      `Saddle per second is not 0. It is ${currentSaddleRate}`,
+    )
+    console.warn(
+      "\x1b[33m%s\x1b[0m",
+      `For the purposes of the calculation, this script will assume it is changed to 0 at current block (${latestBlock.number})`,
+    )
+  }
+
+  // Create event filter
   const eventFilter = minichef.filters.LogSaddlePerSecond()
   const topic0 = eventFilter.topics ? eventFilter.topics[0] : undefined
 
+  // Use etherscan API to get all events matching the filter
   const etherscanQueryURL = `${etherscanAPIUrl}/api?module=logs&action=getLogs&fromBlock=${creationBlockNumber}&toBlock=latest&address=${minichef.address}&topic0=${topic0}&apikey=${etherscanAPIKey}`
   const response = await fetch(etherscanQueryURL)
   if (!response.ok) throw new Error("calculateMinichefOwed: Bad response")
@@ -40,7 +56,7 @@ async function main() {
   }
 
   const allEvents: any[] = json.result
-  console.log(`Queried ${allEvents.length} events`)
+  console.log(`Queried ${allEvents.length} LogSaddlePerSecond events`)
 
   // Calculate the time to rate map
   const timeToRateMap: TimeToRateMap = {}
@@ -53,7 +69,7 @@ async function main() {
   timeToRateMap[latestBlockTimestamp] = BigNumber.from(0)
 
   // Calculate cumulative saddle by multiplying the time delta by the rate
-  let cumulativeSaddle = BigNumber.from(0)
+  let cumulativeSaddleRequired = BigNumber.from(0)
   let lastTimestamp = creationBlockTimestamp
   let prevRate = BigNumber.from(0)
   for (const key in timeToRateMap) {
@@ -62,15 +78,75 @@ async function main() {
     console.log(`rate was changed from ${prevRate} to ${rate} @ ${now}`)
     const timeDelta = now - lastTimestamp
     const saddleDelta = prevRate.mul(timeDelta)
-    cumulativeSaddle = cumulativeSaddle.add(saddleDelta)
+    cumulativeSaddleRequired = cumulativeSaddleRequired.add(saddleDelta)
     lastTimestamp = now
     prevRate = rate
   }
 
+  // Get SDL contract on this chain
+  const sdl = (await ethers.getContract("SDL")) as SDL
+
+  // Get transfer event filter
+  const transferEventFilter = sdl.filters.Transfer(undefined, minichef.address)
+  const transferTopic0 = transferEventFilter.topics
+    ? transferEventFilter.topics[0]
+    : undefined
+  const transferTopic2 = transferEventFilter.topics
+    ? transferEventFilter.topics[2]
+    : undefined
+
+  // Use etherscan API to get all events matching the filter
+  const etherscanSDLTransferQueryURL = `${etherscanAPIUrl}/api?module=logs&action=getLogs&fromBlock=${creationBlockNumber}&toBlock=latest&address=${sdl.address}&topic0=${transferTopic0}&topic2=${transferTopic2}&topic0_2_opr=and&apikey=${etherscanAPIKey}`
+  const sdlTransferResponse = await fetch(etherscanSDLTransferQueryURL)
+  if (!sdlTransferResponse.ok)
+    throw new Error("calculateMinichefOwed: Bad response")
+  const sdlTransferJson = await sdlTransferResponse.json()
+  if (sdlTransferJson.status !== "1") {
+    if (sdlTransferJson.status === "0" && sdlTransferJson.result.length === 0) {
+      console.warn(
+        "\x1b[33m%s\x1b[0m",
+        `No event logs were found for ${sdl.address}`,
+      )
+    } else throw new Error(`calculateMinichefOwed: ${sdlTransferJson.result}`)
+  }
+
+  const allTransferEvents: any[] = sdlTransferJson.result
   console.log(
-    `Cumulative saddle owed to MiniChef on ${
+    `Queried ${allTransferEvents.length} SDL Transfer events to minichef`,
+  )
+
+  // Calculate cumulative SDL sent to minichef
+  let cumulativeSDLSent = BigNumber.from(0)
+  for (const e of allTransferEvents) {
+    const amount = BigNumber.from(e.data)
+    cumulativeSDLSent = cumulativeSDLSent.add(amount)
+  }
+
+  // Print cumulative SDL required by minichef
+  console.log(
+    `Cumulative SDL required by MiniChef on ${
       network.name
-    } chain : ${ethers.utils.formatUnits(cumulativeSaddle.toString(), 18)}`,
+    } chain : ${ethers.utils.formatUnits(
+      cumulativeSaddleRequired.toString(),
+      18,
+    )}`,
+  )
+
+  // Print cumulative SDL sent to minichef
+  console.log(
+    `Cumulative SDL sent to MiniChef on ${
+      network.name
+    } chain : ${ethers.utils.formatUnits(cumulativeSDLSent.toString(), 18)}`,
+  )
+
+  // Print total SDL owed by minichef
+  const totalSDLOwed = cumulativeSaddleRequired.gte(cumulativeSDLSent)
+    ? cumulativeSaddleRequired.sub(cumulativeSDLSent)
+    : BigNumber.from(0)
+  console.log(
+    `Total SDL owed by MiniChef on ${
+      network.name
+    } chain : ${ethers.utils.formatUnits(totalSDLOwed.toString(), 18)}`,
   )
 }
 
