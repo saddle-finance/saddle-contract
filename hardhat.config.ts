@@ -27,7 +27,7 @@ let config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-      deploy: ["./deploy/mainnet/"],
+      deploy: ["./deploy/hardhat/"],
       autoImpersonate: true,
     },
     mainnet: {
