@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: true,
     contract: "GenericERC20",
-    args: ["DUMMY_LP", "Dummy LP token on child chain", 18],
+    args: ["Dummy LP token on child chain", "DUMMY_LP", 18],
     skipIfAlreadyDeployed: true,
   })
 
