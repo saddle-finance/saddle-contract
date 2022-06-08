@@ -37,6 +37,12 @@ export function isTestNetwork(networkId: string): boolean {
   )
 }
 
+export function isHardhatNetwork(networkId: string): boolean {
+  return (
+    networkId == CHAIN_ID.HARDHAT 
+  )
+}
+
 export const ALCHEMY_BASE_URL = {
   [CHAIN_ID.MAINNET]: "https://eth-mainnet.alchemyapi.io/v2/",
   [CHAIN_ID.ROPSTEN]: "https://eth-ropsten.alchemyapi.io/v2/",
