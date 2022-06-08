@@ -22,25 +22,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   const minterAddress = (await get("Minter")).address
-  const lpTokensAndWeights = [
-    { lpToken: "SaddleALETHPoolLPToken", initialWeight: 0 },
-    { lpToken: "SaddleBTCPoolV2LPToken", initialWeight: 0 },
-    { lpToken: "SaddleD4PoolLPToken", initialWeight: 0 },
-    { lpToken: "SaddleUSDPoolV2LPToken", initialWeight: 0 },
-    { lpToken: "SaddleTBTCMetaPoolV3LPToken", initialWeight: 0 },
-    { lpToken: "SaddleSUSDMetaPoolV3LPToken", initialWeight: 0 },
-    { lpToken: "SaddleWCUSDMetaPoolV3LPToken", initialWeight: 0 },
-    { lpToken: "SaddleFrax3PoolLPToken", initialWeight: 0 },
+  const newGaugeArr = [
+    { lpToken: "SaddleALETHPoolLPToken", gaugeType: 0, initialWeight: 0 },
+    { lpToken: "SaddleBTCPoolV2LPToken", gaugeType: 0, initialWeight: 0 },
+    { lpToken: "SaddleD4PoolLPToken", gaugeType: 0, initialWeight: 0 },
+    { lpToken: "SaddleUSDPoolV2LPToken", gaugeType: 0, initialWeight: 0 },
+    { lpToken: "SaddleTBTCMetaPoolV3LPToken", gaugeType: 0, initialWeight: 0 },
+    { lpToken: "SaddleSUSDMetaPoolV3LPToken", gaugeType: 0, initialWeight: 0 },
+    { lpToken: "SaddleWCUSDMetaPoolV3LPToken", gaugeType: 0, initialWeight: 0 },
+    { lpToken: "SaddleFrax3PoolLPToken", gaugeType: 0, initialWeight: 0 },
   ]
 
-  for (const lpTokenAndWeight of lpTokensAndWeights) {
-    const lpToken = lpTokenAndWeight.lpToken
-    const initialWeight = lpTokenAndWeight.initialWeight
+  for (const newGauge of newGaugeArr) {
+    const lpToken = newGauge.lpToken
     const deploymentName = `LiquidityGaugeV5_${lpToken}`
     const lpTokenAddress = (await get(lpToken)).address
 
     if ((await getOrNull(deploymentName)) == null) {
-      const result = await deploy(deploymentName, {
+      const gaugeDeploymentResult = await deploy(deploymentName, {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
@@ -55,9 +54,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       await execute(
         "GaugeController",
         { from: deployer, log: true },
-        "add_gauge(address,int128)",
-        result.address,
-        initialWeight,
+        "add_gauge(address,int128,uint256)",
+        gaugeDeploymentResult.address,
+        newGauge.gaugeType,
+        newGauge.initialWeight,
       )
     } else {
       log(
