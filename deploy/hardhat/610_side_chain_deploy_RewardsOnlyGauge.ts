@@ -9,7 +9,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get, getOrNull, execute, read, log } = deployments
   const { deployer } = await getNamedAccounts()
 
-   
   const dummyChildChainLPToken = await deploy("DUMMY_CHILD_CHAIN_LP_TOKEN", {
     from: deployer,
     log: true,
@@ -19,14 +18,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   })
 
   await deploy("RewardsOnlyGauge", {
-      from: deployer,
-      log: true,
-      skipIfAlreadyDeployed: true,
-      args: [
-        MULTISIG_ADDRESSES[await getChainId()],
-        dummyChildChainLPToken.address
-      ],
-    })      
+    from: deployer,
+    log: true,
+    skipIfAlreadyDeployed: true,
+    args: [
+      MULTISIG_ADDRESSES[await getChainId()],
+      dummyChildChainLPToken.address,
+    ],
+  })
 }
 
 export default func

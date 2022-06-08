@@ -10,18 +10,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   const REWARDS_ONLY_GAUGE_CONTRACT_NAME = "RewardsOnlyGauge"
-  
-  const rewardsOnlyGauge = (await (get(REWARDS_ONLY_GAUGE_CONTRACT_NAME))).address
+
+  const rewardsOnlyGauge = (await get(REWARDS_ONLY_GAUGE_CONTRACT_NAME)).address
 
   await deploy("RewardClaimer", {
-      from: deployer,
-      log: true,
-      skipIfAlreadyDeployed: true,
-      args: [
-        MULTISIG_ADDRESSES[await getChainId()],
-        rewardsOnlyGauge
-      ],
-    })      
+    from: deployer,
+    log: true,
+    skipIfAlreadyDeployed: true,
+    args: [MULTISIG_ADDRESSES[await getChainId()], rewardsOnlyGauge],
+  })
 }
 
 export default func

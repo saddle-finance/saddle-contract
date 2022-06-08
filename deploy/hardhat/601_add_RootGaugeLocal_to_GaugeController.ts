@@ -23,7 +23,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       gaugeType,
     )
   }
-  
+
   const rootGaugeLocal = (await get(ROOT_GAUGE_LOCAL_CONTRACT_NAME)).address
 
   // add gauge
@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "add_gauge(address,int128)",
     rootGaugeLocal,
     gaugeType,
-  ) 
+  )
 }
 
 export default func
