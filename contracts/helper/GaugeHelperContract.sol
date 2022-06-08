@@ -40,19 +40,8 @@ contract GaugeHelperContract {
     }
 
     function gaugeToPoolAddress(address gauge) public view returns (address) {
-        try ILiquidityGaugeV5(gauge).lp_token() returns (address lpToken) {
-            try ILPToken(lpToken).owner() returns (address owner) {
-                return owner;
-            } catch Error(string memory reason) {
-                revert(reason);
-            } catch (bytes memory) {
-                revert("lpToken.owner() failed");
-            }
-        } catch Error(string memory reason) {
-            revert(reason);
-        } catch (bytes memory) {
-            revert("gauge.lp_token() failed");
-        }
+        address lpToken = ILiquidityGaugeV5(gauge).lp_token();
+        return ILPToken(lpToken).owner();
     }
 
     function gaugeToPoolData(address gauge)

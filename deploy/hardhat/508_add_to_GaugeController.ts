@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "GaugeController",
       { from: deployer, log: true },
       "add_type(string,uint256)",
-      "Gauge",
+      "Liquidity",
       BIG_NUMBER_1E18,
     )
   }
