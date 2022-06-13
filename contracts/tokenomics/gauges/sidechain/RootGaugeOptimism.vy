@@ -43,10 +43,11 @@ event FeesModified:
 
 ## BRIDGE AND L2 SPECIFIC CONSTANTS 
 
-BRIDGE_ROUTER: constant(address) = 0x88A69B4E698A4B090DF6CF5Bd7B2D47325Ad30A3
-NOMAD_EVMOS_MAINNET_DESTINATION_CODE: constant(uint32) = 1702260083
-NOMAD_BRIDGE_ENABLE_FAST_TRANSFER: constant(bool) = False 
+L1_STANDARD_BRIDGE: constant(address) = 0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1
+L2_SDL_TOKEN: constant(address) = 0xAe31207aC34423C41576Ff59BFB4E036150f9cF7
+L2_GAS: constant(uint32) = 200_000
 NAME: immutable(String[64])
+
 
 MINTER: immutable(address)
 
@@ -71,6 +72,10 @@ is_killed: public(bool)
 
 checkpoint_admin: public(address)
 
+# L2 transaction costs `max_submission_cost + (gas_limit * gas_price)`
+gas_limit: public(uint256)
+gas_price: public(uint256)
+max_submission_cost: public(uint256)
 
 @external
 def __init__(
@@ -91,7 +96,7 @@ def __init__(
     self.admin = _admin
     self.sdl_token = sdl_token
     self.controller = Minter(_minter).controller()
-    name: String[64] = concat("Saddle ", _lp_symbol, " Root Gauge (Evmos)")
+    name: String[64] = concat("Saddle ", _lp_symbol, " Root Gauge (Optimism)")
     NAME = name
 
     # because we calculate the rate locally, this gauge cannot
@@ -103,7 +108,7 @@ def __init__(
     self.period = block.timestamp / WEEK - 1
     self.start_epoch_time = Minter(_minter).start_epoch_time_write()
 
-    ERC20(sdl_token).approve(BRIDGE_ROUTER, MAX_UINT256)
+    ERC20(sdl_token).approve(L1_STANDARD_BRIDGE, MAX_UINT256)
 
 
 @payable
@@ -164,25 +169,26 @@ def checkpoint() -> bool:
             sdl_token: address = self.sdl_token
 
             Minter(MINTER).mint(self)
-          
-            token: address = sdl_token
-            amount: uint256 = new_emissions
-            destination: uint32 = NOMAD_EVMOS_MAINNET_DESTINATION_CODE
-            recipient: bytes32 = convert(self, bytes32)
-            enable_fast: bool = NOMAD_BRIDGE_ENABLE_FAST_TRANSFER
 
-            # Send SDL tokens to Evmos bridge router
-            # childChainStreamer on Evmos will be at the same address as this contract,
-            # hence sending to 'self' on the Evmos side
+            l1SDLToken: address = sdl_token
+            l2SDLToken: address = L2_SDL_TOKEN
+            to: address = self
+            amount: uint256 = new_emissions
+            l2Gas: uint32 = L2_GAS
+
+            # Send SDL tokens to Optimism L1 Standard Bridge
+            # childChainStreamer on Optimism will be at the same address as this contract,
+            # hence sending to 'self' on the Optimism side
             raw_call(
-                BRIDGE_ROUTER,
+                L1_STANDARD_BRIDGE,
                 _abi_encode(
-                    token,
-                    amount, 
-                    destination,
-                    recipient,
-                    enable_fast,
-                    method_id=method_id("send(address,uint256,uint32,bytes32,bool)")
+                    l1SDLToken,
+                    l2SDLToken, 
+                    to,
+                    amount,
+                    l2Gas,
+                    _abi_encode(b""),
+                    method_id=method_id("depositERC20To(address,address,address,uint256,bytes)")
                 )
             )
 

@@ -190,6 +190,12 @@ def checkpoint() -> bool:
 
             Minter(MINTER).mint(self)
 
+            token: address = sdl_token
+            to: address = self
+            amount: uint256 = new_emissions
+            maxGas: uint256 = gas_limit
+            gasPriceBid: uint256 = gas_price
+
             # After bridging, the SDL should arrive on Arbitrum within 10 minutes. If it
             # does not, the L2 transaction may have failed due to an insufficient amount
             # within `max_submission_cost + (gas_limit * gas_price)`
@@ -204,11 +210,11 @@ def checkpoint() -> bool:
             raw_call(
                 GATEWAY_ROUTER,
                 _abi_encode(
-                    sdl_token,
-                    self, 
-                    new_emissions,
-                    gas_limit,
-                    gas_price,
+                    token,
+                    to, 
+                    amount,
+                    maxGas,
+                    gasPriceBid,
                     _abi_encode(max_submission_cost, b""),
                     method_id=method_id("outboundTransfer(address,address,uint256,uint256,uint256,bytes)")
                 ),
