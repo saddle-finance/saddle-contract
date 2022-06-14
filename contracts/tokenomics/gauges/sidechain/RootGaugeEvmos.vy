@@ -112,9 +112,6 @@ def checkpoint() -> bool:
     """
     @notice Mint all allocated SDL emissions and transfer across the bridge
     @dev Should be called once per week, after the new epoch period has begun.
-         This function is payable to allow forwarding the required ETH for
-         the transaction to be processed on the layer2 side. You can check the
-         required ETH value for the tx by calling `get_total_bridge_cost`.
     """
     assert self.checkpoint_admin in [ZERO_ADDRESS, msg.sender]
     last_period: uint256 = self.period
