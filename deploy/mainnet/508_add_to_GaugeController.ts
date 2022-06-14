@@ -22,15 +22,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   const minterAddress = (await get("Minter")).address
+
+  // TODO: set production initial weight values
+  // TODO: add crosschain root gauges
   const newGaugeArr = [
-    { lpToken: "SaddleALETHPoolLPToken", gaugeType: 0, initialWeight: 0 },
-    { lpToken: "SaddleBTCPoolV2LPToken", gaugeType: 0, initialWeight: 0 },
-    { lpToken: "SaddleD4PoolLPToken", gaugeType: 0, initialWeight: 0 },
-    { lpToken: "SaddleUSDPoolV2LPToken", gaugeType: 0, initialWeight: 0 },
-    { lpToken: "SaddleTBTCMetaPoolV3LPToken", gaugeType: 0, initialWeight: 0 },
-    { lpToken: "SaddleSUSDMetaPoolV3LPToken", gaugeType: 0, initialWeight: 0 },
-    { lpToken: "SaddleWCUSDMetaPoolV3LPToken", gaugeType: 0, initialWeight: 0 },
-    { lpToken: "SaddleFrax3PoolLPToken", gaugeType: 0, initialWeight: 0 },
+    { lpToken: "SaddleALETHPoolLPToken", gaugeType: 0, initialWeight: 1 },
+    { lpToken: "SaddleBTCPoolV2LPToken", gaugeType: 0, initialWeight: 2 },
+    { lpToken: "SaddleD4PoolLPToken", gaugeType: 0, initialWeight: 3 },
+    { lpToken: "SaddleUSDPoolV2LPToken", gaugeType: 0, initialWeight: 4 },
+    { lpToken: "SaddleTBTCMetaPoolV3LPToken", gaugeType: 0, initialWeight: 5 },
+    { lpToken: "SaddleSUSDMetaPoolV3LPToken", gaugeType: 0, initialWeight: 6 },
+    { lpToken: "SaddleWCUSDMetaPoolV3LPToken", gaugeType: 0, initialWeight: 7 },
+    { lpToken: "SaddleFrax3PoolLPToken", gaugeType: 0, initialWeight: 8 },
   ]
 
   for (const newGauge of newGaugeArr) {

@@ -7,7 +7,13 @@ import {
   impersonateAccount,
   setEtherBalance,
 } from "../../test/testUtils"
-import { GaugeController, MiniChefV2, Minter, SDL } from "../../build/typechain"
+import {
+  GaugeController,
+  LiquidityGaugeV5,
+  MiniChefV2,
+  Minter,
+  SDL,
+} from "../../build/typechain"
 import { timestampToUTCString } from "../../utils/time"
 import { BigNumber } from "ethers"
 
@@ -222,6 +228,38 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Future epoch's timestamp.
   const gaugeStartTime = await gaugeController.time_total()
   const minterStartTime = await minter.start_epoch_time()
+
+  // Print relative weights of each gauge at the start of the next epoch
+  const numberOfGauges = (await gaugeController.n_gauges()).toNumber()
+  const gauges: { name: string; address: string; relativeWeight: string }[] = []
+  for (let i = 0; i < numberOfGauges; i++) {
+    const address = await gaugeController.gauges(i)
+    const gaugeContract = (await ethers.getContractAt(
+      "LiquidityGaugeV5",
+      address,
+    )) as LiquidityGaugeV5
+
+    let name: string
+    try {
+      name = await gaugeContract.name()
+    } catch (e) {
+      // In case of root gauges, they don't have a name.
+      name = address
+    }
+
+    const relativeWeight = await gaugeController[
+      "gauge_relative_weight(address,uint256)"
+    ](address, gaugeStartTime)
+
+    gauges.push({
+      name,
+      address,
+      relativeWeight: relativeWeight.toString(),
+    })
+  }
+
+  console.table(gauges)
+
   log(
     `GaugeController: The intial weights will kick in @ ${gaugeStartTime} (${timestampToUTCString(
       gaugeStartTime,
@@ -233,6 +271,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )}). New rates can be applied every 2 weeks from the start timestamp.`,
   )
   log(`All SEQ 2 multisig actions completed! \n`)
+
+  // Advance the epoch to next timestamp when intial weights kick in
+  // Uncomment below line if you want to see the intial weights applied
+  // await setTimestamp(gaugeStartTime.toNumber())
 }
 
 // Only run this in hardhat
