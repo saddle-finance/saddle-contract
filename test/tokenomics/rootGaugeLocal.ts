@@ -235,4 +235,16 @@ describe("Root Gauge (Local)", () => {
       expect(await rewardsOnlyGauge.balanceOf(users[10])).to.eq(0)
     })
   })
+
+  describe("name", () => {
+    it(`RewardsOnlyGauge returns the name of the gauge`, async () => {
+      const expectedName = "Saddle DUMMY_LP RewardGauge Deposit"
+      expect(await rewardsOnlyGauge.name()).to.eq(expectedName)
+    })
+
+    it(`RootGaugeLocal returns the name of the gauge`, async () => {
+      const expectedName = "Saddle DUMMY_LP Root Gauge (Local)"
+      expect(await rootGauge.name()).to.eq(expectedName)
+    })
+  })
 })

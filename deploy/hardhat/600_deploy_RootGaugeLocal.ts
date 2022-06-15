@@ -8,12 +8,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   const minterAddress = (await get("Minter")).address
+  const DUMMY_LP_TOKEN_SYMBOL = "DUMMY_LP"
 
   await deploy("RootGaugeLocal", {
     from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
-    args: [minterAddress, MULTISIG_ADDRESSES[await getChainId()], 0, 0, 0],
+    args: [
+      minterAddress,
+      MULTISIG_ADDRESSES[await getChainId()],
+      DUMMY_LP_TOKEN_SYMBOL,
+      0,
+      0,
+      0,
+    ],
   })
 }
 

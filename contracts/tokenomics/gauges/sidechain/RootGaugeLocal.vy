@@ -55,6 +55,7 @@ event FeesModified:
 
 
 MINTER: immutable(address)
+NAME: immutable(String[64])
 
 WEEK: constant(uint256) = 604800
 YEAR: constant(uint256) = 86400 * 365
@@ -90,6 +91,7 @@ max_submission_cost: public(uint256)
 def __init__(
     _minter: address,
     _admin: address,
+    _lp_symbol: String[26],
     _gas_limit: uint256,
     _gas_price: uint256,
     _max_submission_cost: uint256
@@ -106,6 +108,8 @@ def __init__(
     sdl_token: address = Minter(_minter).token()
 
     MINTER = _minter
+    name: String[64] = concat("Saddle ", _lp_symbol, " Root Gauge (Local)")
+    NAME = name
     self.admin = _admin
     self.sdl_token = sdl_token
     self.controller = Minter(_minter).controller()
@@ -206,6 +210,15 @@ def checkpoint() -> bool:
             ERC20(sdl_token).transfer(self.child_chain_streamer, new_emissions)
 
     return True
+
+
+@view
+@external
+def name() -> String[64]:
+  """
+  @notice Get the name for this gauge token
+  """
+  return NAME
 
 
 @view
