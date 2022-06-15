@@ -61,8 +61,8 @@ async function main() {
     gauges.push({ name, address })
   }
 
-  // The deploy scripts should have already added a default gauge type
-  expect((await gaugeController.n_gauge_types()).toNumber()).to.eq(2)
+  // The deploy scripts should have already added a default gauge type (should not include root gauges for)
+  expect((await gaugeController.n_gauge_types()).toNumber()).to.eq(1)
   expect((await gaugeController.gauge_type_names(0)).toString()).to.eq(
     "Liquidity",
   )
@@ -88,15 +88,17 @@ async function main() {
     await minter.update_mining_parameters()
   }
 
+  const gaugeStartTime = await gaugeController.time_total()
+  const minterStartTime = await minter.start_epoch_time()
   for (const gauge of gauges) {
     const gaugeWeight = (
       await gaugeController.get_gauge_weight(gauge.address, {
         gasLimit: 3_000_000,
       })
     ).toString()
-    const gaugeRelativeWeight = await gaugeController[
-      "gauge_relative_weight(address)"
-    ](gauge.address, { gasLimit: 3_000_000 })
+    const gaugeRelativeWeight = await gaugeController.callStatic[
+      "gauge_relative_weight_write(address,uint256)"
+    ](gauge.address, gaugeStartTime,{ gasLimit: 3_000_000 })
 
     console.log(`${gauge.name} gauge_weight: ${gaugeWeight}`)
     console.log(`${gauge.name} relative_weights: ${gaugeRelativeWeight}`)
@@ -112,9 +114,9 @@ async function main() {
         })
       ).toString()
 
-    const gaugeRelativeWeightAfter = await gaugeController[
-        "gauge_relative_weight(address)"
-        ](gauge.address, { gasLimit: 3_000_000 })
+    const gaugeRelativeWeightAfter = await gaugeController.callStatic[
+        "gauge_relative_weight_write(address,uint256)"
+        ](gauge.address, gaugeStartTime,{ gasLimit: 3_000_000 })
 
     console.log(`${gauge.name} gauge_weight_after: ${gaugeWeightAfter}`)
     console.log(`${gauge.name} relative_weights_after: ${gaugeRelativeWeightAfter}`)
