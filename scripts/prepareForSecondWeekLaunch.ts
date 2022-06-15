@@ -9,15 +9,9 @@ import {
   GaugeHelperContract,
   VotingEscrow,
   Minter,
-  LiquidityGaugeV5,
-  GenericERC20
 } from "../build/typechain"
 import {
-  BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
-  MAX_UINT256,
-  setTimestamp,
-  asyncForEach,
   increaseTimestamp
 } from "../test/testUtils"
 
