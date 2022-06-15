@@ -1,36 +1,25 @@
-import chai from "chai"
 import { ethers } from "hardhat"
-import { solidity } from "ethereum-waffle"
 
-const { expect } = chai
 import {
-  GaugeController,
-  SDL,
-  GaugeHelperContract,
-  VotingEscrow,
-  Minter,
+  GaugeHelperContract
 } from "../build/typechain"
 import {
   getCurrentBlockTimestamp,
   increaseTimestamp
 } from "../test/testUtils"
 
-chai.use(solidity)
+
+/*  tldr:
+  *  checks current gauge rewards, moves block timestamp forward one week (86400 * 7 seconds),
+  *  checks that rewards have changed and ve boost is accounted for
+  */
 
 async function main() {
   // at index 0 is hardhat deployer address
   // on localhost network, we use this address as admins for most contracts
   const signers = await ethers.getSigners()
 
-  const gaugeController = (await ethers.getContract(
-    "GaugeController",
-  )) as GaugeController
-  const sdl = (await ethers.getContract("SDL")) as SDL
-  const veSDL = (await ethers.getContract("VotingEscrow")) as VotingEscrow
-  const minter = (await ethers.getContract("Minter")) as Minter
   const WEEK = 86400 * 7
-  const YEAR = WEEK * 52
-  const MAXTIME = 86400 * 365 * 4
   const gaugeHelperContract = (await ethers.getContract(
     "GaugeHelperContract",
   )) as GaugeHelperContract

@@ -1,7 +1,6 @@
 import chai from "chai"
 import { ethers } from "hardhat"
 import { solidity } from "ethereum-waffle"
-
 const { expect } = chai
 import {
   GaugeController,
@@ -18,12 +17,17 @@ import {
   MAX_UINT256,
   asyncForEach,
 } from "../test/testUtils"
-
 chai.use(solidity)
 
+/*  tldr:
+  *  sets gauges weights, deploys and mints dummy reward tokens, adds dummy tokens
+  *  as rewards to gauges, gets LPtoken by depositing to USDv2 pool, transfers 
+  *  lp tokens to signers[1] and signers[2], transfer SDL to signers[1], signers[1]
+  *  locks all SDL for max legth, both signers deposit LP into USDv2 gauge
+  */
+
 async function main() {
-  // at index 0 is hardhat deployer address
-  // on localhost network, we use this address as admins for most contracts
+  
   const signers = await ethers.getSigners()
 
   const gaugeController = (await ethers.getContract(
@@ -34,7 +38,6 @@ async function main() {
   const minter = (await ethers.getContract("Minter")) as Minter
   const WEEK = 86400 * 7
   const YEAR = WEEK * 52
-  const MAXTIME = 86400 * 365 * 4
   const gaugeHelperContract = (await ethers.getContract(
     "GaugeHelperContract",
   )) as GaugeHelperContract
