@@ -50,6 +50,8 @@ describe("Root Gauge (Local)", () => {
   let dummyLpToken: GenericERC20
   let rewardTokens: string[] = []
 
+  const MAX_REWARDS = 8
+
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       await deployments.fixture() // ensure you start from a fresh deployments
@@ -71,20 +73,23 @@ describe("Root Gauge (Local)", () => {
 
       // MAINNET TXs
 
+      // Enable transfer if it isnt already
       if (await sdl.paused()) {
         await sdl.enableTransfer()
       }
 
+      // Approve SDL and lock 10M for MAXTIME
       await sdl.approve(veSDL.address, MAX_UINT256)
-
       await veSDL.create_lock(
         BIG_NUMBER_1E18.mul(10_000_000),
         (await getCurrentBlockTimestamp()) + MAXTIME,
       )
 
+      // Transfer 10M SDL to Minter
       await sdl.transfer(minter.address, BIG_NUMBER_1E18.mul(10_000_000))
 
       // SIDE CHAIN TXs
+      // Minter dummy tokens to be used as the token to stake in RewardsOnlyGauge
       await dummyLpToken.mint(users[0], BIG_NUMBER_1E18)
       await dummyLpToken.mint(users[10], BIG_NUMBER_1E18)
       await dummyLpToken.approve(rewardsOnlyGauge.address, MAX_UINT256)
@@ -93,7 +98,7 @@ describe("Root Gauge (Local)", () => {
         .approve(rewardsOnlyGauge.address, MAX_UINT256)
 
       rewardTokens = []
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < MAX_REWARDS; i++) {
         try {
           rewardTokens.push(await rewardsOnlyGauge.reward_tokens(i))
         } catch {
