@@ -82,7 +82,7 @@ def __init__( _admin: address, _lp_token: address):
     """
 
     symbol: String[26] = ERC20Extended(_lp_token).symbol()
-    self.name = concat("Curve.fi ", symbol, " RewardGauge Deposit")
+    self.name = concat("Saddle ", symbol, " RewardGauge Deposit")
     self.symbol = concat(symbol, "-gauge")
 
     self.lp_token = _lp_token
