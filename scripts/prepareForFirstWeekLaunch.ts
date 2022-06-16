@@ -9,25 +9,30 @@ import {
   VotingEscrow,
   Minter,
   LiquidityGaugeV5,
-  GenericERC20
+  GenericERC20,
+  IPoolRegistry,
 } from "../build/typechain"
 import {
   BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
   MAX_UINT256,
   asyncForEach,
+  ZERO_ADDRESS,
 } from "../test/testUtils"
 chai.use(solidity)
 
-/*  tldr:
-  *  sets gauges weights, deploys and mints dummy reward tokens, adds dummy tokens
-  *  as rewards to gauges, gets LPtoken by depositing to USDv2 pool, transfers 
-  *  lp tokens to signers[1] and signers[2], transfer SDL to signers[1], signers[1]
-  *  locks all SDL for max legth, both signers deposit LP into USDv2 gauge
-  */
+/**
+ * Adds liquidity to all pools with a gauge.
+ * Deploys and mints two dummy tokens and
+ * adds them as a reward to the USDv2 gauge.
+ * Transfers USdv2 LP tokens to signers[1] and
+ * signers[2].
+ * Transfers SDL to signer[1] and creates a max
+ * length lock for veSDL.
+ * Both signers deposit their LP into the USDv2 gauge.
+ */
 
 async function main() {
-  
   const signers = await ethers.getSigners()
 
   const gaugeController = (await ethers.getContract(
@@ -45,6 +50,8 @@ async function main() {
   const numberOfGauges = (await gaugeController.n_gauges()).toNumber()
   const gauges: { name: string; address: string }[] = []
 
+  const poolDataArray: IPoolRegistry.PoolDataStruct[] = []
+
   for (let i = 0; i < numberOfGauges; i++) {
     const address = await gaugeController.gauges(i)
     const gaugeContract = (await ethers.getContractAt(
@@ -61,6 +68,37 @@ async function main() {
     }
 
     gauges.push({ name, address })
+    const poolData = await gaugeHelperContract.gaugeToPoolData(address)
+    poolDataArray.push(poolData)
+
+    // For only base pools
+    if (poolData.metaSwapDepositAddress === ZERO_ADDRESS) {
+      // get swap contract object form poolData.poolAddress
+      const swapContract = await ethers.getContractAt(
+        "Swap",
+        poolData.poolAddress,
+      )
+      // get array of token contracts from poolData.tokens
+      // these tokens are the tokens for the above swap contract
+      const tokenContracts = await Promise.all(
+        poolData.tokens.map(
+          async (tokenAddress) =>
+            await ethers.getContractAt("GenericERC20", tokenAddress),
+        ),
+      )
+      await asyncForEach(tokenContracts, async (tokenContract) => {
+        await tokenContract.approve(swapContract.address, MAX_UINT256)
+      })
+      const tokenDecimals = await Promise.all(
+        tokenContracts.map(async (tokenContract) => tokenContract.decimals()),
+      )
+
+      const tokenInputs = tokenDecimals.map((decimal) =>
+        ethers.BigNumber.from(10).pow(decimal),
+      )
+      // add liquidity accoridng to base pool decimals for base pool of gauge
+      await swapContract.addLiquidity(tokenInputs, 0, MAX_UINT256)
+    }
   }
 
   // The deploy scripts should have already added a default gauge type (should not include root gauges for)
@@ -90,40 +128,6 @@ async function main() {
     await minter.update_mining_parameters()
   }
 
-  // Change each gauge weight, check that relative weight changes with each addition
-  const gaugeStartTime = await gaugeController.time_total()
-  for (const gauge of gauges) {
-    const gaugeWeight = (
-      await gaugeController.get_gauge_weight(gauge.address, {
-        gasLimit: 3_000_000,
-      })
-    ).toString()
-    const gaugeRelativeWeight = await gaugeController.callStatic[
-      "gauge_relative_weight_write(address,uint256)"
-    ](gauge.address, gaugeStartTime,{ gasLimit: 3_000_000 })
-
-    console.log(`${gauge.name} gauge_weight: ${gaugeWeight}`)
-    console.log(`${gauge.name} relative_weights: ${gaugeRelativeWeight}`)
-
-    // Imitate multisig setting gauge weights
-    await gaugeController.change_gauge_weight(gauge.address, 10000, {
-      gasLimit: 3_000_000,
-    })
-    
-    const gaugeWeightAfter = (
-        await gaugeController.get_gauge_weight(gauge.address, {
-          gasLimit: 3_000_000,
-        })
-      ).toString()
-
-    const gaugeRelativeWeightAfter = await gaugeController.callStatic[
-        "gauge_relative_weight_write(address,uint256)"
-        ](gauge.address, gaugeStartTime,{ gasLimit: 3_000_000 })
-
-    console.log(`${gauge.name} gauge_weight_after: ${gaugeWeightAfter}`)
-    console.log(`${gauge.name} relative_weights_after: ${gaugeRelativeWeightAfter}`)
-  }
-
   // deploy and mint dummy tokens to be used as rewards in the gauge
   const genericERC20Factory = await ethers.getContractFactory("GenericERC20")
   const rewardToken1 = (await genericERC20Factory.deploy(
@@ -143,16 +147,15 @@ async function main() {
     rewardToken1.address,
     (await rewardToken1.balanceOf(signers[0].address)).toString(),
   )
-  
-  // Setup contracts to add liquidity to swap pool
+
+  // setup contracts names
   const USD_V2_SWAP_NAME = "SaddleUSDPoolV2"
   const USD_V2_LP_TOKEN_NAME = `${USD_V2_SWAP_NAME}LPToken`
   const USD_V2_GAUGE_NAME = `LiquidityGaugeV5_${USD_V2_LP_TOKEN_NAME}`
-  const swap = await ethers.getContract(USD_V2_SWAP_NAME)
   const lpToken = await ethers.getContract(USD_V2_LP_TOKEN_NAME)
   const gauge = await ethers.getContract(USD_V2_GAUGE_NAME)
 
-  // set gauge reward to sample tokens
+  // add sample tokens as gauges rewards to USDv2 gauge
   console.log(
     "rewards before desposits: ",
     await gaugeHelperContract.getGaugeRewards(gauge.address),
@@ -177,19 +180,9 @@ async function main() {
   )
 
   await sdl.transfer(minter.address, BIG_NUMBER_1E18.mul(1_000_000))
-  await sdl.connect(signers[1]).approve(veSDL.address, MAX_UINT256) 
+  await sdl.connect(signers[1]).approve(veSDL.address, MAX_UINT256)
   // Transfer SDL from deployer to signer[1]
   await sdl.transfer(signers[1].address, BIG_NUMBER_1E18.mul(1_000_000))
-
-  // get lp token for signer[0] by adding liquidity to swap pool
-  await asyncForEach(["DAI", "USDT", "USDC"], async (token) => {
-    await (await ethers.getContract(token)).approve(swap.address, MAX_UINT256)
-  })
-  await swap.addLiquidity(
-    [BIG_NUMBER_1E18, ethers.BigNumber.from(1e6), ethers.BigNumber.from(1e6)],
-    0,
-    MAX_UINT256,
-  )
 
   // transfer lp tokens from deployer to signers
   await lpToken.transfer(signers[1].address, BIG_NUMBER_1E18)
@@ -198,18 +191,18 @@ async function main() {
   await lpToken.connect(signers[1]).approve(gauge.address, MAX_UINT256)
   await lpToken.connect(signers[2]).approve(gauge.address, MAX_UINT256)
 
-  // Create max lock with 10M SDL for signer[1] to get boost
+  // Create max lock with .8M SDL for signer[1] to get boost
   await sdl.approve(veSDL.address, MAX_UINT256)
   const create_lock_gas_estimate = await veSDL
     .connect(signers[1])
     .estimateGas.create_lock(
-      BIG_NUMBER_1E18.mul(1_000_000),
+      BIG_NUMBER_1E18.mul(800_000),
       (await getCurrentBlockTimestamp()) + 4 * YEAR,
     )
   await veSDL
     .connect(signers[1])
     .create_lock(
-      BIG_NUMBER_1E18.mul(1_000_000),
+      BIG_NUMBER_1E18.mul(800_000),
       (await getCurrentBlockTimestamp()) + 4 * YEAR,
       { gasLimit: create_lock_gas_estimate },
     )
@@ -219,11 +212,17 @@ async function main() {
   )
 
   // Deposit into gauge with boosted account
-  console.log("lp bal of gauge: ", (await lpToken.balanceOf(gauge.address)).toString())
+  console.log(
+    "totalt supply of gauge: ",
+    (await gauge.totalSupply()).toString(),
+  )
   await gauge.connect(signers[1])["deposit(uint256)"](BIG_NUMBER_1E18)
   //Deposit into gauge from un-boosted account
   await gauge.connect(signers[2])["deposit(uint256)"](BIG_NUMBER_1E18)
-  console.log("lp bal of gauge after deposits: ", (await lpToken.balanceOf(gauge.address)).toString())
+  console.log(
+    "total supply of gauge after deposits: ",
+    (await gauge.totalSupply()).toString(),
+  )
 }
 
 main()
