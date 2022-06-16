@@ -2,11 +2,12 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { MasterRegistry } from "../../build/typechain"
 
-// Register contracts related to VotingEscrow
+// Register unique contracts related to VotingEscrow
+// GaugeController, VotingEscrow, Minter, FeeDistributor
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
-  const { deploy, get, getOrNull, execute, read, log } = deployments
-  const { deployer, libraryDeployer } = await getNamedAccounts()
+  const { deployments, getNamedAccounts, ethers } = hre
+  const { get, execute } = deployments
+  const { deployer } = await getNamedAccounts()
 
   const MASTER_REGISTRY_NAME = "MasterRegistry"
 
