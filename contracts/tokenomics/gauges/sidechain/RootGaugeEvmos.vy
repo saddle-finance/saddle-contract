@@ -251,3 +251,11 @@ def set_checkpoint_admin(_admin: address):
     assert msg.sender == self.admin  # dev: admin only
 
     self.checkpoint_admin = _admin
+
+@view
+@external
+def name() -> String[64]:
+  """
+  @notice Get the name for this gauge
+  """
+  return NAME
