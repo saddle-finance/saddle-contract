@@ -44,8 +44,8 @@ event ApplyOwnership:
 # General constants
 WEEK: constant(uint256) = 86400 * 7
 
-# 250K SDL / WEEK
-INITIAL_RATE: constant(uint256) = 2_500_000 * 10 ** 18 / WEEK
+# 1.25M SDL / WEEK
+INITIAL_RATE: constant(uint256) = 1_250_000 * 10 ** 18 / WEEK
 # Weekly
 MAX_ABS_RATE: constant(uint256) = 10_000_000 * 10 ** 18
 RATE_REDUCTION_TIME: constant(uint256) = WEEK * 2
