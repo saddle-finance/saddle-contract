@@ -33,6 +33,12 @@ let config: HardhatUserConfig = {
     mainnet: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
       deploy: ["./deploy/mainnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.etherscan.io",
+          apiKey: process.env.ETHERSCAN_API ?? "NO_KEY",
+        },
+      },
     },
     ropsten: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.ROPSTEN] + process.env.ALCHEMY_API_KEY,
@@ -58,6 +64,12 @@ let config: HardhatUserConfig = {
       chainId: 42161,
       gasPrice: ethers.utils.parseUnits("2", "gwei").toNumber(),
       deploy: ["./deploy/arbitrum/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.arbiscan.io",
+          apiKey: process.env.ETHERSCAN_API ?? "NO_KEY",
+        },
+      },
     },
     optimism_testnet: {
       url: "https://kovan.optimism.io",
@@ -215,10 +227,6 @@ let config: HardhatUserConfig = {
     overwrite: false,
     runOnCompile: true,
   },
-}
-
-if (process.env.ETHERSCAN_API) {
-  config = { ...config, etherscan: { apiKey: process.env.ETHERSCAN_API } }
 }
 
 if (process.env.ACCOUNT_PRIVATE_KEYS) {
