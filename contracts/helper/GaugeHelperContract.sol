@@ -40,8 +40,20 @@ contract GaugeHelperContract {
     }
 
     function gaugeToPoolAddress(address gauge) public view returns (address) {
-        address lpToken = ILiquidityGaugeV5(gauge).lp_token();
-        return ILPToken(lpToken).owner();
+        try ILiquidityGaugeV5(gauge).lp_token() returns (
+            address saddleLpToken
+        ) {
+            try ILPToken(saddleLpToken).owner() returns (
+                address saddlePoolAddress
+            ) {
+                return saddlePoolAddress;
+            } catch {
+                return address(0);
+            }
+        } catch {
+            // Returns zero address if the gauge is not directly using saddle LP token
+            return address(0);
+        }
     }
 
     function gaugeToPoolData(address gauge)
@@ -49,10 +61,21 @@ contract GaugeHelperContract {
         view
         returns (IPoolRegistry.PoolData memory)
     {
-        return
-            IPoolRegistry(
-                MASTER_REGISTRY.resolveNameToLatestAddress(POOL_REGISTRY_NAME)
-            ).getPoolData(gaugeToPoolAddress(gauge));
+        // Get PoolRegistry from MasterRegistry
+        IPoolRegistry poolRegistry = IPoolRegistry(
+            MASTER_REGISTRY.resolveNameToLatestAddress(POOL_REGISTRY_NAME)
+        );
+
+        // Try getting pool data
+        try poolRegistry.getPoolData(gaugeToPoolAddress(gauge)) returns (
+            IPoolRegistry.PoolData memory poolData
+        ) {
+            return poolData;
+        } catch {
+            // Returns zero address if the gauge is not directly using saddle LP token
+            IPoolRegistry.PoolData memory poolData;
+            return poolData;
+        }
     }
 
     function getGaugeRewards(address gauge)
