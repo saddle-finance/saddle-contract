@@ -34,6 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     { lpToken: "SaddleSUSDMetaPoolV3LPToken", gaugeType: 0, initialWeight: 6 },
     { lpToken: "SaddleWCUSDMetaPoolV3LPToken", gaugeType: 0, initialWeight: 7 },
     { lpToken: "SaddleFrax3PoolLPToken", gaugeType: 0, initialWeight: 8 },
+    { lpToken: "SushiSwapPairSDLWETH", gaugeType: 0, initialWeight: 9 },
   ]
 
   for (const newGauge of newGaugeArr) {
