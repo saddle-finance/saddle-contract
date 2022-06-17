@@ -8,6 +8,20 @@ import {
 import { getCurrentBlockTimestamp, increaseTimestamp } from "../test/testUtils"
 
 /**
+ * Interface used for the state of each gauge's weights.
+ *
+ * @interface GaugeWeight
+ * @name {string} name of the gauge. will be the address if name doesnt exist
+ * @weight {string} weight of the gauge
+ * @relativeWeight {string} relative weight of the gauge
+ */
+interface GaugeWeight {
+  name: string
+  weight: string
+  relativeWeight: string
+}
+
+/**
  * Logs current gauge weights.
  * Sets different gauge weights for each gauge.
  * Logs what future gauge weights will change to after epoch.
@@ -32,7 +46,7 @@ async function main() {
   const USD_V2_SWAP_NAME = "SaddleUSDPoolV2"
   const USD_V2_LP_TOKEN_NAME = `${USD_V2_SWAP_NAME}LPToken`
   const USD_V2_GAUGE_NAME = `LiquidityGaugeV5_${USD_V2_LP_TOKEN_NAME}`
-  const gauge = await ethers.getContract(USD_V2_GAUGE_NAME)
+  const usdV2Gauge = await ethers.getContract(USD_V2_GAUGE_NAME)
   const gaugeController = (await ethers.getContract(
     "GaugeController",
   )) as GaugeController
@@ -58,101 +72,102 @@ async function main() {
     gauges.push({ name, address })
   }
 
-  let index = 1
+  // Start of next epoch. Assumes checkpoint has been already called.
   const gaugeStartTime = await gaugeController.time_total()
 
-  let gaugeWeights: {
-    name: string
-    weight: string
-    relativeWeight: string
-  }[] = []
+  // Log current gauge weights and change the relative weights so that
+  // it is different from the initial weights.
+  const currentGaugeWeights: GaugeWeight[] = []
+  const currentBlockTimestamp = await getCurrentBlockTimestamp()
+  for (let i = 0; i < gauges.length; i++) {
+    const gauge = gauges[i]
 
-  for (const gauge of gauges) {
+    // Get live raw gauge weight
     const gaugeWeight = (
       await gaugeController.get_gauge_weight(gauge.address, {
         gasLimit: 3_000_000,
       })
     ).toString()
+
+    // Get live relative gauge weight at current timestamp
     const gaugeRelativeWeight = await gaugeController.callStatic[
       "gauge_relative_weight_write(address,uint256)"
-    ](gauge.address, await getCurrentBlockTimestamp(), { gasLimit: 3_000_000 })
+    ](gauge.address, currentBlockTimestamp, { gasLimit: 3_000_000 })
 
-    gaugeWeights.push({
+    // Store current gauge weight
+    currentGaugeWeights.push({
       name: gauge.name,
       weight: gaugeWeight,
       relativeWeight: gaugeRelativeWeight.toString(),
     })
 
-    // Imitate multisig setting gauge weights
-    await gaugeController.change_gauge_weight(gauge.address, index, {
-      gasLimit: 3_000_000,
-    })
-    index++
+    // Imitate multisig setting gauge weights for the next epoch
+    await gaugeController.change_gauge_weight(
+      gauge.address,
+      gauges.length - i, // Set the weights as the inverse of the index
+      {
+        gasLimit: 3_000_000,
+      },
+    )
   }
-  console.log("Table of current gauge weights:")
-  console.table(gaugeWeights)
+  console.log(`Table of current gauge weights @ ${currentBlockTimestamp}:`)
+  console.table(currentGaugeWeights)
 
-  gaugeWeights = []
+  // Log next epoch's gauge weights.
+  const futureGaugeWeights: GaugeWeight[] = []
   for (const gauge of gauges) {
+    // Get live raw gauge weight
     const gaugeWeightAfter = (
       await gaugeController.get_gauge_weight(gauge.address, {
         gasLimit: 3_000_000,
       })
     ).toString()
 
+    // Get the relative weight of the gauge at the next epoch.
     const gaugeRelativeWeightAfter = await gaugeController.callStatic[
       "gauge_relative_weight_write(address,uint256)"
-    ](gauge.address, await gaugeStartTime, { gasLimit: 3_000_000 })
-    gaugeWeights.push({
+    ](gauge.address, gaugeStartTime, { gasLimit: 3_000_000 })
+
+    // Store the future gauge weight.
+    futureGaugeWeights.push({
       name: gauge.name,
       weight: gaugeWeightAfter,
       relativeWeight: gaugeRelativeWeightAfter.toString(),
     })
   }
-  console.log("Table of gauge weights after assign (for next epoch):")
-  console.table(gaugeWeights)
+  console.log(
+    `Table of gauge weights after assign for next epoch @ ${gaugeStartTime}:`,
+  )
+  console.table(futureGaugeWeights)
 
-  console.log(
-    "claimable rewards for signer[1]:",
-    (
-      await gaugeHelperContract.getClaimableRewards(
-        gauge.address,
-        signers[1].address,
-      )
-    ).toString(),
-  )
-  console.log(
-    "claimable rewards for signer[2]: ",
-    (
-      await gaugeHelperContract.getClaimableRewards(
-        gauge.address,
-        signers[2].address,
-      )
-    ).toString(),
-  )
+  // Log claimable rewards for signers[1] and signers[2] staking in usdV2Gauge
+  for (let i = 1; i < 3; i++) {
+    const signer = signers[i]
+    const claimableRewards = await gaugeHelperContract.getClaimableRewards(
+      usdV2Gauge.address,
+      signer.address,
+    )
+    console.log(
+      `${USD_V2_GAUGE_NAME} Claimable rewards for signer[${i}] ${signer.address}: ${claimableRewards}`,
+    )
+  }
+
   // advance timestamp 1 week
   console.log("timestamp: ", await getCurrentBlockTimestamp())
   await increaseTimestamp(WEEK)
   console.log("timestamp: ", await getCurrentBlockTimestamp())
 
-  console.log(
-    "claimable rewards for signer[1] after a week: ",
-    (
-      await gaugeHelperContract.getClaimableRewards(
-        gauge.address,
-        signers[1].address,
-      )
-    ).toString(),
-  )
-  console.log(
-    "claimable rewards for signer[2] after a week: ",
-    (
-      await gaugeHelperContract.getClaimableRewards(
-        gauge.address,
-        signers[2].address,
-      )
-    ).toString(),
-  )
+  // Log claimable rewards for signers[1] and signers[2]
+  for (let i = 1; i < 3; i++) {
+    const signer = signers[i]
+    const claimableRewards = await gaugeHelperContract.getClaimableRewards(
+      usdV2Gauge.address,
+      signer.address,
+    )
+    console.log(
+      `${USD_V2_GAUGE_NAME} Claimable rewards for signer[${i}] ${signer.address}: ${claimableRewards}`,
+    )
+  }
 }
 
 main()
