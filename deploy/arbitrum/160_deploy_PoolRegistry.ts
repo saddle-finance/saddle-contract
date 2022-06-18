@@ -13,7 +13,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     skipIfAlreadyDeployed: true,
     args: [deployer, MULTISIG_ADDRESSES[await getChainId()]],
   })
-  // NOTE: both manager and admin role are given to deployer since gnosis safe is not working on evmos
 }
 export default func
 func.tags = ["PoolRegistry"]

@@ -10,7 +10,6 @@ import "hardhat-spdx-license-identifier"
 
 import { HardhatUserConfig, task } from "hardhat/config"
 import dotenv from "dotenv"
-import { ethers } from "ethers"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "./utils/network"
 import { PROD_DEPLOYER_ADDRESS } from "./utils/accounts"
 import { Deployment } from "hardhat-deploy/dist/types"
@@ -61,7 +60,6 @@ let config: HardhatUserConfig = {
         ALCHEMY_BASE_URL[CHAIN_ID.ARBITRUM_MAINNET] +
         process.env.ALCHEMY_API_KEY,
       chainId: 42161,
-      gasPrice: ethers.utils.parseUnits("2", "gwei").toNumber(),
       deploy: ["./deploy/arbitrum/"],
       verify: {
         etherscan: {
