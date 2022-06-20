@@ -11,12 +11,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // read n_gauge_types
   const n_gauge_types = await read("GaugeController", "n_gauge_types")
   if (n_gauge_types.toNumber() < 1) {
-    // add a new gauge type
+    // add a default gauge type
     await execute(
       "GaugeController",
       { from: deployer, log: true },
       "add_type(string,uint256)",
-      "Gauge",
+      "Liquidity",
       BIG_NUMBER_1E18,
     )
   }
@@ -37,24 +37,38 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     { lpToken: "SushiSwapPairSDLWETH", gaugeType: 0, initialWeight: 9 },
   ]
 
-  for (const newGauge of newGaugeArr) {
+  for (let i = 0; i < newGaugeArr.length; i++) {
+    const newGauge = newGaugeArr[i]
     const lpToken = newGauge.lpToken
     const deploymentName = `LiquidityGaugeV5_${lpToken}`
     const lpTokenAddress = (await get(lpToken)).address
 
-    if ((await getOrNull(deploymentName)) == null) {
-      const gaugeDeploymentResult = await deploy(deploymentName, {
-        from: deployer,
-        log: true,
-        skipIfAlreadyDeployed: true,
-        contract: "LiquidityGaugeV5",
-        args: [
-          lpTokenAddress,
-          minterAddress,
-          MULTISIG_ADDRESSES[await getChainId()],
-        ],
-      })
+    const gaugeDeploymentResult = await deploy(deploymentName, {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+      contract: "LiquidityGaugeV5",
+      args: [
+        lpTokenAddress,
+        minterAddress,
+        MULTISIG_ADDRESSES[await getChainId()],
+      ],
+    })
 
+    try {
+      // Try reading the gauge type of the newly deployed gauge
+      // If this call is reverted, this implies the gauge was not added yet
+      await read(
+        "GaugeController",
+        "gauge_types",
+        gaugeDeploymentResult.address,
+      )
+      log(
+        `${deploymentName} was already added to GaugeController. Skipping adding it again.`,
+      )
+    } catch {
+      // The gauge is not yet added to the gauge controller.
+      // Add it now.
       await execute(
         "GaugeController",
         { from: deployer, log: true },
@@ -62,10 +76,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         gaugeDeploymentResult.address,
         newGauge.gaugeType,
         newGauge.initialWeight,
-      )
-    } else {
-      log(
-        `${deploymentName} already deployed. Assuming it was already added to GaugeController.`,
       )
     }
   }
