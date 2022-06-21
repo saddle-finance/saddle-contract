@@ -6,7 +6,7 @@ import { MasterRegistry } from "../../build/typechain"
 // GaugeController, VotingEscrow, Minter, FeeDistributor
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
-  const { get, execute } = deployments
+  const { get, execute, read } = deployments
   const { deployer } = await getNamedAccounts()
 
   const MASTER_REGISTRY_NAME = "MasterRegistry"
@@ -47,12 +47,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     .map((x) => x.data)
     .filter((x): x is string => !!x)
 
-  await execute(
-    MASTER_REGISTRY_NAME,
-    { from: deployer, log: true },
-    "batch",
-    batchCallData,
-    false, // If one of the txs revert, ignore
-  )
+  // Check if the contracts are already registered
+  // If not, register them
+  try {
+    await Promise.all(
+      contractNamesToRegister.map(async (contractName) => {
+        await read(
+          MASTER_REGISTRY_NAME,
+          "resolveNameToLatestAddress",
+          ethers.utils.formatBytes32String(contractName),
+        )
+      }),
+    )
+  } catch {
+    await execute(
+      MASTER_REGISTRY_NAME,
+      { from: deployer, log: true, gasLimit: 3_000_000 },
+      "batch",
+      batchCallData,
+      false, // If one of the txs revert, ignore
+    )
+  }
 }
 export default func
