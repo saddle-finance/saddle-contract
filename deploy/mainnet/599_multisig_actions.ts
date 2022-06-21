@@ -277,5 +277,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // await setTimestamp(gaugeStartTime.toNumber())
 }
 
-// Only run this in hardhat
+// Always skip this deploy script
+func.skip = async () => true
 export default func
