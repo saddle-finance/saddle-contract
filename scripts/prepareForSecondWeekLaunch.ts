@@ -36,9 +36,12 @@ async function main() {
   const signers = await ethers.getSigners()
 
   const WEEK = 86400 * 7
+
+
   const gaugeHelperContract = (await ethers.getContract(
     "GaugeHelperContract",
   )) as GaugeHelperContract
+
 
   // You can freely modify timestamps and the state of the contracts to your liking.
   // For how you want to set up the contracts, please refer to test files in test/tokenomics
@@ -152,6 +155,17 @@ async function main() {
     )
   }
 
+  // Log working balances for signers[1] and signers[2] in usdV2Gauge
+  for (let i = 1; i < 3; i++) {
+    const signer = signers[i]
+    const workingBalance = await usdV2Gauge.working_balances(
+      signer.address
+    )
+    console.log(
+      `${USD_V2_GAUGE_NAME} Working balance for signer[${i}] ${signer.address}: ${workingBalance}`,
+    )
+  }
+
   // advance timestamp 1 week
   console.log("timestamp: ", await getCurrentBlockTimestamp())
   await increaseTimestamp(WEEK)
@@ -166,6 +180,28 @@ async function main() {
     )
     console.log(
       `${USD_V2_GAUGE_NAME} Claimable rewards for signer[${i}] ${signer.address}: ${claimableRewards}`,
+    )
+  }
+
+  // Call user_checkpoint() to update working_balances of signer[1] and signer[2]
+  for (let i = 1; i < 3; i++) {
+    const signer = signers[i]
+    await usdV2Gauge.user_checkpoint(
+      signer.address
+    )
+    console.log(
+      `${USD_V2_GAUGE_NAME} Called user_checkpoint for signer[${i}] ${signer.address}`,
+    )
+  }
+
+  // Log working balances for signers[1] and signers[2] in usdV2Gauge
+  for (let i = 1; i < 3; i++) {
+    const signer = signers[i]
+    const workingBalance = await usdV2Gauge.working_balances(
+      signer.address
+    )
+    console.log(
+      `${USD_V2_GAUGE_NAME} Working balance for signer[${i}] ${signer.address}: ${workingBalance}`,
     )
   }
 }
