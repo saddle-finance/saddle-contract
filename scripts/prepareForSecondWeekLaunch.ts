@@ -187,7 +187,8 @@ async function main() {
   for (let i = 1; i < 3; i++) {
     const signer = signers[i]
     await usdV2Gauge.user_checkpoint(
-      signer.address
+      signer.address,
+      { gasLimit: 3_000_000 }
     )
     console.log(
       `${USD_V2_GAUGE_NAME} Called user_checkpoint for signer[${i}] ${signer.address}`,
