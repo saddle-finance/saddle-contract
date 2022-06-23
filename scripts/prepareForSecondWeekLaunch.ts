@@ -5,7 +5,11 @@ import {
   GaugeController,
   LiquidityGaugeV5,
 } from "../build/typechain"
-import { getCurrentBlockTimestamp, increaseTimestamp } from "../test/testUtils"
+import {
+  BIG_NUMBER_1E18,
+  getCurrentBlockTimestamp,
+  increaseTimestamp,
+} from "../test/testUtils"
 
 /**
  * Interface used for the state of each gauge's weights.
@@ -37,11 +41,9 @@ async function main() {
 
   const WEEK = 86400 * 7
 
-
   const gaugeHelperContract = (await ethers.getContract(
     "GaugeHelperContract",
   )) as GaugeHelperContract
-
 
   // You can freely modify timestamps and the state of the contracts to your liking.
   // For how you want to set up the contracts, please refer to test files in test/tokenomics
@@ -49,7 +51,9 @@ async function main() {
   const USD_V2_SWAP_NAME = "SaddleUSDPoolV2"
   const USD_V2_LP_TOKEN_NAME = `${USD_V2_SWAP_NAME}LPToken`
   const USD_V2_GAUGE_NAME = `LiquidityGaugeV5_${USD_V2_LP_TOKEN_NAME}`
-  const usdV2Gauge = await ethers.getContract(USD_V2_GAUGE_NAME)
+  const usdV2Gauge: LiquidityGaugeV5 = await ethers.getContract(
+    USD_V2_GAUGE_NAME,
+  )
   const gaugeController = (await ethers.getContract(
     "GaugeController",
   )) as GaugeController
@@ -158,11 +162,21 @@ async function main() {
   // Log working balances for signers[1] and signers[2] in usdV2Gauge
   for (let i = 1; i < 3; i++) {
     const signer = signers[i]
-    const workingBalance = await usdV2Gauge.working_balances(
-      signer.address
+    const workingBalance = await usdV2Gauge.working_balances(signer.address)
+    const balanceOf = await usdV2Gauge.balanceOf(signer.address)
+    const boost = ethers.utils.formatUnits(
+      workingBalance.mul(BIG_NUMBER_1E18).div(balanceOf).mul(25).div(10),
+      18,
     )
+
     console.log(
       `${USD_V2_GAUGE_NAME} Working balance for signer[${i}] ${signer.address}: ${workingBalance}`,
+    )
+    console.log(
+      `${USD_V2_GAUGE_NAME} BalanceOf for signer[${i}]       ${signer.address}: ${balanceOf}`,
+    )
+    console.log(
+      `${USD_V2_GAUGE_NAME} Boost for signer[${i}]       ${signer.address}: ${boost}`,
     )
   }
 
@@ -186,11 +200,9 @@ async function main() {
   // Call user_checkpoint() to update working_balances of signer[1] and signer[2]
   for (let i = 1; i < 3; i++) {
     const signer = signers[i]
-    await usdV2Gauge.
-      connect(signer).user_checkpoint(
-        signer.address,
-        { gasLimit: 3_000_000 }
-      )
+    await usdV2Gauge
+      .connect(signer)
+      .user_checkpoint(signer.address, { gasLimit: 3_000_000 })
     console.log(
       `${USD_V2_GAUGE_NAME} Called user_checkpoint for signer[${i}] ${signer.address}`,
     )
@@ -199,11 +211,21 @@ async function main() {
   // Log working balances for signers[1] and signers[2] in usdV2Gauge
   for (let i = 1; i < 3; i++) {
     const signer = signers[i]
-    const workingBalance = await usdV2Gauge.working_balances(
-      signer.address
+    const workingBalance = await usdV2Gauge.working_balances(signer.address)
+    const balanceOf = await usdV2Gauge.balanceOf(signer.address)
+    const boost = ethers.utils.formatUnits(
+      workingBalance.mul(BIG_NUMBER_1E18).div(balanceOf).mul(25).div(10),
+      18,
     )
+
     console.log(
       `${USD_V2_GAUGE_NAME} Working balance for signer[${i}] ${signer.address}: ${workingBalance}`,
+    )
+    console.log(
+      `${USD_V2_GAUGE_NAME} BalanceOf for signer[${i}]       ${signer.address}: ${balanceOf}`,
+    )
+    console.log(
+      `${USD_V2_GAUGE_NAME} Boost for signer[${i}]       ${signer.address}: ${boost}`,
     )
   }
 }
