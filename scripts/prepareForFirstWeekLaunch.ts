@@ -262,12 +262,21 @@ async function main() {
     `Total supply of ${USD_V2_GAUGE_NAME}: `,
     (await usdv2Gauge.totalSupply()).toString(),
   )
+  console.log(
+    `Working supply of ${USD_V2_GAUGE_NAME}: `,
+    (await usdv2Gauge.working_supply()).toString(),
+  )
+
   await usdv2Gauge.connect(signers[1])["deposit(uint256)"](BIG_NUMBER_1E18)
   // Deposit into gauge from un-boosted account
   await usdv2Gauge.connect(signers[2])["deposit(uint256)"](BIG_NUMBER_1E18)
   console.log(
     `Total supply of ${USD_V2_GAUGE_NAME} after deposits: `,
     (await usdv2Gauge.totalSupply()).toString(),
+  )
+  console.log(
+    `Working supply of ${USD_V2_GAUGE_NAME}: `,
+    (await usdv2Gauge.working_supply()).toString(),
   )
 }
 
