@@ -186,10 +186,11 @@ async function main() {
   // Call user_checkpoint() to update working_balances of signer[1] and signer[2]
   for (let i = 1; i < 3; i++) {
     const signer = signers[i]
-    await usdV2Gauge.user_checkpoint(
-      signer.address,
-      { gasLimit: 3_000_000 }
-    )
+    await usdV2Gauge.
+      connect(signer).user_checkpoint(
+        signer.address,
+        { gasLimit: 3_000_000 }
+      )
     console.log(
       `${USD_V2_GAUGE_NAME} Called user_checkpoint for signer[${i}] ${signer.address}`,
     )
