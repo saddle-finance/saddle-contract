@@ -2,15 +2,15 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 
 // Deployment names
-const META_POOL_NAME = "SaddleFRAXsUSDMetaPool"
+const META_POOL_NAME = "SaddleFRAXUSDsMetaPool"
 const META_POOL_LP_TOKEN_NAME = `${META_POOL_NAME}LPToken`
-const BASE_POOL_NAME = "SaddleFtmUSDPool"
+const BASE_POOL_NAME = "SaddleFRAXBPPool"
 
 // Constructor arguments
-const TOKEN_NAMES = ["SUSD", `${BASE_POOL_NAME}LPToken`]
+const TOKEN_NAMES = ["USDs", `${BASE_POOL_NAME}LPToken`]
 const TOKEN_DECIMALS = [18, 18]
-const LP_TOKEN_NAME = "Saddle sUSD/saddleFraxBP LP Token"
-const LP_TOKEN_SYMBOL = "saddleFraxSUSD"
+const LP_TOKEN_NAME = "Saddle USDs/saddleFraxBP LP Token"
+const LP_TOKEN_SYMBOL = "saddleFraxUSDs"
 const INITIAL_A = 100
 const SWAP_FEE = 4e6 // 4bps
 const ADMIN_FEE = 50e8
@@ -77,4 +77,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = [META_POOL_NAME]
-func.dependencies = ["LPToken", "FRAXSUSDMetaPoolTokens", "SaddleFtmUSDPool"]
+func.dependencies = ["LPToken", "FRAXUSDSMetaPoolTokens", "SaddleFRAXBPPool"]

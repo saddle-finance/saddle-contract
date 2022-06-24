@@ -25,18 +25,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     //   isGuarded: false,
     // },
     {
-      // frax SUSD meta Pool
-      poolAddress: (await get("SaddleFRAXsUSDMetaPool")).address,
-      typeOfAsset: PoolType.USD,
-      poolName: ethers.utils.formatBytes32String("FRAXBP-SUSD"),
-      targetAddress: (await get("MetaSwapV3")).address,
-      metaSwapDepositAddress: (await get("SaddleFRAXsUSDMetaPoolDeposit"))
-      .address,
-      isSaddleApproved: true,
-      isRemoved: false,
-      isGuarded: false,
-    },
-    {
       // frax alUSD meta Pool
       poolAddress: (await get("SaddleFRAXalUSDMetaPool")).address,
       typeOfAsset: PoolType.USD,

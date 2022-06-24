@@ -35,4 +35,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["FRAXUSDTMetaPoolTokens"]
-func.dependencies = ["SaddleFraxBPPool"]
+func.dependencies = ["SaddleFRAXBPPool"]

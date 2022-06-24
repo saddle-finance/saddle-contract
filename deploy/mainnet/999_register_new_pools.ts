@@ -51,7 +51,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // },
     {
       // frax USDC Base Pool
-      poolAddress: (await get("SaddleFraxBPPool")).address,
+      poolAddress: (await get("SaddleFRAXBPPool")).address,
       typeOfAsset: PoolType.USD,
       poolName: ethers.utils.formatBytes32String("FRAX-USDC-BP"),
       targetAddress: (await get("Swap")).address,

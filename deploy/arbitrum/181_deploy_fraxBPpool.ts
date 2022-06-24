@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 
 // Deployment Names
-const BASE_POOL_NAME = "SaddleFraxBPPool"
+const BASE_POOL_NAME = "SaddleFRAXBPPool"
 const BASE_POOL_LP_TOKEN_NAME = `${BASE_POOL_NAME}LPToken`
 
 // Constructor arguments

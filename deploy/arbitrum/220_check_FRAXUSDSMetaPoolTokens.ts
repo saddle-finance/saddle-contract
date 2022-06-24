@@ -4,7 +4,7 @@ import { isTestNetwork } from "../../utils/network"
 import { BigNumber } from "ethers"
 
 const USD_TOKENS_ARGS: { [token: string]: any[] } = {
-  SUSD: ["Synth sUSD", "sUSD", "18"],
+  USDs: ["USDs", "USDS", "18"],
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -34,5 +34,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["FRAXSUSDMetaPoolTokens"]
-func.dependencies = ["SaddleFraxBPPool"]
+func.tags = ["FRAXUSDSMetaPoolTokens"]
+func.dependencies = ["SaddleFRAXBPPool"]

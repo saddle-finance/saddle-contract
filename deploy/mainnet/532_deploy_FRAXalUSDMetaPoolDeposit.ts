@@ -6,7 +6,7 @@ const META_POOL_NAME = "SaddleFRAXalUSDMetaPool"
 const META_POOL_LP_TOKEN_NAME = `${META_POOL_NAME}LPToken`
 const META_POOL_DEPOSIT_NAME = `${META_POOL_NAME}Deposit`
 const TARGET_META_SWAP_DEPOSIT_NAME = `MetaSwapDeposit`
-const BASE_POOL_NAME = `SaddleFraxBPPool`
+const BASE_POOL_NAME = `SaddleFRAXBPPool`
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
