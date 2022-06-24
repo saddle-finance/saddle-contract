@@ -1,49 +1,49 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { PoolRegistry } from "../../build/typechain"
-import { ZERO_ADDRESS } from "../../test/testUtils"
 import { PoolType } from "../../utils/constants"
-import { IPoolRegistry } from "../../build/typechain"
+import { IPoolRegistry } from "../../build/typechain/"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
-  const { deploy, get, getOrNull, execute, read, log } = deployments
+  const { deployments, getNamedAccounts, ethers } = hre
+  const { get, execute, log } = deployments
   const { deployer } = await getNamedAccounts()
 
   const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
 
   const pools: IPoolRegistry.PoolInputDataStruct[] = [
-    // {
-    //   // FtmUSDPool
-    //   poolAddress: (await get("SaddleFtmUSDPool")).address,
-    //   typeOfAsset: PoolType.USD,
-    //   poolName: ethers.utils.formatBytes32String("FtmUSD"),
-    //   targetAddress: (await get("SwapFlashLoan")).address,
-    //   metaSwapDepositAddress: ZERO_ADDRESS,
-    //   isSaddleApproved: true,
-    //   isRemoved: false,
-    //   isGuarded: false,
-    // },
     {
-      // frax alUSD meta Pool
-      poolAddress: (await get("SaddleFRAXalUSDMetaPool")).address,
+      // sUSD meta pool v3
+      poolAddress: (await get("SaddleSUSDMetaPoolV3")).address,
       typeOfAsset: PoolType.USD,
-      poolName: ethers.utils.formatBytes32String("FRAXBP-alUSD"),
+      poolName: ethers.utils.formatBytes32String("sUSD-USDv2_v3"),
       targetAddress: (await get("MetaSwapV3")).address,
-      metaSwapDepositAddress: (await get("SaddleFRAXalUSDMetaPoolDeposit"))
-      .address,
+      metaSwapDepositAddress: (await get("SaddleSUSDMetaPoolV3Deposit"))
+        .address,
       isSaddleApproved: true,
       isRemoved: false,
       isGuarded: false,
     },
     {
-      // frax USDT meta Pool
-      poolAddress: (await get("SaddleFRAXUSDTMetaPool")).address,
-      typeOfAsset: PoolType.USD,
-      poolName: ethers.utils.formatBytes32String("FRAXBP-USDT"),
+      // tBTCv2 meta pool v3
+      poolAddress: (await get("SaddleTBTCMetaPoolV3")).address,
+      typeOfAsset: PoolType.BTC,
+      poolName: ethers.utils.formatBytes32String("tBTCv2-BTCv2_v3"),
       targetAddress: (await get("MetaSwapV3")).address,
-      metaSwapDepositAddress: (await get("SaddleFRAXUSDTMetaPoolDeposit"))
-      .address,
+      metaSwapDepositAddress: (await get("SaddleTBTCMetaPoolV3Deposit"))
+        .address,
+      isSaddleApproved: true,
+      isRemoved: false,
+      isGuarded: false,
+    },
+    {
+      // WCUSD meta pool v3
+      poolAddress: (await get("SaddleWCUSDMetaPoolV3")).address,
+      typeOfAsset: PoolType.USD,
+      poolName: ethers.utils.formatBytes32String("WCUSD-USDv2_v3"),
+      targetAddress: (await get("MetaSwapV3")).address,
+      metaSwapDepositAddress: (await get("SaddleWCUSDMetaPoolV3Deposit"))
+        .address,
       isSaddleApproved: true,
       isRemoved: false,
       isGuarded: false,
@@ -63,10 +63,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           async (pool) => await poolRegistry.populateTransaction.addPool(pool),
         ),
       )
-
-      const batchCallData = batchCall
-        .map((x) => x.data)
-        .filter((x): x is string => !!x)
+      const batchCallData = batchCall.map((x) => x.data).filter(Boolean)
 
       await execute(
         "PoolRegistry",
