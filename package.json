@@ -70,11 +70,7 @@
     "coverage": "hardhat coverage --temp ./build/artifacts",
     "deploy": "hardhat deploy",
     "start": "hardhat node",
-    "fork:mainnet": "dotenv -v FORK_NETWORK=mainnet hardhat node",
-    "fork:evmos_mainnet": "dotenv -v FORK_NETWORK=evmos_mainnet hardhat node",
-    "fork:arbitrum_mainnet": "dotenv -v FORK_NETWORK=arbitrum_mainnet hardhat node",
-    "fork:fantom_mainnet": "dotenv -v FORK_NETWORK=fantom_mainnet hardhat node",
-    "fork:optimism_mainnet": "dotenv -v FORK_NETWORK=optimism_mainnet hardhat node",
+    "fork": "dotenv -v FORK_NETWORK=$npm_config_network hardhat node",
     "prepare": "npm run build",
     "addresses": "node scripts/print-addresses.js"
   },
