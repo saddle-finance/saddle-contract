@@ -16,7 +16,7 @@
     "@openzeppelin/contracts-upgradeable": "3.4.1",
     "@openzeppelin/contracts-upgradeable-4.2.0": "npm:@openzeppelin/contracts-upgradeable@4.2.0",
     "dotenv": "^10.0.0",
-    "dotenv-cli": "^4.1.1",
+    "dotenv-cli": "^5.1.0",
     "synthetix": "2.56.1"
   },
   "devDependencies": {
