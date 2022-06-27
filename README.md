@@ -40,17 +40,19 @@ $ npm run start
 ```
 You can connect to this RPC server via `http://localhost:8545` with chain ID of 31337
 
-### Deploying contracts to local fork of Mainnet
+### Deploying contracts to local fork of a network
 
-In order to successfully fork the mainnet, `ALCHEMY_API` must be set to a valid URL in the `.env` file.
+In order to successfully fork a network, the networks have to be defined in hardhat.config.ts with valid RPC URLs. In case of mainnet, `ALCHEMY_API` must be set to a valid URL in the `.env` file. 
 ```
 ALCHEMY_API="https://eth-mainnet.alchemyapi.io/v2/XXXXXXXXXXXX"
 ```
 
 ```bash
-$ npm run fork
+$ npm run fork --network=mainnet
 ```
-You can connect to this RPC server via `http://localhost:8545` with chain ID of 1.
+You can connect to this RPC server via `http://localhost:8545` with chain ID of the network.
+
+Additionally, you can choose a block number to fork from by setting `FORK_BLOCK_NUMBER` env variable.
 
 ### Deploying contracts to Ropsten
 
