@@ -1,8 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { PoolRegistry } from "../../build/typechain"
+import { PoolRegistry, IPoolRegistry } from "../../build/typechain"
 import { PoolType } from "../../utils/constants"
-import { IPoolRegistry } from "../../build/typechain/"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre

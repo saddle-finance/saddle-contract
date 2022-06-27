@@ -8,11 +8,9 @@ import { deployments, ethers } from "hardhat"
 import {
   IPoolRegistry,
   ISwapGuarded,
-  ISwapGuarded__factory,
   MetaSwap,
   PoolRegistry,
   Swap,
-  Swap__factory,
 } from "../../build/typechain"
 import { PoolType } from "../../utils/constants"
 import {
@@ -433,7 +431,7 @@ describe("Registry", async () => {
     it("Successfully fetches swapStorage from a regular Swap", async () => {
       await poolRegistry.addPool(usdv2Data)
       const swap = (await ethers.getContractAt(
-        Swap__factory.abi,
+        "Swap",
         usdv2Data.poolAddress,
       )) as Swap
       expect(await poolRegistry.getSwapStorage(usdv2Data.poolAddress)).to.eql(
@@ -444,7 +442,7 @@ describe("Registry", async () => {
     it("Successfully fetches swapStorage from a guarded Swap", async () => {
       await poolRegistry.addPool(guardedBtcInputData)
       const guardedSwap = (await ethers.getContractAt(
-        ISwapGuarded__factory.abi,
+        "SwapGuarded",
         guardedBtcInputData.poolAddress,
       )) as ISwapGuarded
       const swapStorage = [...(await guardedSwap.swapStorage())]

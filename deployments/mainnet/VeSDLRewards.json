@@ -1,0 +1,815 @@
+{
+  "address": "0xc7b10D3B08CEB05d8ff58a3c781225D9a72078Ae",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "veToken_",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "rewardToken_",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "gov_",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "Donate",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "reward",
+          "type": "uint256"
+        }
+      ],
+      "name": "RewardAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "reward",
+          "type": "uint256"
+        }
+      ],
+      "name": "RewardPaid",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "gov",
+          "type": "address"
+        }
+      ],
+      "name": "UpdatedGov",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "isWhitelisted",
+          "type": "bool"
+        }
+      ],
+      "name": "UpdatedWhitelist",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "DURATION",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_addr",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "_isWhitelist",
+          "type": "bool"
+        }
+      ],
+      "name": "addToWhitelist",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "currentRewards",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "donate",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "earned",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getReward",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "_lock",
+          "type": "bool"
+        }
+      ],
+      "name": "getReward",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "_lock",
+          "type": "bool"
+        }
+      ],
+      "name": "getRewardFor",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "gov",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "historicalRewards",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lastTimeRewardApplicable",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lastUpdateTime",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "periodFinish",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "queueNewRewards",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "queuedRewards",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "rewardPerToken",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "rewardPerTokenStored",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "rewardRate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "rewardToken",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "rewards",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_gov",
+          "type": "address"
+        }
+      ],
+      "name": "setGov",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
+      "name": "sweep",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        }
+      ],
+      "name": "updateReward",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "userRewardPerTokenPaid",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "veToken",
+      "outputs": [
+        {
+          "internalType": "contract IVotingEscrow",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "whitelist",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x8ff08cb70415aecadae6b4d5074f4425b982ba7f7ed2ca87a6d8f16104521370",
+  "receipt": {
+    "to": null,
+    "from": "0x5BDb37d0Ddea3A90F233c7B7F6b9394B6b2eef34",
+    "contractAddress": "0xc7b10D3B08CEB05d8ff58a3c781225D9a72078Ae",
+    "transactionIndex": 124,
+    "gasUsed": "1434365",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x2cfb53666022d651c969e9f2462bd03f4f208ea34e4de40ab4c08fd2dce3731a",
+    "transactionHash": "0x8ff08cb70415aecadae6b4d5074f4425b982ba7f7ed2ca87a6d8f16104521370",
+    "logs": [],
+    "blockNumber": 14998668,
+    "cumulativeGasUsed": "12577692",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0xD2751CdBED54B87777E805be36670D7aeAe73bb2",
+    "0xf1Dc500FdE233A4055e25e5BbF516372BC4F6871",
+    "0x3F8E527aF4e0c6e763e8f368AC679c44C45626aE"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "09e31fb00e633dab4b5e8225b32aed67",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.6+commit.11564f7e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"veToken_\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"rewardToken_\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"gov_\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Donate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"}],\"name\":\"RewardAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"}],\"name\":\"RewardPaid\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"gov\",\"type\":\"address\"}],\"name\":\"UpdatedGov\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"isWhitelisted\",\"type\":\"bool\"}],\"name\":\"UpdatedWhitelist\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DURATION\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_addr\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"_isWhitelist\",\"type\":\"bool\"}],\"name\":\"addToWhitelist\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"currentRewards\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"donate\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"earned\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getReward\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"_lock\",\"type\":\"bool\"}],\"name\":\"getReward\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"_lock\",\"type\":\"bool\"}],\"name\":\"getRewardFor\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"gov\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"historicalRewards\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastTimeRewardApplicable\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastUpdateTime\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"periodFinish\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"queueNewRewards\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"queuedRewards\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rewardPerToken\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rewardPerTokenStored\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rewardRate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rewardToken\",\"outputs\":[{\"internalType\":\"contract IERC20\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"rewards\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_gov\",\"type\":\"address\"}],\"name\":\"setGov\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_token\",\"type\":\"address\"}],\"name\":\"sweep\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"}],\"name\":\"updateReward\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"userRewardPerTokenPaid\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"veToken\",\"outputs\":[{\"internalType\":\"contract IVotingEscrow\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"addToWhitelist(address,bool)\":{\"details\":\"Can be called by gov\",\"params\":{\"_addr\":\"address to whitelist\",\"_isWhitelist\":\"whether to whitelist or blacklist\"}},\"donate(uint256)\":{\"details\":\"Do not trigger rewardRate recalculation\",\"params\":{\"_amount\":\"token to donate\"},\"returns\":{\"_0\":\"true\"}},\"earned(address)\":{\"returns\":{\"_0\":\"amount of tokens earned\"}},\"getReward()\":{\"returns\":{\"_0\":\"true\"}},\"getReward(bool)\":{\"params\":{\"_lock\":\"should it lock rewards into veSDL\"},\"returns\":{\"_0\":\"true\"}},\"getRewardFor(address,bool)\":{\"details\":\"rewards are transfer to _account\",\"params\":{\"_account\":\"to claim rewards for\",\"_lock\":\"should it lock rewards into veSDL\"},\"returns\":{\"_0\":\"true\"}},\"lastTimeRewardApplicable()\":{\"returns\":{\"_0\":\"timestamp until rewards are distributed\"}},\"queueNewRewards(uint256)\":{\"details\":\"Trigger rewardRate recalculation using _amount and queuedRewards\",\"params\":{\"_amount\":\"token to add to rewards\"},\"returns\":{\"_0\":\"true\"}},\"rewardPerToken()\":{\"details\":\"gives the total amount of rewards distributed since inception of the pool per vault token\",\"returns\":{\"_0\":\"rewardPerToken\"}},\"setGov(address)\":{\"details\":\"Can be called by gov\",\"params\":{\"_gov\":\"new gov\"},\"returns\":{\"_0\":\"true\"}},\"updateReward(address)\":{\"details\":\"called by veSDL\",\"returns\":{\"_0\":\"true\"}}},\"title\":\"VeSDLRewards\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"addToWhitelist(address,bool)\":{\"notice\":\"add to whitelist\"},\"donate(uint256)\":{\"notice\":\"Donate tokens to distribute as rewards\"},\"earned(address)\":{\"notice\":\"earning for an account\"},\"getReward()\":{\"notice\":\"Get rewards\"},\"getReward(bool)\":{\"notice\":\"Get rewards\"},\"getRewardFor(address,bool)\":{\"notice\":\"Get rewards for an account\"},\"queueNewRewards(uint256)\":{\"notice\":\"Add new rewards to be distributed over a week\"},\"rewardPerToken()\":{\"notice\":\"reward per token deposited\"},\"setGov(address)\":{\"notice\":\"set gov\"},\"updateReward(address)\":{\"notice\":\"use to update rewards on veSDL balance changes.\"}},\"notice\":\"Gauge like contract that simulates veSDL stake.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/tokenomics/voting_escrow/VeSDLRewards.sol\":\"VeSDLRewards\"},\"evmVersion\":\"berlin\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts-4.4.0/token/ERC20/IERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (token/ERC20/IERC20.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Interface of the ERC20 standard as defined in the EIP.\\n */\\ninterface IERC20 {\\n    /**\\n     * @dev Returns the amount of tokens in existence.\\n     */\\n    function totalSupply() external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the amount of tokens owned by `account`.\\n     */\\n    function balanceOf(address account) external view returns (uint256);\\n\\n    /**\\n     * @dev Moves `amount` tokens from the caller's account to `recipient`.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transfer(address recipient, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Returns the remaining number of tokens that `spender` will be\\n     * allowed to spend on behalf of `owner` through {transferFrom}. This is\\n     * zero by default.\\n     *\\n     * This value changes when {approve} or {transferFrom} are called.\\n     */\\n    function allowance(address owner, address spender) external view returns (uint256);\\n\\n    /**\\n     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * IMPORTANT: Beware that changing an allowance with this method brings the risk\\n     * that someone may use both the old and the new allowance by unfortunate\\n     * transaction ordering. One possible solution to mitigate this race\\n     * condition is to first reduce the spender's allowance to 0 and set the\\n     * desired value afterwards:\\n     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729\\n     *\\n     * Emits an {Approval} event.\\n     */\\n    function approve(address spender, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Moves `amount` tokens from `sender` to `recipient` using the\\n     * allowance mechanism. `amount` is then deducted from the caller's\\n     * allowance.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transferFrom(\\n        address sender,\\n        address recipient,\\n        uint256 amount\\n    ) external returns (bool);\\n\\n    /**\\n     * @dev Emitted when `value` tokens are moved from one account (`from`) to\\n     * another (`to`).\\n     *\\n     * Note that `value` may be zero.\\n     */\\n    event Transfer(address indexed from, address indexed to, uint256 value);\\n\\n    /**\\n     * @dev Emitted when the allowance of a `spender` for an `owner` is set by\\n     * a call to {approve}. `value` is the new allowance.\\n     */\\n    event Approval(address indexed owner, address indexed spender, uint256 value);\\n}\\n\",\"keccak256\":\"0xc1452b054778f1926419196ef12ae200758a4ee728df69ae1cd13e5c16ca7df7\",\"license\":\"MIT\"},\"@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (token/ERC20/utils/SafeERC20.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../IERC20.sol\\\";\\nimport \\\"../../../utils/Address.sol\\\";\\n\\n/**\\n * @title SafeERC20\\n * @dev Wrappers around ERC20 operations that throw on failure (when the token\\n * contract returns false). Tokens that return no value (and instead revert or\\n * throw on failure) are also supported, non-reverting calls are assumed to be\\n * successful.\\n * To use this library you can add a `using SafeERC20 for IERC20;` statement to your contract,\\n * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.\\n */\\nlibrary SafeERC20 {\\n    using Address for address;\\n\\n    function safeTransfer(\\n        IERC20 token,\\n        address to,\\n        uint256 value\\n    ) internal {\\n        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));\\n    }\\n\\n    function safeTransferFrom(\\n        IERC20 token,\\n        address from,\\n        address to,\\n        uint256 value\\n    ) internal {\\n        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));\\n    }\\n\\n    /**\\n     * @dev Deprecated. This function has issues similar to the ones found in\\n     * {IERC20-approve}, and its usage is discouraged.\\n     *\\n     * Whenever possible, use {safeIncreaseAllowance} and\\n     * {safeDecreaseAllowance} instead.\\n     */\\n    function safeApprove(\\n        IERC20 token,\\n        address spender,\\n        uint256 value\\n    ) internal {\\n        // safeApprove should only be called when setting an initial allowance,\\n        // or when resetting it to zero. To increase and decrease it, use\\n        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'\\n        require(\\n            (value == 0) || (token.allowance(address(this), spender) == 0),\\n            \\\"SafeERC20: approve from non-zero to non-zero allowance\\\"\\n        );\\n        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));\\n    }\\n\\n    function safeIncreaseAllowance(\\n        IERC20 token,\\n        address spender,\\n        uint256 value\\n    ) internal {\\n        uint256 newAllowance = token.allowance(address(this), spender) + value;\\n        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));\\n    }\\n\\n    function safeDecreaseAllowance(\\n        IERC20 token,\\n        address spender,\\n        uint256 value\\n    ) internal {\\n        unchecked {\\n            uint256 oldAllowance = token.allowance(address(this), spender);\\n            require(oldAllowance >= value, \\\"SafeERC20: decreased allowance below zero\\\");\\n            uint256 newAllowance = oldAllowance - value;\\n            _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));\\n        }\\n    }\\n\\n    /**\\n     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement\\n     * on the return value: the return value is optional (but if data is returned, it must not be false).\\n     * @param token The token targeted by the call.\\n     * @param data The call data (encoded using abi.encode or one of its variants).\\n     */\\n    function _callOptionalReturn(IERC20 token, bytes memory data) private {\\n        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since\\n        // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that\\n        // the target address contains contract code and also asserts for success in the low-level call.\\n\\n        bytes memory returndata = address(token).functionCall(data, \\\"SafeERC20: low-level call failed\\\");\\n        if (returndata.length > 0) {\\n            // Return data is optional\\n            require(abi.decode(returndata, (bool)), \\\"SafeERC20: ERC20 operation did not succeed\\\");\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x671741933530f343f023a40e58e61bc09d62494b96c6f3e39e647f315facd519\",\"license\":\"MIT\"},\"@openzeppelin/contracts-4.4.0/utils/Address.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (utils/Address.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Collection of functions related to the address type\\n */\\nlibrary Address {\\n    /**\\n     * @dev Returns true if `account` is a contract.\\n     *\\n     * [IMPORTANT]\\n     * ====\\n     * It is unsafe to assume that an address for which this function returns\\n     * false is an externally-owned account (EOA) and not a contract.\\n     *\\n     * Among others, `isContract` will return false for the following\\n     * types of addresses:\\n     *\\n     *  - an externally-owned account\\n     *  - a contract in construction\\n     *  - an address where a contract will be created\\n     *  - an address where a contract lived, but was destroyed\\n     * ====\\n     */\\n    function isContract(address account) internal view returns (bool) {\\n        // This method relies on extcodesize, which returns 0 for contracts in\\n        // construction, since the code is only stored at the end of the\\n        // constructor execution.\\n\\n        uint256 size;\\n        assembly {\\n            size := extcodesize(account)\\n        }\\n        return size > 0;\\n    }\\n\\n    /**\\n     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to\\n     * `recipient`, forwarding all available gas and reverting on errors.\\n     *\\n     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost\\n     * of certain opcodes, possibly making contracts go over the 2300 gas limit\\n     * imposed by `transfer`, making them unable to receive funds via\\n     * `transfer`. {sendValue} removes this limitation.\\n     *\\n     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].\\n     *\\n     * IMPORTANT: because control is transferred to `recipient`, care must be\\n     * taken to not create reentrancy vulnerabilities. Consider using\\n     * {ReentrancyGuard} or the\\n     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].\\n     */\\n    function sendValue(address payable recipient, uint256 amount) internal {\\n        require(address(this).balance >= amount, \\\"Address: insufficient balance\\\");\\n\\n        (bool success, ) = recipient.call{value: amount}(\\\"\\\");\\n        require(success, \\\"Address: unable to send value, recipient may have reverted\\\");\\n    }\\n\\n    /**\\n     * @dev Performs a Solidity function call using a low level `call`. A\\n     * plain `call` is an unsafe replacement for a function call: use this\\n     * function instead.\\n     *\\n     * If `target` reverts with a revert reason, it is bubbled up by this\\n     * function (like regular Solidity function calls).\\n     *\\n     * Returns the raw returned data. To convert to the expected return value,\\n     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].\\n     *\\n     * Requirements:\\n     *\\n     * - `target` must be a contract.\\n     * - calling `target` with `data` must not revert.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCall(address target, bytes memory data) internal returns (bytes memory) {\\n        return functionCall(target, data, \\\"Address: low-level call failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`], but with\\n     * `errorMessage` as a fallback revert reason when `target` reverts.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCall(\\n        address target,\\n        bytes memory data,\\n        string memory errorMessage\\n    ) internal returns (bytes memory) {\\n        return functionCallWithValue(target, data, 0, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],\\n     * but also transferring `value` wei to `target`.\\n     *\\n     * Requirements:\\n     *\\n     * - the calling contract must have an ETH balance of at least `value`.\\n     * - the called Solidity function must be `payable`.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCallWithValue(\\n        address target,\\n        bytes memory data,\\n        uint256 value\\n    ) internal returns (bytes memory) {\\n        return functionCallWithValue(target, data, value, \\\"Address: low-level call with value failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCallWithValue-address-bytes-uint256-}[`functionCallWithValue`], but\\n     * with `errorMessage` as a fallback revert reason when `target` reverts.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCallWithValue(\\n        address target,\\n        bytes memory data,\\n        uint256 value,\\n        string memory errorMessage\\n    ) internal returns (bytes memory) {\\n        require(address(this).balance >= value, \\\"Address: insufficient balance for call\\\");\\n        require(isContract(target), \\\"Address: call to non-contract\\\");\\n\\n        (bool success, bytes memory returndata) = target.call{value: value}(data);\\n        return verifyCallResult(success, returndata, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],\\n     * but performing a static call.\\n     *\\n     * _Available since v3.3._\\n     */\\n    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {\\n        return functionStaticCall(target, data, \\\"Address: low-level static call failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],\\n     * but performing a static call.\\n     *\\n     * _Available since v3.3._\\n     */\\n    function functionStaticCall(\\n        address target,\\n        bytes memory data,\\n        string memory errorMessage\\n    ) internal view returns (bytes memory) {\\n        require(isContract(target), \\\"Address: static call to non-contract\\\");\\n\\n        (bool success, bytes memory returndata) = target.staticcall(data);\\n        return verifyCallResult(success, returndata, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],\\n     * but performing a delegate call.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {\\n        return functionDelegateCall(target, data, \\\"Address: low-level delegate call failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],\\n     * but performing a delegate call.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function functionDelegateCall(\\n        address target,\\n        bytes memory data,\\n        string memory errorMessage\\n    ) internal returns (bytes memory) {\\n        require(isContract(target), \\\"Address: delegate call to non-contract\\\");\\n\\n        (bool success, bytes memory returndata) = target.delegatecall(data);\\n        return verifyCallResult(success, returndata, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Tool to verifies that a low level call was successful, and revert if it wasn't, either by bubbling the\\n     * revert reason using the provided one.\\n     *\\n     * _Available since v4.3._\\n     */\\n    function verifyCallResult(\\n        bool success,\\n        bytes memory returndata,\\n        string memory errorMessage\\n    ) internal pure returns (bytes memory) {\\n        if (success) {\\n            return returndata;\\n        } else {\\n            // Look for revert reason and bubble it up if present\\n            if (returndata.length > 0) {\\n                // The easiest way to bubble the revert reason is using memory via assembly\\n\\n                assembly {\\n                    let returndata_size := mload(returndata)\\n                    revert(add(32, returndata), returndata_size)\\n                }\\n            } else {\\n                revert(errorMessage);\\n            }\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x9944d1038f27dcebff810d7ba16b3b8058b967173d76874fb72dd7cd84129656\",\"license\":\"MIT\"},\"@openzeppelin/contracts-4.4.0/utils/math/Math.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (utils/math/Math.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Standard math utilities missing in the Solidity language.\\n */\\nlibrary Math {\\n    /**\\n     * @dev Returns the largest of two numbers.\\n     */\\n    function max(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a >= b ? a : b;\\n    }\\n\\n    /**\\n     * @dev Returns the smallest of two numbers.\\n     */\\n    function min(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a < b ? a : b;\\n    }\\n\\n    /**\\n     * @dev Returns the average of two numbers. The result is rounded towards\\n     * zero.\\n     */\\n    function average(uint256 a, uint256 b) internal pure returns (uint256) {\\n        // (a + b) / 2 can overflow.\\n        return (a & b) + (a ^ b) / 2;\\n    }\\n\\n    /**\\n     * @dev Returns the ceiling of the division of two numbers.\\n     *\\n     * This differs from standard division with `/` in that it rounds up instead\\n     * of rounding down.\\n     */\\n    function ceilDiv(uint256 a, uint256 b) internal pure returns (uint256) {\\n        // (a + b - 1) / b can overflow on addition, so we distribute.\\n        return a / b + (a % b == 0 ? 0 : 1);\\n    }\\n}\\n\",\"keccak256\":\"0xe936fc79332de2ca7b1c06a70f81345aa2466958aab00f463e312ca0585e85cf\",\"license\":\"MIT\"},\"contracts/interfaces/IVotingEscrow.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.0;\\nimport \\\"@openzeppelin/contracts-4.4.0/token/ERC20/IERC20.sol\\\";\\n\\ninterface IVotingEscrow is IERC20 {\\n    struct LockedBalance {\\n        int128 amount;\\n        uint256 end;\\n    }\\n\\n    function balanceOf(address) external view override returns (uint256);\\n\\n    function totalSupply() external view override returns (uint256);\\n\\n    function locked__end(address) external view returns (uint256);\\n\\n    function locked(address) external view returns (LockedBalance memory);\\n\\n    function deposit_for(address, uint256) external;\\n\\n    function is_unlocked() external view returns (bool);\\n}\\n\",\"keccak256\":\"0xa44f9f8a5c7040bc560f7a16a3b5513c9bf0f674dd5925d24268cb56a2ebc378\",\"license\":\"MIT\"},\"contracts/tokenomics/voting_escrow/VeSDLRewards.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.0;\\n\\nimport \\\"@openzeppelin/contracts-4.4.0/token/ERC20/IERC20.sol\\\";\\nimport \\\"@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol\\\";\\nimport \\\"@openzeppelin/contracts-4.4.0/utils/math/Math.sol\\\";\\nimport \\\"../../interfaces/IVotingEscrow.sol\\\";\\n\\n/** @title VeSDLRewards\\n    @notice Gauge like contract that simulates veSDL stake.\\n */\\n\\ncontract VeSDLRewards {\\n    using SafeERC20 for IERC20;\\n\\n    IERC20 public rewardToken; // immutable are breaking coverage software should be added back after.\\n    IVotingEscrow public veToken; // immutable\\n    uint256 public constant DURATION = 7 days;\\n    uint256 public periodFinish = 0;\\n    uint256 public rewardRate = 0;\\n    uint256 public lastUpdateTime;\\n    uint256 public rewardPerTokenStored;\\n    uint256 public queuedRewards = 0;\\n    uint256 public currentRewards = 0;\\n    uint256 public historicalRewards = 0;\\n    address public gov;\\n    mapping(address => uint256) public userRewardPerTokenPaid;\\n    mapping(address => uint256) public rewards;\\n    // whitelisted addresses have right to claim and lock into veSDL on anothers behalf\\n    mapping(address => bool) public whitelist;\\n\\n    event RewardAdded(uint256 reward);\\n    event Donate(uint256 amount);\\n    event RewardPaid(address indexed user, uint256 reward);\\n    event UpdatedGov(address gov);\\n    event UpdatedWhitelist(address recipient, bool isWhitelisted);\\n\\n    constructor(\\n        address veToken_,\\n        address rewardToken_,\\n        address gov_\\n    ) {\\n        veToken = IVotingEscrow(veToken_);\\n        rewardToken = IERC20(rewardToken_);\\n        gov = gov_;\\n    }\\n\\n    modifier _updateReward(address account) {\\n        rewardPerTokenStored = rewardPerToken();\\n        lastUpdateTime = lastTimeRewardApplicable();\\n\\n        if (account != address(0)) {\\n            rewards[account] = _earnedReward(account);\\n            userRewardPerTokenPaid[account] = rewardPerTokenStored;\\n        }\\n        _;\\n    }\\n\\n    /**\\n     *  @return timestamp until rewards are distributed\\n     */\\n    function lastTimeRewardApplicable() public view returns (uint256) {\\n        return Math.min(block.timestamp, periodFinish);\\n    }\\n\\n    /** @notice reward per token deposited\\n     *  @dev gives the total amount of rewards distributed since inception of the pool per vault token\\n     *  @return rewardPerToken\\n     */\\n    function rewardPerToken() public view returns (uint256) {\\n        uint256 supply = veToken.totalSupply();\\n        if (supply == 0) {\\n            return rewardPerTokenStored;\\n        }\\n        return\\n            rewardPerTokenStored +\\n            (((lastTimeRewardApplicable() - lastUpdateTime) *\\n                rewardRate *\\n                1e18) / supply);\\n    }\\n\\n    function _earnedReward(address account) internal view returns (uint256) {\\n        return\\n            (veToken.balanceOf(account) *\\n                (rewardPerToken() - userRewardPerTokenPaid[account])) /\\n            1e18 +\\n            rewards[account];\\n    }\\n\\n    /** @notice earning for an account\\n     *  @return amount of tokens earned\\n     */\\n    function earned(address account) external view returns (uint256) {\\n        return _earnedReward(account);\\n    }\\n\\n    /** @notice use to update rewards on veSDL balance changes.\\n        @dev called by veSDL\\n     *  @return true\\n     */\\n    function updateReward(address _account)\\n        external\\n        _updateReward(_account)\\n        returns (bool)\\n    {\\n        require(msg.sender == address(veToken), \\\"!authorized\\\");\\n\\n        return true;\\n    }\\n\\n    /**\\n     * @notice\\n     *  Get rewards for an account\\n     * @dev rewards are transfer to _account\\n     * @param _account to claim rewards for\\n     * @param _lock should it lock rewards into veSDL\\n     * @return true\\n     */\\n    function getRewardFor(address _account, bool _lock)\\n        external\\n        returns (bool)\\n    {\\n        _getReward(\\n            _account,\\n            (whitelist[msg.sender] || msg.sender == _account) ? _lock : false\\n        );\\n        return true;\\n    }\\n\\n    /**\\n     * @notice\\n     *  Get rewards\\n     * @param _lock should it lock rewards into veSDL\\n     * @return true\\n     */\\n    function getReward(bool _lock) external returns (bool) {\\n        _getReward(msg.sender, _lock);\\n        return true;\\n    }\\n\\n    /**\\n     * @notice\\n     *  Get rewards\\n     * @return true\\n     */\\n    function getReward() external returns (bool) {\\n        _getReward(msg.sender, false);\\n        return true;\\n    }\\n\\n    function _getReward(address _account, bool _lock)\\n        internal\\n        _updateReward(_account)\\n    {\\n        uint256 reward = rewards[_account];\\n        if (reward == 0) return;\\n        rewards[_account] = 0;\\n\\n        if (_lock) {\\n            SafeERC20.safeApprove(rewardToken, address(veToken), reward);\\n            veToken.deposit_for(_account, reward);\\n        } else {\\n            SafeERC20.safeTransfer(rewardToken, _account, reward);\\n        }\\n\\n        emit RewardPaid(_account, reward);\\n    }\\n\\n    /**\\n     * @notice\\n     *  Donate tokens to distribute as rewards\\n     * @dev Do not trigger rewardRate recalculation\\n     * @param _amount token to donate\\n     * @return true\\n     */\\n    function donate(uint256 _amount) external returns (bool) {\\n        require(_amount != 0, \\\"==0\\\");\\n        IERC20(rewardToken).safeTransferFrom(\\n            msg.sender,\\n            address(this),\\n            _amount\\n        );\\n        queuedRewards = queuedRewards + _amount;\\n        emit Donate(_amount);\\n        return true;\\n    }\\n\\n    /**\\n     * @notice\\n     * Add new rewards to be distributed over a week\\n     * @dev Trigger rewardRate recalculation using _amount and queuedRewards\\n     * @param _amount token to add to rewards\\n     * @return true\\n     */\\n    function queueNewRewards(uint256 _amount) external returns (bool) {\\n        require(_amount != 0, \\\"==0\\\");\\n        IERC20(rewardToken).safeTransferFrom(\\n            msg.sender,\\n            address(this),\\n            _amount\\n        );\\n\\n        _amount = _amount + queuedRewards;\\n        _notifyRewardAmount(_amount);\\n        queuedRewards = 0;\\n\\n        return true;\\n    }\\n\\n    function _notifyRewardAmount(uint256 reward)\\n        internal\\n        _updateReward(address(0))\\n    {\\n        historicalRewards = historicalRewards + reward;\\n        if (block.timestamp >= periodFinish) {\\n            rewardRate = reward / DURATION;\\n        } else {\\n            uint256 remaining = periodFinish - block.timestamp;\\n            uint256 leftover = remaining * rewardRate;\\n            reward = reward + leftover;\\n            rewardRate = reward / DURATION;\\n        }\\n        currentRewards = reward;\\n        lastUpdateTime = block.timestamp;\\n        periodFinish = block.timestamp + DURATION;\\n        emit RewardAdded(reward);\\n    }\\n\\n    /**\\n     * @notice\\n     * set gov\\n     * @dev Can be called by gov\\n     * @param _gov new gov\\n     * @return true\\n     */\\n    function setGov(address _gov) external returns (bool) {\\n        require(msg.sender == gov, \\\"!authorized\\\");\\n\\n        require(_gov != address(0), \\\"0 address\\\");\\n        gov = _gov;\\n        emit UpdatedGov(_gov);\\n        return true;\\n    }\\n\\n    /**\\n     * @notice\\n     * add to whitelist\\n     * @dev Can be called by gov\\n     * @param _addr  address to whitelist\\n     * @param _isWhitelist whether to whitelist or blacklist\\n     */\\n    function addToWhitelist(address _addr, bool _isWhitelist) external {\\n        require(msg.sender == gov, \\\"!authorized\\\");\\n\\n        require(_addr != address(0), \\\"0 address\\\");\\n        whitelist[_addr] = _isWhitelist;\\n        emit UpdatedWhitelist(_addr, _isWhitelist);\\n    }\\n\\n    function sweep(address _token) external returns (bool) {\\n        require(msg.sender == gov, \\\"!authorized\\\");\\n\\n        SafeERC20.safeTransfer(\\n            IERC20(_token),\\n            gov,\\n            IERC20(_token).balanceOf(address(this))\\n        );\\n        return true;\\n    }\\n}\\n\",\"keccak256\":\"0xb0a0000afcde59d0114b8ec33493336e21287f9e06480274f5d7792eb59204bd\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x6080604052600060025560006003556000600655600060075560006008553480156200002a57600080fd5b50604051620018a2380380620018a28339810160408190526200004d91620000ad565b600180546001600160a01b039485166001600160a01b031991821617909155600080549385169382169390931790925560098054919093169116179055620000f7565b80516001600160a01b0381168114620000a857600080fd5b919050565b600080600060608486031215620000c357600080fd5b620000ce8462000090565b9250620000de6020850162000090565b9150620000ee6040850162000090565b90509250925092565b61179b80620001076000396000f3fe608060405234801561001057600080fd5b50600436106101ad5760003560e01c80638b876347116100ee578063cd3daf9d11610097578063ebe2b12b11610071578063ebe2b12b1461037c578063f14faf6f14610385578063f579513f14610398578063f7c618c1146103ab57600080fd5b8063cd3daf9d14610358578063cfad57a214610360578063df136d651461037357600080fd5b8063a4698feb116100c8578063a4698feb14610327578063bc93233f1461033a578063c8f33c911461034f57600080fd5b80638b876347146102db578063901a7d53146102fb5780639b19251a1461030457600080fd5b80633b92eb231161015b578063632447c911610135578063632447c9146102ae57806363d38c3b146102c15780637b0a47ee146102ca57806380faa57d146102d357600080fd5b80633b92eb23146102735780633d18b91214610293578063590a41f51461029b57600080fd5b806312d43a511161018c57806312d43a511461021b5780631be0528914610260578063262d3d6d1461026a57600080fd5b80628cc262146101b257806301681a62146101d85780630700037d146101fb575b600080fd5b6101c56101c0366004611527565b6103cb565b6040519081526020015b60405180910390f35b6101eb6101e6366004611527565b6103dc565b60405190151581526020016101cf565b6101c5610209366004611527565b600b6020526000908152604090205481565b60095461023b9073ffffffffffffffffffffffffffffffffffffffff1681565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020016101cf565b6101c562093a8081565b6101c560085481565b60015461023b9073ffffffffffffffffffffffffffffffffffffffff1681565b6101eb610502565b6101eb6102a93660046115b3565b610515565b6101eb6102bc366004611527565b6105ad565b6101c560065481565b6101c560035481565b6101c5610694565b6101c56102e9366004611527565b600a6020526000908152604090205481565b6101c560075481565b6101eb610312366004611527565b600c6020526000908152604090205460ff1681565b6101eb610335366004611579565b6106a7565b61034d610348366004611542565b6106b3565b005b6101c560045481565b6101c561080c565b6101eb61036e366004611527565b610910565b6101c560055481565b6101c560025481565b6101eb6103933660046115b3565b610a5c565b6101eb6103a6366004611542565b610b11565b60005461023b9073ffffffffffffffffffffffffffffffffffffffff1681565b60006103d682610b5b565b92915050565b60095460009073ffffffffffffffffffffffffffffffffffffffff16331461044b5760405162461bcd60e51b815260206004820152600b60248201527f21617574686f72697a656400000000000000000000000000000000000000000060448201526064015b60405180910390fd5b6009546040517f70a082310000000000000000000000000000000000000000000000000000000081523060048201526104fa91849173ffffffffffffffffffffffffffffffffffffffff918216918316906370a082319060240160206040518083038186803b1580156104bd57600080fd5b505afa1580156104d1573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104f591906115cc565b610c69565b506001919050565b600061050f336000610d42565b50600190565b6000816105645760405162461bcd60e51b815260206004820152600360248201527f3d3d3000000000000000000000000000000000000000000000000000000000006044820152606401610442565b6000546105899073ffffffffffffffffffffffffffffffffffffffff16333085610f49565b6006546105969083611652565b91506105a182610fad565b50506000600655600190565b6000816105b861080c565b6005556105c3610694565b60045573ffffffffffffffffffffffffffffffffffffffff811615610624576105eb81610b5b565b73ffffffffffffffffffffffffffffffffffffffff82166000908152600b6020908152604080832093909355600554600a909152919020555b60015473ffffffffffffffffffffffffffffffffffffffff16331461068b5760405162461bcd60e51b815260206004820152600b60248201527f21617574686f72697a65640000000000000000000000000000000000000000006044820152606401610442565b50600192915050565b60006106a2426002546110e1565b905090565b60006104fa3383610d42565b60095473ffffffffffffffffffffffffffffffffffffffff16331461071a5760405162461bcd60e51b815260206004820152600b60248201527f21617574686f72697a65640000000000000000000000000000000000000000006044820152606401610442565b73ffffffffffffffffffffffffffffffffffffffff821661077d5760405162461bcd60e51b815260206004820152600960248201527f30206164647265737300000000000000000000000000000000000000000000006044820152606401610442565b73ffffffffffffffffffffffffffffffffffffffff82166000818152600c602090815260409182902080547fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00168515159081179091558251938452908301527f0cb6419711fbc14c120b7eb5e02b897bb91a3ab45c8c53575792b9baa3e174e191015b60405180910390a15050565b600080600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff166318160ddd6040518163ffffffff1660e01b815260040160206040518083038186803b15801561087757600080fd5b505afa15801561088b573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108af91906115cc565b9050806108be57505060055490565b806003546004546108cd610694565b6108d791906116e2565b6108e191906116a5565b6108f390670de0b6b3a76400006116a5565b6108fd919061166a565b60055461090a9190611652565b91505090565b60095460009073ffffffffffffffffffffffffffffffffffffffff16331461097a5760405162461bcd60e51b815260206004820152600b60248201527f21617574686f72697a65640000000000000000000000000000000000000000006044820152606401610442565b73ffffffffffffffffffffffffffffffffffffffff82166109dd5760405162461bcd60e51b815260206004820152600960248201527f30206164647265737300000000000000000000000000000000000000000000006044820152606401610442565b600980547fffffffffffffffffffffffff00000000000000000000000000000000000000001673ffffffffffffffffffffffffffffffffffffffff84169081179091556040519081527f8c1e80ae98bcf45b0da9a05005fcdfc1986381446154762a690eca07d17ab1e6906020015b60405180910390a1506001919050565b600081610aab5760405162461bcd60e51b815260206004820152600360248201527f3d3d3000000000000000000000000000000000000000000000000000000000006044820152606401610442565b600054610ad09073ffffffffffffffffffffffffffffffffffffffff16333085610f49565b81600654610ade9190611652565b6006556040518281527f33ac262747c8397a2c737ef15aa625b857fa57c6987e46fe8590677c9a3b7a2e90602001610a4c565b336000908152600c602052604081205461068b90849060ff1680610b4a57503373ffffffffffffffffffffffffffffffffffffffff8616145b610b55576000610d42565b83610d42565b73ffffffffffffffffffffffffffffffffffffffff81166000908152600b6020908152604080832054600a909252822054670de0b6b3a764000090610b9e61080c565b610ba891906116e2565b6001546040517f70a0823100000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8781166004830152909116906370a082319060240160206040518083038186803b158015610c1357600080fd5b505afa158015610c27573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610c4b91906115cc565b610c5591906116a5565b610c5f919061166a565b6103d69190611652565b60405173ffffffffffffffffffffffffffffffffffffffff8316602482015260448101829052610d3d9084907fa9059cbb00000000000000000000000000000000000000000000000000000000906064015b604080517fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe08184030181529190526020810180517bffffffffffffffffffffffffffffffffffffffffffffffffffffffff167fffffffff00000000000000000000000000000000000000000000000000000000909316929092179091526110f9565b505050565b81610d4b61080c565b600555610d56610694565b60045573ffffffffffffffffffffffffffffffffffffffff811615610db757610d7e81610b5b565b73ffffffffffffffffffffffffffffffffffffffff82166000908152600b6020908152604080832093909355600554600a909152919020555b73ffffffffffffffffffffffffffffffffffffffff83166000908152600b602052604090205480610de85750505050565b73ffffffffffffffffffffffffffffffffffffffff84166000908152600b60205260408120558215610ecf57600054600154610e3e9173ffffffffffffffffffffffffffffffffffffffff9081169116836111eb565b6001546040517f3a46273e00000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff86811660048301526024820184905290911690633a46273e90604401600060405180830381600087803b158015610eb257600080fd5b505af1158015610ec6573d6000803e3d6000fd5b50505050610ef3565b600054610ef39073ffffffffffffffffffffffffffffffffffffffff168583610c69565b8373ffffffffffffffffffffffffffffffffffffffff167fe2403640ba68fed3a2f88b7557551d1993f84b99bb10ff833f0cf8db0c5e048682604051610f3b91815260200190565b60405180910390a250505050565b60405173ffffffffffffffffffffffffffffffffffffffff80851660248301528316604482015260648101829052610fa79085907f23b872dd0000000000000000000000000000000000000000000000000000000090608401610cbb565b50505050565b6000610fb761080c565b600555610fc2610694565b60045573ffffffffffffffffffffffffffffffffffffffff81161561102357610fea81610b5b565b73ffffffffffffffffffffffffffffffffffffffff82166000908152600b6020908152604080832093909355600554600a909152919020555b816008546110319190611652565b60085560025442106110525761104a62093a808361166a565b600355611095565b60004260025461106291906116e2565b905060006003548261107491906116a5565b90506110808185611652565b935061108f62093a808561166a565b60035550505b60078290554260048190556110ae9062093a8090611652565b6002556040518281527fde88a922e0d3b88b24e9623efeb464919c6bf9f66857a65e2bfcf2ce87a9433d90602001610800565b60008183106110f057816110f2565b825b9392505050565b600061115b826040518060400160405280602081526020017f5361666545524332303a206c6f772d6c6576656c2063616c6c206661696c65648152508573ffffffffffffffffffffffffffffffffffffffff166113629092919063ffffffff16565b805190915015610d3d57808060200190518101906111799190611596565b610d3d5760405162461bcd60e51b815260206004820152602a60248201527f5361666545524332303a204552433230206f7065726174696f6e20646964206e60448201527f6f742073756363656564000000000000000000000000000000000000000000006064820152608401610442565b80158061129a57506040517fdd62ed3e00000000000000000000000000000000000000000000000000000000815230600482015273ffffffffffffffffffffffffffffffffffffffff838116602483015284169063dd62ed3e9060440160206040518083038186803b15801561126057600080fd5b505afa158015611274573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061129891906115cc565b155b61130c5760405162461bcd60e51b815260206004820152603660248201527f5361666545524332303a20617070726f76652066726f6d206e6f6e2d7a65726f60448201527f20746f206e6f6e2d7a65726f20616c6c6f77616e6365000000000000000000006064820152608401610442565b60405173ffffffffffffffffffffffffffffffffffffffff8316602482015260448101829052610d3d9084907f095ea7b30000000000000000000000000000000000000000000000000000000090606401610cbb565b60606113718484600085611379565b949350505050565b6060824710156113f15760405162461bcd60e51b815260206004820152602660248201527f416464726573733a20696e73756666696369656e742062616c616e636520666f60448201527f722063616c6c00000000000000000000000000000000000000000000000000006064820152608401610442565b843b61143f5760405162461bcd60e51b815260206004820152601d60248201527f416464726573733a2063616c6c20746f206e6f6e2d636f6e74726163740000006044820152606401610442565b6000808673ffffffffffffffffffffffffffffffffffffffff16858760405161146891906115e5565b60006040518083038185875af1925050503d80600081146114a5576040519150601f19603f3d011682016040523d82523d6000602084013e6114aa565b606091505b50915091506114ba8282866114c5565b979650505050505050565b606083156114d45750816110f2565b8251156114e45782518084602001fd5b8160405162461bcd60e51b81526004016104429190611601565b803573ffffffffffffffffffffffffffffffffffffffff8116811461152257600080fd5b919050565b60006020828403121561153957600080fd5b6110f2826114fe565b6000806040838503121561155557600080fd5b61155e836114fe565b9150602083013561156e81611754565b809150509250929050565b60006020828403121561158b57600080fd5b81356110f281611754565b6000602082840312156115a857600080fd5b81516110f281611754565b6000602082840312156115c557600080fd5b5035919050565b6000602082840312156115de57600080fd5b5051919050565b600082516115f78184602087016116f9565b9190910192915050565b60208152600082518060208401526116208160408501602087016116f9565b601f017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0169190910160400192915050565b6000821982111561166557611665611725565b500190565b6000826116a0577f4e487b7100000000000000000000000000000000000000000000000000000000600052601260045260246000fd5b500490565b6000817fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff04831182151516156116dd576116dd611725565b500290565b6000828210156116f4576116f4611725565b500390565b60005b838110156117145781810151838201526020016116fc565b83811115610fa75750506000910152565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b801515811461176257600080fd5b5056fea2646970667358221220df5ed0b534c7649232a4d6ffcdde8b8ffbc0d98f539850c4d33b969370cebf3764736f6c63430008060033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106101ad5760003560e01c80638b876347116100ee578063cd3daf9d11610097578063ebe2b12b11610071578063ebe2b12b1461037c578063f14faf6f14610385578063f579513f14610398578063f7c618c1146103ab57600080fd5b8063cd3daf9d14610358578063cfad57a214610360578063df136d651461037357600080fd5b8063a4698feb116100c8578063a4698feb14610327578063bc93233f1461033a578063c8f33c911461034f57600080fd5b80638b876347146102db578063901a7d53146102fb5780639b19251a1461030457600080fd5b80633b92eb231161015b578063632447c911610135578063632447c9146102ae57806363d38c3b146102c15780637b0a47ee146102ca57806380faa57d146102d357600080fd5b80633b92eb23146102735780633d18b91214610293578063590a41f51461029b57600080fd5b806312d43a511161018c57806312d43a511461021b5780631be0528914610260578063262d3d6d1461026a57600080fd5b80628cc262146101b257806301681a62146101d85780630700037d146101fb575b600080fd5b6101c56101c0366004611527565b6103cb565b6040519081526020015b60405180910390f35b6101eb6101e6366004611527565b6103dc565b60405190151581526020016101cf565b6101c5610209366004611527565b600b6020526000908152604090205481565b60095461023b9073ffffffffffffffffffffffffffffffffffffffff1681565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020016101cf565b6101c562093a8081565b6101c560085481565b60015461023b9073ffffffffffffffffffffffffffffffffffffffff1681565b6101eb610502565b6101eb6102a93660046115b3565b610515565b6101eb6102bc366004611527565b6105ad565b6101c560065481565b6101c560035481565b6101c5610694565b6101c56102e9366004611527565b600a6020526000908152604090205481565b6101c560075481565b6101eb610312366004611527565b600c6020526000908152604090205460ff1681565b6101eb610335366004611579565b6106a7565b61034d610348366004611542565b6106b3565b005b6101c560045481565b6101c561080c565b6101eb61036e366004611527565b610910565b6101c560055481565b6101c560025481565b6101eb6103933660046115b3565b610a5c565b6101eb6103a6366004611542565b610b11565b60005461023b9073ffffffffffffffffffffffffffffffffffffffff1681565b60006103d682610b5b565b92915050565b60095460009073ffffffffffffffffffffffffffffffffffffffff16331461044b5760405162461bcd60e51b815260206004820152600b60248201527f21617574686f72697a656400000000000000000000000000000000000000000060448201526064015b60405180910390fd5b6009546040517f70a082310000000000000000000000000000000000000000000000000000000081523060048201526104fa91849173ffffffffffffffffffffffffffffffffffffffff918216918316906370a082319060240160206040518083038186803b1580156104bd57600080fd5b505afa1580156104d1573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104f591906115cc565b610c69565b506001919050565b600061050f336000610d42565b50600190565b6000816105645760405162461bcd60e51b815260206004820152600360248201527f3d3d3000000000000000000000000000000000000000000000000000000000006044820152606401610442565b6000546105899073ffffffffffffffffffffffffffffffffffffffff16333085610f49565b6006546105969083611652565b91506105a182610fad565b50506000600655600190565b6000816105b861080c565b6005556105c3610694565b60045573ffffffffffffffffffffffffffffffffffffffff811615610624576105eb81610b5b565b73ffffffffffffffffffffffffffffffffffffffff82166000908152600b6020908152604080832093909355600554600a909152919020555b60015473ffffffffffffffffffffffffffffffffffffffff16331461068b5760405162461bcd60e51b815260206004820152600b60248201527f21617574686f72697a65640000000000000000000000000000000000000000006044820152606401610442565b50600192915050565b60006106a2426002546110e1565b905090565b60006104fa3383610d42565b60095473ffffffffffffffffffffffffffffffffffffffff16331461071a5760405162461bcd60e51b815260206004820152600b60248201527f21617574686f72697a65640000000000000000000000000000000000000000006044820152606401610442565b73ffffffffffffffffffffffffffffffffffffffff821661077d5760405162461bcd60e51b815260206004820152600960248201527f30206164647265737300000000000000000000000000000000000000000000006044820152606401610442565b73ffffffffffffffffffffffffffffffffffffffff82166000818152600c602090815260409182902080547fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00168515159081179091558251938452908301527f0cb6419711fbc14c120b7eb5e02b897bb91a3ab45c8c53575792b9baa3e174e191015b60405180910390a15050565b600080600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff166318160ddd6040518163ffffffff1660e01b815260040160206040518083038186803b15801561087757600080fd5b505afa15801561088b573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108af91906115cc565b9050806108be57505060055490565b806003546004546108cd610694565b6108d791906116e2565b6108e191906116a5565b6108f390670de0b6b3a76400006116a5565b6108fd919061166a565b60055461090a9190611652565b91505090565b60095460009073ffffffffffffffffffffffffffffffffffffffff16331461097a5760405162461bcd60e51b815260206004820152600b60248201527f21617574686f72697a65640000000000000000000000000000000000000000006044820152606401610442565b73ffffffffffffffffffffffffffffffffffffffff82166109dd5760405162461bcd60e51b815260206004820152600960248201527f30206164647265737300000000000000000000000000000000000000000000006044820152606401610442565b600980547fffffffffffffffffffffffff00000000000000000000000000000000000000001673ffffffffffffffffffffffffffffffffffffffff84169081179091556040519081527f8c1e80ae98bcf45b0da9a05005fcdfc1986381446154762a690eca07d17ab1e6906020015b60405180910390a1506001919050565b600081610aab5760405162461bcd60e51b815260206004820152600360248201527f3d3d3000000000000000000000000000000000000000000000000000000000006044820152606401610442565b600054610ad09073ffffffffffffffffffffffffffffffffffffffff16333085610f49565b81600654610ade9190611652565b6006556040518281527f33ac262747c8397a2c737ef15aa625b857fa57c6987e46fe8590677c9a3b7a2e90602001610a4c565b336000908152600c602052604081205461068b90849060ff1680610b4a57503373ffffffffffffffffffffffffffffffffffffffff8616145b610b55576000610d42565b83610d42565b73ffffffffffffffffffffffffffffffffffffffff81166000908152600b6020908152604080832054600a909252822054670de0b6b3a764000090610b9e61080c565b610ba891906116e2565b6001546040517f70a0823100000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8781166004830152909116906370a082319060240160206040518083038186803b158015610c1357600080fd5b505afa158015610c27573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610c4b91906115cc565b610c5591906116a5565b610c5f919061166a565b6103d69190611652565b60405173ffffffffffffffffffffffffffffffffffffffff8316602482015260448101829052610d3d9084907fa9059cbb00000000000000000000000000000000000000000000000000000000906064015b604080517fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe08184030181529190526020810180517bffffffffffffffffffffffffffffffffffffffffffffffffffffffff167fffffffff00000000000000000000000000000000000000000000000000000000909316929092179091526110f9565b505050565b81610d4b61080c565b600555610d56610694565b60045573ffffffffffffffffffffffffffffffffffffffff811615610db757610d7e81610b5b565b73ffffffffffffffffffffffffffffffffffffffff82166000908152600b6020908152604080832093909355600554600a909152919020555b73ffffffffffffffffffffffffffffffffffffffff83166000908152600b602052604090205480610de85750505050565b73ffffffffffffffffffffffffffffffffffffffff84166000908152600b60205260408120558215610ecf57600054600154610e3e9173ffffffffffffffffffffffffffffffffffffffff9081169116836111eb565b6001546040517f3a46273e00000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff86811660048301526024820184905290911690633a46273e90604401600060405180830381600087803b158015610eb257600080fd5b505af1158015610ec6573d6000803e3d6000fd5b50505050610ef3565b600054610ef39073ffffffffffffffffffffffffffffffffffffffff168583610c69565b8373ffffffffffffffffffffffffffffffffffffffff167fe2403640ba68fed3a2f88b7557551d1993f84b99bb10ff833f0cf8db0c5e048682604051610f3b91815260200190565b60405180910390a250505050565b60405173ffffffffffffffffffffffffffffffffffffffff80851660248301528316604482015260648101829052610fa79085907f23b872dd0000000000000000000000000000000000000000000000000000000090608401610cbb565b50505050565b6000610fb761080c565b600555610fc2610694565b60045573ffffffffffffffffffffffffffffffffffffffff81161561102357610fea81610b5b565b73ffffffffffffffffffffffffffffffffffffffff82166000908152600b6020908152604080832093909355600554600a909152919020555b816008546110319190611652565b60085560025442106110525761104a62093a808361166a565b600355611095565b60004260025461106291906116e2565b905060006003548261107491906116a5565b90506110808185611652565b935061108f62093a808561166a565b60035550505b60078290554260048190556110ae9062093a8090611652565b6002556040518281527fde88a922e0d3b88b24e9623efeb464919c6bf9f66857a65e2bfcf2ce87a9433d90602001610800565b60008183106110f057816110f2565b825b9392505050565b600061115b826040518060400160405280602081526020017f5361666545524332303a206c6f772d6c6576656c2063616c6c206661696c65648152508573ffffffffffffffffffffffffffffffffffffffff166113629092919063ffffffff16565b805190915015610d3d57808060200190518101906111799190611596565b610d3d5760405162461bcd60e51b815260206004820152602a60248201527f5361666545524332303a204552433230206f7065726174696f6e20646964206e60448201527f6f742073756363656564000000000000000000000000000000000000000000006064820152608401610442565b80158061129a57506040517fdd62ed3e00000000000000000000000000000000000000000000000000000000815230600482015273ffffffffffffffffffffffffffffffffffffffff838116602483015284169063dd62ed3e9060440160206040518083038186803b15801561126057600080fd5b505afa158015611274573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061129891906115cc565b155b61130c5760405162461bcd60e51b815260206004820152603660248201527f5361666545524332303a20617070726f76652066726f6d206e6f6e2d7a65726f60448201527f20746f206e6f6e2d7a65726f20616c6c6f77616e6365000000000000000000006064820152608401610442565b60405173ffffffffffffffffffffffffffffffffffffffff8316602482015260448101829052610d3d9084907f095ea7b30000000000000000000000000000000000000000000000000000000090606401610cbb565b60606113718484600085611379565b949350505050565b6060824710156113f15760405162461bcd60e51b815260206004820152602660248201527f416464726573733a20696e73756666696369656e742062616c616e636520666f60448201527f722063616c6c00000000000000000000000000000000000000000000000000006064820152608401610442565b843b61143f5760405162461bcd60e51b815260206004820152601d60248201527f416464726573733a2063616c6c20746f206e6f6e2d636f6e74726163740000006044820152606401610442565b6000808673ffffffffffffffffffffffffffffffffffffffff16858760405161146891906115e5565b60006040518083038185875af1925050503d80600081146114a5576040519150601f19603f3d011682016040523d82523d6000602084013e6114aa565b606091505b50915091506114ba8282866114c5565b979650505050505050565b606083156114d45750816110f2565b8251156114e45782518084602001fd5b8160405162461bcd60e51b81526004016104429190611601565b803573ffffffffffffffffffffffffffffffffffffffff8116811461152257600080fd5b919050565b60006020828403121561153957600080fd5b6110f2826114fe565b6000806040838503121561155557600080fd5b61155e836114fe565b9150602083013561156e81611754565b809150509250929050565b60006020828403121561158b57600080fd5b81356110f281611754565b6000602082840312156115a857600080fd5b81516110f281611754565b6000602082840312156115c557600080fd5b5035919050565b6000602082840312156115de57600080fd5b5051919050565b600082516115f78184602087016116f9565b9190910192915050565b60208152600082518060208401526116208160408501602087016116f9565b601f017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0169190910160400192915050565b6000821982111561166557611665611725565b500190565b6000826116a0577f4e487b7100000000000000000000000000000000000000000000000000000000600052601260045260246000fd5b500490565b6000817fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff04831182151516156116dd576116dd611725565b500290565b6000828210156116f4576116f4611725565b500390565b60005b838110156117145781810151838201526020016116fc565b83811115610fa75750506000910152565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b801515811461176257600080fd5b5056fea2646970667358221220df5ed0b534c7649232a4d6ffcdde8b8ffbc0d98f539850c4d33b969370cebf3764736f6c63430008060033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "addToWhitelist(address,bool)": {
+        "details": "Can be called by gov",
+        "params": {
+          "_addr": "address to whitelist",
+          "_isWhitelist": "whether to whitelist or blacklist"
+        }
+      },
+      "donate(uint256)": {
+        "details": "Do not trigger rewardRate recalculation",
+        "params": {
+          "_amount": "token to donate"
+        },
+        "returns": {
+          "_0": "true"
+        }
+      },
+      "earned(address)": {
+        "returns": {
+          "_0": "amount of tokens earned"
+        }
+      },
+      "getReward()": {
+        "returns": {
+          "_0": "true"
+        }
+      },
+      "getReward(bool)": {
+        "params": {
+          "_lock": "should it lock rewards into veSDL"
+        },
+        "returns": {
+          "_0": "true"
+        }
+      },
+      "getRewardFor(address,bool)": {
+        "details": "rewards are transfer to _account",
+        "params": {
+          "_account": "to claim rewards for",
+          "_lock": "should it lock rewards into veSDL"
+        },
+        "returns": {
+          "_0": "true"
+        }
+      },
+      "lastTimeRewardApplicable()": {
+        "returns": {
+          "_0": "timestamp until rewards are distributed"
+        }
+      },
+      "queueNewRewards(uint256)": {
+        "details": "Trigger rewardRate recalculation using _amount and queuedRewards",
+        "params": {
+          "_amount": "token to add to rewards"
+        },
+        "returns": {
+          "_0": "true"
+        }
+      },
+      "rewardPerToken()": {
+        "details": "gives the total amount of rewards distributed since inception of the pool per vault token",
+        "returns": {
+          "_0": "rewardPerToken"
+        }
+      },
+      "setGov(address)": {
+        "details": "Can be called by gov",
+        "params": {
+          "_gov": "new gov"
+        },
+        "returns": {
+          "_0": "true"
+        }
+      },
+      "updateReward(address)": {
+        "details": "called by veSDL",
+        "returns": {
+          "_0": "true"
+        }
+      }
+    },
+    "title": "VeSDLRewards",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "addToWhitelist(address,bool)": {
+        "notice": "add to whitelist"
+      },
+      "donate(uint256)": {
+        "notice": "Donate tokens to distribute as rewards"
+      },
+      "earned(address)": {
+        "notice": "earning for an account"
+      },
+      "getReward()": {
+        "notice": "Get rewards"
+      },
+      "getReward(bool)": {
+        "notice": "Get rewards"
+      },
+      "getRewardFor(address,bool)": {
+        "notice": "Get rewards for an account"
+      },
+      "queueNewRewards(uint256)": {
+        "notice": "Add new rewards to be distributed over a week"
+      },
+      "rewardPerToken()": {
+        "notice": "reward per token deposited"
+      },
+      "setGov(address)": {
+        "notice": "set gov"
+      },
+      "updateReward(address)": {
+        "notice": "use to update rewards on veSDL balance changes."
+      }
+    },
+    "notice": "Gauge like contract that simulates veSDL stake.",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 752,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "rewardToken",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_contract(IERC20)77"
+      },
+      {
+        "astId": 755,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "veToken",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_contract(IVotingEscrow)738"
+      },
+      {
+        "astId": 761,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "periodFinish",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 764,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "rewardRate",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 766,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "lastUpdateTime",
+        "offset": 0,
+        "slot": "4",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 768,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "rewardPerTokenStored",
+        "offset": 0,
+        "slot": "5",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 771,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "queuedRewards",
+        "offset": 0,
+        "slot": "6",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 774,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "currentRewards",
+        "offset": 0,
+        "slot": "7",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 777,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "historicalRewards",
+        "offset": 0,
+        "slot": "8",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 779,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "gov",
+        "offset": 0,
+        "slot": "9",
+        "type": "t_address"
+      },
+      {
+        "astId": 783,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "userRewardPerTokenPaid",
+        "offset": 0,
+        "slot": "10",
+        "type": "t_mapping(t_address,t_uint256)"
+      },
+      {
+        "astId": 787,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "rewards",
+        "offset": 0,
+        "slot": "11",
+        "type": "t_mapping(t_address,t_uint256)"
+      },
+      {
+        "astId": 791,
+        "contract": "contracts/tokenomics/voting_escrow/VeSDLRewards.sol:VeSDLRewards",
+        "label": "whitelist",
+        "offset": 0,
+        "slot": "12",
+        "type": "t_mapping(t_address,t_bool)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_contract(IERC20)77": {
+        "encoding": "inplace",
+        "label": "contract IERC20",
+        "numberOfBytes": "20"
+      },
+      "t_contract(IVotingEscrow)738": {
+        "encoding": "inplace",
+        "label": "contract IVotingEscrow",
+        "numberOfBytes": "20"
+      },
+      "t_mapping(t_address,t_bool)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => bool)",
+        "numberOfBytes": "32",
+        "value": "t_bool"
+      },
+      "t_mapping(t_address,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

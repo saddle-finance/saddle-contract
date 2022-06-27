@@ -4,7 +4,7 @@ import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
 import { ethers, network } from "hardhat"
 import { DeploymentsExtension } from "hardhat-deploy/dist/types"
 import { Artifact } from "hardhat/types"
-import { ERC20, Swap } from "../build/typechain/"
+import { IERC20, Swap } from "../build/typechain/"
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
 import { CHAIN_ID } from "../utils/network"
 
@@ -121,7 +121,7 @@ export async function getPoolBalances(
 
 export async function getUserTokenBalances(
   address: string | Signer,
-  tokens: ERC20[],
+  tokens: Contract[],
 ): Promise<BigNumber[]> {
   const balanceArray = []
 
@@ -130,7 +130,7 @@ export async function getUserTokenBalances(
   }
 
   for (const token of tokens) {
-    balanceArray.push(await token.balanceOf(address))
+    balanceArray.push(await (token as IERC20).balanceOf(address))
   }
 
   return balanceArray
@@ -138,12 +138,12 @@ export async function getUserTokenBalances(
 
 export async function getUserTokenBalance(
   address: string | Signer,
-  token: ERC20,
+  token: Contract,
 ): Promise<BigNumber> {
   if (address instanceof Signer) {
     address = await address.getAddress()
   }
-  return token.balanceOf(address)
+  return (token as IERC20).balanceOf(address)
 }
 
 // EVM methods
