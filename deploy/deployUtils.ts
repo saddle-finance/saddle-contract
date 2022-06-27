@@ -30,6 +30,10 @@ export async function deployMetaswap(
       tokenNames.map(async (name) => (await get(name)).address),
     )
 
+    tokenDecimals = await Promise.all(
+      tokenNames.map(async (name) => await read(name, "decimals")),
+    )
+
     await deploy(metaPoolName, {
       from: deployer,
       log: true,
@@ -144,6 +148,9 @@ export async function deploySwapFlashLoan(
   } else {
     const TOKEN_ADDRESSES = await Promise.all(
       tokenNames.map(async (name) => (await get(name)).address),
+    )
+    tokenDecimals = await Promise.all(
+      tokenNames.map(async (name) => await read(name, "decimals")),
     )
 
     await deploy(poolName, {
