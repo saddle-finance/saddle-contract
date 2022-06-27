@@ -1,7 +1,5 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { isTestNetwork } from "../../utils/network"
-import { BigNumber } from "ethers"
 import { checkTokens } from "../deployUtils"
 
 const USD_TOKENS_ARGS: { [token: string]: any[] } = {

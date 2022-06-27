@@ -1,7 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { PoolRegistry } from "../../build/typechain"
-import { ZERO_ADDRESS } from "../../test/testUtils"
 import { PoolType } from "../../utils/constants"
 import { IPoolRegistry } from "../../build/typechain"
 
