@@ -57,9 +57,7 @@ let config: HardhatUserConfig = {
       deploy: ["./deploy/arbitrum/"],
     },
     arbitrum_mainnet: {
-      url:
-        ALCHEMY_BASE_URL[CHAIN_ID.ARBITRUM_MAINNET] +
-        process.env.ALCHEMY_API_KEY,
+      url: "https://arb1.arbitrum.io/rpc",
       chainId: 42161,
       deploy: ["./deploy/arbitrum/"],
       verify: {
