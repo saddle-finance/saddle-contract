@@ -8,7 +8,7 @@ const BASE_POOL_NAME = "SaddleFtmUSDPool"
 
 // Constructor arguments
 const TOKEN_NAMES = ["ALUSD", `${BASE_POOL_NAME}LPToken`]
-const TOKEN_DECIMALS = [6, 18]
+const TOKEN_DECIMALS = [18, 18]
 const LP_TOKEN_NAME = "Saddle alUSD/saddleFtmUSD LP Token"
 const LP_TOKEN_SYMBOL = "saddleFraxUSDT"
 const INITIAL_A = 100
