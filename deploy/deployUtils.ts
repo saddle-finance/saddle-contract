@@ -3,6 +3,7 @@ import { MULTISIG_ADDRESSES } from "../utils/accounts"
 import { isTestNetwork } from "../utils/network"
 import { getChainId } from "hardhat"
 import { BigNumber } from "ethers"
+import { ZERO_ADDRESS } from "../test/testUtils"
 
 export async function deployMetaswap(
   hre: HardhatRuntimeEnvironment,
@@ -23,7 +24,13 @@ export async function deployMetaswap(
 
   // Manually check if the pool is already deployed
   const metaPool = await getOrNull(metaPoolName)
-  if (metaPool) {
+
+  // Check if has been initialized
+  const isInitialized: boolean = metaPool
+    ? (await read(metaPoolName, "swapStorage")).lpToken !== ZERO_ADDRESS
+    : false
+
+  if (metaPool && isInitialized) {
     log(`reusing ${metaPoolName} at ${metaPool.address}`)
   } else {
     const TOKEN_ADDRESSES = await Promise.all(
@@ -45,7 +52,8 @@ export async function deployMetaswap(
         AmplificationUtils: (await get("AmplificationUtils")).address,
       },
     })
-    const receipt = await execute(
+
+    await execute(
       metaPoolName,
       {
         from: deployer,
@@ -91,12 +99,16 @@ export async function deployMetaswapDeposit(
   metaPoolName: string,
 ) {
   const { deployments, getNamedAccounts } = hre
-  const { execute, deploy, get, getOrNull, log } = deployments
+  const { execute, deploy, get, getOrNull, log, read } = deployments
   const { deployer } = await getNamedAccounts()
 
   // Manually check if the pool is already deployed
   const metaPoolDeposit = await getOrNull(metaPoolDepositName)
-  if (metaPoolDeposit) {
+  // Check if it has been initialized
+  const isInitialized = metaPoolDeposit
+    ? (await read(metaPoolDepositName, "baseSwap")) !== ZERO_ADDRESS
+    : false
+  if (metaPoolDeposit && isInitialized) {
     log(`reusing ${metaPoolDepositName} at ${metaPoolDeposit.address}`)
   } else {
     // This is the first time deploying MetaSwapDeposit contract.
@@ -143,7 +155,13 @@ export async function deploySwapFlashLoan(
 
   // Manually check if the pool is already deployed
   const poolContract = await getOrNull(poolName)
-  if (poolContract) {
+
+  // Check if has been initialized
+  const isInitialized: boolean = poolContract
+    ? (await read(poolName, "swapStorage")).lpToken !== ZERO_ADDRESS
+    : false
+
+  if (poolContract && isInitialized) {
     log(`reusing ${poolName} at ${poolContract.address}`)
   } else {
     const TOKEN_ADDRESSES = await Promise.all(
