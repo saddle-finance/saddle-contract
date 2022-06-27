@@ -63,7 +63,7 @@ let config: HardhatUserConfig = {
       verify: {
         etherscan: {
           apiUrl: "https://api.arbiscan.io",
-          apiKey: process.env.ETHERSCAN_API ?? "NO_KEY",
+          apiKey: "6IJ9VIDV55VNTPAA8TRKQREVWQJDA98FEK",
         },
       },
     },
@@ -79,6 +79,12 @@ let config: HardhatUserConfig = {
       url: "https://mainnet.optimism.io",
       chainId: 10,
       deploy: ["./deploy/optimism/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api-optimistic.etherscan.io",
+          apiKey: "8A88XPGCP6IQXRJGM5NKMBMMGT7NNRBIMF",
+        },
+      },
     },
     fantom_testnet: {
       url: "https://rpc.testnet.fantom.network/",
@@ -92,6 +98,12 @@ let config: HardhatUserConfig = {
       url: "https://rpc.ftm.tools/",
       chainId: 250,
       deploy: ["./deploy/fantom/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.ftmscan.com",
+          apiKey: "YKFDUZYGB28APW5KQQI4MH1CKRZN8IRYMP",
+        },
+      },
     },
     evmos_testnet: {
       url: "https://eth.bd.evmos.dev:8545",
