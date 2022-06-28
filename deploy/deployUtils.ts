@@ -229,6 +229,8 @@ export async function deploySwapFlashLoan(
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
+
+    // check if contract is verified
   }
 }
 
@@ -267,13 +269,15 @@ async function checkRegisteredPool(
   hre: HardhatRuntimeEnvironment,
   poolName: string,
 ) {
-  const { ethers } = hre
+  const { ethers, deployments } = hre
+  const { log } = deployments
 
   const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
 
   await poolRegistry
     .getPoolDataByName(poolName)
     .then(() => {
+      log("Skipping adding pools to registry because they are already added")
       return false
     })
     .catch(async () => {
@@ -281,18 +285,20 @@ async function checkRegisteredPool(
     })
 }
 
-async function registerPools(
+export async function registerPools(
   hre: HardhatRuntimeEnvironment,
   pools: IPoolRegistry.PoolInputDataStruct[],
 ) {
   const { deployments, getNamedAccounts, ethers } = hre
   const { execute } = deployments
   const { deployer } = await getNamedAccounts()
-
   const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
+  const poolsToBeAdded = pools.filter((pool) =>
+    checkRegisteredPool(hre, pool.poolName.toString()),
+  )
 
   const batchCall = await Promise.all(
-    pools.map(
+    poolsToBeAdded.map(
       async (pool) => await poolRegistry.populateTransaction.addPool(pool),
     ),
   )
@@ -305,4 +311,17 @@ async function registerPools(
     batchCallData,
     true,
   )
+}
+
+export async function verifyContract(
+  hre: HardhatRuntimeEnvironment,
+  contractName: string,
+  constructors: any[] = [],
+) {
+  const { ethers } = hre
+  const contract = await ethers.getContract(contractName)
+
+  await hre.run("verify:verify", {
+    address: contract.address,
+  })
 }
