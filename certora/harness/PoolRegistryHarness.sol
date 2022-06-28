@@ -12,5 +12,9 @@ contract PoolRegistryHarness is PoolRegistry {
     function getPools(uint256 i) public view returns(PoolData memory) {
         return pools[i];
     }
+    
+    function getPoolsPoolAddress(uint256 i) public view returns (address) {
+        return pools[i].poolAddress;
+    } 
 }
 

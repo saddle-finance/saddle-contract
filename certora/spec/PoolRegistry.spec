@@ -15,17 +15,11 @@ methods {
     poolsIndexOfPlusOne(address) returns (uint256) envfree
     poolsIndexOfNamePlusOne(bytes32) returns (uint256)
     addPool(poolRegistry.PoolInputData) //PoolInputData struct = (address,uint8,bytes32,address,address,bool,bool,bool)
-    addCommunityPool(poolRegistry.PoolData) // PoolData struct = (address,address,uint8,bytes32,address,address[],address[],address,address,bool,bool,bool)
     approvePool(address)
-    updatePool(poolRegistry.PoolData) //PoolData struct
     removePool(address)
-    getPoolData(address) returns (poolRegistry.PoolData)
-    getPoolDataAtIndex(uint256) returns (poolRegistry.PoolData)
-    getPoolDataByName(bytes32) returns (poolRegistry.PoolData)
     getVirtualPrice(address) returns (uint256)
     getA(address) returns (uint256)
     getPaused(address) returns (bool)
-    getSwapStorage(address) returns (poolRegistry.SwapStorageData) //SwapStorageData struct = (uint256,uint256,uint256,uint256,uint256,uint256,address)
     getTokens(address) returns (address[]);
     getUnderlyingTokens(address) returns (address[])
     getPoolsLength() returns (uint256) envfree
@@ -39,10 +33,11 @@ methods {
     
 
     // helper from the harness
-    getPools(uint256) returns (poolRegistry.PoolData) envfree
-
+    getPoolsPoolAddress(uint256) returns (address) envfree;
     //  method summaries
     batch(bytes[], bool) // summarize as func that does nothing?
+    getConstantLength() returns(uint256) => ALWAYS(3); 
+
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -57,11 +52,11 @@ methods {
 
 //
 invariant uniquePools(uint256 i, uint256 j)
-    i != j => getPools(i).poolAddress != getPools(j).poolAddress
+    i != j => getPoolsPoolAddress(i) != getPoolsPoolAddress(j)
 
 // pool data at index i has address s.t. poolIndexPlusOne[address] = index + 1
 invariant poolStorageConsistency(uint256 i, address x)
-    getPools(i).poolAddress == x <=> poolsIndexOfPlusOne(x) == i + 1
+    getPoolsPoolAddress(i) == x <=> poolsIndexOfPlusOne(x) == i + 1
 
 
 ////////////////////////////////////////////////////////////////////////////

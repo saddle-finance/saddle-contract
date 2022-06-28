@@ -1,12 +1,12 @@
 diff -ruN .gitignore .gitignore
---- .gitignore	1969-12-31 16:00:00.000000000 -0800
-+++ .gitignore	2022-06-20 19:48:51.000000000 -0700
+--- .gitignore	1970-01-01 02:00:00.000000000 +0200
++++ .gitignore	2022-06-28 11:51:29.000000000 +0300
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
 diff -ruN registries/PoolRegistry.sol registries/PoolRegistry.sol
---- registries/PoolRegistry.sol	2022-06-16 12:09:36.000000000 -0700
-+++ registries/PoolRegistry.sol	2022-06-27 23:52:15.000000000 -0700
+--- registries/PoolRegistry.sol	2022-06-28 15:34:32.000000000 +0300
++++ registries/PoolRegistry.sol	2022-06-28 16:14:05.000000000 +0300
 @@ -42,8 +42,8 @@
      /// @inheritdoc IPoolRegistry
      mapping(bytes32 => uint256) public override poolsIndexOfNamePlusOne;
@@ -18,3 +18,21 @@ diff -ruN registries/PoolRegistry.sol registries/PoolRegistry.sol
  
      /**
       * @notice Add a new registry entry to the master list.
+@@ -185,7 +185,7 @@
+             : _getSwapStorage(inputData.poolAddress).lpToken;
+ 
+         // Check token addresses
+-        for (uint8 i = 0; i < 8; i++) {
++        for (uint8 i = 0; i < getConstantLength(); i++) {
+             try ISwap(inputData.poolAddress).getToken(i) returns (
+                 IERC20 token
+             ) {
+@@ -561,4 +561,8 @@
+                 .div(baseLPTokenTotalSupply);
+         }
+     }
++
++    function getConstantLength() public view returns (uint256) {
++        return 8; 
++    }
+ }
