@@ -11,10 +11,11 @@ contract SmartWalletChecker is Ownable {
 
     event ApproveWallet(address);
     event RevokeWallet(address);
+    event WhitelistEnabled(bool);
 
     constructor(bool _isWhitelistEnabled) public Ownable() {
         // Set state variables
-        isWhitelistEnabled = _isWhitelistEnabled;
+        setIsWhitelistEnabled(_isWhitelistEnabled);
     }
 
     function commitSetChecker(address _checker) external onlyOwner {
@@ -25,7 +26,7 @@ contract SmartWalletChecker is Ownable {
         checker = future_checker;
     }
 
-    function approveWallet(address _wallet) public onlyOwner {
+    function approveWallet(address _wallet) external onlyOwner {
         wallets[_wallet] = true;
 
         emit ApproveWallet(_wallet);
@@ -35,6 +36,12 @@ contract SmartWalletChecker is Ownable {
         wallets[_wallet] = false;
 
         emit RevokeWallet(_wallet);
+    }
+
+    function setIsWhitelistEnabled(bool _isWhitelistEnabled) public onlyOwner {
+        isWhitelistEnabled = _isWhitelistEnabled;
+
+        emit WhitelistEnabled(_isWhitelistEnabled);
     }
 
     function check(address _wallet) external view returns (bool) {
