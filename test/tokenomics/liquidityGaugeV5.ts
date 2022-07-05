@@ -90,25 +90,27 @@ describe("Liquidity Gauge V5", () => {
       )
 
       await sdl.transfer(minter.address, BIG_NUMBER_1E18.mul(1_000_000))
+
+      // Set timestamp to start of next week to ensure consistent test results
+      await setTimestamp(
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
+      )
+      if ((await minter.rate()).eq(MAX_UINT256)) {
+        await minter.update_mining_parameters()
+      }
+
+      // Imitate multisig setting gauge weights
+      await gaugeController.change_gauge_weight(gauge.address, 10000)
+
+      // Skip to the week after when the weights apply
+      await setTimestamp(
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
+      )
     },
   )
 
   beforeEach(async () => {
     await setupTest()
-
-    // Set timestamp to start of next week to ensure consistent test results
-    await setTimestamp(
-      Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
-    )
-    await minter.update_mining_parameters()
-
-    // Imitate multisig setting gauge weights
-    await gaugeController.change_gauge_weight(gauge.address, 10000)
-
-    // Skip to the week after when the weights apply
-    await setTimestamp(
-      Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
-    )
   })
 
   describe("deposit & claimable_tokens", () => {
@@ -136,10 +138,10 @@ describe("Liquidity Gauge V5", () => {
       await increaseTimestamp(86400)
 
       expect(await gauge.callStatic.claimable_tokens(deployerAddress)).to.eq(
-        "25510617441421012800930",
+        "127032254961761840554085",
       )
       expect(await gauge.callStatic.claimable_tokens(users[10])).to.eq(
-        "10204081632653061205028",
+        "50812078640837870793172",
       )
 
       // Gauge weight is changed mid-week but will apply next week
@@ -148,25 +150,25 @@ describe("Liquidity Gauge V5", () => {
       // Full week passes and we expect the rewards to have maxxed out
       await increaseTimestamp(86400 * 6)
       expect(await gauge.callStatic.claimable_tokens(deployerAddress)).to.eq(
-        "178571251417233559750131",
+        "889210494060519668778594",
       )
       expect(await gauge.callStatic.claimable_tokens(users[10])).to.eq(
-        "71428335222978079984708",
+        "355683374280341002082976",
       )
 
       // Expect no change in rewards
       await increaseTimestamp(86400)
       expect(await gauge.callStatic.claimable_tokens(deployerAddress)).to.eq(
-        "178571251417233559750131",
+        "889210494060519668778594",
       )
       expect(await gauge.callStatic.claimable_tokens(users[10])).to.eq(
-        "71428335222978079984708",
+        "355683374280341002082976",
       )
 
       // Claim main reward via calling Minter.mint()
       await minter.connect(signers[10]).mint(gauge.address)
       expect(await gauge.callStatic.claimable_tokens(users[10])).to.eq("0")
-      expect(await sdl.balanceOf(users[10])).to.eq("71428335222978079984708")
+      expect(await sdl.balanceOf(users[10])).to.eq("355683374280341002082976")
     })
   })
 
@@ -183,10 +185,10 @@ describe("Liquidity Gauge V5", () => {
       await increaseTimestamp(86400)
 
       expect(await gauge.callStatic.claimable_tokens(deployerAddress)).to.eq(
-        "25510617441421012800930",
+        "127032254961761840554085",
       )
       expect(await gauge.callStatic.claimable_tokens(users[10])).to.eq(
-        "10204081632653061205028",
+        "50812078640837870793172",
       )
 
       // Withdraw LP tokens
