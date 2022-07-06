@@ -4,12 +4,13 @@ import { isTestNetwork } from "../utils/network"
 import { getChainId } from "hardhat"
 import { BigNumber } from "ethers"
 import { ZERO_ADDRESS } from "../test/testUtils"
-import { PoolRegistry } from "../build/typechain"
+import { PoolRegistry, TestSwapReturnValues__factory } from "../build/typechain"
 import { PoolType } from "../utils/constants"
 import { IPoolRegistry } from "../build/typechain"
 
 export interface IPoolDataInput {
   poolName: string
+  basePoolName?: string
   tokenNames: string[]
   lpTokenSymbol: string
   initialA: number
@@ -17,202 +18,6 @@ export interface IPoolDataInput {
   adminFee: number
 }
 
-export interface IMetaPoolDataInput {
-  metaPoolName: string
-  basePoolName: string
-  tokenNames: string[]
-  lpTokenSymbol: string
-  initialA: number
-  swapFee: number
-  adminFee: number
-}
-//test
-export async function deployMetaswap2(
-  hre: HardhatRuntimeEnvironment,
-  pools: IMetaPoolDataInput[],
-) {
-  // filter out already deployed pools
-  const newDeploypools = pools.filter((pool) =>
-    checkIfPoolDeployed(hre, pool.metaPoolName),
-  )
-  console.log(`Pools to be deployed: `)
-  newDeploypools.map((pool) => console.log(pool.metaPoolName))
-
-  newDeploypools.forEach(async function (pool) {
-    const metaPoolName = pool.metaPoolName
-    console.log(`Attempting to deploy pool with name: ${metaPoolName}`)
-    const basePoolName = pool.basePoolName
-    const tokenNames = pool.tokenNames
-    tokenNames.push(`${basePoolName}LPToken`)
-    const lpTokenSymbol = pool.lpTokenSymbol
-    const initialA = pool.initialA
-    const swapFee = pool.swapFee
-    const adminFee = pool.adminFee
-
-    const { deployments, getNamedAccounts } = hre
-    const { execute, deploy, get, getOrNull, log, read, save } = deployments
-    const { deployer } = await getNamedAccounts()
-    const lpTokenName = `${metaPoolName}LPToken`
-    console.log("Attempting to get token addresses")
-    const tokenAddresses = await Promise.all(
-      tokenNames.map(async (name) => (await get(name)).address),
-    )
-
-    const tokenDecimals = await Promise.all(
-      tokenNames.map(async (name) => await read(name, "decimals")),
-    )
-
-    // deploy the metapool
-    console.log("Deploying the metapool")
-    await deploy(metaPoolName, {
-      from: deployer,
-      log: true,
-      contract: "MetaSwap",
-      skipIfAlreadyDeployed: true,
-      libraries: {
-        SwapUtils: (await get("SwapUtils")).address,
-        MetaSwapUtils: (await get("MetaSwapUtils")).address,
-        AmplificationUtils: (await get("AmplificationUtils")).address,
-      },
-    })
-
-    // initalize metapool with starting values
-    console.log("Initializing MetaSwap")
-    await execute(
-      metaPoolName,
-      {
-        from: deployer,
-        log: true,
-      },
-      "initializeMetaSwap",
-      tokenAddresses,
-      tokenDecimals,
-      lpTokenName,
-      lpTokenSymbol,
-      initialA,
-      swapFee,
-      adminFee,
-      (
-        await get("LPToken")
-      ).address,
-      (
-        await get(basePoolName)
-      ).address,
-    )
-
-    await execute(
-      metaPoolName,
-      { from: deployer, log: true },
-      "transferOwnership",
-      MULTISIG_ADDRESSES[await getChainId()],
-    )
-
-    // deploy the Meta Swap Deposit
-    console.log("Deploying Metaswap Deposit")
-    await deployMetaswapDeposit(
-      hre,
-      `${metaPoolName}Deposit`,
-      basePoolName,
-      metaPoolName,
-    )
-
-    // get lptoken address (was deployed by the metaswap contract)
-    const lpTokenAddress = (await read(metaPoolName, "swapStorage")).lpToken
-    log(`deployed ${lpTokenName} at ${lpTokenAddress}`)
-
-    // save lptoken deployment
-    console.log("saving lp token deployment")
-    await save(lpTokenName, {
-      abi: (await get("LPToken")).abi, // LPToken ABI
-      address: lpTokenAddress,
-    })
-  })
-}
-
-export async function deploySwapFlashLoan2(
-  hre: HardhatRuntimeEnvironment,
-  pools: IPoolDataInput[],
-) {
-  // filter out already deployed pools
-  const newDeploypools = pools.filter((pool) =>
-    checkIfPoolDeployed(hre, pool.poolName),
-  )
-
-  newDeploypools.forEach(async function (pool) {
-    const poolName = pool.poolName
-    console.log(`Attempting to deploy pool with name: ${poolName}`)
-    const tokenNames = pool.tokenNames
-    const lpTokenSymbol = pool.lpTokenSymbol
-    const initialA = pool.initialA
-    const swapFee = pool.swapFee
-    const adminFee = pool.adminFee
-
-    const { deployments, getNamedAccounts } = hre
-    const { execute, deploy, get, getOrNull, log, read, save } = deployments
-    const { deployer } = await getNamedAccounts()
-    const lpTokenName = `${poolName}LPToken`
-    console.log("Attempting to get token addresses")
-    const tokenAddresses = await Promise.all(
-      tokenNames.map(async (name) => (await get(name)).address),
-    )
-
-    const tokenDecimals = await Promise.all(
-      tokenNames.map(async (name) => await read(name, "decimals")),
-    )
-
-    // deploy the metapool
-    console.log("Deploying the pool")
-    await deploy(poolName, {
-      from: deployer,
-      log: true,
-      contract: "SwapFlashLoan",
-      skipIfAlreadyDeployed: true,
-      libraries: {
-        SwapUtils: (await get("SwapUtils")).address,
-        AmplificationUtils: (await get("AmplificationUtils")).address,
-      },
-    })
-
-    await execute(
-      poolName,
-      {
-        from: deployer,
-        log: true,
-      },
-      "initialize",
-      tokenAddresses,
-      tokenDecimals,
-      lpTokenName,
-      lpTokenSymbol,
-      initialA,
-      swapFee,
-      adminFee,
-      (
-        await get("LPToken")
-      ).address,
-    )
-
-    await execute(
-      poolName,
-      { from: deployer, log: true },
-      "transferOwnership",
-      MULTISIG_ADDRESSES[await getChainId()],
-    )
-
-    // get lptoken address (was deployed by the metaswap contract)
-    const lpTokenAddress = (await read(poolName, "swapStorage")).lpToken
-    log(`deployed ${lpTokenName} at ${lpTokenAddress}`)
-
-    // save lptoken deployment
-    console.log("saving lp token deployment")
-    await save(lpTokenName, {
-      abi: (await get("LPToken")).abi, // LPToken ABI
-      address: lpTokenAddress,
-    })
-  })
-}
-
-// real
 export async function deployMetaswap(
   hre: HardhatRuntimeEnvironment,
   metaPoolName: string,
@@ -310,6 +115,103 @@ export async function deployMetaswap(
       address: lpTokenAddress,
     })
   }
+}
+
+export async function deployMetaswapV2(
+  hre: HardhatRuntimeEnvironment,
+  pools: IPoolDataInput[],
+) {
+  const newDeploypools = await checkIfPoolDeployed(hre, pools)
+
+  newDeploypools.forEach(async function (pool) {
+    const metaPoolName = pool.poolName
+    console.log(`Attempting to deploy pool with name: ${metaPoolName}`)
+    const basePoolName = pool.basePoolName
+    const tokenNames = pool.tokenNames
+    tokenNames.push(`${basePoolName}LPToken`)
+    const lpTokenSymbol = pool.lpTokenSymbol
+    const initialA = pool.initialA
+    const swapFee = pool.swapFee
+    const adminFee = pool.adminFee
+
+    const { deployments, getNamedAccounts } = hre
+    const { execute, deploy, get, getOrNull, log, read, save } = deployments
+    const { deployer } = await getNamedAccounts()
+    const lpTokenName = `${metaPoolName}LPToken`
+    console.log("Attempting to get token addresses")
+    const tokenAddresses = await Promise.all(
+      tokenNames.map(async (name) => (await get(name)).address),
+    )
+
+    const tokenDecimals = await Promise.all(
+      tokenNames.map(async (name) => await read(name, "decimals")),
+    )
+
+    // deploy the metapool
+    console.log("Deploying the metapool")
+    await deploy(metaPoolName, {
+      from: deployer,
+      log: true,
+      contract: "MetaSwap",
+      skipIfAlreadyDeployed: true,
+      libraries: {
+        SwapUtils: (await get("SwapUtils")).address,
+        MetaSwapUtils: (await get("MetaSwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
+      },
+    })
+
+    // initalize metapool with starting values
+    console.log("Initializing MetaSwap")
+    await execute(
+      metaPoolName,
+      {
+        from: deployer,
+        log: true,
+      },
+      "initializeMetaSwap",
+      tokenAddresses,
+      tokenDecimals,
+      lpTokenName,
+      lpTokenSymbol,
+      initialA,
+      swapFee,
+      adminFee,
+      (
+        await get("LPToken")
+      ).address,
+      (
+        await get(basePoolName!)
+      ).address,
+    )
+
+    await execute(
+      metaPoolName,
+      { from: deployer, log: true },
+      "transferOwnership",
+      MULTISIG_ADDRESSES[await getChainId()],
+    )
+
+    // deploy the Meta Swap Deposit
+    console.log("Deploying Metaswap Deposit")
+    await deployMetaswapDeposit(
+      hre,
+      `${metaPoolName}Deposit`,
+      basePoolName!,
+      metaPoolName,
+    )
+
+    // get lptoken address (was deployed by the metaswap contract)
+    const lpTokenAddress = (await read(metaPoolName, "swapStorage")).lpToken
+    log(`deployed ${lpTokenName} at ${lpTokenAddress}`)
+
+    // save lptoken deployment
+    console.log("saving lp token deployment")
+    await save(lpTokenName, {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
+  })
 }
 
 export async function deployMetaswapDeposit(
@@ -434,26 +336,118 @@ export async function deploySwapFlashLoan(
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
-
-    // check if contract is verified
   }
+}
+
+export async function deploySwapFlashLoanV2(
+  hre: HardhatRuntimeEnvironment,
+  pools: IPoolDataInput[],
+) {
+  // filter out already deployed pools
+  const newDeploypools = await checkIfPoolDeployed(hre, pools)
+
+  newDeploypools.forEach(async function (pool) {
+    const poolName = pool.poolName
+    console.log(`Attempting to deploy pool with name: ${poolName}`)
+    const tokenNames = pool.tokenNames
+    const lpTokenSymbol = pool.lpTokenSymbol
+    const initialA = pool.initialA
+    const swapFee = pool.swapFee
+    const adminFee = pool.adminFee
+
+    const { deployments, getNamedAccounts } = hre
+    const { execute, deploy, get, getOrNull, log, read, save } = deployments
+    const { deployer } = await getNamedAccounts()
+    const lpTokenName = `${poolName}LPToken`
+    console.log("Attempting to get token addresses")
+    const tokenAddresses = await Promise.all(
+      tokenNames.map(async (name) => (await get(name)).address),
+    )
+
+    const tokenDecimals = await Promise.all(
+      tokenNames.map(async (name) => await read(name, "decimals")),
+    )
+
+    // deploy the metapool
+    console.log("Deploying the pool")
+    await deploy(poolName, {
+      from: deployer,
+      log: true,
+      contract: "SwapFlashLoan",
+      skipIfAlreadyDeployed: true,
+      libraries: {
+        SwapUtils: (await get("SwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
+      },
+    })
+
+    await execute(
+      poolName,
+      {
+        from: deployer,
+        log: true,
+      },
+      "initialize",
+      tokenAddresses,
+      tokenDecimals,
+      lpTokenName,
+      lpTokenSymbol,
+      initialA,
+      swapFee,
+      adminFee,
+      (
+        await get("LPToken")
+      ).address,
+    )
+
+    await execute(
+      poolName,
+      { from: deployer, log: true },
+      "transferOwnership",
+      MULTISIG_ADDRESSES[await getChainId()],
+    )
+
+    // get lptoken address (was deployed by the metaswap contract)
+    const lpTokenAddress = (await read(poolName, "swapStorage")).lpToken
+    log(`deployed ${lpTokenName} at ${lpTokenAddress}`)
+
+    // save lptoken deployment
+    console.log("saving lp token deployment")
+    await save(lpTokenName, {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
+    // attempt to verify contract (fails on getting api key)
+    // await verifyContract(hre, poolName)
+  })
+  // register new pools
+  await registerPools(hre, newDeploypools)
 }
 
 async function checkIfPoolDeployed(
   hre: HardhatRuntimeEnvironment,
-  poolName: string,
+  pools: IPoolDataInput[],
 ) {
   const { deployments } = hre
   const { getOrNull, read } = deployments
 
-  // Manually check if the pool is already deployed
-  const metaPool = await getOrNull(poolName)
-
-  // Check if has been initialized
-  const isInitialized: boolean = metaPool
-    ? (await read(poolName, "swapStorage")).lpToken !== ZERO_ADDRESS
-    : false
-  return isInitialized && metaPool
+  async function checkDeployed(poolName: string) {
+    // Manually check if the pool is already deployed
+    const pool = await getOrNull(poolName)
+    // Check if has been initialized
+    const isInitialized: boolean = pool
+      ? (await read(poolName, "swapStorage")).lpToken !== ZERO_ADDRESS
+      : false
+    return isInitialized && pool
+  }
+  const newDeploypools = pools.filter((pool) => checkDeployed(pool.poolName))
+  if (newDeploypools.length != 0) {
+    console.log("****** New deployments detected ******")
+    for (let i = 0; i < newDeploypools.length; i++) {
+      console.log(`New pool to be deployed: ${newDeploypools[i].poolName}`)
+    }
+  }
+  return newDeploypools
 }
 
 export async function checkTokens(
@@ -509,18 +503,32 @@ async function checkRegisteredPool(
 
 export async function registerPools(
   hre: HardhatRuntimeEnvironment,
-  pools: IPoolRegistry.PoolInputDataStruct[],
+  pools: IPoolDataInput[],
 ) {
   const { deployments, getNamedAccounts, ethers } = hre
-  const { execute } = deployments
+  const { execute, get } = deployments
   const { deployer } = await getNamedAccounts()
   const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
   const poolsToBeAdded = pools.filter((pool) =>
     checkRegisteredPool(hre, pool.poolName.toString()),
   )
+  console.log(`Attempting to register ${poolsToBeAdded.length} pool[s]`)
+  let poolsToBeRegistered: IPoolRegistry.PoolInputDataStruct[] = []
+  poolsToBeAdded.forEach(async (pool) => {
+    poolsToBeRegistered.push({
+      poolAddress: (await get(pool.poolName)).address,
+      typeOfAsset: PoolType.USD,
+      poolName: ethers.utils.formatBytes32String(pool.tokenNames.join("-")),
+      targetAddress: (await get("SwapFlashLoan")).address,
+      metaSwapDepositAddress: ZERO_ADDRESS,
+      isSaddleApproved: true,
+      isRemoved: false,
+      isGuarded: false,
+    })
+  })
 
   const batchCall = await Promise.all(
-    poolsToBeAdded.map(
+    poolsToBeRegistered.map(
       async (pool) => await poolRegistry.populateTransaction.addPool(pool),
     ),
   )
@@ -543,8 +551,10 @@ export async function verifyContract(
   const { ethers } = hre
   const contract = await ethers.getContract(contractName)
 
+  console.log(`attempting to verify contract: ${contractName}`)
   await hre.run("verify:verify", {
     address: contract.address,
     constructorArguments: constructors,
   })
+  console.log(`Successfully verified ${contractName} at ${contract.address}`)
 }
