@@ -25,7 +25,7 @@ jobs:
         node-version: '16'
     # fix for forcing git to use https when pulling deps
     - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
-    - run: npm ci
+    - run: npm ci --legacy-peer-deps
     - run: npm run build --if-present
     - run: npm run lint
 
@@ -47,6 +47,6 @@ jobs:
         node-version: '16'
     # fix for forcing git to use https when pulling deps
     - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
-    - run: npm ci
+    - run: npm ci --legacy-peer-deps
     - run: npm run build --if-present
     - run: npm test

@@ -20,7 +20,7 @@
     "synthetix": "2.56.1"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.13",
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
     "@nomiclabs/hardhat-etherscan": "^2.1.8",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@nomiclabs/hardhat-web3": "^2.0.0",
@@ -37,7 +37,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-unused-imports": "^2.0.0",
     "ethereum-waffle": "^3.4.4",
-    "ethers": "^5.6.4",
+    "ethers": "^5.6.9",
     "ethlint": "^1.2.5",
     "hardhat": "^2.9.3",
     "hardhat-deploy": "github:saddle-finance/hardhat-deploy",
