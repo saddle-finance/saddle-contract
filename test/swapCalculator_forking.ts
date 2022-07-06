@@ -10,7 +10,7 @@ chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
 
-describe("SwapCalculator (D4 pool on forked mainnet)", async () => {
+describe("SwapCalculator (D4 pool on forked mainnet) [ @skip-on-coverage ]", async () => {
   let signers: Array<Signer>
   let owner: Signer
   let swapCalculator: SwapCalculator
