@@ -30,7 +30,7 @@ const USD_V2_LP_TOKEN_NAME = `${USD_V2_SWAP_NAME}LPToken`
 const USD_V2_GAUGE_NAME = `LiquidityGaugeV5_${USD_V2_LP_TOKEN_NAME}`
 const VESDL_NAME = "VotingEscrow"
 
-describe("Fee Distributor", () => {
+describe("Fee Distributor [ @skip-on-coverage ]", () => {
   let signers: Array<Signer>
   let users: string[]
   let deployer: Signer
