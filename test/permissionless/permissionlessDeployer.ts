@@ -223,7 +223,7 @@ describe("PermissionlessDeployer", async () => {
       await testDeploySwap()
       await testDeployMetaSwap()
 
-      const poolData: IPoolRegistry.PoolDataStruct =
+      const poolData: IPoolRegistry.PoolDataStructOutput =
         await poolRegistry.getPoolDataByName(BYTES32_FRAX_POOL_NAME)
       const permissionlessSwapContract = await ethers.getContractAt(
         PERMISSIONLESS_SWAP_NAME,
@@ -342,7 +342,7 @@ describe("PermissionlessDeployer", async () => {
 
       // Metapool
 
-      const metaPoolData: IPoolRegistry.PoolDataStruct =
+      const metaPoolData: IPoolRegistry.PoolDataStructOutput =
         await poolRegistry.getPoolDataByName(BYTES32_FRAX_METAPOOL_NAME)
       const permissionlessMetaSwapContract = await ethers.getContractAt(
         PERMISSIONLESS_METASWAP_NAME,

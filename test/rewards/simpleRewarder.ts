@@ -13,7 +13,6 @@ import {
   BIG_NUMBER_1E18,
   BIG_NUMBER_ZERO,
   getCurrentBlockTimestamp,
-  increaseTimestamp,
   MAX_UINT256,
   setTimestamp,
   ZERO_ADDRESS,
@@ -337,7 +336,7 @@ describe("SimpleRewarder", async () => {
       await miniChef.set(0, 1, simpleRewarder.address, true)
 
       await miniChef.connect(farmer).harvest(0, farmerAddress)
-      await increaseTimestamp(1000)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
 
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(5),
@@ -369,7 +368,7 @@ describe("SimpleRewarder", async () => {
       await miniChef.set(0, 1, simpleRewarder.address, true)
 
       await miniChef.connect(farmer).harvest(0, farmerAddress)
-      await increaseTimestamp(1000)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
 
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(5),

@@ -10,7 +10,7 @@ The contracts are compiled with [Hardhat](https://hardhat.org/getting-started/),
 ## Installation
 
 ```bash
-$ npm i
+$ npm ci --legacy-peer-deps
 ```
 
 ## Usage
