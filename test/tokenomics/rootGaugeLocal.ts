@@ -255,4 +255,18 @@ describe("Root Gauge (Local)", () => {
       expect(await rootGauge.name()).to.eq(expectedName)
     })
   })
+
+  describe("childChainStreamer", () => {
+    it(`Reverts when notified by non-distributor within active period`, async () => {
+      // TODO: fill in test
+    })
+
+    it(`Succeeds when notified by distributor within active period`, async () => {
+      // TODO: fill in test
+    })
+
+    it(`Succeeds when notified by non-distributor after period ended`, async () => {
+      // TODO: fill in test
+    })
+  })
 })
