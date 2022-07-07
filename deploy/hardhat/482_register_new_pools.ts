@@ -12,7 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
 
-  const pools: IPoolRegistry.PoolInputDataStruct[] = [
+  const pools: IPoolRegistry.PoolInputDataStructOutput[] = [
     {
       // 4 pool will not be used on the frontend
       poolAddress: (await get("Saddle4Pool")).address,
@@ -35,7 +35,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       isRemoved: false,
       isGuarded: false,
     },
-  ]
+  ] as IPoolRegistry.PoolInputDataStructOutput[]
 
   await poolRegistry
     .getPoolDataByName(pools[0].poolName)

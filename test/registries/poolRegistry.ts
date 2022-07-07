@@ -55,12 +55,12 @@ describe("Registry", async () => {
   let ownerAddress: string
   let poolRegistry: PoolRegistry
   let registryFactory: ContractFactory
-  let usdv2Data: IPoolRegistry.PoolDataStruct
-  let susdMetaV2Data: IPoolRegistry.PoolDataStruct
-  let guardedBtcData: IPoolRegistry.PoolDataStruct
-  let usdv2InputData: IPoolRegistry.PoolInputDataStruct
-  let susdMetaV2InputData: IPoolRegistry.PoolInputDataStruct
-  let guardedBtcInputData: IPoolRegistry.PoolInputDataStruct
+  let usdv2Data: IPoolRegistry.PoolDataStructOutput
+  let susdMetaV2Data: IPoolRegistry.PoolDataStructOutput
+  let guardedBtcData: IPoolRegistry.PoolDataStructOutput
+  let usdv2InputData: IPoolRegistry.PoolInputDataStructOutput
+  let susdMetaV2InputData: IPoolRegistry.PoolInputDataStructOutput
+  let guardedBtcInputData: IPoolRegistry.PoolInputDataStructOutput
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -86,7 +86,7 @@ describe("Registry", async () => {
         isSaddleApproved: true,
         isRemoved: false,
         isGuarded: false,
-      }
+      } as IPoolRegistry.PoolInputDataStructOutput
 
       usdv2Data = {
         poolAddress: (await get(USD_POOL_CONTRACT_NAME)).address,
@@ -99,13 +99,13 @@ describe("Registry", async () => {
           (await get(USDC_CONTRACT_NAME)).address,
           (await get(USDT_CONTRACT_NAME)).address,
         ],
-        underlyingTokens: [],
+        underlyingTokens: [] as string[],
         basePoolAddress: ZERO_ADDRESS,
         metaSwapDepositAddress: ZERO_ADDRESS,
         isSaddleApproved: true,
         isRemoved: false,
         isGuarded: false,
-      }
+      } as IPoolRegistry.PoolDataStructOutput
 
       susdMetaV2InputData = {
         poolAddress: (await get(SUSD_META_POOL_CONTRACT_NAME)).address,
@@ -118,7 +118,7 @@ describe("Registry", async () => {
         isSaddleApproved: true,
         isRemoved: false,
         isGuarded: false,
-      }
+      } as IPoolRegistry.PoolInputDataStructOutput
 
       susdMetaV2Data = {
         poolAddress: (await get(SUSD_META_POOL_CONTRACT_NAME)).address,
@@ -143,7 +143,7 @@ describe("Registry", async () => {
         isSaddleApproved: true,
         isRemoved: false,
         isGuarded: false,
-      }
+      } as IPoolRegistry.PoolDataStructOutput
 
       guardedBtcInputData = {
         poolAddress: (await get(BTC_POOL_CONTRACT_NAME)).address,
@@ -154,7 +154,7 @@ describe("Registry", async () => {
         isSaddleApproved: true,
         isRemoved: false,
         isGuarded: true,
-      }
+      } as IPoolRegistry.PoolInputDataStructOutput
 
       guardedBtcData = {
         poolAddress: (await get(BTC_POOL_CONTRACT_NAME)).address,
@@ -168,13 +168,13 @@ describe("Registry", async () => {
           (await get(RENBTC_CONTRACT_NAME)).address,
           (await get(SBTC_CONTRACT_NAME)).address,
         ],
-        underlyingTokens: [],
+        underlyingTokens: [] as string[],
         basePoolAddress: ZERO_ADDRESS,
         metaSwapDepositAddress: ZERO_ADDRESS,
         isSaddleApproved: true,
         isRemoved: false,
         isGuarded: true,
-      }
+      } as IPoolRegistry.PoolDataStructOutput
 
       for (const token of usdv2Data.tokens) {
         const tokenContract = await ethers.getContractAt(
