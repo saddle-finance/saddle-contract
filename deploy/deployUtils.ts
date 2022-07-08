@@ -117,7 +117,7 @@ export async function deployMetaswap(
   }
 }
 
-export async function deployMetaswapArray(
+export async function deployMetaswapPools(
   hre: HardhatRuntimeEnvironment,
   pools: IPoolDataInput[],
 ) {
@@ -193,25 +193,24 @@ export async function deployMetaswapArray(
       MULTISIG_ADDRESSES[await getChainId()],
     )
 
-    // // deploy the Meta Swap Deposit
-    // console.log("Deploying Metaswap Deposit")
-    // await deployMetaswapDeposit(
-    //   hre,
-    //   `${metaPoolName}Deposit`,
-    //   basePoolName!,
-    //   metaPoolName,
-    // )
+    // get lptoken address (was deployed by the metaswap contract)
+    const lpTokenAddress = (await read(metaPoolName, "swapStorage")).lpToken
+    log(`deployed ${lpTokenName} at ${lpTokenAddress}`)
+    // save lptoken deployment
+    console.log("saving lp token deployment")
+    await save(lpTokenName, {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
 
-    // // get lptoken address (was deployed by the metaswap contract)
-    // const lpTokenAddress = (await read(metaPoolName, "swapStorage")).lpToken
-    // log(`deployed ${lpTokenName} at ${lpTokenAddress}`)
-
-    // // save lptoken deployment
-    // console.log("saving lp token deployment")
-    // await save(lpTokenName, {
-    //   abi: (await get("LPToken")).abi, // LPToken ABI
-    //   address: lpTokenAddress,
-    // })
+    // deploy the Meta Swap Deposit
+    console.log("Deploying Metaswap Deposit")
+    await deployMetaswapDeposit(
+      hre,
+      `${metaPoolName}Deposit`,
+      basePoolName!,
+      metaPoolName,
+    )
   }
 }
 
@@ -339,7 +338,7 @@ export async function deploySwapFlashLoan(
   }
 }
 
-export async function deploySwapFlashLoanArray(
+export async function deploySwapFlashLoanPools(
   hre: HardhatRuntimeEnvironment,
   pools: IPoolDataInput[],
 ) {
