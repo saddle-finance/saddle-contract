@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const minterAddress = (await get("Minter")).address
 
-  // LP token deployments to add LiqV5 gauges for
+  // LP token deployments to add LiqV5 gauges
   const newGaugeArr = [
     { lpToken: "SaddleUSXPoolLPToken", gaugeType: 0, initialWeight: 0 },
   ]
