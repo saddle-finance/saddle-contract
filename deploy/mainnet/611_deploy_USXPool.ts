@@ -12,7 +12,7 @@ const LP_TOKEN_NAME = "Saddle USDC/USX LP Token"
 const LP_TOKEN_SYMBOL = "saddleUSX"
 const INITIAL_A = 500
 const SWAP_FEE = 4e6 // 4bps
-const ADMIN_FEE = 5e9 // 50% of the 3bps
+const ADMIN_FEE = 5e9 // 50% of the 4bps
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await deploySwapFlashLoan(

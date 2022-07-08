@@ -14,7 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const pools: IPoolRegistry.PoolInputDataStruct[] = [
     {
-      // frax USDC Base Pool
+      // USDX Base Pool
       poolAddress: (await get("SaddleUSXPool")).address,
       typeOfAsset: PoolType.USD,
       poolName: ethers.utils.formatBytes32String("USDC-USX"),
