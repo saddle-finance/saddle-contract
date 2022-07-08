@@ -117,13 +117,14 @@ export async function deployMetaswap(
   }
 }
 
-export async function deployMetaswapV2(
+export async function deployMetaswapArray(
   hre: HardhatRuntimeEnvironment,
   pools: IPoolDataInput[],
 ) {
   const newDeploypools = await checkIfPoolDeployed(hre, pools)
 
-  newDeploypools.forEach(async function (pool) {
+  for (let i = 0; i < newDeploypools.length; i++) {
+    const pool = newDeploypools[i]
     const metaPoolName = pool.poolName
     console.log(`Attempting to deploy pool with name: ${metaPoolName}`)
     const basePoolName = pool.basePoolName
@@ -192,26 +193,26 @@ export async function deployMetaswapV2(
       MULTISIG_ADDRESSES[await getChainId()],
     )
 
-    // deploy the Meta Swap Deposit
-    console.log("Deploying Metaswap Deposit")
-    await deployMetaswapDeposit(
-      hre,
-      `${metaPoolName}Deposit`,
-      basePoolName!,
-      metaPoolName,
-    )
+    // // deploy the Meta Swap Deposit
+    // console.log("Deploying Metaswap Deposit")
+    // await deployMetaswapDeposit(
+    //   hre,
+    //   `${metaPoolName}Deposit`,
+    //   basePoolName!,
+    //   metaPoolName,
+    // )
 
-    // get lptoken address (was deployed by the metaswap contract)
-    const lpTokenAddress = (await read(metaPoolName, "swapStorage")).lpToken
-    log(`deployed ${lpTokenName} at ${lpTokenAddress}`)
+    // // get lptoken address (was deployed by the metaswap contract)
+    // const lpTokenAddress = (await read(metaPoolName, "swapStorage")).lpToken
+    // log(`deployed ${lpTokenName} at ${lpTokenAddress}`)
 
-    // save lptoken deployment
-    console.log("saving lp token deployment")
-    await save(lpTokenName, {
-      abi: (await get("LPToken")).abi, // LPToken ABI
-      address: lpTokenAddress,
-    })
-  })
+    // // save lptoken deployment
+    // console.log("saving lp token deployment")
+    // await save(lpTokenName, {
+    //   abi: (await get("LPToken")).abi, // LPToken ABI
+    //   address: lpTokenAddress,
+    // })
+  }
 }
 
 export async function deployMetaswapDeposit(
@@ -234,7 +235,6 @@ export async function deployMetaswapDeposit(
     log(`reusing ${metaPoolDepositName} at ${metaPoolDeposit.address}`)
   } else {
     // This is the first time deploying MetaSwapDeposit contract.
-    // Next time, we can just deploy a proxy that targets this.
     await deploy(metaPoolDepositName, {
       from: deployer,
       log: true,
@@ -339,14 +339,14 @@ export async function deploySwapFlashLoan(
   }
 }
 
-export async function deploySwapFlashLoanV2(
+export async function deploySwapFlashLoanArray(
   hre: HardhatRuntimeEnvironment,
   pools: IPoolDataInput[],
 ) {
   // filter out already deployed pools
   const newDeploypools = await checkIfPoolDeployed(hre, pools)
-
-  newDeploypools.forEach(async function (pool) {
+  for (let i = 0; i < newDeploypools.length; i++) {
+    const pool = newDeploypools[i]
     const poolName = pool.poolName
     console.log(`Attempting to deploy pool with name: ${poolName}`)
     const tokenNames = pool.tokenNames
@@ -419,7 +419,7 @@ export async function deploySwapFlashLoanV2(
     })
     // attempt to verify contract (fails on getting api key)
     // await verifyContract(hre, poolName)
-  })
+  }
   // register new pools
   await registerPools(hre, newDeploypools)
 }
