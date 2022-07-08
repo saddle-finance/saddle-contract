@@ -257,16 +257,68 @@ describe("Root Gauge (Local)", () => {
   })
 
   describe("childChainStreamer", () => {
-    it(`Reverts when notified by non-distributor within active period`, async () => {
-      // TODO: fill in test
+    beforeEach(async () => {
+      // Increase time stamp by 12 hours, to be well into the current period
+      await increaseTimestamp(DAY/2)
+
+      console.log(`'Rewards received' before: ${(await childChainStreamer.reward_data(sdl.address))[4]}\n` +
+                  `'Last update time' before: ${await childChainStreamer.last_update_time()}`)
+    })
+
+    afterEach(async () => {
+      console.log(`'Rewards received' after: ${(await childChainStreamer.reward_data(sdl.address))[4]}\n` +
+                  `'Last update time' after: ${await childChainStreamer.last_update_time()}\n\n`)
+                 
+    })
+
+    it(`Reverts when notified and no new rewards were deposited`, async () => {      
+      // Call notify_reward_amount from distributor within active period
+      await expect(childChainStreamer.connect(signers[10]).notify_reward_amount(sdl.address)).to.be.revertedWith(
+        "Invalid token or no new reward"
+      )
+    })
+    
+    it(`Reverts when notified by non-distributor within active period`, async () => {      
+      // Simulate new SDL rewards coming from RootGauge 
+      await sdl.transfer(childChainStreamer.address, BIG_NUMBER_1E18.mul(500_000)) 
+
+      // Call notify_reward_amount from non-distributor within active period
+      await expect(childChainStreamer.connect(signers[10]).notify_reward_amount(sdl.address)).to.be.revertedWith(
+        "Reward period still active"
+      )
     })
 
     it(`Succeeds when notified by distributor within active period`, async () => {
-      // TODO: fill in test
+      const last_update_time = await childChainStreamer.last_update_time()
+      const rewards_received = (await childChainStreamer.reward_data(sdl.address))[4]
+
+      // Simulate new SDL rewards coming from RootGauge 
+      await sdl.transfer(childChainStreamer.address, BIG_NUMBER_1E18.mul(500_000))
+
+      // Call notify_reward_amount from distributor (deployer)
+      await childChainStreamer.connect(deployer).notify_reward_amount(sdl.address)
+
+      await expect(await childChainStreamer.last_update_time()).to.be.gt(last_update_time)
+      await expect((await childChainStreamer.reward_data(sdl.address))[4]).to.be.eq(
+        rewards_received.add(BIG_NUMBER_1E18.mul(500_000)))
     })
 
-    it(`Succeeds when notified by non-distributor after period ended`, async () => {
-      // TODO: fill in test
+    it(`Succeeds when notified by non-distributor after period ended`, async () => {     
+      const last_update_time = await childChainStreamer.last_update_time()
+      const rewards_received = (await childChainStreamer.reward_data(sdl.address))[4]
+      
+      // Increase time stamp by 1 week, so active period is over
+      await increaseTimestamp(WEEK)
+
+      // Simulate new SDL rewards coming from RootGauge 
+      await sdl.transfer(childChainStreamer.address, BIG_NUMBER_1E18.mul(500_000))
+      
+      // Call notify_reward_amount from non-distributor outside active period
+      await childChainStreamer.connect(signers[10]).notify_reward_amount(sdl.address)
+
+      await expect(await childChainStreamer.last_update_time()).to.be.gt(last_update_time)
+      await expect((await childChainStreamer.reward_data(sdl.address))[4]).to.be.eq(
+        rewards_received.add(BIG_NUMBER_1E18.mul(500_000)))
     })
   })
 })
