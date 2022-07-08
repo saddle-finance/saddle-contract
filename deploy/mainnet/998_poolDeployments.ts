@@ -2,8 +2,8 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import {
   IPoolDataInput,
-  deployMetaswapArray,
-  deploySwapFlashLoanArray,
+  deployMetaswapPools,
+  deploySwapFlashLoanPools,
 } from "../deployUtils"
 
 // Swap Flash Loan Inputs
@@ -32,8 +32,8 @@ const metaPools: IPoolDataInput[] = [
 ]
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  await deployMetaswapArray(hre, metaPools)
-  await deploySwapFlashLoanArray(hre, swapPools)
+  await deployMetaswapPools(hre, metaPools)
+  await deploySwapFlashLoanPools(hre, swapPools)
 }
 
 export default func
