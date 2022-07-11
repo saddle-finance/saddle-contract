@@ -458,13 +458,6 @@ export async function checkTokens(
   const { deployer } = await getNamedAccounts()
 
   for (const token in tokenArgs) {
-    await deploy(token, {
-      from: deployer,
-      log: true,
-      contract: "GenericERC20",
-      args: tokenArgs[token],
-      skipIfAlreadyDeployed: true,
-    })
     // If it's on hardhat, mint test tokens
     if (isTestNetwork(await getChainId())) {
       const decimals = tokenArgs[token][2]
