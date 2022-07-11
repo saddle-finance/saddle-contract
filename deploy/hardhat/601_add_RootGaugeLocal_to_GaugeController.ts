@@ -8,8 +8,11 @@ const ROOT_GAUGE_LOCAL_CONTRACT_NAME = "RootGaugeLocal"
 const LOCALHOST_LIQUIDITY_GAUGE_TYPE_NAME = "Liquidity (localhost)"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+<<<<<<< HEAD
   // temporary not adding root gauges to gauge controller
   return
+=======
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
   const { deployer } = await getNamedAccounts()

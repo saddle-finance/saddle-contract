@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "address": "0x253A68c96D6F7B44082a96A8D74c88b1838f304B",
+=======
+  "address": "0x3cF7b9479a01eeB3bbfC43581fa3bb21cd888e2A",
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
   "abi": [
     {
       "anonymous": false,

@@ -105,11 +105,68 @@ describe("Root Gauge (Local)", () => {
           break
         }
       }
+<<<<<<< HEAD
+=======
+
+      // Set timestamp to start of next week to ensure consistent results
+      await setTimestamp(
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
+      )
+
+      // If rate is not initialized, initialize it
+      if ((await minter.rate()).eq(MAX_UINT256)) {
+        await minter.update_mining_parameters()
+      }
+      await rootGauge.connect(deployer).checkpoint()
+
+      // Imitate multisig setting gauge weights
+      await gaugeController.change_gauge_weight(rootGauge.address, 10000)
+
+      // Skip to the week after when the weights apply
+      await setTimestamp(
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
+      )
+      await rootGauge.connect(deployer).checkpoint()
+      console.log(
+        `inflation rate: ${await rootGauge.inflation_rate()}\n` +
+          `emissions: ${await rootGauge.emissions()}\n` +
+          `period: ${await rootGauge.period()}`,
+      )
+      expect(await sdl.balanceOf(childChainStreamer.address)).to.be.eq(0)
+
+      // For root gauges, we need to wait until the full duration of the rewards has passed
+      await setTimestamp(
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
+      )
+
+      // Imitate multisig calling checkpoint
+      // On mainnet this will trigger the bridging of SDL to other networks
+      await rootGauge.connect(deployer).checkpoint()
+      console.log(
+        `inflation rate: ${await rootGauge.inflation_rate()}\n` +
+          `emissions: ${await rootGauge.emissions()}\n` +
+          `period: ${await rootGauge.period()}`,
+      )
+
+      // Simulate 1hr of briding delay
+      await increaseTimestamp(60 * 60)
+
+      // Child chain streamer should have the tokens now
+      const childChainBalance = await sdl.balanceOf(childChainStreamer.address)
+      expect(childChainBalance)
+        .to.be.gte("1244400199104031855682950")
+        .and.lte("1244400199104031855682951")
+
+      // Call notify reward_amount on the child chain streamer to let it know
+      // SDL has been successfully bridged
+      await childChainStreamer.notify_reward_amount(sdl.address)
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
     },
   )
 
   beforeEach(async () => {
     await setupTest()
+<<<<<<< HEAD
 
     await setTimestamp(
       Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
@@ -160,6 +217,8 @@ describe("Root Gauge (Local)", () => {
     // Call notify reward_amount on the child chain streamer to let it know
     // SDL has been successfully bridged
     await childChainStreamer.notify_reward_amount(sdl.address)
+=======
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
   })
 
   describe("deposit & claimable_reward", () => {
@@ -193,23 +252,39 @@ describe("Root Gauge (Local)", () => {
           users[0],
           rewardTokens[0],
         ),
+<<<<<<< HEAD
       ).to.eq("178579695767195767157594")
+=======
+      ).to.eq("88889843587454338983234")
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
 
       expect(
         await rewardsOnlyGauge.callStatic.claimable_reward_write(
           users[10],
           rewardTokens[0],
         ),
+<<<<<<< HEAD
       ).to.eq("178571428571428571390400")
 
       // Claim main reward via calling rewardsOnlyGauge.claim_rewards()
       await rewardsOnlyGauge.connect(signers[10])["claim_rewards()"]()
       expect(await sdl.balanceOf(users[10])).to.eq("178573495370370370332198")
+=======
+      ).to.eq("88885728507430846814400")
+
+      // Claim main reward via calling rewardsOnlyGauge.claim_rewards()
+      await rewardsOnlyGauge.connect(signers[10])["claim_rewards()"]()
+      expect(await sdl.balanceOf(users[10])).to.eq("88886757277436719856608")
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
 
       const beforeBalance = await sdl.balanceOf(users[0])
       await rewardsOnlyGauge.connect(signers[0])["claim_rewards()"]()
       expect((await sdl.balanceOf(users[0])).sub(beforeBalance)).to.eq(
+<<<<<<< HEAD
         "178581762566137566099392",
+=======
+        "88890872357460212025442",
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
       )
     })
   })
@@ -229,7 +304,11 @@ describe("Root Gauge (Local)", () => {
           users[10],
           rewardTokens[0],
         ),
+<<<<<<< HEAD
       ).to.eq("357146990740740740664397")
+=======
+      ).to.eq("177773514554873439713217")
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
 
       // Withdraw LP tokens
       await rewardsOnlyGauge

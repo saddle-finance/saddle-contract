@@ -10,7 +10,11 @@ const BASE_POOL_NAME = "SaddleFtmUSDPool"
 const TOKEN_NAMES = ["ALUSD", `${BASE_POOL_NAME}LPToken`]
 const TOKEN_DECIMALS = [18, 18]
 const LP_TOKEN_NAME = "Saddle alUSD/saddleFtmUSD LP Token"
+<<<<<<< HEAD
 const LP_TOKEN_SYMBOL = "saddleFraxUSDT"
+=======
+const LP_TOKEN_SYMBOL = "saddleFraxalUSD"
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
 const INITIAL_A = 100
 const SWAP_FEE = 4e6 // 4bps
 const ADMIN_FEE = 50e8

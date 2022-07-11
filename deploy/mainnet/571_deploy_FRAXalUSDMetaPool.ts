@@ -4,14 +4,21 @@ import { deployMetaswap } from "../deployUtils"
 
 // Deployment names
 const META_POOL_NAME = "SaddleFRAXalUSDMetaPool"
+<<<<<<< HEAD
 const META_POOL_LP_TOKEN_NAME = `${META_POOL_NAME}LPToken`
+=======
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
 const BASE_POOL_NAME = "SaddleFRAXBPPool"
 
 // Constructor arguments
 const TOKEN_NAMES = ["ALUSD", `${BASE_POOL_NAME}LPToken`]
 const TOKEN_DECIMALS = [18, 18]
 const LP_TOKEN_NAME = "Saddle alUSD/saddleFraxBP LP Token"
+<<<<<<< HEAD
 const LP_TOKEN_SYMBOL = "saddleFraxUSDT"
+=======
+const LP_TOKEN_SYMBOL = "saddleFraxalUSD"
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
 const INITIAL_A = 100
 const SWAP_FEE = 4e6 // 4bps
 const ADMIN_FEE = 50e8

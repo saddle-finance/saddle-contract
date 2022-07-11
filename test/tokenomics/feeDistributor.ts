@@ -30,7 +30,11 @@ const USD_V2_LP_TOKEN_NAME = `${USD_V2_SWAP_NAME}LPToken`
 const USD_V2_GAUGE_NAME = `LiquidityGaugeV5_${USD_V2_LP_TOKEN_NAME}`
 const VESDL_NAME = "VotingEscrow"
 
+<<<<<<< HEAD
 describe("Liquidity Gauge V5", () => {
+=======
+describe("Fee Distributor [ @skip-on-coverage ]", () => {
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
   let signers: Array<Signer>
   let users: string[]
   let deployer: Signer
@@ -148,16 +152,27 @@ describe("Liquidity Gauge V5", () => {
       await increaseTimestamp(WEEK / 2)
       await feeDistributor.checkpoint_token()
       expect(await feeDistributor["claimable(address)"](deployerAddress)).to.eq(
+<<<<<<< HEAD
         "800773694390715667",
       )
       expect(await feeDistributor["claimable(address)"](users[10])).to.eq(
         "199226305609284332",
+=======
+        "800000000000000000",
+      )
+      expect(await feeDistributor["claimable(address)"](users[10])).to.eq(
+        "200000000000000000",
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
       )
 
       // After claiming the rewards, no more rewards are claimable
       await feeDistributor.connect(signers[10])["claim()"]()
       expect(await feeDistributor["claimable(address)"](users[10])).to.eq(0)
+<<<<<<< HEAD
       expect(await lpToken.balanceOf(users[10])).to.eq("199226305609284332")
+=======
+      expect(await lpToken.balanceOf(users[10])).to.eq("200000000000000000")
+>>>>>>> d03757cddbc9710170a809933d414dfe740c4afc
     })
   })
 })
