@@ -460,15 +460,24 @@ export async function checkTokens(
   for (const token in tokenArgs) {
     // If it's on hardhat, mint test tokens
     if (isTestNetwork(await getChainId())) {
-      const decimals = tokenArgs[token][2]
-      console.log(`minting: ${tokenArgs[token][0]}`)
-      await execute(
-        token,
-        { from: deployer, log: true },
-        "mint",
-        deployer,
-        BigNumber.from(10).pow(decimals).mul(1000000),
-      )
+      for (const token in tokenArgs) {
+        await deploy(token, {
+          from: deployer,
+          log: true,
+          contract: "GenericERC20",
+          args: tokenArgs[token],
+          skipIfAlreadyDeployed: true,
+        })
+        const decimals = tokenArgs[token][2]
+        console.log(`minting: ${tokenArgs[token][0]}`)
+        await execute(
+          token,
+          { from: deployer, log: true },
+          "mint",
+          deployer,
+          BigNumber.from(10).pow(decimals).mul(1000000),
+        )
+      }
     }
   }
 }
