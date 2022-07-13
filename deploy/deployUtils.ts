@@ -4,7 +4,7 @@ import { isTestNetwork } from "../utils/network"
 import { getChainId } from "hardhat"
 import { BigNumber } from "ethers"
 import { ZERO_ADDRESS } from "../test/testUtils"
-import { PoolRegistry, TestSwapReturnValues__factory } from "../build/typechain"
+import { PoolRegistry } from "../build/typechain"
 import { PoolType } from "../utils/constants"
 import { IPoolRegistry } from "../build/typechain"
 
@@ -434,7 +434,7 @@ async function checkIfPoolDeployed(
 ) {
   const { deployments } = hre
   const { getOrNull, read } = deployments
-  let newDeployPools: IPoolDataInput[] = []
+  const newDeployPools: IPoolDataInput[] = []
   console.log("... checking for new pool deployments")
 
   for (let i = 0; i < pools.length; i++) {
@@ -523,7 +523,7 @@ export async function registerPools(
     checkRegisteredPool(hre, pool.poolName.toString()),
   )
   console.log(`Attempting to register ${poolsToBeAdded.length} pool[s]`)
-  let poolsToBeRegistered: IPoolRegistry.PoolInputDataStruct[] = []
+  const poolsToBeRegistered: IPoolRegistry.PoolInputDataStruct[] = []
   poolsToBeAdded.forEach(async (pool) => {
     poolsToBeRegistered.push({
       poolAddress: (await get(pool.poolName)).address,
