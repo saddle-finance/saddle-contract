@@ -4,11 +4,11 @@ import {
   IPoolDataInput,
   deployMetaswapPools,
   deploySwapFlashLoanPools,
-} from "../deployUtils"
+} from "./deployUtils"
 
-// Swap Flash Loan Inputs
+// SwapFlashLoan Inputs
 const swapPools: IPoolDataInput[] = [
-  // test deploy
+  // pool will deploy since a deployement is not found
   {
     poolName: "testDAIFRAXPool",
     tokenNames: ["FEI", "ALUSD"],
@@ -17,7 +17,7 @@ const swapPools: IPoolDataInput[] = [
     swapFee: 4e6,
     adminFee: 50e8,
   },
-  // test that already deployed pool doesn't get deployed
+  // pool will not deploy
   {
     poolName: "SaddleFRAXBPPool",
     tokenNames: ["USDC", "FRAX"],
@@ -30,6 +30,7 @@ const swapPools: IPoolDataInput[] = [
 
 // Metaswap Inputs
 const metaPools: IPoolDataInput[] = [
+  // pool will deploy since a deployement is not found
   {
     poolName: "testDAIFRAXBPMetaPool",
     basePoolName: "SaddleFRAXBPPool",
@@ -39,7 +40,7 @@ const metaPools: IPoolDataInput[] = [
     swapFee: 4e6,
     adminFee: 50e8,
   },
-  // test that already deployed pool doesn't get deployed
+  // pool will not deploy
   {
     poolName: "SaddleFRAXUSDTMetaPool",
     basePoolName: "SaddleFRAXBPPool",
@@ -57,5 +58,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 
 export default func
-func.tags = ["test deploys"]
-// func.dependencies = ["LPToken", "SaddleArbUSDPool"]
+func.tags = ["poolDeployments"]
