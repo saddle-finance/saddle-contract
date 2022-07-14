@@ -5,13 +5,17 @@ import {
   deployMetaswapPools,
   deploySwapFlashLoanPools,
 } from "./deployUtils"
+import { verifyContract } from "./deployUtils"
 
 // SwapFlashLoan Inputs
 const swapPools: IPoolDataInput[] = [
   // pool will deploy since a deployement is not found
   {
-    poolName: "testDAIFRAXPool",
-    tokenNames: ["FEI", "ALUSD"],
+    poolName: "testalUSDFRAXPool",
+    tokenArgs: {
+      ALUSD: ["Alchemix USD", "alUSD", "18"],
+      FRAX: ["Frax", "FRAX", "18"],
+    },
     lpTokenSymbol: "saddleDAIFRAX",
     initialA: 100,
     swapFee: 4e6,
@@ -20,7 +24,10 @@ const swapPools: IPoolDataInput[] = [
   // pool will not deploy
   {
     poolName: "SaddleFRAXBPPool",
-    tokenNames: ["USDC", "FRAX"],
+    tokenArgs: {
+      USDC: ["USD Coin", "USDC"],
+      FRAX: ["Frax", "FRAX"],
+    },
     lpTokenSymbol: "saddleFraxBP",
     initialA: 100,
     swapFee: 4e6,
@@ -32,9 +39,11 @@ const swapPools: IPoolDataInput[] = [
 const metaPools: IPoolDataInput[] = [
   // pool will deploy since a deployement is not found
   {
-    poolName: "testDAIFRAXBPMetaPool",
+    poolName: "testalUSDFRAXBPMetaPool",
     basePoolName: "SaddleFRAXBPPool",
-    tokenNames: ["DAI"],
+    tokenArgs: {
+      DAI: ["Dai", "DAI", "18"],
+    },
     lpTokenSymbol: "saddleFRAXDAIUSD",
     initialA: 100,
     swapFee: 4e6,
@@ -44,7 +53,9 @@ const metaPools: IPoolDataInput[] = [
   {
     poolName: "SaddleFRAXUSDTMetaPool",
     basePoolName: "SaddleFRAXBPPool",
-    tokenNames: ["USDT"],
+    tokenArgs: {
+      USDT: ["Tether", "USDT", "18"],
+    },
     lpTokenSymbol: "saddleFraxUSDT",
     initialA: 100,
     swapFee: 4e6,

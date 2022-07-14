@@ -11,7 +11,7 @@ import { IPoolRegistry } from "../build/typechain"
 export interface IPoolDataInput {
   poolName: string
   basePoolName?: string
-  tokenNames: string[]
+  tokenArgs: { [token: string]: any[] }
   lpTokenSymbol: string
   initialA: number
   swapFee: number
@@ -130,7 +130,11 @@ export async function deployMetaswapPools(
     const pool = newDeploypools[i]
     const metaPoolName = pool.poolName
     const basePoolName = pool.basePoolName
-    const tokenNames = pool.tokenNames
+    const tokenNames: string[] = []
+    for (const token in pool.tokenArgs) {
+      tokenNames.push(token)
+    }
+    // const tokenNames: string[] = ["ALUSD"]
     tokenNames.push(`${basePoolName}LPToken`)
     const lpTokenName = `${metaPoolName}LPToken`
     const lpTokenSymbol = pool.lpTokenSymbol
@@ -351,12 +355,17 @@ export async function deploySwapFlashLoanPools(
   const { deployments, getNamedAccounts } = hre
   const { execute, deploy, get, getOrNull, log, read, save } = deployments
   const { deployer } = await getNamedAccounts()
+  // check tokens
+  pools.map(async (pool) => await checkTokens(hre, pool.tokenArgs))
   // filter out already deployed pools
   const newDeploypools = await checkIfPoolDeployed(hre, pools)
   for (let i = 0; i < newDeploypools.length; i++) {
     const pool = newDeploypools[i]
     const poolName = pool.poolName
-    const tokenNames = pool.tokenNames
+    const tokenNames: string[] = []
+    for (const token in pool.tokenArgs) {
+      tokenNames.push(token)
+    }
     const lpTokenName = `${poolName}LPToken`
     const lpTokenSymbol = pool.lpTokenSymbol
     const initialA = pool.initialA
@@ -459,7 +468,6 @@ async function checkIfPoolDeployed(
   return newDeployPools
 }
 
-// ALUSD: ["Alchemix USD", "alUSD", "18"],
 export async function checkTokens(
   hre: HardhatRuntimeEnvironment,
   tokenArgs: { [token: string]: any[] },
@@ -525,10 +533,14 @@ export async function registerPools(
   console.log(`Attempting to register ${poolsToBeAdded.length} pool[s]`)
   const poolsToBeRegistered: IPoolRegistry.PoolInputDataStruct[] = []
   poolsToBeAdded.forEach(async (pool) => {
+    const tokenNames: string[] = []
+    for (const token in pool.tokenArgs) {
+      tokenNames.push(token)
+    }
     poolsToBeRegistered.push({
       poolAddress: (await get(pool.poolName)).address,
       typeOfAsset: PoolType.USD,
-      poolName: ethers.utils.formatBytes32String(pool.tokenNames.join("-")),
+      poolName: ethers.utils.formatBytes32String(tokenNames.join("-")),
       targetAddress: (await get("SwapFlashLoan")).address,
       metaSwapDepositAddress: ZERO_ADDRESS,
       isSaddleApproved: true,
