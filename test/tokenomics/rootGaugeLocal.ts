@@ -288,8 +288,8 @@ describe("Root Gauge (Local)", () => {
     })
 
     it(`Succeeds when notified by distributor within active period`, async () => {
-      const last_update_time = await childChainStreamer.last_update_time()
-      const rewards_received = (await childChainStreamer.reward_data(sdl.address))[4]
+      const lastUpdateTime = await childChainStreamer.last_update_time()
+      const rewardsReceived = (await childChainStreamer.reward_data(sdl.address))[4]
 
       // Simulate new SDL rewards coming from RootGauge 
       await sdl.transfer(childChainStreamer.address, BIG_NUMBER_1E18.mul(500_000))
@@ -297,14 +297,14 @@ describe("Root Gauge (Local)", () => {
       // Call notify_reward_amount from distributor (deployer)
       await childChainStreamer.connect(deployer).notify_reward_amount(sdl.address)
 
-      await expect(await childChainStreamer.last_update_time()).to.be.gt(last_update_time)
-      await expect((await childChainStreamer.reward_data(sdl.address))[4]).to.be.eq(
-        rewards_received.add(BIG_NUMBER_1E18.mul(500_000)))
+      expect(await childChainStreamer.last_update_time()).to.be.gt(lastUpdateTime)
+      expect((await childChainStreamer.reward_data(sdl.address))[4]).to.be.eq(
+        rewardsReceived.add(BIG_NUMBER_1E18.mul(500_000)))
     })
 
     it(`Succeeds when notified by non-distributor after period ended`, async () => {     
-      const last_update_time = await childChainStreamer.last_update_time()
-      const rewards_received = (await childChainStreamer.reward_data(sdl.address))[4]
+      const lastUpdateTime = await childChainStreamer.last_update_time()
+      const rewardsReceived = (await childChainStreamer.reward_data(sdl.address))[4]
       
       // Increase time stamp by 1 week, so active period is over
       await setTimestamp(await getCurrentBlockTimestamp() + (WEEK))
@@ -315,9 +315,9 @@ describe("Root Gauge (Local)", () => {
       // Call notify_reward_amount from non-distributor outside active period
       await childChainStreamer.connect(signers[10]).notify_reward_amount(sdl.address)
 
-      await expect(await childChainStreamer.last_update_time()).to.be.gt(last_update_time)
-      await expect((await childChainStreamer.reward_data(sdl.address))[4]).to.be.eq(
-        rewards_received.add(BIG_NUMBER_1E18.mul(500_000)))
+      expect(await childChainStreamer.last_update_time()).to.be.gt(lastUpdateTime)
+      expect((await childChainStreamer.reward_data(sdl.address))[4]).to.be.eq(
+        rewardsReceived.add(BIG_NUMBER_1E18.mul(500_000)))
     })
   })
 })
