@@ -5,7 +5,6 @@ import {
   deployMetaswapPools,
   deploySwapFlashLoanPools,
 } from "./deployUtils"
-import { verifyContract } from "./deployUtils"
 
 // SwapFlashLoan Inputs
 const swapPools: IPoolDataInput[] = [
