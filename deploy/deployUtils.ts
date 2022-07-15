@@ -10,6 +10,7 @@ import { IPoolRegistry } from "../build/typechain"
 
 export interface IPoolDataInput {
   poolName: string
+  registryName: string
   basePoolName?: string
   tokenArgs: { [token: string]: any[] }
   lpTokenSymbol: string
@@ -533,14 +534,10 @@ export async function registerPools(
   console.log(`Attempting to register ${poolsToBeAdded.length} pool[s]`)
   const poolsToBeRegistered: IPoolRegistry.PoolInputDataStruct[] = []
   poolsToBeAdded.forEach(async (pool) => {
-    const tokenNames: string[] = []
-    for (const token in pool.tokenArgs) {
-      tokenNames.push(token)
-    }
     poolsToBeRegistered.push({
       poolAddress: (await get(pool.poolName)).address,
       typeOfAsset: PoolType.USD,
-      poolName: ethers.utils.formatBytes32String(tokenNames.join("-")),
+      poolName: ethers.utils.formatBytes32String(pool.registryName),
       targetAddress: (await get("SwapFlashLoan")).address,
       metaSwapDepositAddress: ZERO_ADDRESS,
       isSaddleApproved: true,

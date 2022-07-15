@@ -11,6 +11,7 @@ const swapPools: IPoolDataInput[] = [
   // pool will deploy since a deployement is not found
   {
     poolName: "testalUSDFRAXPool",
+    registryName: "USDX-FRAX",
     tokenArgs: {
       ALUSD: ["Alchemix USD", "alUSD", "18"],
       FRAX: ["Frax", "FRAX", "18"],
@@ -23,6 +24,7 @@ const swapPools: IPoolDataInput[] = [
   // pool will not deploy
   {
     poolName: "SaddleFRAXBPPool",
+    registryName: "USDC-FRAX",
     tokenArgs: {
       USDC: ["USD Coin", "USDC"],
       FRAX: ["Frax", "FRAX"],
@@ -39,6 +41,7 @@ const metaPools: IPoolDataInput[] = [
   // pool will deploy since a deployement is not found
   {
     poolName: "testalUSDFRAXBPMetaPool",
+    registryName: "test-USDX-FRAX",
     basePoolName: "SaddleFRAXBPPool",
     tokenArgs: {
       DAI: ["Dai", "DAI", "18"],
@@ -51,6 +54,7 @@ const metaPools: IPoolDataInput[] = [
   // pool will not deploy
   {
     poolName: "SaddleFRAXUSDTMetaPool",
+    registryName: "USDT-FRAX",
     basePoolName: "SaddleFRAXBPPool",
     tokenArgs: {
       USDT: ["Tether", "USDT", "18"],
