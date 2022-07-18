@@ -5,7 +5,7 @@ import { BigNumber } from "ethers"
 
 const USD_TOKENS_ARGS: { [token: string]: any[] } = {
   USDC: ["USD Coin", "USDC", "6"],
-  FRAX: ["Tether", "USDT", "6"],
+  USDT: ["Tether", "USDT", "6"],
   DAI: ["Dai Stablecoin", "DAI", "18"],
 }
 
