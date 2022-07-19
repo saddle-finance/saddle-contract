@@ -8,15 +8,16 @@ import { PoolRegistry } from "../build/typechain"
 import { PoolType } from "../utils/constants"
 import { IPoolRegistry } from "../build/typechain"
 
-export interface IPoolDataInput {
-  poolName: string
-  registryName: string
-  basePoolName?: string
-  tokenArgs: { [token: string]: any[] }
-  lpTokenSymbol: string
-  initialA: number
-  swapFee: number
-  adminFee: number
+export interface PoolData {
+  poolName: string // Name of the pool
+  registryName?: string // Name pool with be registered under
+  basePoolName?: string // Base pool for metaswap * only provided for metapools
+  tokenArgs: { [token: string]: any[] } // <TOKEN(same as in /deployments)>: ["<Explorer Token Name>", "<Token symbol>", "<decimals>"],
+  lpTokenSymbol: string // Name for LP Token that will be deployed with associated pool
+  initialA: number // Initial amplification coefficient
+  swapFee: number // % fee charged on swap
+  adminFee: number // % of swapFee sent to Saddle
+  multisig: boolean // If a multisig on this chain exists
 }
 
 export async function deployMetaswap(
@@ -120,7 +121,7 @@ export async function deployMetaswap(
 
 export async function deployMetaswapPools(
   hre: HardhatRuntimeEnvironment,
-  pools: IPoolDataInput[],
+  pools: PoolData[],
 ) {
   const { deployments, getNamedAccounts } = hre
   const { execute, deploy, get, getOrNull, log, read, save } = deployments
@@ -201,12 +202,14 @@ export async function deployMetaswapPools(
       address: lpTokenAddress,
     })
 
-    await execute(
-      metaPoolName,
-      { from: deployer, log: true },
-      "transferOwnership",
-      MULTISIG_ADDRESSES[await getChainId()],
-    )
+    if (pool.multisig) {
+      await execute(
+        metaPoolName,
+        { from: deployer, log: true },
+        "transferOwnership",
+        MULTISIG_ADDRESSES[await getChainId()],
+      )
+    }
 
     // deploy the Meta Swap Deposit
     console.log("Deploying Metaswap Deposit")
@@ -351,7 +354,7 @@ export async function deploySwapFlashLoan(
 
 export async function deploySwapFlashLoanPools(
   hre: HardhatRuntimeEnvironment,
-  pools: IPoolDataInput[],
+  pools: PoolData[],
 ) {
   const { deployments, getNamedAccounts } = hre
   const { execute, deploy, get, getOrNull, log, read, save } = deployments
@@ -412,12 +415,14 @@ export async function deploySwapFlashLoanPools(
       ).address,
     )
 
-    await execute(
-      poolName,
-      { from: deployer, log: true },
-      "transferOwnership",
-      MULTISIG_ADDRESSES[await getChainId()],
-    )
+    if (pool.multisig) {
+      await execute(
+        poolName,
+        { from: deployer, log: true },
+        "transferOwnership",
+        MULTISIG_ADDRESSES[await getChainId()],
+      )
+    }
 
     // get lptoken address (was deployed by the metaswap contract)
     const lpTokenAddress = (await read(poolName, "swapStorage")).lpToken
@@ -440,11 +445,11 @@ export async function deploySwapFlashLoanPools(
 
 async function checkIfPoolDeployed(
   hre: HardhatRuntimeEnvironment,
-  pools: IPoolDataInput[],
+  pools: PoolData[],
 ) {
   const { deployments } = hre
   const { getOrNull, read } = deployments
-  const newDeployPools: IPoolDataInput[] = []
+  const newDeployPools: PoolData[] = []
   console.log("... checking for new pool deployments")
 
   for (let i = 0; i < pools.length; i++) {
@@ -522,7 +527,7 @@ async function checkRegisteredPool(
 
 export async function registerPools(
   hre: HardhatRuntimeEnvironment,
-  pools: IPoolDataInput[],
+  pools: PoolData[],
 ) {
   const { deployments, getNamedAccounts, ethers } = hre
   const { execute, get } = deployments
@@ -533,33 +538,36 @@ export async function registerPools(
   )
   console.log(`Attempting to register ${poolsToBeAdded.length} pool[s]`)
   const poolsToBeRegistered: IPoolRegistry.PoolInputDataStruct[] = []
-  poolsToBeAdded.forEach(async (pool) => {
-    poolsToBeRegistered.push({
-      poolAddress: (await get(pool.poolName)).address,
-      typeOfAsset: PoolType.USD,
-      poolName: ethers.utils.formatBytes32String(pool.registryName),
-      targetAddress: (await get("SwapFlashLoan")).address,
-      metaSwapDepositAddress: ZERO_ADDRESS,
-      isSaddleApproved: true,
-      isRemoved: false,
-      isGuarded: false,
-    })
+  poolsToBeAdded.map(async (pool) => {
+    if (pool.registryName) {
+      poolsToBeRegistered.push({
+        poolAddress: (await get(pool.poolName)).address,
+        typeOfAsset: PoolType.USD,
+        poolName: ethers.utils.formatBytes32String(pool.registryName),
+        targetAddress: (await get("SwapFlashLoan")).address,
+        metaSwapDepositAddress: ZERO_ADDRESS,
+        isSaddleApproved: true,
+        isRemoved: false,
+        isGuarded: false,
+      })
+    }
   })
+  if (poolsToBeAdded.length > 0) {
+    const batchCall = await Promise.all(
+      poolsToBeRegistered.map(
+        async (pool) => await poolRegistry.populateTransaction.addPool(pool),
+      ),
+    )
+    const batchCallData = batchCall.map((x) => x.data).filter(Boolean)
 
-  const batchCall = await Promise.all(
-    poolsToBeRegistered.map(
-      async (pool) => await poolRegistry.populateTransaction.addPool(pool),
-    ),
-  )
-  const batchCallData = batchCall.map((x) => x.data).filter(Boolean)
-
-  await execute(
-    "PoolRegistry",
-    { from: deployer, log: true },
-    "batch",
-    batchCallData,
-    true,
-  )
+    await execute(
+      "PoolRegistry",
+      { from: deployer, log: true },
+      "batch",
+      batchCallData,
+      true,
+    )
+  }
 }
 
 export async function verifyContract(

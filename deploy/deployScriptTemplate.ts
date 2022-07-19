@@ -1,13 +1,13 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import {
-  IPoolDataInput,
+  PoolData,
   deployMetaswapPools,
   deploySwapFlashLoanPools,
 } from "./deployUtils"
 
 // SwapFlashLoan Inputs
-const swapPools: IPoolDataInput[] = [
+const swapPools: PoolData[] = [
   // pool will deploy since a deployement is not found
   {
     poolName: "testalUSDFRAXPool",
@@ -20,6 +20,7 @@ const swapPools: IPoolDataInput[] = [
     initialA: 100,
     swapFee: 4e6,
     adminFee: 50e8,
+    multisig: true,
   },
   // pool will not deploy
   {
@@ -33,11 +34,12 @@ const swapPools: IPoolDataInput[] = [
     initialA: 100,
     swapFee: 4e6,
     adminFee: 50e8,
+    multisig: true,
   },
 ]
 
 // Metaswap Inputs
-const metaPools: IPoolDataInput[] = [
+const metaPools: PoolData[] = [
   // pool will deploy since a deployement is not found
   {
     poolName: "testalUSDFRAXBPMetaPool",
@@ -50,6 +52,7 @@ const metaPools: IPoolDataInput[] = [
     initialA: 100,
     swapFee: 4e6,
     adminFee: 50e8,
+    multisig: true,
   },
   // pool will not deploy
   {
@@ -63,6 +66,7 @@ const metaPools: IPoolDataInput[] = [
     initialA: 100,
     swapFee: 4e6,
     adminFee: 50e8,
+    multisig: true,
   },
 ]
 
