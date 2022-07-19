@@ -144,7 +144,8 @@ let config: HardhatUserConfig = {
       deploy: ["./deploy/kava_mainnet/"],
       verify: {
         etherscan: {
-          apiUrl: "https://explorer.kava.io/api",
+          apiUrl: "https://explorer.kava.io",
+          apiKey: "NO_KEY",
         },
       },
     },
