@@ -71,7 +71,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log(`deployed ${poolLpTokenName} at ${lpTokenAddress}`)
 
     await save(poolLpTokenName, {
-      abi: (await get("LPToken")).abi, // LPToken ABI
+      abi: (await get("LPToken")).abi, // LPToken AB I
       address: lpTokenAddress,
     })
   }
