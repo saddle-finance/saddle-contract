@@ -9,8 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
   const { deployer } = await getNamedAccounts()
-  // waiting for kava multisig
-  return
+
   const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
 
   const pools: IPoolRegistry.PoolInputDataStruct[] = [

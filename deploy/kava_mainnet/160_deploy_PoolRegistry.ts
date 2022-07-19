@@ -6,13 +6,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
   const { deploy } = deployments
   const { deployer } = await getNamedAccounts()
-  // waiting for kava multisig
-  return
+
   await deploy("PoolRegistry", {
     from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
-    args: [deployer, MULTISIG_ADDRESSES[await getChainId()]],
+    args: [deployer, deployer],
   })
   // NOTE: both manager and admin role are given to deployer since gnosis safe is not working on evmos
 }
