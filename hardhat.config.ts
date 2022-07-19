@@ -141,7 +141,7 @@ let config: HardhatUserConfig = {
       live: true,
       url: "https://evm.kava.io",
       chainId: 2222,
-      deploy: ["./deploy/kava/"],
+      deploy: ["./deploy/kava_mainnet/"],
       verify: {
         etherscan: {
           apiUrl: "https://explorer.kava.io/api",

@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     skipIfAlreadyDeployed: true,
     args: [deployer, deployer],
   })
-  // NOTE: both manager and admin role are given to deployer since gnosis safe is not working on evmos
+  // NOTE: both manager and admin role are given to deployer since gnosis safe is not working on kava
 }
 export default func
 func.tags = ["PoolRegistry"]

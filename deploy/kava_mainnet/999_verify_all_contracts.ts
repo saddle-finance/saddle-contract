@@ -3,6 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  return
   const { deployments, getChainId, ethers } = hre
   const { log } = deployments
   const contracts: string[] = [
