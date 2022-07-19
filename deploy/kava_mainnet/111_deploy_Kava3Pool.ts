@@ -1,6 +1,5 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { deploySwapFlashLoan } from "../deployUtils"
 import { ZERO_ADDRESS } from "../../test/testUtils"
 
 // Deployment Names
@@ -71,7 +70,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log(`deployed ${poolLpTokenName} at ${lpTokenAddress}`)
 
     await save(poolLpTokenName, {
-      abi: (await get("LPToken")).abi, // LPToken AB I
+      abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
   }
