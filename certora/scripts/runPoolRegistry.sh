@@ -8,6 +8,6 @@ certoraRun \
     --staging \
     --optimistic_loop \
     --loop_iter 3 \
-    --send_only --solc solc6.12\
+    --send_only \
     $RULE \
     --msg "Pool Registry with simplification andd loop 3: $1"

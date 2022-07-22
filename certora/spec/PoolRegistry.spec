@@ -50,7 +50,7 @@ methods {
 //                       Invariants                                       //
 ////////////////////////////////////////////////////////////////////////////
 
-//
+// unqiue pool per index
 invariant uniquePools(uint256 i, uint256 j)
     i != j => getPoolsPoolAddress(i) != getPoolsPoolAddress(j)
 
