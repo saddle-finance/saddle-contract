@@ -16,7 +16,6 @@ import {
   asyncForEach,
   BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
-  increaseTimestamp,
   MAX_UINT256,
   setTimestamp,
 } from "../testUtils"
@@ -108,7 +107,7 @@ describe("Liquidity Gauge V5", () => {
         (await getCurrentBlockTimestamp()) + MAXTIME,
       )
 
-      // Transform some to Minter
+      // Transfer some to Minter
       await sdl.transfer(minter.address, BIG_NUMBER_1E18.mul(1_000_000))
 
       // Set timestamp to start of next week to ensure consistent test results
@@ -152,7 +151,7 @@ describe("Liquidity Gauge V5", () => {
       expect(await gauge.working_supply()).to.eq(String(1.4e18))
 
       // A day passes
-      await increaseTimestamp(86400)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 86400)
 
       expect(await gauge.callStatic.claimable_tokens(deployerAddress)).to.eq(
         "127553087207105064189798",
@@ -165,7 +164,7 @@ describe("Liquidity Gauge V5", () => {
       await gaugeController.change_gauge_weight(gauge.address, 0)
 
       // Full week passes and we expect the rewards to have maxxed out
-      await increaseTimestamp(86400 * 6)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 86400 * 6)
       expect(await gauge.callStatic.claimable_tokens(deployerAddress)).to.eq(
         "892856257086167800046658",
       )
@@ -174,7 +173,8 @@ describe("Liquidity Gauge V5", () => {
       )
 
       // Expect no change in rewards
-      await increaseTimestamp(86400)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 86400)
+
       expect(await gauge.callStatic.claimable_tokens(deployerAddress)).to.eq(
         "892856257086167800046658",
       )
@@ -199,7 +199,7 @@ describe("Liquidity Gauge V5", () => {
       await gauge.connect(signers[10])["deposit(uint256)"](BIG_NUMBER_1E18)
 
       // A day passes
-      await increaseTimestamp(86400)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 86400)
 
       expect(await gauge.callStatic.claimable_tokens(deployerAddress)).to.eq(
         "127553087207105064189798",
