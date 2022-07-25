@@ -46,7 +46,9 @@ describe("GaugeHelperContract", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture(["USDPoolV2", "veSDL"]) // ensure you start from a fresh deployments
+      await deployments.fixture(["USDPoolV2", "veSDL"], {
+        fallbackToGlobal: false,
+      }) // ensure you start from a fresh deployments
 
       const deployer = (await ethers.getSigners())[0]
       const minter = await ethers.getContract(MINTER_NAME)

@@ -47,7 +47,9 @@ describe("Liquidity Gauge V5", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture(["USDPoolV2", "veSDL"]) // ensure you start from a fresh deployments
+      await deployments.fixture(["USDPoolV2", "veSDL"], {
+        fallbackToGlobal: false,
+      }) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       users = await Promise.all(

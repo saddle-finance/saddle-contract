@@ -41,7 +41,9 @@ describe("Fee Distributor [ @skip-on-coverage ]", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture(["USDPoolV2", "veSDL"])
+      await deployments.fixture(["USDPoolV2", "veSDL"], {
+        fallbackToGlobal: false,
+      })
 
       signers = await ethers.getSigners()
       users = await Promise.all(
