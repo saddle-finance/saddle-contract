@@ -15,7 +15,6 @@ import {
 import {
   BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
-  increaseTimestamp,
   MAX_UINT256,
   setTimestamp,
 } from "../testUtils"
@@ -150,7 +149,7 @@ describe("Root Gauge (Local)", () => {
       )
 
       // Simulate 1hr of briding delay
-      await increaseTimestamp(60 * 60)
+      await setTimestamp((await getCurrentBlockTimestamp()) + 60 * 60)
 
       // Child chain streamer should have the tokens now
       const childChainBalance = await sdl.balanceOf(childChainStreamer.address)
@@ -189,7 +188,7 @@ describe("Root Gauge (Local)", () => {
       expect(await rewardsOnlyGauge.totalSupply()).to.eq(BIG_NUMBER_1E18.mul(2))
 
       // A day passes
-      await increaseTimestamp(DAY)
+      await setTimestamp((await getCurrentBlockTimestamp()) + DAY)
 
       // user[0] deposited before user[10] so he gets slightly more reward
       expect(
@@ -226,7 +225,7 @@ describe("Root Gauge (Local)", () => {
         ["deposit(uint256)"](BIG_NUMBER_1E18)
 
       // A day passes
-      await increaseTimestamp(DAY)
+      await setTimestamp((await getCurrentBlockTimestamp()) + DAY)
 
       expect(
         await rewardsOnlyGauge.callStatic.claimable_reward_write(
