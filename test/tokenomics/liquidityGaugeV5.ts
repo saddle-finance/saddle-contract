@@ -55,7 +55,6 @@ describe("Liquidity Gauge V5", () => {
       )
       deployerAddress = users[0]
       minter = await ethers.getContract("Minter")
-      await minter.update_mining_parameters()
 
       const swap: Swap = await ethers.getContract(USD_V2_SWAP_NAME)
       lpToken = await ethers.getContract(USD_V2_LP_TOKEN_NAME)

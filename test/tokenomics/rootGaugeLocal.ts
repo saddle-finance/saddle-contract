@@ -54,7 +54,7 @@ describe("Root Gauge (Local)", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["veSDL", "RootGaugeLocal"]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       users = await Promise.all(
@@ -62,7 +62,6 @@ describe("Root Gauge (Local)", () => {
       )
       deployer = signers[0]
       minter = await ethers.getContract("Minter")
-
       dummyLpToken = await ethers.getContract(DUMMY_LP_TOKEN_NAME)
       rootGauge = await ethers.getContract(ROOT_GAUGE_LOCAL_NAME)
       childChainStreamer = await ethers.getContract(CHILD_CHAIN_STRAMER_NAME)
@@ -71,7 +70,12 @@ describe("Root Gauge (Local)", () => {
       sdl = await ethers.getContract("SDL")
       veSDL = await ethers.getContract("VotingEscrow")
 
-      // MAINNET TXs
+      // Add the root gauge to gauge controller
+      await gaugeController["add_type(string,uint256)"](
+        "Root Gauge",
+        BIG_NUMBER_1E18,
+      )
+      await gaugeController["add_gauge(address,int128)"](rootGauge.address, 0)
 
       // Enable transfer if it isnt already
       if (await sdl.paused()) {
@@ -112,9 +116,6 @@ describe("Root Gauge (Local)", () => {
       )
 
       // If rate is not initialized, initialize it
-      if ((await minter.rate()).eq(MAX_UINT256)) {
-        await minter.update_mining_parameters()
-      }
       await rootGauge.connect(deployer).checkpoint()
 
       // Imitate multisig setting gauge weights
@@ -151,9 +152,7 @@ describe("Root Gauge (Local)", () => {
 
       // Child chain streamer should have the tokens now
       const childChainBalance = await sdl.balanceOf(childChainStreamer.address)
-      expect(childChainBalance)
-        .to.be.gte("1244400199104031855682950")
-        .and.lte("1244400199104031855682951")
+      expect(childChainBalance).to.eq("1249999999999999999430400")
 
       // Call notify reward_amount on the child chain streamer to let it know
       // SDL has been successfully bridged
@@ -196,23 +195,23 @@ describe("Root Gauge (Local)", () => {
           users[0],
           rewardTokens[0],
         ),
-      ).to.eq("88889843587454338983234")
+      ).to.eq("89289847883597883557196")
 
       expect(
         await rewardsOnlyGauge.callStatic.claimable_reward_write(
           users[10],
           rewardTokens[0],
         ),
-      ).to.eq("88885728507430846814400")
+      ).to.eq("89285714285714285673600")
 
       // Claim main reward via calling rewardsOnlyGauge.claim_rewards()
       await rewardsOnlyGauge.connect(signers[10])["claim_rewards()"]()
-      expect(await sdl.balanceOf(users[10])).to.eq("88886757277436719856608")
+      expect(await sdl.balanceOf(users[10])).to.eq("89286747685185185144499")
 
       const beforeBalance = await sdl.balanceOf(users[0])
       await rewardsOnlyGauge.connect(signers[0])["claim_rewards()"]()
       expect((await sdl.balanceOf(users[0])).sub(beforeBalance)).to.eq(
-        "88890872357460212025442",
+        "89290881283068783028095",
       )
     })
   })
@@ -232,7 +231,7 @@ describe("Root Gauge (Local)", () => {
           users[10],
           rewardTokens[0],
         ),
-      ).to.eq("177773514554873439713217")
+      ).to.eq("178573495370370370288998")
 
       // Withdraw LP tokens
       await rewardsOnlyGauge
