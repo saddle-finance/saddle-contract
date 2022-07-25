@@ -39,7 +39,7 @@ describe("SimpleRewarder with MiniChefv2 but with ", async () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["USDPoolV2"], { fallbackToGlobal: false })
 
       signers = await ethers.getSigners()
       deployer = signers[0]
