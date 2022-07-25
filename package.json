@@ -68,7 +68,7 @@
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "lint:fix:sol": "prettier --write 'contracts/**/*.sol' && solhint 'contracts/**/*.sol' --fix",
     "build": "hardhat compile --no-typechain && hardhat typechain",
-    "test": "hardhat test",
+    "test": "hardhat test --deploy-fixture",
     "coverage": "hardhat coverage --temp ./build/artifacts",
     "deploy": "hardhat deploy",
     "start": "hardhat node",

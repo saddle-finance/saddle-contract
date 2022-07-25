@@ -37,9 +37,13 @@ describe("SimpleRewarder", async () => {
   let farmerAddress: string
   let lazyFarmerAddress: string
 
+  // fixed time for testing
+  const TEST_START_TIMESTAMP = 2362003200
+
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["USDPoolV2"])
+      await setTimestamp(TEST_START_TIMESTAMP)
 
       signers = await ethers.getSigners()
       deployer = signers[0]
