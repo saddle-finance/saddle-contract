@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const SDL = "0xf1Dc500FdE233A4055e25e5BbF516372BC4F6871"
 
   // deploy Root Gauge Factory
-  const rootGaugeFacotryDeployment = await deploy("RootGaugeFactory", {
+  const rootGaugeFactoryDeployment = await deploy("RootGaugeFactory", {
     from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -29,7 +29,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     contract: "RootGauge",
     args: [
       SDL,
-      rootGaugeFacotryDeployment.address,
+      rootGaugeFactoryDeployment.address,
       (await get("Minter")).address,
     ],
   })
@@ -40,6 +40,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "rootGaugeImplementation.address: ",
     rootGaugeImplementation.address,
   )
-  // await factory.set_implementation(rootGaugeImplementation.address)
+  await factory.set_implementation(rootGaugeImplementation.address)
+
+  // set the bridger implementation ** fails for unknown reason
+  await factory.set_bridger(
+    42161,
+    (
+      await ethers.getContract("ArbitrumBridger")
+    ).address,
+  )
 }
 export default func
+func.dependencies = ["ArbBridger"]

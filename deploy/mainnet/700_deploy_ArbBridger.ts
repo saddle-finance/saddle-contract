@@ -14,9 +14,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     contract: "ArbitrumBridger",
     args: [1000000, 990000000, 10000000000000],
   })
-
-  // set the deployed implementation ** fails for unknown reason
-  const factory = await ethers.getContract("RootGaugeFactory")
-  await factory.set_bridger(42161, BridgerDeployment.address)
 }
 export default func
+func.tags = ["ArbBridger"]
