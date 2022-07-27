@@ -1,10 +1,11 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
+import { RootGaugeFactory } from "../../build/typechain"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
-  const { deploy, get } = deployments
+  const { deploy, get, execute } = deployments
   const { deployer } = await getNamedAccounts()
 
   // eventually be anycall translator
@@ -36,11 +37,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // set the deployed implementation ** fails for unknown reason
   const factory = await ethers.getContract("RootGaugeFactory")
-  // await factory.set_implementation(rootGaugeImplementation.address)
+  await execute(
+    "RootGaugeFactory",
+    { from: deployer, log: true },
+    "set_implementation",
+    rootGaugeImplementation.address,
+  )
 
   // set the bridger implementation ** fails for unknown reason
   console.log((await ethers.getContract("ArbitrumBridger")).address)
-  await factory.set_bridger(
+  await execute(
+    "RootGaugeFactory",
+    { from: deployer, log: true },
+    "set_bridger",
     42161,
     (
       await ethers.getContract("ArbitrumBridger")

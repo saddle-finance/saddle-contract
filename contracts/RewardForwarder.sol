@@ -13,7 +13,9 @@ interface IGauge {
 contract RewardForwarder {
 
     // consts
+    using SafeERC20 for IERC20; 
     address immutable GAUGE;
+    uint256 private constant MAX_UINT256 = 2**256 - 1;
 
     constructor(address _gauge) {
         GAUGE = _gauge;
@@ -23,15 +25,9 @@ contract RewardForwarder {
         IGauge(GAUGE).deposit_reward_token(_rewardToken, IERC20(_rewardToken).balanceOf(address(this)));
     }
 
-    // function allow(address _rewardToken) external {
-    //  response: Bytes[32] = raw_call(
-    //     _reward_token,
-    //     _abi_encode(GAUGE, MAX_UINT256, method_id=method_id("approve(address,uint256)")),
-    //     max_outsize=32,
-    // )
-    // if len(response) != 0:
-    //     assert convert(response, bool)  
-    //}
+    function allow(address _rewardToken) external {
+        IERC20(_rewardToken).safeApprove(GAUGE, MAX_UINT256);
+    }
 
     function gauge() external view returns(address) {
         return(GAUGE);

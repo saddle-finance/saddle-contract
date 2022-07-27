@@ -13,7 +13,7 @@ interface IGatewayRouter {
         uint256 _amount,
         uint256 _maxGas,
         uint256 _gasPriceBid,
-        bytes[128] memory _data // _max_submission_cost, _extra_data
+        bytes calldata _data // _max_submission_cost, _extra_data
     ) external payable;
     }
 
@@ -67,12 +67,16 @@ contract ArbitrumBridger {
         emit TransferOwnership(ZERO_ADDRESS, msg.sender);
     }
 
-    function bridge (address token,  address to, uint256 amount) public payable {
-        assert(IERC20(token).transferFrom(msg.sender, address(this), amount));
-        if( token != SDL && !approved[token]){
-            assert(IERC20(token).approve(IGatewayRouter(ARB_GATEWAY_ROUTER).getGateWay(SDL), MAX_UINT256));
-            approved[token] = true;
+    function bridge (address _token,  address _to, uint256 _amount) external payable {
+        assert(IERC20(_token).transferFrom(msg.sender, address(this), _amount));
+        if( _token != SDL && !approved[_token]){
+            assert(IERC20(_token).approve(IGatewayRouter(ARB_GATEWAY_ROUTER).getGateWay(SDL), MAX_UINT256));
+            approved[_token] = true;
         }
+        IGatewayRouter(ARB_GATEWAY_ROUTER).outboundTransfer{value: gasLimit * gasPrice + maxSubmissionCost}(
+            _token, _to, _amount, gasLimit, gasPrice, abi.encode(maxSubmissionCost, new bytes(0)));
+            
+        
 
     }
 
