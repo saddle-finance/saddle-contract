@@ -1,29 +1,38 @@
-pragma solidity 0.8.6;
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.6;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-4.2.0/token/ERC20/utils/SafeERC20.sol";
 
 interface IGatewayRouter {
-    function setGateway(
-        address _gateway,
+    function getGateWay(address _token) external view returns (address);
+    function outboundTransfer(
+        address _token,
+        address _to,
+        uint256 _amount,
         uint256 _maxGas,
         uint256 _gasPriceBid,
-        uint256 _maxSubmissionCost,
-        address creditBackAddress
-    ) external payable returns (uint256);
-}
+        bytes[128] memory _data // _max_submission_cost, _extra_data
+    ) external payable;
+    }
 
 
 contract ArbitrumBridger {
 
     // consts
     address private constant SDL = 0xf1Dc500FdE233A4055e25e5BbF516372BC4F6871;
+    // Arbitrum: L1 ERC20 Gateway
     address private constant ARB_GATEWAY = 0xa3A7B6F88361F48403514059F1F16C8E78d60EeC;
+    
     address private constant ARB_GATEWAY_ROUTER = 0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef;
     uint256 private constant MAX_UINT256 = 2**256 - 1;
     address private constant ZERO_ADDRESS = 0x0000000000000000000000000000000000000000;
     // vars
-    uint256 private submissionData;
+    uint256 private gasLimit;
+    uint256 private gasPrice;
+    uint256 private maxSubmissionCost;
+
     mapping(address => bool) public approved;
 
     // owner
@@ -34,34 +43,61 @@ contract ArbitrumBridger {
 
     event TransferOwnership(
         address oldOwner,
-        address oldOwner,
+        address newOwner
     );
 
     event UpdateSubmissionData(
-        uint256 oldSubmissionData [3]
-        uint256 newSubmissionData [3]
+        uint256[3] oldSubmissionData,
+        uint256[3] newSubmissionData
     );
 
-    constructor(uint256 gasLimit, uint256 gasLimit, uint256 maxSubmissionCost) {
+    constructor(uint256 _gasLimit, uint256 _gasPrice, uint256 _maxSubmissionCost) {
         // construct submission data
-        self.submissionData = string(abi.encodePacked(gasLimit, gasLimit, maxSubmissionCost);
-        emit UpdateSubmissionData([0,0,0], [gasLimit, gasLimit, maxSubmissionCost]);
+        gasLimit = _gasLimit;
+        gasPrice = _gasPrice;
+        maxSubmissionCost = _maxSubmissionCost;
+        // emit UpdateSubmissionData([0,0,0], [gasLimit, gasLimit, maxSubmissionCost]);
 
         // approve token transfer to gateway
-        address private constant SDL = 0xf1Dc500FdE233A4055e25e5BbF516372BC4F6871;
-        sdlToken = IERC20(SDL);
-        assert sdlToken.approve(ARB_GATEWAY, MAX_UINT256);
-        approved[SDL] = True
+        IERC20 sdlToken = IERC20(SDL);
+        assert(sdlToken.approve(ARB_GATEWAY, MAX_UINT256));
+        approved[SDL] = true;
 
         owner = msg.sender;
         emit TransferOwnership(ZERO_ADDRESS, msg.sender);
     }
 
     function bridge (address token,  address to, uint256 amount) public payable {
-        assert IERC20(token).transferFrom(msg.sender, self, amount)
-        if( token != SDL &&  !approved[token]){
-            assert IERC20(token).approve(<get gateway router contract>, MAX_UINT256)
+        assert(IERC20(token).transferFrom(msg.sender, address(this), amount));
+        if( token != SDL && !approved[token]){
+            assert(IERC20(token).approve(IGatewayRouter(ARB_GATEWAY_ROUTER).getGateWay(SDL), MAX_UINT256));
+            approved[token] = true;
         }
+
+    }
+
+    function cost() external view returns(uint256) {
+        // gasLimit * gasPrice + maxSubmissionCost
+        return(gasLimit * gasPrice + maxSubmissionCost);
+    }
+
+    function setSubmissionData(uint256 _gasLimit, uint256 _gasPrice,  uint256 _maxSubmissionCost) external {
+        assert(msg.sender == owner);
+        emit UpdateSubmissionData([gasLimit, gasPrice, maxSubmissionCost], [_gasLimit, _gasPrice, _maxSubmissionCost]);
+        gasLimit = _gasLimit;
+        gasPrice = _gasPrice;
+        maxSubmissionCost = _maxSubmissionCost;
+    }
+
+    function commitTransferOwnership(address _futureOwner) external{
+        assert(msg.sender == owner);
+        futureOwner = _futureOwner;
+    }
+
+    function acceptTransferOwnership() external{
+        assert(msg.sender == futureOwner);
+        emit TransferOwnership(owner, msg.sender);
+        owner = msg.sender;
     }
 }
 
