@@ -36,13 +36,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // set the deployed implementation ** fails for unknown reason
   const factory = await ethers.getContract("RootGaugeFactory")
-  console.log(
-    "rootGaugeImplementation.address: ",
-    rootGaugeImplementation.address,
-  )
-  await factory.set_implementation(rootGaugeImplementation.address)
+  // await factory.set_implementation(rootGaugeImplementation.address)
 
   // set the bridger implementation ** fails for unknown reason
+  console.log((await ethers.getContract("ArbitrumBridger")).address)
   await factory.set_bridger(
     42161,
     (
