@@ -60,9 +60,9 @@ contract ArbitrumBridger {
 
         // approve token transfer to gateway
         IERC20 sdlToken = IERC20(SDL);
+        // TODO: why can't I safe approve here?
         assert(sdlToken.approve(ARB_GATEWAY, MAX_UINT256));
         approved[SDL] = true;
-
         owner = msg.sender;
         emit TransferOwnership(ZERO_ADDRESS, msg.sender);
     }
@@ -104,39 +104,3 @@ contract ArbitrumBridger {
         owner = msg.sender;
     }
 }
-
-
-
-
-
-
-
-
-
-//     #### consts
-//     arbitrum_L1_Gateway = multisig.contract(
-//         "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef"
-//     )
-//     amountToSendArbitrumMiniChef = ceil(8974940) * 1e18
-//     gasLimitL2 = 1000000
-//     gasPriceL2 = 990000000
-//     maxSubmisstionCostL2 = 10000000000000
-//     arbitrumMinichefAddress = MINICHEF_ADDRESSES[CHAIN_IDS["ARBITRUM"]]
-
-//      ####  call getGateway on abrL1Gateway with SDL mainnet address to get L2 address
-//     sdlGatewayAddress = arbitrum_L1_Gateway.getGateway(sdl_contract.address)
-//     sdl_contract.approve(sdlGatewayAddress, amountToSendArbitrumMiniChef)
-//     arb_encoded = (
-//         "0x"
-//         + eth_abi.encode_abi(["uint256", "bytes32[]"], [maxSubmisstionCostL2, []]).hex()
-//     )
-
-//     arbitrum_L1_Gateway.outboundTransfer(
-//         sdl_contract.address,
-//         arbitrumMinichefAddress,
-//         amountToSendArbitrumMiniChef,
-//         gasLimitL2,
-//         gasPriceL2,
-//         arb_encoded,
-//         {"value": 1e15},
-//     )
