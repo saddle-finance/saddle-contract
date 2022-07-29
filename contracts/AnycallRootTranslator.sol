@@ -3,10 +3,9 @@
 pragma solidity ^0.8.6;
 pragma experimental ABIEncoderV2;
 
-// TODO: is calldata correct here?
-interface CallProxy {
-    function anyCall(address _to, bytes calldata  _data, address _fallback, uint256 _toChainId) public ; // nonpayable
-    }
+interface I_CallProxy {
+    function anyCall(address _to, bytes calldata  _data, address _fallback, uint256 _toChainId) external ; // nonpayable
+    } 
 
 
 contract AnyCallRootTranslator {
