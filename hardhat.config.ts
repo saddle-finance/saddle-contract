@@ -137,6 +137,18 @@ let config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
     },
+    kava_mainnet: {
+      live: true,
+      url: "https://evm.kava.io",
+      chainId: 2222,
+      deploy: ["./deploy/kava_mainnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://explorer.kava.io",
+          apiKey: "NO_KEY",
+        },
+      },
+    },
   },
   paths: {
     sources: "./contracts",
@@ -210,6 +222,7 @@ let config: HardhatUserConfig = {
       9000: 0, // use the same address on evmos testnet
       9001: 0, // use the same address on evmos mainnnet
       2221: 0, // use the same address on kava testnet
+      2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
     },
     libraryDeployer: {
@@ -221,6 +234,7 @@ let config: HardhatUserConfig = {
       9000: 0, // use the same address on evmos testnet
       9001: 0, // use the same address on evmos mainnnet
       2221: 0, // use the same address on kava testnet
+      2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
     },
     multisig: {
@@ -258,6 +272,10 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
     },
     evmos_mainnet: {
       ...config.networks?.evmos_mainnet,
+      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
+    },
+    kava_mainnet: {
+      ...config.networks?.kava_mainnet,
       accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
     },
   }
