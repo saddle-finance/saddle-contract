@@ -4,7 +4,7 @@ import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
-  const { deploy, get } = deployments
+  const { deploy, get, execute } = deployments
   const { deployer } = await getNamedAccounts()
 
   // eventually be anycall translator
@@ -30,12 +30,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [SDL, childGaugeFacotryDeployment.address],
   })
 
-  // set the deployed implementation ** fails for unknown reason
-  const factory = await ethers.getContract("ChildGaugeFactory")
-  console.log(
-    "rootGaugeImplementation.address: ",
+  // set the deployed implementation
+  await execute(
+    "RootGaugeFactory",
+    { from: deployer, log: true },
+    "set_implementation",
     childGaugeImplementation.address,
   )
-  // await factory.set_implementation(childGaugeImplementation.address)
+  // TODO set_voting_escrow
+  const veSDL = await get("VotingEscrow")
+  await execute(
+    "RootGaugeFactory",
+    { from: deployer, log: true },
+    "set_voting_escrow",
+    veSDL.address,
+  )
+
+  // TODO set_call_proxy
+  await execute(
+    "RootGaugeFactory",
+    { from: deployer, log: true },
+    "set_call_proxy",
+    (
+      await ethers.getContract("AnycallTranslator")
+    ).address,
+  )
 }
 export default func

@@ -21,7 +21,7 @@ contract RewardForwarder {
         GAUGE = _gauge;
     }
 
-    function depositRewardToken (address _rewardToken) external view { //can this really be a view? Is recommened to be
+    function depositRewardToken (address _rewardToken) external { //can this really be a view? Is recommened to be
         IGauge(GAUGE).deposit_reward_token(_rewardToken, IERC20(_rewardToken).balanceOf(address(this)));
     }
 

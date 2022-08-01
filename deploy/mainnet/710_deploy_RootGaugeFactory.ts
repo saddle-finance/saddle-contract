@@ -55,6 +55,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       await ethers.getContract("ArbitrumBridger")
     ).address,
   )
+
+  await execute(
+    "RootGaugeFactory",
+    { from: deployer, log: true },
+    "set_call_proxy",
+    (
+      await ethers.getContract("AnycallTranslator")
+    ).address,
+  )
 }
 export default func
 func.dependencies = ["ArbBridger"]

@@ -56,11 +56,11 @@ contract ArbitrumBridger {
         gasLimit = _gasLimit;
         gasPrice = _gasPrice;
         maxSubmissionCost = _maxSubmissionCost;
-        // emit UpdateSubmissionData([0,0,0], [gasLimit, gasLimit, maxSubmissionCost]);
+        emit UpdateSubmissionData([uint256(0),uint256(0),uint256(0)], [gasLimit, gasLimit, maxSubmissionCost]);
 
         // approve token transfer to gateway
         IERC20 sdlToken = IERC20(SDL);
-        // TODO: why can't I safe approve here?
+        // TODO: doesn't allow for safeApprove?
         assert(sdlToken.approve(ARB_GATEWAY, MAX_UINT256));
         approved[SDL] = true;
         owner = msg.sender;
@@ -68,16 +68,15 @@ contract ArbitrumBridger {
     }
 
     function bridge (address _token,  address _to, uint256 _amount) external payable {
+        // TODO: doesn't allow for safeTransferFrom?
         assert(IERC20(_token).transferFrom(msg.sender, address(this), _amount));
         if( _token != SDL && !approved[_token]){
+            // TODO: doesn't allow for safeApprove? 
             assert(IERC20(_token).approve(IGatewayRouter(ARB_GATEWAY_ROUTER).getGateWay(SDL), MAX_UINT256));
             approved[_token] = true;
         }
         IGatewayRouter(ARB_GATEWAY_ROUTER).outboundTransfer{value: gasLimit * gasPrice + maxSubmissionCost}(
             _token, _to, _amount, gasLimit, gasPrice, abi.encode(maxSubmissionCost, new bytes(0)));
-            
-        
-
     }
 
     function cost() external view returns(uint256) {
@@ -86,7 +85,7 @@ contract ArbitrumBridger {
     }
 
     function setSubmissionData(uint256 _gasLimit, uint256 _gasPrice,  uint256 _maxSubmissionCost) external {
-        assert(msg.sender == owner);
+        require(msg.sender == owner, "error msg");
         emit UpdateSubmissionData([gasLimit, gasPrice, maxSubmissionCost], [_gasLimit, _gasPrice, _maxSubmissionCost]);
         gasLimit = _gasLimit;
         gasPrice = _gasPrice;
@@ -94,12 +93,12 @@ contract ArbitrumBridger {
     }
 
     function commitTransferOwnership(address _futureOwner) external{
-        assert(msg.sender == owner);
+        require(msg.sender == owner);
         futureOwner = _futureOwner;
     }
 
     function acceptTransferOwnership() external{
-        assert(msg.sender == futureOwner);
+        require(msg.sender == futureOwner);
         emit TransferOwnership(owner, msg.sender);
         owner = msg.sender;
     }
