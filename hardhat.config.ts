@@ -121,6 +121,7 @@ let config: HardhatUserConfig = {
       verify: {
         etherscan: {
           apiUrl: "https://evm.evmos.org",
+          apiKey: "NO_KEY",
         },
       },
     },
