@@ -12,7 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "MetaSwapUtils",
     "SwapFlashLoan",
     "Saddle3Pool",
-    "Muticall",
+    "Multicall",
     "Muticall2",
     "Muticall3",
   ]
