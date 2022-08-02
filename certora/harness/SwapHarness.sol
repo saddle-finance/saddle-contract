@@ -7,8 +7,13 @@ import "../munged/Swap.sol";
 // methods for the spec to access internal state, or may override some of the
 // more complex methods in the original contract.
 contract SwapHarness is Swap {
-    function getInitialized() public view returns (bool) {
+    function isInitialized() public view returns (bool) {
         return _initialized;
     }
-    // TODO: add public 'inARamp' field
+    
+    function inRampA() public view returns (bool) {
+        return (block.timestamp >= swapStorage.initialATime &&
+                block.timestamp < swapStorage.futureATime &&
+                swapStorage.initialA != swapStorage.futureA);
+    }
 }
