@@ -11,7 +11,7 @@ import {
 chai.use(solidity)
 const { expect } = chai
 
-describe("RootGaugeFactory", () => {
+describe("ChildGaugeFactory", () => {
   let signers: Array<Signer>
   let users: string[]
   let deployer: Signer
@@ -21,33 +21,27 @@ describe("RootGaugeFactory", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture(["veSDL"], { fallbackToGlobal: false }) // ensure you start from a fresh deployments
+      await deployments.fixture(["veSDL"]) // ensure you start from a fresh deployments
 
-      console.log("test")
       signers = await ethers.getSigners()
       users = await Promise.all(
         signers.map(async (signer) => signer.getAddress()),
       )
-
-      // Replace with mock address unless being tested on forked mainnet
-      const anyCallAddress = "0x0000000000000000000000000000000000000000"
 
       // Deploy anycallTranslator
       const anyCallTranslatorFactory = await ethers.getContractFactory(
         "AnyCallTranslator",
       )
       anycallTranslator = (await anyCallTranslatorFactory.deploy(
-        anyCallAddress,
+        anycallTranslator,
       )) as AnyCallTranslator
-      console.log("test")
 
       // Root Gauge factory
       const rootGaugeFactoryFactory = await ethers.getContractFactory(
         "RootGaugeFactory",
       )
       rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
-        anycallTranslator.address,
-        users[0],
+        anycallTranslator,
       )) as RootGaugeFactory
 
       // Root Gauge Implementation
@@ -72,13 +66,9 @@ describe("RootGaugeFactory", () => {
     await setupTest()
   })
 
-  describe("RootGaugeFactory", () => {
-    it(`Successfully sets root gauge implementation`, async () => {
-      // Initialize checkpoint by calling it first when empty
-      await rootGaugeFactory.set_implementation(rootGauge.address)
-      expect(await rootGaugeFactory.get_implementation()).to.eq(
-        rootGauge.address,
-      )
+  describe("ChildGaugeFactory", () => {
+    it(`Successfully sets child gauge implementation`, async () => {
+      // Write test here
     })
   })
 })
