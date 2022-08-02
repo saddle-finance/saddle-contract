@@ -9,16 +9,19 @@ import {
   IPoolRegistry,
   LPToken,
   MasterRegistry,
+  MetaSwap,
   PermissionlessDeployer,
+  PermissionlessMetaSwap,
   PermissionlessSwap,
   PoolRegistry,
+  Swap,
 } from "../../build/typechain/"
 import { PoolType } from "../../utils/constants"
 import {
-  asyncForEach,
   getCurrentBlockTimestamp,
+  getUserTokenBalances,
   MAX_UINT256,
-  setNextTimestamp,
+  setTimestamp,
 } from "../testUtils"
 
 chai.use(solidity)
@@ -52,6 +55,9 @@ const BYTES32_FRAX_METAPOOL_NAME = ethers.utils.formatBytes32String(
   TEST_FRAX_USD_METAPOOL_NAME,
 )
 
+const AMOUNT = BigNumber.from(String(1e17))
+const INFLATED_VP = BigNumber.from("1020790547891975684")
+
 describe("PermissionlessDeployer", async () => {
   let signers: Array<Signer>
   let deployer: Signer
@@ -65,6 +71,7 @@ describe("PermissionlessDeployer", async () => {
   let registryFactory: ContractFactory
   let permissionlessDeployer: PermissionlessDeployer
   let permissionlessSwap: PermissionlessSwap
+  let permissionlessMetaSwap: PermissionlessMetaSwap
   let deploySwapInput: PermissionlessDeployer.DeploySwapInputStruct
   let deployMetaSwapInput: PermissionlessDeployer.DeployMetaSwapInputStruct
   let usdv2Data: IPoolRegistry.PoolDataStruct
@@ -73,6 +80,10 @@ describe("PermissionlessDeployer", async () => {
   let usdv2InputData: IPoolRegistry.PoolInputDataStruct
   let susdMetaV2InputData: IPoolRegistry.PoolInputDataStruct
   let guardedBtcInputData: IPoolRegistry.PoolInputDataStruct
+  let baseSwap: Swap
+  let baseLpToken: LPToken
+  let metaSwap: MetaSwap
+  let metaLpToken: LPToken
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -96,6 +107,83 @@ describe("PermissionlessDeployer", async () => {
       permissionlessSwap = (await ethers.getContract(
         PERMISSIONLESS_SWAPFLASHLOAN_NAME,
       )) as PermissionlessSwap
+
+      const baseSwapAddress = await testDeploySwap()
+      baseSwap = await ethers.getContractAt("Swap", baseSwapAddress)
+      const metaSwapAddresses = await testDeployMetaSwap()
+      metaSwap = await ethers.getContractAt(
+        "MetaSwap",
+        metaSwapAddresses.deployedMetaSwap,
+      )
+
+      // Add some inital liquidity to the deployed pools
+      const baseSwapData = await poolRegistry.getPoolData(baseSwapAddress)
+      await Promise.all(
+        baseSwapData.tokens.map(async (token) => {
+          const tokenContract = await ethers.getContractAt(
+            GENERIC_ERC20_CONTRACT_NAME,
+            token,
+          )
+          await tokenContract.approve(baseSwapAddress, MAX_UINT256)
+          await tokenContract.approve(metaSwap.address, MAX_UINT256)
+        }),
+      )
+      await baseSwap.addLiquidity(
+        [
+          BigNumber.from(1e8),
+          BigNumber.from(String(1e20)),
+          BigNumber.from(String(1e20)),
+        ],
+        0,
+        MAX_UINT256,
+      )
+
+      // Approve base lp token to be burned
+      baseLpToken = await ethers.getContractAt(
+        "GenericERC20",
+        baseSwapData.lpToken,
+      )
+      await baseLpToken.approve(baseSwapAddress, MAX_UINT256)
+
+      // Wait for virtual price to update
+      await setTimestamp((await getCurrentBlockTimestamp()) + 600)
+      // Add liquidity to the deployed metapool
+      const metaSwapData = await poolRegistry.getPoolData(
+        metaSwapAddresses.deployedMetaSwap,
+      )
+      await Promise.all(
+        metaSwapData.tokens.map(async (token) => {
+          const tokenContract = await ethers.getContractAt(
+            GENERIC_ERC20_CONTRACT_NAME,
+            token,
+          )
+          await tokenContract.approve(metaSwap.address, MAX_UINT256)
+        }),
+      )
+      await metaSwap.addLiquidity(
+        [BigNumber.from(String(1e20)), BigNumber.from(String(1e20))],
+        0,
+        MAX_UINT256,
+      )
+
+      // Approve LP token to be burned
+      metaLpToken = await ethers.getContractAt(
+        "GenericERC20",
+        metaSwapData.lpToken,
+      )
+      await metaLpToken.approve(metaSwap.address, MAX_UINT256)
+
+      // swap between each token pairs to inflate admin fees and
+      for (let k = 0; k < 100; k++) {
+        await baseSwap.swap(0, 1, String(1e8), 0, MAX_UINT256)
+        await baseSwap.swap(1, 2, String(1e20), 0, MAX_UINT256)
+        await baseSwap.swap(2, 0, String(1e20), 0, MAX_UINT256)
+      }
+
+      console.log((await baseSwap.getVirtualPrice()).toString())
+
+      // Wait for cache to update
+      await setTimestamp((await getCurrentBlockTimestamp()) + 600)
     },
   )
 
@@ -120,7 +208,11 @@ describe("PermissionlessDeployer", async () => {
       owner: user1Address,
       typeOfAsset: PoolType.USD,
     }
+    const expectedAddress = await permissionlessDeployer.callStatic.deploySwap(
+      deploySwapInput,
+    )
     await permissionlessDeployer.deploySwap(deploySwapInput)
+    return expectedAddress
   }
 
   async function testDeployMetaSwap() {
@@ -142,12 +234,16 @@ describe("PermissionlessDeployer", async () => {
       typeOfAsset: PoolType.USD,
       baseSwap: poolData.poolAddress,
     }
+    const expectedAddress =
+      await permissionlessDeployer.callStatic.deployMetaSwap(
+        deployMetaSwapInput,
+      )
     await permissionlessDeployer.deployMetaSwap(deployMetaSwapInput)
+    return expectedAddress
   }
 
   describe("deploySwap", () => {
-    it("Successfully deploys MetaSwap", async () => {
-      await testDeploySwap()
+    it("Successfully deploys Swap", async () => {
       const poolData: IPoolRegistry.PoolDataStruct =
         await poolRegistry.getPoolDataByName(
           ethers.utils.formatBytes32String(TEST_FRAX_USD_POOL_NAME),
@@ -159,9 +255,7 @@ describe("PermissionlessDeployer", async () => {
   })
 
   describe("deployMetaSwap", () => {
-    it("Successfully deploys Swap", async () => {
-      await testDeploySwap()
-      await testDeployMetaSwap()
+    it("Successfully deploys MetaSwap", async () => {
       const poolData: IPoolRegistry.PoolDataStruct =
         await poolRegistry.getPoolDataByName(BYTES32_FRAX_METAPOOL_NAME)
       expect(poolData.poolName).to.equal(BYTES32_FRAX_METAPOOL_NAME)
@@ -218,235 +312,293 @@ describe("PermissionlessDeployer", async () => {
     })
   })
 
-  describe("withdrawAdminFees", () => {
-    it("Successfully withdraws accrued admin trading fees", async () => {
-      await testDeploySwap()
-      await testDeployMetaSwap()
-
-      const poolData: IPoolRegistry.PoolDataStructOutput =
-        await poolRegistry.getPoolDataByName(BYTES32_FRAX_POOL_NAME)
-      const permissionlessSwapContract = await ethers.getContractAt(
-        PERMISSIONLESS_SWAP_NAME,
-        poolData.poolAddress,
+  describe("Invariant holds", () => {
+    beforeEach(async () => {
+      const swapData: IPoolRegistry.PoolDataStructOutput =
+        await poolRegistry.getPoolDataByName(
+          ethers.utils.formatBytes32String(TEST_FRAX_USD_POOL_NAME),
+        )
+      baseSwap = await ethers.getContractAt(
+        "PermissionlessSwapFlashLoan",
+        swapData.poolAddress,
       )
 
-      // Approve transfer of base pool tokens
-      await asyncForEach(poolData.tokens, async (token) => {
-        const tokenContract = await ethers.getContractAt(
-          GENERIC_ERC20_CONTRACT_NAME,
-          token,
-        )
-        await tokenContract.approve(
-          permissionlessSwapContract.address,
+      const metaSwapData: IPoolRegistry.PoolDataStructOutput =
+        await poolRegistry.getPoolDataByName(BYTES32_FRAX_METAPOOL_NAME)
+      metaSwap = await ethers.getContractAt(
+        "PermissionlessMetaSwapFlashLoan",
+        metaSwapData.poolAddress,
+      )
+
+      //
+    })
+
+    describe("addLiquidity", () => {
+      it("Virtual price doesn't decrease after depositing only susd", async () => {
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.addLiquidity([String(AMOUNT), 0], 0, MAX_UINT256)
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      })
+
+      it("Virtual price doesn't decrease after depositing only baseLPToken", async () => {
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.addLiquidity([0, String(AMOUNT)], 0, MAX_UINT256)
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      })
+    })
+
+    describe("removeLiquidity", () => {
+      it("Virtual price doesn't decrease after removeLiquidity", async () => {
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.removeLiquidity(String(AMOUNT), [0, 0], MAX_UINT256)
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      })
+    })
+
+    describe("removeLiquidityImbalance", () => {
+      it("Virtual price doesn't decrease after removeLiquidityImbalance susd", async () => {
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.removeLiquidityImbalance(
+          [AMOUNT, 0],
+          BigNumber.from(AMOUNT).mul(2),
           MAX_UINT256,
+        )
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      })
+
+      it("Virtual price doesn't decrease after removeLiquidityImbalance baseLPToken", async () => {
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.removeLiquidityImbalance(
+          [0, AMOUNT],
+          BigNumber.from(AMOUNT).mul(2),
+          MAX_UINT256,
+        )
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      })
+    })
+
+    describe("removeLiquidityOneToken", () => {
+      it("Virtual price doesn't decrease after removeLiquidityOneToken susd", async () => {
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.removeLiquidityOneToken(
+          String(AMOUNT),
+          0,
+          0,
+          MAX_UINT256,
+        )
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      })
+
+      it("Virtual price doesn't decrease after removeLiquidityOneToken baseLPToken", async () => {
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.removeLiquidityOneToken(
+          String(AMOUNT),
+          1,
+          0,
+          MAX_UINT256,
+        )
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+      })
+    })
+
+    describe("swap", () => {
+      const expectedAdminFeeValueBaseLPToken = BigNumber.from(2e13)
+
+      it("Virtual price doesn't decrease after swap susd -> baseLPToken", async () => {
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.swap(0, 1, String(AMOUNT), 0, MAX_UINT256)
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+        // We expect the increase in admin balance of base LP token to be valued at
+        // swap value * 50% * 0.04%
+        // Since the values aren't exact due to approximations, we test against +-0.01% delta
+        const adminFeeValue = (await metaSwap.getAdminBalance(1))
+          .mul(INFLATED_VP)
+          .div(String(1e18))
+        expect(adminFeeValue)
+          .gte(
+            expectedAdminFeeValueBaseLPToken
+              .mul(String(9999e14))
+              .div(String(1e18)),
+          )
+          .and.lte(
+            expectedAdminFeeValueBaseLPToken
+              .mul(String(10001e14))
+              .div(String(1e18)),
+          )
+        console.log(
+          `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueBaseLPToken}`,
         )
       })
 
-      // Add liquidity
-      await permissionlessSwapContract.addLiquidity(
-        [String(3e6), String(3e18), String(3e18)],
-        0,
-        MAX_UINT256,
-      )
-
-      const baseLPToken: LPToken = await ethers.getContractAt(
-        LP_TOKEN_NAME,
-        poolData.lpToken,
-      )
-
-      expect(await baseLPToken.name()).to.be.eq(
-        String(`Saddle ${await baseLPToken.symbol()} LP Token`),
-      )
-      const actualPoolTokenAmount = await baseLPToken.balanceOf(deployerAddress)
-
-      // The actual pool token amount is less than 4e18 due to the imbalance of the underlying tokens
-      expect(actualPoolTokenAmount).to.eq(BigNumber.from(String(9e18)))
-
-      // Function to return map of current token balances
-      async function getTokenBalances(
-        tokenAddresses: string[],
-        userAddress: string,
-      ) {
-        const balances: BigNumber[] = []
-        await asyncForEach(tokenAddresses, async (tokenAddress) => {
-          const tokenContract = await ethers.getContractAt(
-            GENERIC_ERC20_CONTRACT_NAME,
-            tokenAddress,
+      it("Virtual price doesn't decrease after swap baseLPToken -> susd", async () => {
+        const expectedDepositedBaseLpTokenAmount =
+          await baseSwap.callStatic.addLiquidity(
+            [0, String(AMOUNT), 0],
+            0,
+            MAX_UINT256,
           )
-          const token_balance = await tokenContract.balanceOf(userAddress)
-          balances.push(token_balance)
-        })
-        return balances
-      }
 
+        const expectedSwapValue = expectedDepositedBaseLpTokenAmount
+          .mul(INFLATED_VP)
+          .div(String(1e18))
+        const expectedAdminFeeValueSUSD = expectedSwapValue
+          .mul(2e14)
+          .div(String(1e18))
+
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.swap(
+          1,
+          0,
+          expectedDepositedBaseLpTokenAmount,
+          0,
+          MAX_UINT256,
+        )
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+        // We expect the increase in admin balance of susd to be valued at
+        // swap value * 50% * 0.04%
+        // Since the values aren't exact due to approximations, we test against +-0.05% delta
+        const adminFeeValue = await metaSwap.getAdminBalance(0)
+        expect(adminFeeValue)
+          .gte(expectedAdminFeeValueSUSD.mul(String(9999e14)).div(String(1e18)))
+          .and.lte(
+            expectedAdminFeeValueSUSD.mul(String(10001e14)).div(String(1e18)),
+          )
+        console.log(
+          `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueSUSD}`,
+        )
+      })
+    })
+
+    describe("swapUnderlying", () => {
+      const expectedAdminFeeValueBaseLPToken = BigNumber.from(2e13)
+
+      it("Virtual price doesn't decrease after swapUnderlying susd -> dai", async () => {
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.swapUnderlying(0, 2, String(AMOUNT), 0, MAX_UINT256)
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+        const adminFeeValue = (await metaSwap.getAdminBalance(1))
+          .mul(INFLATED_VP)
+          .div(String(1e18))
+        expect(adminFeeValue)
+          .gte(
+            expectedAdminFeeValueBaseLPToken
+              .mul(String(9999e14))
+              .div(String(1e18)),
+          )
+          .and.lte(
+            expectedAdminFeeValueBaseLPToken
+              .mul(String(10001e14))
+              .div(String(1e18)),
+          )
+        console.log(
+          `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueBaseLPToken}`,
+        )
+      })
+
+      it("Virtual price doesn't decrease after swapUnderlying dai -> susd", async () => {
+        const expectedDepositedBaseLpTokenAmount =
+          await baseSwap.callStatic.addLiquidity(
+            [0, String(AMOUNT), 0],
+            0,
+            MAX_UINT256,
+          )
+        const expectedSwapValue = expectedDepositedBaseLpTokenAmount
+          .mul(INFLATED_VP)
+          .div(String(1e18))
+        const expectedAdminFeeValueSUSD = expectedSwapValue
+          .mul(2e14)
+          .div(String(1e18))
+
+        const virtualPriceBefore = await metaSwap.getVirtualPrice()
+        await metaSwap.swapUnderlying(2, 0, String(AMOUNT), 0, MAX_UINT256)
+        expect(await metaSwap.getVirtualPrice()).to.gte(virtualPriceBefore)
+        const adminFeeValue = await metaSwap.getAdminBalance(0)
+        expect(adminFeeValue)
+          .gte(expectedAdminFeeValueSUSD.mul(String(9999e14)).div(String(1e18)))
+          .and.lte(
+            expectedAdminFeeValueSUSD.mul(String(10001e14)).div(String(1e18)),
+          )
+        console.log(
+          `Actual admin fee increase: ${adminFeeValue}, ideal value: ${expectedAdminFeeValueSUSD}`,
+        )
+      })
+    })
+  })
+
+  describe("withdrawAdminFees", () => {
+    it("Successfully withdraws accrued admin trading fees from base swap", async () => {
+      const tokens = (await poolRegistry.getPoolData(baseSwap.address)).tokens
+
+      const collectorBalBefore = await getUserTokenBalances(
+        deployerAddress,
+        tokens,
+      )
+      const adminBalBefore = await getUserTokenBalances(user1Address, tokens)
+      const vpBefore = await baseSwap.getVirtualPrice()
+
+      await baseSwap.withdrawAdminFees()
+
+      const collectorBalAfter = await getUserTokenBalances(
+        deployerAddress,
+        tokens,
+      )
+      const adminBarAfter = await getUserTokenBalances(user1Address, tokens)
+      const vpAfter = await baseSwap.getVirtualPrice()
+
+      const collectorBalDelta = collectorBalAfter.map((bal, i) =>
+        bal.sub(collectorBalBefore[i]),
+      )
+      const adminBalDelta = adminBarAfter.map((bal, i) =>
+        bal.sub(adminBalBefore[i]),
+      )
+      const expectedDelta = [
+        BigNumber.from("1004118"),
+        BigNumber.from("997505689639501527"),
+        BigNumber.from("998328057497365569"),
+      ]
+      expect(collectorBalDelta).to.eql(expectedDelta)
+      expect(adminBalDelta).to.eql(expectedDelta)
+      expect(vpAfter).to.eq(vpBefore)
+    })
+
+    it("Successfully withdraws accrued admin trading fees from meta swap", async () => {
       // swap each token 20 times
       for (let i = 0; i < 20; i++) {
-        await permissionlessSwapContract.swap(0, 1, 1e6, 0, MAX_UINT256)
-        await permissionlessSwapContract.swap(0, 2, 1e6, 0, MAX_UINT256)
-        await permissionlessSwapContract.swap(
-          1,
-          0,
-          String(1e18),
-          0,
-          MAX_UINT256,
-        )
-        await permissionlessSwapContract.swap(
-          1,
-          2,
-          String(1e18),
-          0,
-          MAX_UINT256,
-        )
-        await permissionlessSwapContract.swap(
-          2,
-          0,
-          String(1e18),
-          0,
-          MAX_UINT256,
-        )
-        await permissionlessSwapContract.swap(
-          2,
-          1,
-          String(1e18),
-          0,
-          MAX_UINT256,
-        )
+        await metaSwap.swap(0, 1, String(1e18), 0, MAX_UINT256)
+        await metaSwap.swap(1, 0, String(1e18), 0, MAX_UINT256)
       }
 
-      // get balances of each token after the swaps
-      const feeCollectorBalances = await getTokenBalances(
-        poolData.tokens,
+      const tokens = (await poolRegistry.getPoolData(metaSwap.address)).tokens
+
+      const collectorBalBefore = await getUserTokenBalances(
         deployerAddress,
+        tokens,
       )
+      const adminBalBefore = await getUserTokenBalances(user1Address, tokens)
+      const vpBefore = await metaSwap.getVirtualPrice()
 
-      // withdraw admin fees
-      await permissionlessSwapContract.connect(user1).withdrawAdminFees()
+      await metaSwap.withdrawAdminFees()
 
-      // expect correct changes in token balances after admin fee withdrawal
-      const feeCollectorBalancesWithFees = await getTokenBalances(
-        poolData.tokens,
+      const collectorBalAfter = await getUserTokenBalances(
         deployerAddress,
+        tokens,
       )
-      const user1BalancesWithFees = await getTokenBalances(
-        poolData.tokens,
-        user1Address,
+      const adminBarAfter = await getUserTokenBalances(user1Address, tokens)
+      const vpAfter = await metaSwap.getVirtualPrice()
+
+      const collectorBalDelta = collectorBalAfter.map((bal, i) =>
+        bal.sub(collectorBalBefore[i]),
       )
-
-      expect(
-        user1BalancesWithFees.every((value) => value.gt(BigNumber.from(0))),
-      ).to.be.true
-
-      for (let i = 0; i < feeCollectorBalances.length; i++) {
-        expect(feeCollectorBalances[i]).to.lt(feeCollectorBalancesWithFees[i])
-      }
-
-      // Metapool
-
-      const metaPoolData: IPoolRegistry.PoolDataStructOutput =
-        await poolRegistry.getPoolDataByName(BYTES32_FRAX_METAPOOL_NAME)
-      const permissionlessMetaSwapContract = await ethers.getContractAt(
-        PERMISSIONLESS_METASWAP_NAME,
-        metaPoolData.poolAddress,
+      const adminBalDelta = adminBarAfter.map((bal, i) =>
+        bal.sub(adminBalBefore[i]),
       )
-
-      // Approve transfer of base pool and meta pool token
-
-      const metaLPToken = await ethers.getContractAt(
-        LP_TOKEN_NAME,
-        metaPoolData.lpToken,
-      )
-      expect(await metaLPToken.name()).to.be.eq(
-        String(`Saddle ${await metaLPToken.symbol()} LP Token`),
-      )
-
-      const sUSDContract = await ethers.getContractAt(
-        GENERIC_ERC20_CONTRACT_NAME,
-        metaPoolData.tokens[0],
-      )
-      await baseLPToken.approve(
-        permissionlessMetaSwapContract.address,
-        MAX_UINT256,
-      )
-      await sUSDContract.approve(
-        permissionlessMetaSwapContract.address,
-        MAX_UINT256,
-      )
-
-      // fast forward block 10 minutes to allow metapool to cache base pool vitrual price
-      const currentTimestamp = await getCurrentBlockTimestamp()
-      await setNextTimestamp(currentTimestamp + 60 * 10)
-      await ethers.provider.send("evm_mine", [])
-
-      // Add liquidity to metapool
-      await permissionlessMetaSwapContract.addLiquidity(
-        [String(1e18), String(1e18)],
-        0,
-        MAX_UINT256,
-      )
-
-      expect(
-        await sUSDContract.balanceOf(permissionlessMetaSwapContract.address),
-      ).to.eq(String(1e18))
-      expect(
-        await baseLPToken.balanceOf(permissionlessMetaSwapContract.address),
-      ).to.eq(String(1e18))
-
-      // Function to return map of current token balances
-      async function getMetaTokenBalances(userAddress: string) {
-        const balances: BigNumber[] = []
-        balances.push(await sUSDContract.balanceOf(deployerAddress))
-        balances.push(await baseLPToken.balanceOf(deployerAddress))
-        return balances
-      }
-
-      const metaLPTokenBal = await baseLPToken.balanceOf(poolData.lpToken)
-
-      // swap each token 20 times
-      for (let i = 0; i < 20; i++) {
-        await permissionlessMetaSwapContract.swap(
-          0,
-          1,
-          String(1e18),
-          0,
-          MAX_UINT256,
-        )
-        await permissionlessMetaSwapContract.swap(
-          1,
-          0,
-          String(1e18),
-          0,
-          MAX_UINT256,
-        )
-      }
-
-      // // get balances of each token after the swaps
-      const metafeeCollectorBalances = await getMetaTokenBalances(
-        deployerAddress,
-      )
-
-      const metauser1Balances = await getMetaTokenBalances(user1Address)
-
-      // withdraw admin fees
-      await permissionlessMetaSwapContract.connect(user1).withdrawAdminFees()
-
-      // expect correct changes in token balances after admin fee withdrawal
-      const metafeeCollectorBalancesWithFees = await getMetaTokenBalances(
-        deployerAddress,
-      )
-      const metauser1BalancesWithFees = await getMetaTokenBalances(user1Address)
-
-      expect(
-        metauser1BalancesWithFees.every((value) => value.gt(BigNumber.from(0))),
-      ).to.be.true
-
-      for (let i = 0; i < metafeeCollectorBalancesWithFees.length; i++) {
-        expect(metafeeCollectorBalancesWithFees[i]).to.gt(
-          metafeeCollectorBalances[i],
-        )
-      }
-      for (let i = 0; i < metafeeCollectorBalancesWithFees.length; i++) {
-        expect(metauser1BalancesWithFees[i]).to.gt(metauser1Balances[i])
-      }
+      const expectedDelta = [
+        BigNumber.from("2041550919186710"),
+        BigNumber.from("1959294344559532"),
+      ]
+      expect(collectorBalDelta).to.eql(expectedDelta)
+      expect(adminBalDelta).to.eql(expectedDelta)
+      expect(vpAfter).to.eq(vpBefore)
     })
   })
 })
