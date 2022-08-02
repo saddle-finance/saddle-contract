@@ -50,3 +50,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["MasterRegistry"]
+func.dependencies = ["PoolRegistry"]
