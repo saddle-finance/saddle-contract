@@ -14,6 +14,7 @@ const { expect } = chai
 describe("RootGaugeFactory", () => {
   let signers: Array<Signer>
   let users: string[]
+  let user1: Signer
   let deployer: Signer
   let rootGaugeFactory: RootGaugeFactory
   let rootGauge: RootGauge
@@ -25,12 +26,16 @@ describe("RootGaugeFactory", () => {
 
       console.log("test")
       signers = await ethers.getSigners()
+      user1 = signers[1]
       users = await Promise.all(
         signers.map(async (signer) => signer.getAddress()),
       )
 
       // Replace with mock address unless being tested on forked mainnet
       const anyCallAddress = "0x0000000000000000000000000000000000000000"
+
+      // Replace with mock address unless being tested on forked mainnet
+      const bridgerAddress = "0x0000000000000000000000000000000000000000"
 
       // Deploy anycallTranslator
       const anyCallTranslatorFactory = await ethers.getContractFactory(
@@ -74,10 +79,23 @@ describe("RootGaugeFactory", () => {
 
   describe("RootGaugeFactory", () => {
     it(`Successfully sets root gauge implementation`, async () => {
-      // Initialize checkpoint by calling it first when empty
       await rootGaugeFactory.set_implementation(rootGauge.address)
       expect(await rootGaugeFactory.get_implementation()).to.eq(
         rootGauge.address,
+      )
+    })
+    it(`Successfully access checks when setting root gauge implementation`, async () => {
+      await expect(
+        rootGaugeFactory.connect(user1).set_implementation(rootGauge.address),
+      ).to.be.reverted
+    })
+    it(`Successfully sets bridger`, async () => {
+      await rootGaugeFactory.set_bridger(
+        2222,
+        "0x0000000000000000000000000000000000000000",
+      )
+      expect(await rootGaugeFactory.get_bridger(2222)).to.eq(
+        "0x0000000000000000000000000000000000000000",
       )
     })
   })
