@@ -121,7 +121,7 @@ export async function getPoolBalances(
 
 export async function getUserTokenBalances(
   address: string | Signer,
-  tokens: Contract[],
+  tokens: Contract[] | string[],
 ): Promise<BigNumber[]> {
   const balanceArray = []
 
@@ -129,7 +129,11 @@ export async function getUserTokenBalances(
     address = await address.getAddress()
   }
 
-  for (const token of tokens) {
+  for (let token of tokens) {
+    if (typeof token == "string") {
+      token = await ethers.getContractAt("GenericERC20", token)
+    }
+
     balanceArray.push(await (token as IERC20).balanceOf(address))
   }
 
