@@ -1,12 +1,13 @@
 diff -ruN .gitignore .gitignore
+diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ .gitignore	2022-08-02 18:09:10.827827800 +0200
++++ .gitignore	2022-08-03 17:24:30.649082500 +0200
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
 diff -ruN imports/AddressUpgradeable.sol imports/AddressUpgradeable.sol
 --- imports/AddressUpgradeable.sol	1970-01-01 01:00:00.000000000 +0100
-+++ imports/AddressUpgradeable.sol	2022-08-02 18:09:10.839796700 +0200
++++ imports/AddressUpgradeable.sol	2022-08-03 18:03:54.825081300 +0200
 @@ -0,0 +1,165 @@
 +// SPDX-License-Identifier: MIT
 +
@@ -173,9 +174,45 @@ diff -ruN imports/AddressUpgradeable.sol imports/AddressUpgradeable.sol
 +        }
 +    }
 +}
+diff -ruN imports/ContextUpgradeable.sol imports/ContextUpgradeable.sol
+--- imports/ContextUpgradeable.sol	1970-01-01 01:00:00.000000000 +0100
++++ imports/ContextUpgradeable.sol	2022-08-03 17:24:30.670997300 +0200
+@@ -0,0 +1,32 @@
++// SPDX-License-Identifier: MIT
++
++pragma solidity >=0.6.0 <0.8.0;
++import "./Initializable.sol";
++
++/*
++ * @dev Provides information about the current execution context, including the
++ * sender of the transaction and its data. While these are generally available
++ * via msg.sender and msg.data, they should not be accessed in such a direct
++ * manner, since when dealing with GSN meta-transactions the account sending and
++ * paying for execution may not be the actual sender (as far as an application
++ * is concerned).
++ *
++ * This contract is only required for intermediate, library-like contracts.
++ */
++abstract contract ContextUpgradeable is Initializable {
++    function __Context_init() internal initializer {
++        __Context_init_unchained();
++    }
++
++    function __Context_init_unchained() internal initializer {
++    }
++    function _msgSender() internal view virtual returns (address payable) {
++        return msg.sender;
++    }
++
++    function _msgData() internal view virtual returns (bytes memory) {
++        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
++        return msg.data;
++    }
++    uint256[50] private __gap;
++}
 diff -ruN imports/Initializable.sol imports/Initializable.sol
 --- imports/Initializable.sol	1970-01-01 01:00:00.000000000 +0100
-+++ imports/Initializable.sol	2022-08-02 18:11:27.059804700 +0200
++++ imports/Initializable.sol	2022-08-03 17:24:30.678975700 +0200
 @@ -0,0 +1,55 @@
 +// SPDX-License-Identifier: MIT
 +
@@ -232,9 +269,230 @@ diff -ruN imports/Initializable.sol imports/Initializable.sol
 +        return !AddressUpgradeable.isContract(address(this));
 +    }
 +}
+diff -ruN imports/OwnableUpgradeable.sol imports/OwnableUpgradeable.sol
+--- imports/OwnableUpgradeable.sol	1970-01-01 01:00:00.000000000 +0100
++++ imports/OwnableUpgradeable.sol	2022-08-03 17:24:30.687951500 +0200
+@@ -0,0 +1,75 @@
++// SPDX-License-Identifier: MIT
++
++pragma solidity >=0.6.0 <0.8.0;
++
++import "./ContextUpgradeable.sol";
++import "./Initializable.sol";
++/**
++ * @dev Contract module which provides a basic access control mechanism, where
++ * there is an account (an owner) that can be granted exclusive access to
++ * specific functions.
++ *
++ * By default, the owner account will be the one that deploys the contract. This
++ * can later be changed with {transferOwnership}.
++ *
++ * This module is used through inheritance. It will make available the modifier
++ * `onlyOwner`, which can be applied to your functions to restrict their use to
++ * the owner.
++ */
++abstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {
++    address private _owner;
++
++    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
++
++    /**
++     * @dev Initializes the contract setting the deployer as the initial owner.
++     */
++    function __Ownable_init() internal initializer {
++        __Context_init_unchained();
++        __Ownable_init_unchained();
++    }
++
++    function __Ownable_init_unchained() internal initializer {
++        address msgSender = _msgSender();
++        _owner = msgSender;
++        emit OwnershipTransferred(address(0), msgSender);
++    }
++
++    /**
++     * @dev Returns the address of the current owner.
++     */
++    function owner() public view virtual returns (address) {
++        return _owner;
++    }
++
++    /**
++     * @dev Throws if called by any account other than the owner.
++     */
++    modifier onlyOwner() {
++        require(owner() == _msgSender(), "Ownable: caller is not the owner");
++        _;
++    }
++
++    /**
++     * @dev Leaves the contract without owner. It will not be possible to call
++     * `onlyOwner` functions anymore. Can only be called by the current owner.
++     *
++     * NOTE: Renouncing ownership will leave the contract without an owner,
++     * thereby removing any functionality that is only available to the owner.
++     */
++    function renounceOwnership() public virtual onlyOwner {
++        emit OwnershipTransferred(_owner, address(0));
++        _owner = address(0);
++    }
++
++    /**
++     * @dev Transfers ownership of the contract to a new account (`newOwner`).
++     * Can only be called by the current owner.
++     */
++    function transferOwnership(address newOwner) public virtual onlyOwner {
++        require(newOwner != address(0), "Ownable: new owner is the zero address");
++        emit OwnershipTransferred(_owner, newOwner);
++        _owner = newOwner;
++    }
++    uint256[49] private __gap;
++}
+diff -ruN imports/OwnerPausableUpgradeable.sol imports/OwnerPausableUpgradeable.sol
+--- imports/OwnerPausableUpgradeable.sol	1970-01-01 01:00:00.000000000 +0100
++++ imports/OwnerPausableUpgradeable.sol	2022-08-03 18:02:48.935930700 +0200
+@@ -0,0 +1,37 @@
++// SPDX-License-Identifier: MIT
++
++pragma solidity 0.6.12;
++
++import "./OwnableUpgradeable.sol";
++import "./PausableUpgradeable.sol";
++
++/**
++ * @title OwnerPausable
++ * @notice An ownable contract allows the owner to pause and unpause the
++ * contract without a delay.
++ * @dev Only methods using the provided modifiers will be paused.
++ */
++abstract contract OwnerPausableUpgradeable is
++    OwnableUpgradeable,
++    PausableUpgradeable
++{
++    function __OwnerPausable_init() internal initializer {
++        __Context_init_unchained();
++        __Ownable_init_unchained();
++        __Pausable_init_unchained();
++    }
++
++    /**
++     * @notice Pause the contract. Revert if already paused.
++     */
++    function pause() external onlyOwner {
++        PausableUpgradeable._pause();
++    }
++
++    /**
++     * @notice Unpause the contract. Revert if already unpaused.
++     */
++    function unpause() external onlyOwner {
++        PausableUpgradeable._unpause();
++    }
++}
+diff -ruN imports/PausableUpgradeable.sol imports/PausableUpgradeable.sol
+--- imports/PausableUpgradeable.sol	1970-01-01 01:00:00.000000000 +0100
++++ imports/PausableUpgradeable.sol	2022-08-03 17:24:30.716880500 +0200
+@@ -0,0 +1,97 @@
++// SPDX-License-Identifier: MIT
++
++pragma solidity >=0.6.0 <0.8.0;
++
++import "./ContextUpgradeable.sol";
++import "./Initializable.sol";
++
++/**
++ * @dev Contract module which allows children to implement an emergency stop
++ * mechanism that can be triggered by an authorized account.
++ *
++ * This module is used through inheritance. It will make available the
++ * modifiers `whenNotPaused` and `whenPaused`, which can be applied to
++ * the functions of your contract. Note that they will not be pausable by
++ * simply including this module, only once the modifiers are put in place.
++ */
++abstract contract PausableUpgradeable is Initializable, ContextUpgradeable {
++    /**
++     * @dev Emitted when the pause is triggered by `account`.
++     */
++    event Paused(address account);
++
++    /**
++     * @dev Emitted when the pause is lifted by `account`.
++     */
++    event Unpaused(address account);
++
++    bool private _paused;
++
++    /**
++     * @dev Initializes the contract in unpaused state.
++     */
++    function __Pausable_init() internal initializer {
++        __Context_init_unchained();
++        __Pausable_init_unchained();
++    }
++
++    function __Pausable_init_unchained() internal initializer {
++        _paused = false;
++    }
++
++    /**
++     * @dev Returns true if the contract is paused, and false otherwise.
++     */
++    function paused() public view virtual returns (bool) {
++        return _paused;
++    }
++
++    /**
++     * @dev Modifier to make a function callable only when the contract is not paused.
++     *
++     * Requirements:
++     *
++     * - The contract must not be paused.
++     */
++    modifier whenNotPaused() {
++        require(!paused(), "Pausable: paused");
++        _;
++    }
++
++    /**
++     * @dev Modifier to make a function callable only when the contract is paused.
++     *
++     * Requirements:
++     *
++     * - The contract must be paused.
++     */
++    modifier whenPaused() {
++        require(paused(), "Pausable: not paused");
++        _;
++    }
++
++    /**
++     * @dev Triggers stopped state.
++     *
++     * Requirements:
++     *
++     * - The contract must not be paused.
++     */
++    function _pause() internal virtual whenNotPaused {
++        _paused = true;
++        emit Paused(_msgSender());
++    }
++
++    /**
++     * @dev Returns to normal state.
++     *
++     * Requirements:
++     *
++     * - The contract must be paused.
++     */
++    function _unpause() internal virtual whenPaused {
++        _paused = false;
++        emit Unpaused(_msgSender());
++    }
++    uint256[49] private __gap;
++}
 diff -ruN imports/ReentrancyGuardUpgradeable.sol imports/ReentrancyGuardUpgradeable.sol
 --- imports/ReentrancyGuardUpgradeable.sol	1970-01-01 01:00:00.000000000 +0100
-+++ imports/ReentrancyGuardUpgradeable.sol	2022-08-02 18:09:10.859741100 +0200
++++ imports/ReentrancyGuardUpgradeable.sol	2022-08-03 17:24:30.743802700 +0200
 @@ -0,0 +1,68 @@
 +// SPDX-License-Identifier: MIT
 +
@@ -344,7 +602,9 @@ diff -ruN Swap.sol Swap.sol
  import "@openzeppeltoken/ERC20/SafeERC20.sol";
  import "@openzeppelproxy/Clones.sol";
 -import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-+import "./ReentrancyGuardUpgradeable.sol"; // MUNGED 
- import "./OwnerPausableUpgradeable.sol";
++import "./imports/ReentrancyGuardUpgradeable.sol"; // MUNGED 
+-import "./OwnerPausableUpgradeable.sol";
++import "./imports/OwnerPausableUpgradeable.sol";
  import "./SwapUtils.sol";
  import "./AmplificationUtils.sol";
+ 
