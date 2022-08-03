@@ -8,6 +8,11 @@ node_modules/*
 .eslintcache
 docs
 
+# Certora temp files
+.certora*
+.last_confs
+resource_errors.json
+
 ### macOS ###
 # General
 .DS_Store
