@@ -16,4 +16,8 @@ contract SwapHarness is Swap {
                 block.timestamp < swapStorage.futureATime &&
                 swapStorage.initialA != swapStorage.futureA);
     }
+
+    function getPooledTokenAddress(uint256 index) public view returns (address) {
+        return address(getToken(index));
+    } 
 }
