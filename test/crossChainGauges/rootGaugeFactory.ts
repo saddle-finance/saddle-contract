@@ -1,4 +1,4 @@
-import chai from "chai"
+import chai, { assert } from "chai"
 import { solidity } from "ethereum-waffle"
 import { Signer } from "ethers"
 import { deployments } from "hardhat"
@@ -7,6 +7,7 @@ import {
   RootGauge,
   RootGaugeFactory,
 } from "../../build/typechain/"
+import { ZERO_ADDRESS } from "../testUtils"
 
 chai.use(solidity)
 const { expect } = chai
@@ -77,9 +78,15 @@ describe("RootGaugeFactory", () => {
     await setupTest()
   })
 
-  describe("RootGaugeFactory", () => {
+  describe("Initialize RootGaugeFactory", () => {
     it(`Successfully sets root gauge implementation`, async () => {
-      await rootGaugeFactory.set_implementation(rootGauge.address)
+      const tx = await rootGaugeFactory.set_implementation(rootGauge.address)
+      console.log(tx)
+      // expect(tx).to.have.property("UpdateImplementation")
+      // expect(tx.events["UpdateImplementation"]).to.eq([
+      //   ZERO_ADDRESS,
+      //   rootGauge.address,
+      // ])
       expect(await rootGaugeFactory.get_implementation()).to.eq(
         rootGauge.address,
       )
@@ -96,6 +103,15 @@ describe("RootGaugeFactory", () => {
       )
       expect(await rootGaugeFactory.get_bridger(2222)).to.eq(
         "0x0000000000000000000000000000000000000000",
+      )
+    })
+  })
+
+  describe("Deploy with RootGaugeFactory", () => {
+    it(`Successfully sets root gauge implementation`, async () => {
+      await rootGaugeFactory.set_implementation(rootGauge.address)
+      expect(await rootGaugeFactory.get_implementation()).to.eq(
+        rootGauge.address,
       )
     })
   })

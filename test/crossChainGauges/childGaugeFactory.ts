@@ -4,8 +4,8 @@ import { Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
   AnyCallTranslator,
-  RootGauge,
-  RootGaugeFactory,
+  ChildGauge,
+  ChildGaugeFactory,
 } from "../../build/typechain/"
 
 chai.use(solidity)
@@ -15,8 +15,8 @@ describe("ChildGaugeFactory", () => {
   let signers: Array<Signer>
   let users: string[]
   let deployer: Signer
-  let rootGaugeFactory: RootGaugeFactory
-  let rootGauge: RootGauge
+  let childGaugeFactory: ChildGaugeFactory
+  let childGauge: ChildGauge
   let anycallTranslator: AnyCallTranslator
 
   const setupTest = deployments.createFixture(
@@ -40,15 +40,15 @@ describe("ChildGaugeFactory", () => {
       const rootGaugeFactoryFactory = await ethers.getContractFactory(
         "RootGaugeFactory",
       )
-      rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
+      childGaugeFactory = (await rootGaugeFactoryFactory.deploy(
         anycallTranslator,
-      )) as RootGaugeFactory
+      )) as ChildGaugeFactory
 
       // Root Gauge Implementation
       const gaugeImplementationFactory = await ethers.getContractFactory(
-        "RootGauge",
+        "ChildGauge",
       )
-      rootGauge = (await gaugeImplementationFactory.deploy(
+      childGauge = (await gaugeImplementationFactory.deploy(
         (
           await ethers.getContract("SDL")
         ).address,
@@ -58,7 +58,7 @@ describe("ChildGaugeFactory", () => {
         (
           await ethers.getContract("Minter")
         ).address,
-      )) as RootGauge
+      )) as ChildGauge
     },
   )
 
@@ -69,6 +69,7 @@ describe("ChildGaugeFactory", () => {
   describe("ChildGaugeFactory", () => {
     it(`Successfully sets child gauge implementation`, async () => {
       // Write test here
+      return
     })
   })
 })
