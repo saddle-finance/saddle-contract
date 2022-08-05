@@ -3,7 +3,7 @@
 pragma solidity ^0.8.6;
 pragma experimental ABIEncoderV2;
 
-interface I_CallProxy {
+interface ICallProxy {
     function anyCall(
         address _to,
         bytes calldata _data,
@@ -42,6 +42,6 @@ contract AnyCallTranslator {
         uint256 _toChainId
     ) external {
         require(msg.sender == owner);
-        I_CallProxy(anycall).anyCall(_to, _data, _fallback, _toChainId);
+        ICallProxy(anycall).anyCall(_to, _data, _fallback, _toChainId);
     }
 }
