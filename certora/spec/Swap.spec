@@ -2,10 +2,45 @@
 //                                Methods                                 //
 ////////////////////////////////////////////////////////////////////////////
 
+methods {
+	getD(uint256[], uint256) returns (uint256) => NONDET
+	getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
+	calculateWithdrawOneTokenDY((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint256,uint256) returns (uint256, uint256, uint256) => NONDET 
+	calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8)  returns (uint256) => NONDET 
+	_calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8,uint256) returns (uint256, uint256) => NONDET 
+	xp(uint256[],uint256[]) returns (uint256[] ) => NONDET 
+	getVirtualPrice((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[])) returns (uint256) => CONSTANT 
+	getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
+	_calculateSwap((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint8,uint256,uint256[] ) returns (uint256, uint256) => NONDET
+	_feePerToken(uint256, uint256) returns (uint256) => NONDET
+
+    // summariazable functions check
+    // https://prover.certora.com/output/93493/9456d9506f97c875cba5/Results.txt?anonymousKey=d95f3e811114cd664bc8f9b20cc8c33ebf94b771
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Ghosts and definitions                           //
 ////////////////////////////////////////////////////////////////////////////
+
+ghost bool initialized {
+    init_state axiom initialized == false;
+}
+
+hook Sload bool init _initialized STORAGE {
+    require initialized == init;
+}
+
+// fails due to havoc
+rule cantReinit(method f) filtered {
+    f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
+} {
+    require initialized;
+ 
+    env e; calldataarg args;
+    f@withrevert(e,args);
+ 
+    assert lastReverted;
+}
 
 // definition isInitialized() returns bool = 
 // definition initialized() returns bool =

@@ -7,6 +7,6 @@ certoraRun \
     --verify SwapHarness:certora/spec/Swap.spec \
     --optimistic_loop \
     --loop_iter 3 \
-    --send_only \
+    --settings -showInternalFunctions \
     $RULE \
     --msg "Swap with simplifications and loop 3: $1"
