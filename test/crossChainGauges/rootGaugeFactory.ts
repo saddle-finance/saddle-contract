@@ -2,11 +2,10 @@ import chai, { assert } from "chai"
 import { solidity } from "ethereum-waffle"
 import { Signer } from "ethers"
 import { deployments } from "hardhat"
-import {
-  AnyCallTranslator,
-  RootGauge,
-  RootGaugeFactory,
-} from "../../build/typechain/"
+
+import { AnyCallTranslator } from "../../build/typechain/contracts/crossChainGauges/AnycallTranslator.sol"
+import { RootGauge } from "../../build/typechain/contracts/crossChainGauges/implementations/RootGauge.vy"
+import { RootGaugeFactory } from "../../build/typechain/contracts/crossChainGauges/RootGaugeFactory.vy"
 import { ZERO_ADDRESS } from "../testUtils"
 
 chai.use(solidity)

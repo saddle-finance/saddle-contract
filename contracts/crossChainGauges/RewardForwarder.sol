@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-4.2.0/token/ERC20/utils/SafeERC20.sol";
 
 interface IGauge {
-    function deposit_reward_token(address _reward_token, uint256 amount)
+    function depositRewardToken(address _reward_token, uint256 amount)
         external
         view; // nonpayable
 }
@@ -21,9 +21,9 @@ contract RewardForwarder {
         GAUGE = _gauge;
     }
 
-    function depositRewardToken(address _rewardToken) external {
+    function depositRewardToken(address _rewardToken) external view{
         //can this really be a view? Is recommened to be
-        IGauge(GAUGE).deposit_reward_token(
+        IGauge(GAUGE).depositRewardToken(
             _rewardToken,
             IERC20(_rewardToken).balanceOf(address(this))
         );

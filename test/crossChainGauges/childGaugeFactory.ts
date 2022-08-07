@@ -2,11 +2,9 @@ import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { Signer } from "ethers"
 import { deployments } from "hardhat"
-import {
-  AnyCallTranslator,
-  ChildGauge,
-  ChildGaugeFactory,
-} from "../../build/typechain/"
+import { AnyCallTranslator } from "../../build/typechain/contracts/crossChainGauges/AnycallTranslator.sol"
+import { ChildGauge } from "../../build/typechain/contracts/crossChainGauges/implementations/ChildGauge.vy"
+import { ChildGaugeFactory } from "../../build/typechain/contracts/crossChainGauges/ChildGaugeFactory.vy"
 
 chai.use(solidity)
 const { expect } = chai
@@ -29,6 +27,7 @@ describe("ChildGaugeFactory", () => {
       )
 
       // Deploy anycallTranslator
+      const anyCallTranslatorFactory = await ethers.getContractFactory(
         "AnyCallTranslator",
       )
       anycallTranslator = (await anyCallTranslatorFactory.deploy(

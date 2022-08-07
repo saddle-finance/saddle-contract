@@ -194,6 +194,7 @@ let config: HardhatUserConfig = {
   },
   vyper: {
     compilers: [
+      { version: "0.2.7" },
       { version: "0.2.12" },
       { version: "0.2.16" },
       { version: "0.2.15" },
