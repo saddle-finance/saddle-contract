@@ -24,7 +24,7 @@ import {
 chai.use(solidity)
 const { expect } = chai
 
-describe("Meta-Swap with inflated baseVirtualPrice and 50% admin fees", async () => {
+describe("PermissionlessMetaSwapFlashLoan with inflated baseVirtualPrice and 50% admin fees", async () => {
   let signers: Array<Signer>
   let baseSwap: Swap
   let metaSwap: MetaSwap
