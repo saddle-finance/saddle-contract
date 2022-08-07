@@ -13,7 +13,7 @@ import { ZERO_ADDRESS } from "../testUtils"
 chai.use(solidity)
 const { expect } = chai
 
-describe("RootGaugeFactory", () => {
+describe("ChildGaugeFactory", () => {
   let signers: Array<Signer>
   let users: string[]
   let user1: Signer
@@ -50,27 +50,25 @@ describe("RootGaugeFactory", () => {
 
       // Root Gauge factory
       const rootGaugeFactoryFactory = await ethers.getContractFactory(
-        "RootGaugeFactory",
+        "ChildGaugeFactory",
       )
       rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
         anycallTranslator.address,
+        (
+          await ethers.getContract("SDL")
+        ).address,
         users[0],
       )) as RootGaugeFactory
 
       // Root Gauge Implementation
       const gaugeImplementationFactory = await ethers.getContractFactory(
-        "RootGauge",
+        "ChildGauge",
       )
       rootGauge = (await gaugeImplementationFactory.deploy(
         (
           await ethers.getContract("SDL")
         ).address,
-        (
-          await ethers.getContract("GaugeController")
-        ).address,
-        (
-          await ethers.getContract("Minter")
-        ).address,
+        rootGaugeFactory.address,
       )) as RootGauge
     },
   )
@@ -81,38 +79,7 @@ describe("RootGaugeFactory", () => {
 
   describe("Initialize RootGaugeFactory", () => {
     it(`Successfully sets root gauge implementation`, async () => {
-      const contractTx = await rootGaugeFactory.set_implementation(
-        rootGauge.address,
-      )
-      const contractReceipt = await contractTx.wait()
-      const event = contractReceipt.events?.find(
-        (event) => event.event === "UpdateImplementation",
-      )
-      const implementationAddr = event?.args!["_new_implementation"]
-      expect(implementationAddr).to.eq(rootGauge.address)
-      expect(await rootGaugeFactory.get_implementation()).to.eq(
-        rootGauge.address,
-      )
-    })
-    it(`Successfully access checks when setting root gauge implementation`, async () => {
-      await expect(
-        rootGaugeFactory.connect(user1).set_implementation(rootGauge.address),
-      ).to.be.reverted
-    })
-    it(`Successfully sets bridger`, async () => {
-      const contractTx = await rootGaugeFactory.set_bridger(2222, ZERO_ADDRESS)
-      const contractReceipt = await contractTx.wait()
-      const event = contractReceipt.events?.find(
-        (event) => event.event === "BridgerUpdated",
-      )
-      const implementationAddr = event?.args!["_new_bridger"]
-      expect(implementationAddr).to.eq(ZERO_ADDRESS)
-      expect(await rootGaugeFactory.get_bridger(2222)).to.eq(ZERO_ADDRESS)
-    })
-    it(`Successfully access checks when setting bridger`, async () => {
-      await expect(
-        rootGaugeFactory.connect(user1).set_bridger(2222, ZERO_ADDRESS),
-      ).to.be.reverted
+      return
     })
   })
 })
