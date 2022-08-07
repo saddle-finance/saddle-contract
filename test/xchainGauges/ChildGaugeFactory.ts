@@ -4,11 +4,11 @@ import { Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
   AnyCallTranslator,
-  RootGauge,
-  RootGaugeFactory,
+  ChildGauge,
+  ChildGaugeFactory,
 } from "../../build/typechain"
 
-import { ZERO_ADDRESS } from "../testUtils"
+import { isTestNetwork, ZERO_ADDRESS } from "../testUtils"
 
 chai.use(solidity)
 const { expect } = chai
@@ -18,11 +18,11 @@ describe("ChildGaugeFactory", () => {
   let users: string[]
   let user1: Signer
   let deployer: Signer
-  let rootGaugeFactory: RootGaugeFactory
-  let rootGauge: RootGauge
+  let childGaugeFactory: ChildGaugeFactory
+  let childGauge: ChildGauge
   let anycallTranslator: AnyCallTranslator
 
-  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+  const MOCK_ADDRESS = "0x0000000000000000000000000000000000000001"
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -49,27 +49,27 @@ describe("ChildGaugeFactory", () => {
       )) as AnyCallTranslator
 
       // Root Gauge factory
-      const rootGaugeFactoryFactory = await ethers.getContractFactory(
+      const childGaugeFactoryFactory = await ethers.getContractFactory(
         "ChildGaugeFactory",
       )
-      rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
+      childGaugeFactory = (await childGaugeFactoryFactory.deploy(
         anycallTranslator.address,
         (
           await ethers.getContract("SDL")
         ).address,
         users[0],
-      )) as RootGaugeFactory
+      )) as ChildGaugeFactory
 
       // Root Gauge Implementation
       const gaugeImplementationFactory = await ethers.getContractFactory(
         "ChildGauge",
       )
-      rootGauge = (await gaugeImplementationFactory.deploy(
+      childGauge = (await gaugeImplementationFactory.deploy(
         (
           await ethers.getContract("SDL")
         ).address,
-        rootGaugeFactory.address,
-      )) as RootGauge
+        childGaugeFactory.address,
+      )) as ChildGauge
     },
   )
 
@@ -77,9 +77,40 @@ describe("ChildGaugeFactory", () => {
     await setupTest()
   })
 
-  describe("Initialize RootGaugeFactory", () => {
-    it(`Successfully sets root gauge implementation`, async () => {
-      return
+  describe("Initialize ChildGaugeFactory", () => {
+    it(`Successfully sets child gauge implementation`, async () => {
+      const contractTx = await childGaugeFactory.set_implementation(
+        childGauge.address,
+      )
+      const contractReceipt = await contractTx.wait()
+      const event = contractReceipt.events?.find(
+        (event) => event.event === "UpdateImplementation",
+      )
+      const implementationAddr = event?.args!["_new_implementation"]
+      expect(implementationAddr).to.eq(childGauge.address)
+      expect(await childGaugeFactory.get_implementation()).to.eq(
+        childGauge.address,
+      )
+    })
+    it(`Successfully access checks when setting root gauge implementation`, async () => {
+      await expect(
+        childGaugeFactory.connect(user1).set_implementation(childGauge.address),
+      ).to.be.reverted
+    })
+    it(`Successfully sets voting escrow implementation`, async () => {
+      const contractTx = await childGaugeFactory.set_voting_escrow(MOCK_ADDRESS)
+      const contractReceipt = await contractTx.wait()
+      const event = contractReceipt.events?.find(
+        (event) => event.event === "UpdateVotingEscrow",
+      )
+      console.log(event)
+      const votingescrowAddr = event?.args!["_new_voting_escrow"]
+      expect(votingescrowAddr).to.eq(MOCK_ADDRESS)
+    })
+    it("Successfully access checks sets voting escrow implementation", async () => {
+      await expect(
+        childGaugeFactory.connect(user1).set_voting_escrow(MOCK_ADDRESS),
+      ).to.be.reverted
     })
   })
 })
