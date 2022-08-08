@@ -190,6 +190,15 @@ let config: HardhatUserConfig = {
           },
         },
       },
+      "contracts/poc/SaddlePOC.sol": {
+        version: "0.8.7",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10000,
+          },
+        },
+      },
     },
   },
   vyper: {
