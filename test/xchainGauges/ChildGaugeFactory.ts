@@ -48,7 +48,7 @@ describe("ChildGaugeFactory", () => {
         anyCallAddress,
       )) as AnyCallTranslator
 
-      // Root Gauge factory
+      // Child Gauge factory
       const childGaugeFactoryFactory = await ethers.getContractFactory(
         "ChildGaugeFactory",
       )
