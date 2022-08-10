@@ -102,6 +102,7 @@ describe("RewardForwarder", () => {
       testToken.initialize("Gauge Test Token", "GT")
       await testToken.mint(users[0], 100)
       //   TODO: Property 'deposit' does not exist on type 'ChildGauge', so have to use execute
+      // following does not work await childGauge.deposit(100)
       // TODO: Execute cannot find the deployment
       // await execute(
       //   "ChildGauge",

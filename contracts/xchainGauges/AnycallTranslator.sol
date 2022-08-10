@@ -16,9 +16,6 @@ contract AnyCallTranslator {
     // consts
     address public owner;
     address private anycall;
-    uint256 private constant MAX_UINT256 = 2**256 - 1;
-    address private constant ZERO_ADDRESS =
-        0x0000000000000000000000000000000000000000;
 
     constructor(address _owner) {
         // Root | Child Gauge Factory
