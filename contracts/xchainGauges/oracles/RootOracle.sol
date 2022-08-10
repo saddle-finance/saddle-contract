@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.6;
 pragma experimental ABIEncoderV2;
 
@@ -23,10 +22,10 @@ interface ICallProxy {
 interface Factory {
     function get_bridger(
         uint256 _chain_id
-    ) external view returns(address); // TODO: is external correct here?
+    ) external view returns(address);
 }
 
-interface VotingEscrow {
+interface votingEscrow {
     function epoch() external view returns(uint256);
     function pointHistory(uint256 _idx) external view returns(Point memory); // TODO: is memory correct here?
     function userPointEpoch(address _user) external view returns(uint256);
@@ -82,8 +81,8 @@ contract RootOracle {
         assert(Factory(FACTORY).get_bridger(_chainId) != ZERO_ADDRESS);
 
         require(IERC20(VE).balanceOf(user) !=0, "no ve balance");
-        Point memory userPoint = VotingEscrow(VE).userPointHistory(user, VotingEscrow(VE).userPointEpoch(user));
-        Point memory globalPoint = VotingEscrow(VE).pointHistory(VotingEscrow(VE).epoch());
+        Point memory userPoint = votingEscrow(VE).userPointHistory(user, votingEscrow(VE).userPointEpoch(user));
+        Point memory globalPoint = votingEscrow(VE).pointHistory(votingEscrow(VE).epoch());
         ICallProxy(callProxy).anyCall(
             address(this), 
             abi.encode(userPoint, globalPoint, user, "receive((int128,int128,uint256),(int128,int128,uint256),address)")
@@ -94,8 +93,8 @@ contract RootOracle {
         require(msg.sender == callProxy, "not translator");
         assert(Factory(FACTORY).get_bridger(_chainId) != ZERO_ADDRESS);
         require(IERC20(VE).balanceOf(_user) !=0, "no ve balance");
-        Point memory userPoint = VotingEscrow(VE).userPointHistory(_user, VotingEscrow(VE).userPointEpoch(_user));
-        Point memory globalPoint = VotingEscrow(VE).pointHistory(VotingEscrow(VE).epoch());
+        Point memory userPoint = votingEscrow(VE).userPointHistory(_user, votingEscrow(VE).userPointEpoch(_user));
+        Point memory globalPoint = votingEscrow(VE).pointHistory(votingEscrow(VE).epoch());
         ICallProxy(callProxy).anyCall(
             address(this), 
             abi.encode(userPoint, globalPoint, _user, "receive((int128,int128,uint256),(int128,int128,uint256),address)")

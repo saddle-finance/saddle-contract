@@ -34,6 +34,9 @@ describe("ArbitrumBridger", () => {
   let childGauge: ChildGauge
 
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+  const gasLimit = 1000000
+  const gasPrice = 990000000
+  const maxSubmissionCost = 10000000000000
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -46,15 +49,14 @@ describe("ArbitrumBridger", () => {
       )
 
       // Deploy child gauge
-      const bridgerFactory = await ethers.getContractFactory("ArbitrumBridger")
-      //   uint256 _gasLimit,
-      //     uint256 _gasPrice,
-      //     uint256 _maxSubmissionCost
 
+      const bridgerFactory = await ethers.getContractFactory("ArbitrumBridger")
+
+      // TODO: below fails
       arbitrumBridger = (await bridgerFactory.deploy(
-        1_000_000,
-        2 * 10 ** 9,
-        10 ** 13,
+        gasLimit,
+        gasPrice,
+        maxSubmissionCost,
       )) as ArbitrumBridger
     },
   )
@@ -81,10 +83,10 @@ describe("ArbitrumBridger", () => {
     })
   })
 
-  describe("Initialize RewardForwarder", () => {
+  describe("Initialize Arbitrum Bridger", () => {
     it(`Successfully initializes with cost`, async () => {
       expect(await arbitrumBridger.cost()).to.eq(
-        1_000_000 * (2 * 10 ** 9) + 10 ** 13,
+        gasLimit * gasPrice + maxSubmissionCost,
       )
     })
   })

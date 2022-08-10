@@ -19,12 +19,14 @@ interface IGatewayRouter {
 }
 
 contract ArbitrumBridger {
+    // TODO: do we want setter functions for these gate_ways? 
+    // Other contracts using this one have setters for what bridger to use
+    
     // consts
     address private constant SDL = 0xf1Dc500FdE233A4055e25e5BbF516372BC4F6871;
     // Arbitrum: L1 ERC20 Gateway
     address private constant ARB_GATEWAY =
         0xa3A7B6F88361F48403514059F1F16C8E78d60EeC;
-
     address private constant ARB_GATEWAY_ROUTER =
         0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef;
     uint256 private constant MAX_UINT256 = 2**256 - 1;

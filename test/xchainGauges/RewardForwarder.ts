@@ -101,7 +101,7 @@ describe("RewardForwarder", () => {
       testToken = (await lpTokenFactory.deploy()) as LPToken
       testToken.initialize("Gauge Test Token", "GT")
       await testToken.mint(users[0], 100)
-      //   TODO: Property 'deposit' does not exist on type 'ChildGauge'.
+      //   TODO: Property 'deposit' does not exist on type 'ChildGauge', so have to use execute
       // TODO: Execute cannot find the deployment
       // await execute(
       //   "ChildGauge",
