@@ -1,64 +1,26 @@
 import "erc20.spec"
-using SwapX as swap
-/*
+
 methods {
-	getD(uint256[]  xp, uint256 a)
-        returns (uint256) => NONDET
-	getYD(
-        uint256 a,
-        uint8 tokenIndex,
-        uint256[]  xp,
-        uint256 d
-    ) returns (uint256) => NONDET
-	calculateWithdrawOneTokenDY(
-        SwapUtils.Swap  self,
-        uint8 tokenIndex,
-        uint256 tokenAmount,
-        uint256 totalSupply
-    )
-        returns (
-            uint256,
-            uint256,
-            uint256
-        ) => NONDET 
-	calculateWithdrawOneToken(
-        SwapUtils.Swap  self,
-        uint256 tokenAmount,
-        uint8 tokenIndex
-    )  returns (uint256) => NONDET 
-	_calculateWithdrawOneToken(
-        SwapUtils.Swap self,
-        uint256 tokenAmount,
-        uint8 tokenIndex,
-        uint256 totalSupply
-    ) returns (uint256, uint256) => NONDET 
-	xp(
-        uint256[]  balances,
-        uint256[]  precisionMultipliers
-    ) returns (uint256[] ) => NONDET 
-	getVirtualPrice(SwapUtils.Swap self)
-        returns (uint256) => CONSTANT 
-	getY(
-        uint256 preciseA,
-        uint8 tokenIndexFrom,
-        uint8 tokenIndexTo,
-        uint256 x,
-        uint256[]  xp
-    ) returns (uint256) => NONDET
-	_calculateSwap(
-        SwapUtils.Swap  self,
-        uint8 tokenIndexFrom,
-        uint8 tokenIndexTo,
-        uint256 dx,
-        uint256[]  balances
-    ) returns (uint256 dy, uint256 dyFee) => NONDET
+	getD(uint256[], uint256) returns (uint256) => NONDET
+	getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
+	calculateWithdrawOneTokenDY((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint256,uint256) returns (uint256, uint256, uint256) => NONDET 
+	calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8)  returns (uint256) => NONDET 
+	_calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8,uint256) returns (uint256, uint256) => NONDET 
+	xp(uint256[],uint256[]) returns (uint256[] ) => NONDET 
+	getVirtualPrice((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[])) returns (uint256) => CONSTANT 
+	getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
+	_calculateSwap((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint8,uint256,uint256[] ) returns (uint256, uint256) => NONDET
+	_feePerToken(uint256, uint256) returns (uint256) => NONDET
 
-	_feePerToken(uint256 swapFee, uint256 numTokens)
-        returns (uint256) => NONDET
-
-
+    // refactored functions
+    /*
+    _addLiquidityHelper1((uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),address[],uint256[]) returns(uint256[]) => NONDET
+    _addLiquidityHelper2((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),(uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),address[],uint256[]) returns(uint256[]) => NONDET
+    _removeLiquidityImbalanceHelper1((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),(uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),uint256[]) returns (uint256[]) => NONDET
+    _removeLiquidityOneTokenHelper1((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),uint256,uint256,uint8) returns(uint256) => NONDET
+    */
 }
-*/
+
 rule sanity(method f)
 {
 	env e;

@@ -6,7 +6,9 @@ certoraRun \
     certora/harness/SwapHarness.sol\
     --verify SwapHarness:certora/spec/Swap.spec \
     --optimistic_loop \
-    --loop_iter 3 \
-    --settings -showInternalFunctions \
+    --cache saddle \
+    --loop_iter 2 \
+    --staging \
+    --settings -enableEqualitySaturation=false \
     $RULE \
-    --msg "Swap with simplifications and loop 3: $1"
+    --msg "Swap rules: $1"

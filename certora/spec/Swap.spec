@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 methods {
+    // math functions summarized
 	getD(uint256[], uint256) returns (uint256) => NONDET
 	getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
 	calculateWithdrawOneTokenDY((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint256,uint256) returns (uint256, uint256, uint256) => NONDET 
@@ -14,8 +15,17 @@ methods {
 	_calculateSwap((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint8,uint256,uint256[] ) returns (uint256, uint256) => NONDET
 	_feePerToken(uint256, uint256) returns (uint256) => NONDET
 
+    // refactored functions
+    _addLiquidityHelper1((uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),address[],uint256[]) returns(uint256[]) => NONDET
+    _addLiquidityHelper2((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),(uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),address[],uint256[]) returns(uint256[]) => NONDET
+    _removeLiquidityImbalanceHelper1((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),(uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),uint256[]) returns (uint256[]) => NONDET
+    _removeLiquidityOneTokenHelper1((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),uint256,uint256,uint8) returns(uint256) => NONDET
+
     // summariazable functions check
     // https://prover.certora.com/output/93493/9456d9506f97c875cba5/Results.txt?anonymousKey=d95f3e811114cd664bc8f9b20cc8c33ebf94b771
+
+    // normal functions
+    getTokenBalance(uint8) returns(uint256) envfree
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -59,6 +69,8 @@ rule cantReinit(method f) filtered {
     If balance of one underlying token is zero, the balance of all other 
     underlying tokens must also be zero
 */
+invariant zeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
+    getTokenBalance(tokenA) == 0 => getTokenBalance(tokenX) == 0
 
 /*
     If balance of one underlying token is non-zero, the balance of all other
