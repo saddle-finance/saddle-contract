@@ -3,7 +3,6 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { PoolRegistry } from "../../build/typechain"
 import { PoolType } from "../../utils/constants"
 import { IPoolRegistry } from "../../build/typechain"
-import { ZERO_ADDRESS } from "../../test/testUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
