@@ -18,12 +18,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       lpToken: (await get("SaddleFRAXUSDsMetaPoolLPToken")).address,
       typeOfAsset: PoolType.USD,
       poolName: ethers.utils.formatBytes32String("FRAXBP-USDs"),
-      targetAddress: (await get("MetaSwap")).address,
+      targetAddress: (await get("SaddleFRAXUSDsMetaPool")).address,
       tokens: [
         (await get("USDs")).address,
         (await get("SaddleFRAXBPPoolLPToken")).address,
       ],
       underlyingTokens: [
+        (await get("USDs")).address,
         (await get("FRAX")).address,
         (await get("USDC")).address,
       ],
