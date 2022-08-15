@@ -1,12 +1,16 @@
 import chai, { assert } from "chai"
 import { solidity } from "ethereum-waffle"
-import { Signer } from "ethers"
+import { ContractFactory, Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
   AnyCallTranslator,
+  LPToken,
   RootGauge,
   RootGaugeFactory,
 } from "../../build/typechain"
+import { mock } from "../../build/typechain/contracts/xchainGauges"
+import { MockAnyCall } from "../../build/typechain/contracts/xchainGauges/mock/MockAnycall.sol"
+import { MockBridger } from "../../build/typechain/contracts/xchainGauges/mock/MockBridger.sol"
 
 import { ZERO_ADDRESS } from "../testUtils"
 
@@ -21,6 +25,10 @@ describe("RootGaugeFactory", () => {
   let rootGaugeFactory: RootGaugeFactory
   let rootGauge: RootGauge
   let anycallTranslator: AnyCallTranslator
+  let mockBridger: MockBridger
+  let mockAnyCall: MockAnyCall
+  let lpTokenFactory: ContractFactory
+  let sampleLPToken: string
 
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -40,14 +48,25 @@ describe("RootGaugeFactory", () => {
       // Replace with mock address unless being tested on forked mainnet
       const bridgerAddress = ZERO_ADDRESS
 
+      // Deploy mock bridger
+      const mockBridgerFactory = await ethers.getContractFactory("MockBridger")
+      mockBridger = (await mockBridgerFactory.deploy()) as MockBridger
+
+      // Deploy mock anycall
+      const mockAnyCallFactory = await ethers.getContractFactory("MockAnyCall")
+      mockAnyCall = (await mockAnyCallFactory.deploy()) as MockAnyCall
+      // mock LP token factory
+      // const sampleLPToken = (await ethers.getContract("Saddle4Pool")).address
+      // lpTokenFactory = await ethers.getContractFactory("LPToken")
+
       // Deploy anycallTranslator
       const anyCallTranslatorFactory = await ethers.getContractFactory(
         "AnyCallTranslator",
       )
       anycallTranslator = (await anyCallTranslatorFactory.deploy(
-        anyCallAddress,
+        users[0],
+        mockAnyCall.address,
       )) as AnyCallTranslator
-
       // Root Gauge factory
       const rootGaugeFactoryFactory = await ethers.getContractFactory(
         "RootGaugeFactory",
@@ -113,6 +132,38 @@ describe("RootGaugeFactory", () => {
       await expect(
         rootGaugeFactory.connect(user1).set_bridger(2222, ZERO_ADDRESS),
       ).to.be.reverted
+    })
+  })
+  describe("Deploy Gauge from RootGaugeFactory", () => {
+    it(`Successfully deploys a root gauge`, async () => {
+      // set bridger to mock birdger
+      await rootGaugeFactory.set_bridger(11, mockBridger.address)
+      // set anycall to mock anycall
+      await rootGaugeFactory.set_call_proxy(mockAnyCall.address)
+      // deploy mock LP token
+      // const firstToken = (await lpTokenFactory.deploy()) as LPToken
+      // await firstToken.initialize("Test Token", "TEST")
+      // set factory implementation
+      await rootGaugeFactory.set_implementation(rootGauge.address)
+      // deploy root gauge
+      const gaugeDeployTx = await rootGaugeFactory[
+        "deploy_child_gauge(uint256,address,bytes32)"
+      ](
+        11,
+        "0x0000000000000000000000000000000000000001",
+        // abcd bytes32()
+        "0x6162636400000000000000000000000000000000000000000000000000000000",
+      )
+      // doesn't seem to produce the event
+      const contractReceipt = await gaugeDeployTx.wait()
+      console.log("receipt: ", contractReceipt)
+      const event = contractReceipt.events?.find(
+        (event) => event.event === "DeployedGauge",
+      )
+      console.log("event: ", event)
+      const implementationAddr = event?.args!["_implementation"]
+      console.log(implementationAddr)
+      expect(implementationAddr).to.be.eq(rootGauge.address)
     })
   })
 })

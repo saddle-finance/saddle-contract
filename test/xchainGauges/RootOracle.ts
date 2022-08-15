@@ -50,6 +50,7 @@ describe("RootOracle", () => {
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
   const WEEK = 86400 * 7
   const MAXTIME = 86400 * 365 * 4
+  const anyCallAddress = "0xC10Ef9F491C9B59f936957026020C321651ac078"
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -83,11 +84,11 @@ describe("RootOracle", () => {
       )
 
       // Deploy anycallTranslator
-      const anyCallAddress = "0xC10Ef9F491C9B59f936957026020C321651ac078"
       const anyCallTranslatorFactory = await ethers.getContractFactory(
         "AnyCallTranslator",
       )
       anycallTranslator = (await anyCallTranslatorFactory.deploy(
+        users[0],
         anyCallAddress,
       )) as AnyCallTranslator
 
@@ -107,7 +108,7 @@ describe("RootOracle", () => {
         (
           await ethers.getContract("VeSDLRewards")
         ).address,
-        ZERO_ADDRESS,
+        anyCallAddress,
       )) as RootOracle
     },
   )
@@ -136,7 +137,12 @@ describe("RootOracle", () => {
 
   describe("Initialize RootOracle", () => {
     it(`Successfully initializes`, async () => {
-      expect(await rootOracle.callProxy()).to.eq(ZERO_ADDRESS)
+      expect(await rootOracle.callProxy()).to.eq(anyCallAddress)
     })
+    // it(`Successfully calls push()`, async () => {
+    //   await rootOracle
+    //     .connect(anycallTranslator.address)
+    //     ["push(uint256)"](42161, { from: anycallTranslator.address })
+    // })
   })
 })

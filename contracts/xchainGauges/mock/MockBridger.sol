@@ -38,10 +38,10 @@ contract MockBridger {
 
     constructor(
     ) {
-        // approve token transfer to gateway
-        IERC20 sdlToken = IERC20(SDL);
-        // TODO: doesn't allow for safeApprove?
-        assert(sdlToken.approve(ARB_GATEWAY, MAX_UINT256));
+        // // approve token transfer to gateway
+        // IERC20 sdlToken = IERC20(SDL);
+        // // TODO: doesn't allow for safeApprove?
+        // assert(sdlToken.approve(ARB_GATEWAY, MAX_UINT256));
         approved[SDL] = true;
     }
 
