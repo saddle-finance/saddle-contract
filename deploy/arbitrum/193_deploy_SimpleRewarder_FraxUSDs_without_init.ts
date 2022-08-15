@@ -1,5 +1,3 @@
-import { expect } from "chai"
-import { BigNumber } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 
@@ -18,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await save("SimpleRewarder_SPA2", result)
 
-    // init() method is called separately 
+    // init() method is called separately
     /*
     const PID = 5
     const lpToken = (await get("SaddleFRAXUSDsMetaPoolLPToken")).address
