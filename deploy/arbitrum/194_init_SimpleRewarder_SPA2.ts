@@ -9,7 +9,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   if ((await getOrNull("SimpleRewarder_SPA2")) != null) {
-
     const PID = 5
     const lpToken = (await get("SaddleFRAXUSDsMetaPoolLPToken")).address
     const rewardToken = "0x5575552988A3A80504bBaeB1311674fCFd40aD4B" // SPA token
@@ -37,7 +36,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "init",
       data,
     )
-    
   }
 }
 export default func
