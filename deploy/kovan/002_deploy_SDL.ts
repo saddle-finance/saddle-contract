@@ -9,11 +9,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const unlockPeriod = isTestNetwork(await getChainId()) ? 0 : 7890000 // 3 months in seconds
 
+  /*
   await deploy("SDL", {
     from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
     args: [deployer, unlockPeriod, (await get("Vesting")).address],
+  })
+  */
+
+  // using vacuous address for vesting contract
+  await deploy("SDL", {
+    from: deployer,
+    log: true,
+    skipIfAlreadyDeployed: true,
+    args: [deployer, unlockPeriod, "0x0000000000000000000000000000000000000001"],
   })
 }
 export default func

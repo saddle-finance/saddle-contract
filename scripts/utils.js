@@ -31,6 +31,12 @@ const DEPLOYMENTS_TO_NETWORK = {
     explorerApi: "https://api-ropsten.etherscan.io",
     apiKeyName: "ETHERSCAN_API",
   },
+  kovan: {
+    id: 42,
+    test: true,
+    explorerApi: "https://api-kovan.etherscan.io",
+    apiKeyName: "ETHERSCAN_API",
+  },
   localhost: { id: 31337, test: true },
 }
 
