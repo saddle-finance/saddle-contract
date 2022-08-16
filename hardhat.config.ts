@@ -48,6 +48,7 @@ let config: HardhatUserConfig = {
     },
     kovan: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.KOVAN] + process.env.ALCHEMY_API_KEY,
+      chainId: 42,
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
@@ -232,6 +233,7 @@ let config: HardhatUserConfig = {
       2221: 0, // use the same address on kava testnet
       2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
+      42: 0 // use the same address on kovan
     },
     libraryDeployer: {
       default: 1, // use a different account for deploying libraries on the hardhat network
@@ -244,6 +246,7 @@ let config: HardhatUserConfig = {
       2221: 0, // use the same address on kava testnet
       2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
+      42: 0 // use the same address on kovan
     },
     multisig: {
       default: 0,
@@ -284,6 +287,10 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
     },
     kava_mainnet: {
       ...config.networks?.kava_mainnet,
+      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
+    },
+    kovan: {
+      ...config.networks?.kovan,
       accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
     },
   }
