@@ -46,6 +46,13 @@ let config: HardhatUserConfig = {
       },
       deploy: ["./deploy/ropsten/"],
     },
+    kovan: {
+      url: ALCHEMY_BASE_URL[CHAIN_ID.KOVAN] + process.env.ALCHEMY_API_KEY,
+      accounts: {
+        mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
+      },
+      deploy: ["./deploy/kovan/"],
+    },
     arbitrum_testnet: {
       url:
         ALCHEMY_BASE_URL[CHAIN_ID.ARBITRUM_TESTNET] +
