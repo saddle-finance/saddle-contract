@@ -84,11 +84,12 @@ describe("AnycallTranslator", () => {
         data,
       )
       const contractReceipt = await gaugeDeployTx.wait()
-      console.log("receipt: ", contractReceipt.events)
-      const event = contractReceipt.events?.find(
-        (event) => event.event === "NewMsg",
-      )
-      console.log("event: ", event)
+      console.log("receipt: ", contractReceipt)
+      console.log("result: ", await anycallTranslator.dataResult())
+      // const event = contractReceipt.events?.find(
+      //   (event) => event.event === "NewMsg",
+      // )
+      // console.log("event: ", event)
     })
   })
 })

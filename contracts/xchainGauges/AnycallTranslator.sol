@@ -28,6 +28,8 @@ interface IGaugeFactory {
 contract AnyCallTranslator {
     // consts
     address public owneraddress;
+    bytes public dataResult;
+    string public selector;
     // TODO: maybe dont need to save this var
     address private anycallExecutor;
     address private anycallContract;
@@ -69,18 +71,12 @@ contract AnyCallTranslator {
     }
 
     function anyExecute(bytes calldata data) external returns (bool success, bytes memory result){  
+        // Get address of anycallExecutor
         (address _from,,) = IAnycallExecutor(anycallExecutor).context();
-        // Messages should only be accepted if they are from this contract
-        // ChainId check should not be neccessary as salt is private
+        // Check that caller is verified
         require(_from == address(this), "AnycallClient: wrong context");
-        // TODO: function selectors will be the same for child and root, have to find another way to select how to decode
-        // bytes4 selector = abi.decode(data[:4], (bytes4));
-        // Decode selector to string
-        
-        // (string memory message) = abi.decode(data, (uint256, bytes32));
-        emit NewMsg(data);
-        success=true;
-        result="";
+        // Pass encoded function call to gauge factory
+        (success, result) = GaugeFactory.call(data);
         return(success, result);
     }
 }
