@@ -3,13 +3,15 @@ import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
-  ChildGaugeFactory,
   LPToken,
   RewardForwarder,
   AnyCallTranslator,
   ChildGauge,
   GenericERC20,
   MockAnyCall,
+  RootGaugeFactory,
+  MockBridger,
+  RootGauge,
 } from "../../build/typechain"
 
 import { BIG_NUMBER_1E18, ZERO_ADDRESS } from "../testUtils"
@@ -28,9 +30,10 @@ describe("AnycallTranslator", () => {
   let testToken: LPToken
   let firstGaugeToken: GenericERC20
   let lpTokenFactory: ContractFactory
-  let childGaugeFactory: ChildGaugeFactory
+  let rootGaugeFactory: RootGaugeFactory
   let anycallTranslator: AnyCallTranslator
-  let childGauge: ChildGauge
+  let mockBridger: MockBridger
+  let rootGauge: RootGauge
 
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -58,6 +61,41 @@ describe("AnycallTranslator", () => {
       )) as AnyCallTranslator
 
       await mockAnycall.setanyCallTranslator(anycallTranslator.address)
+
+      // **** Setup rootGauge Factory ****
+
+      const rootGaugeFactoryFactory = await ethers.getContractFactory(
+        "RootGaugeFactory",
+      )
+      rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
+        anycallTranslator.address,
+        users[0],
+      )) as RootGaugeFactory
+
+      const mockBridgerFactory = await ethers.getContractFactory("MockBridger")
+      mockBridger = (await mockBridgerFactory.deploy()) as MockBridger
+      // Set Bridger to mock bridger
+      await rootGaugeFactory.set_bridger(1, mockBridger.address)
+
+      // Root Gauge Implementation
+      const gaugeImplementationFactory = await ethers.getContractFactory(
+        "RootGauge",
+      )
+      rootGauge = (await gaugeImplementationFactory.deploy(
+        (
+          await ethers.getContract("SDL")
+        ).address,
+        (
+          await ethers.getContract("GaugeController")
+        ).address,
+        (
+          await ethers.getContract("Minter")
+        ).address,
+      )) as RootGauge
+      await rootGaugeFactory.set_implementation(rootGauge.address)
+
+      // Set Gauge Facotory in AnycallTranslator
+      await anycallTranslator.setGaugeFactory(rootGaugeFactory.address)
     },
   )
 
@@ -67,6 +105,10 @@ describe("AnycallTranslator", () => {
 
   describe("Initialize AnycallTranslator", () => {
     it(`Successfully calls anycall execute`, async () => {
+      // ensure Root Factory is setup
+      console.log("bridger", rootGaugeFactory.get_bridger(1))
+      console.log("implementation", rootGaugeFactory.get_implementation())
+
       let ABI = ["function deploy_gauge(uint256 _chain_id, bytes32 _salt)"]
       let iface = new ethers.utils.Interface(ABI)
       const data = iface.encodeFunctionData("deploy_gauge", [
@@ -74,22 +116,22 @@ describe("AnycallTranslator", () => {
         "0x6162636400000000000000000000000000000000000000000000000000000000",
       ])
 
-      //   const data = ethers.utils.defaultAbiCoder.encode(
-      //     ["bytes", "uint256", "bytes"],
-      //     ["deploy_gauge(uint256,bytes32)", 11, "0x0"],
-      //   )
-      //   ethers.utils.encodeInterface(ABC).encodeFunctionData("deploy_gauge", [
       const gaugeDeployTx = await mockAnycall.callAnyExecute(
         anycallTranslator.address,
         data,
       )
       const contractReceipt = await gaugeDeployTx.wait()
-      console.log("receipt: ", contractReceipt)
+      // console.log("receipt: ", contractReceipt)
       console.log("result: ", await anycallTranslator.dataResult())
-      // const event = contractReceipt.events?.find(
-      //   (event) => event.event === "NewMsg",
-      // )
-      // console.log("event: ", event)
+      const event = contractReceipt.events?.find(
+        (event) => event.event === "successMsg",
+      )
+      console.log("successMsg: ", event)
+      const event2 = contractReceipt.events?.find(
+        (event) => event.event === "resultMsg",
+      )
+      console.log("resultMsg: ", event2)
+      console.log("gauge count: ", await rootGaugeFactory.get_gauge_count(1))
     })
   })
 })

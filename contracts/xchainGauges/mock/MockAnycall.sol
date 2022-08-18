@@ -11,6 +11,9 @@ contract MockAnyCall {
 
     address public anyCallTranslator;
 
+    event successMsg(bool);
+    event resultMsg(bytes);
+
     function anyCall(
         address _to,
         bytes memory _data,
@@ -23,8 +26,10 @@ contract MockAnyCall {
         anyCallTranslator = _anyCallTranslator;
     }
 
-    function callAnyExecute(address anycallTranslator, bytes calldata _data) external {
-        IAnyCallTranslator(anycallTranslator).anyExecute(_data);
+    function callAnyExecute(address anycallTranslator, bytes calldata _data) external returns(bool success, bytes memory result) {
+        (success, )= IAnyCallTranslator(anycallTranslator).anyExecute(_data);
+        emit successMsg(success);
+        emit resultMsg(result);
     }
 
     function context() external view returns (address from, uint256 fromChainID, uint256 nonce){
