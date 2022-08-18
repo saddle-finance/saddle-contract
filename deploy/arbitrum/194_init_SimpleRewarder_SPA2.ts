@@ -8,9 +8,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, execute, get, getOrNull, save, read } = deployments
   const { deployer } = await getNamedAccounts()
 
-  // waiting on input from Sperax on rate/second
-  return
-
   if ((await getOrNull("SimpleRewarder_SPA2")) != null) {
     const PID = 5
     const lpToken = (await get("SaddleFRAXUSDsMetaPoolLPToken")).address
