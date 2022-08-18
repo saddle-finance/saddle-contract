@@ -45,28 +45,23 @@ contract ChildOracle {
         );
     }
     // TODO: should return uint256
-    function balanceOf(address _user) external view returns(int128){
-        // TODO: memory or storage here? same for rest in contract 
+    function balanceOf(address _user) external view returns(uint256){
+        // memory as this function is a view
         Point memory lastPoint = userPoints[_user];
-        // original lastPoint.bias -= lastPoint.slope * (block.timestamp - lastPoint.ts));
         lastPoint.bias -= lastPoint.slope * int128(int(block.timestamp - lastPoint.ts));
         if(lastPoint.bias < 0 ){
             lastPoint.bias = 0;
         }
-        // TODO: explicit type conversion not allowed from int128 to uint256
-        // original: return uint256(lastPoint.bias);
-        return(lastPoint.bias);
+        return(uint256(uint128(lastPoint.bias)));
     }
 
-    // TODO: should return uint256
-    function totatlSupply() external view returns(int128){
+    function totatlSupply() external view returns(uint256){
         Point memory lastPoint = globalPoint;
         lastPoint.bias -= lastPoint.slope * int128(int(block.timestamp - lastPoint.ts));
         if(lastPoint.bias < 0 ){
             lastPoint.bias = 0;
         }
-        // original return uint256(lastPoint.bias);
-        return(lastPoint.bias);
+        return(uint256(uint128(lastPoint.bias)));
     }
 
     function recieve(Point memory _userPoint, Point memory _globalPoint, address _user) external {

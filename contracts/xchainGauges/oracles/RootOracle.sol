@@ -74,7 +74,6 @@ contract RootOracle {
         );
     }
 
-    // function push without _user given
     function push(uint256 _chainId) external {
         require(msg.sender == callProxy, "not translator");
         address user = msg.sender;

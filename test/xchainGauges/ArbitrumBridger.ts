@@ -32,6 +32,7 @@ describe("ArbitrumBridger", () => {
   let arbitrumBridger: ArbitrumBridger
   let anycallTranslator: AnyCallTranslator
   let childGauge: ChildGauge
+  let SDLAddr: string
 
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
   const gasLimit = 1000000
@@ -47,6 +48,9 @@ describe("ArbitrumBridger", () => {
       users = await Promise.all(
         signers.map(async (signer) => signer.getAddress()),
       )
+      const SDLAddr = (await ethers.getContract("SDL")).address
+      console.log("SDLAddr: ", SDLAddr)
+      // 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
 
       // Deploy child gauge
 
@@ -57,6 +61,9 @@ describe("ArbitrumBridger", () => {
         gasLimit,
         gasPrice,
         maxSubmissionCost,
+        (
+          await ethers.getContract("SDL")
+        ).address,
       )) as ArbitrumBridger
     },
   )
@@ -83,8 +90,9 @@ describe("ArbitrumBridger", () => {
     })
   })
 
-  describe("Initialize Arbitrum Bridger", () => {
+  describe("Arbitrum Bridger", () => {
     it(`Successfully initializes with cost`, async () => {
+      console.log(SDLAddr)
       expect(await arbitrumBridger.cost()).to.eq(
         gasLimit * gasPrice + maxSubmissionCost,
       )
