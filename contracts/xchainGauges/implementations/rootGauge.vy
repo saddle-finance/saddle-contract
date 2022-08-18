@@ -10,10 +10,6 @@ interface Bridger:
     def cost() -> uint256: view
     def bridge(_token: address, _destination: address, _amount: uint256): payable
 
-interface CRV20:
-    def rate() -> uint256: view
-    def future_epoch_time_write() -> uint256: nonpayable
-
 interface ERC20:
     def balanceOf(_account: address) -> uint256: view
     def approve(_account: address, _value: uint256): nonpayable
@@ -29,6 +25,8 @@ interface Factory:
 
 interface Minter:
     def mint(_gauge: address): nonpayable
+    def rate() -> uint256: view
+    def future_epoch_time_write() -> uint256: view
 
 
 struct InflationParams:
@@ -42,7 +40,7 @@ RATE_DENOMINATOR: constant(uint256) = 10 ** 18
 RATE_REDUCTION_COEFFICIENT: constant(uint256) = 1189207115002721024  # 2 ** (1/4) * 1e18
 RATE_REDUCTION_TIME: constant(uint256) = YEAR
 
-CRV: immutable(address)
+SDL: immutable(address)
 GAUGE_CONTROLLER: immutable(address)
 MINTER: immutable(address)
 
@@ -59,11 +57,11 @@ is_killed: public(bool)
 
 
 @external
-def __init__(_crv_token: address, _gauge_controller: address, _minter: address):
+def __init__(_sdl_token: address, _gauge_controller: address, _minter: address):
     self.factory = 0x000000000000000000000000000000000000dEaD
 
     # assign immutable variables
-    CRV = _crv_token
+    SDL = _sdl_token
     GAUGE_CONTROLLER = _gauge_controller
     MINTER = _minter
 
@@ -82,12 +80,12 @@ def transmit_emissions():
     assert msg.sender == self.factory  # dev: call via factory
 
     Minter(MINTER).mint(self)
-    minted: uint256 = ERC20(CRV).balanceOf(self)
+    minted: uint256 = ERC20(SDL).balanceOf(self)
 
     assert minted != 0  # dev: nothing minted
     bridger: address = self.bridger
 
-    Bridger(bridger).bridge(CRV, self, minted, value=Bridger(bridger).cost())
+    Bridger(bridger).bridge(SDL, self, minted, value=Bridger(bridger).cost())
 
 
 @view
@@ -135,6 +133,7 @@ def user_checkpoint(_user: address) -> bool:
                 # calculate with old rate
                 emissions += weight * params.rate * (params.finish_time - period_time) / 10 ** 18
                 # update rate
+                # TODO: for the updated rate do we call our minter.commit_next_emission()? or just take the commited_rate()?
                 params.rate = params.rate * RATE_DENOMINATOR / RATE_REDUCTION_COEFFICIENT
                 # calculate with new rate
                 emissions += weight * params.rate * (period_time + WEEK - params.finish_time) / 10 ** 18
@@ -163,8 +162,8 @@ def set_killed(_is_killed: bool):
         self.inflation_params.rate = 0
     else:
         self.inflation_params = InflationParams({
-            rate: CRV20(CRV).rate(),
-            finish_time: CRV20(CRV).future_epoch_time_write()
+            rate: Minter(MINTER).rate(),
+            finish_time: Minter(MINTER).future_epoch_time_write()
         })
         self.last_period = block.timestamp / WEEK
     self.is_killed = _is_killed
@@ -178,8 +177,8 @@ def update_bridger():
     """
     # reset approval
     bridger: address = Factory(self.factory).get_bridger(self.chain_id)
-    ERC20(CRV).approve(self.bridger, 0)
-    ERC20(CRV).approve(bridger, MAX_UINT256)
+    ERC20(SDL).approve(self.bridger, 0)
+    ERC20(SDL).approve(bridger, MAX_UINT256)
     self.bridger = bridger
 
 
@@ -195,12 +194,12 @@ def initialize(_bridger: address, _chain_id: uint256):
     self.factory = msg.sender
 
     inflation_params: InflationParams = InflationParams({
-        rate: CRV20(CRV).rate(),
-        finish_time: CRV20(CRV).future_epoch_time_write()
+        rate: Minter(MINTER).rate(),
+        finish_time: Minter(MINTER).future_epoch_time_write()
     })
     assert inflation_params.rate != 0
 
     self.inflation_params = inflation_params
     self.last_period = block.timestamp / WEEK
 
-    ERC20(CRV).approve(_bridger, MAX_UINT256)
+    ERC20(SDL).approve(_bridger, MAX_UINT256)

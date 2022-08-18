@@ -67,7 +67,7 @@ WEEK: constant(uint256) = 86400 * 7
 VERSION: constant(String[8]) = "v0.1.0"
 
 
-CRV: immutable(address)
+SDL: immutable(address)
 FACTORY: immutable(address)
 
 
@@ -112,17 +112,17 @@ inflation_rate: public(HashMap[uint256, uint256])
 
 
 @external
-def __init__(_crv_token: address, _factory: address):
+def __init__(_sdl_token: address, _factory: address):
     self.lp_token = 0x000000000000000000000000000000000000dEaD
 
-    CRV = _crv_token
+    SDL = _sdl_token
     FACTORY = _factory
 
 
 @internal
 def _checkpoint(_user: address):
     """
-    @notice Checkpoint a user calculating their CRV entitlement
+    @notice Checkpoint a user calculating their SDL entitlement
     @param _user User address
     """
     period: uint256 = self.period
@@ -142,6 +142,7 @@ def _checkpoint(_user: address):
                 # we don't have to worry about crossing inflation epochs
                 # and if we miss any weeks, those weeks inflation rates will be 0 for sure
                 # but that means no one interacted with the gauge for that long
+                # TODO: is this the same calculation for us?
                 integrate_inv_supply += self.inflation_rate[prev_week_time / WEEK] * 10 ** 18 * dt / working_supply
 
             if week_time == block.timestamp:
@@ -149,12 +150,12 @@ def _checkpoint(_user: address):
             prev_week_time = week_time
             week_time = min(week_time + WEEK, block.timestamp)
 
-    # check CRV balance and increase weekly inflation rate by delta for the rest of the week
-    crv_balance: uint256 = ERC20(CRV).balanceOf(self)
-    if crv_balance != 0:
+    # check SDL balance and increase weekly inflation rate by delta for the rest of the week
+    sdl_balance: uint256 = ERC20(SDL).balanceOf(self)
+    if sdl_balance != 0:
         current_week: uint256 = block.timestamp / WEEK
-        self.inflation_rate[current_week] += crv_balance / ((current_week + 1) * WEEK - block.timestamp)
-        ERC20(CRV).transfer(FACTORY, crv_balance)
+        self.inflation_rate[current_week] += sdl_balance / ((current_week + 1) * WEEK - block.timestamp)
+        ERC20(SDL).transfer(FACTORY, sdl_balance)
 
     period += 1
     self.period = period
@@ -170,7 +171,8 @@ def _checkpoint(_user: address):
 @internal
 def _update_liquidity_limit(_user: address, _user_balance: uint256, _total_supply: uint256):
     """
-    @notice Calculate working balances to apply amplification of CRV production.
+    TODO: change the below
+    @notice Calculate working balances to apply amplification of SDL production.
     @dev https://resources.curve.fi/guides/boosting-your-crv-rewards#formula
     @param _user The user address
     @param _user_balance User's amount of liquidity (LP tokens)
