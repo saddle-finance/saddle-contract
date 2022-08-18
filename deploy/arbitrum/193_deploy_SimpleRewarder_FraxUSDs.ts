@@ -50,7 +50,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
   
   // check if rate is set correctly 
-  expect(await read("SimpleRewarder_SPA2", "ratePerSecond",)).to.eq("1286008200000000000")
+  expect(await read("SimpleRewarder_SPA2", "rewardPerSecond",)).to.eq("1286008200000000000")
   
 }
 
