@@ -1,4 +1,4 @@
-import { assert, expect } from "chai"
+import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     })
     await save("SimpleRewarder_SPA2", result)
   }
-  
+
   const PID = 5
   const lpToken = (await get("SaddleFRAXUSDsMetaPoolLPToken")).address
   const rewardToken = "0x5575552988A3A80504bBaeB1311674fCFd40aD4B" // SPA token
@@ -40,7 +40,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
 
   // skip if already initialized
-  if (await read("SimpleRewarder_SPA2", "rewardToken",) != rewardToken) {
+  if ((await read("SimpleRewarder_SPA2", "rewardToken")) != rewardToken) {
     await execute(
       "SimpleRewarder_SPA2",
       { from: deployer, log: true },
@@ -48,10 +48,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       data,
     )
   }
-  
-  // check if rate is set correctly 
-  expect(await read("SimpleRewarder_SPA2", "rewardPerSecond",)).to.eq("1286008200000000000")
-  
+
+  // check if rate is set correctly
+  expect(await read("SimpleRewarder_SPA2", "rewardPerSecond")).to.eq(
+    "1286008200000000000",
+  )
 }
 
 export default func
