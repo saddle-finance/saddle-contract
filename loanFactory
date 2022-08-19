@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.6.12;
+//change to different clones
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/proxy/Clones.sol";
+import "./usdLoans.sol";
+
+
+
+contract loanFactory {
+
+    address immutable liquidLoansImplementation;
+   
+    event contractCreation(address cloneAddress, address manager, address pairedPool);
+
+    constructor() public {
+        liquidLoansImplementation = address (new usdLoans());
+        
+    }
+
+    function createLoanContract(address price1, address price2) public {
+        address clone = Clones.clone(liquidLoansImplementation);
+        //address 
+        usdLoans(clone).initialize();
+        usdLoans(clone).transferOwnership(msg.sender);
+        emit contractCreation(clone, msg.sender, address [] priceFeeds);
+    }
+
+    
+
+}
