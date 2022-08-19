@@ -5,34 +5,31 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-4.2.0/token/ERC20/utils/SafeERC20.sol";
 
-interface IGatewayRouter {
-    function getGateWay(address _token) external view returns (address);
+interface IOptimismStandardBridge {
 
-    function outboundTransfer(
-        address _token,
+    function depositERC20To(
+        address _l1token,
+        address _l2token,
         address _to,
         uint256 _amount,
-        uint256 _maxGas,
-        uint256 _gasPriceBid,
-        bytes calldata _data // _max_submission_cost, _extra_data
+        uint32 l2Gas,
+        bytes calldata _data
     ) external payable;
 }
 
 contract ArbitrumBridger {
     // consts
     address private SDL;
-    // Arbitrum: L1 ERC20 Gateway
-    address private constant ARB_GATEWAY =
-        0xa3A7B6F88361F48403514059F1F16C8E78d60EeC;
-    address private constant ARB_GATEWAY_ROUTER =
-        0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef;
+    address private OP_SDL;
+    address private constant OPTIMISM_L1_STANDARD_BRIDGE =
+        0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1;
+    address private constant OPTIMISM_L2_STANDARD_BRIDGE =
+        0x4200000000000000000000000000000000000010;
     uint256 private constant MAX_UINT256 = 2**256 - 1;
     address private constant ZERO_ADDRESS =
         0x0000000000000000000000000000000000000000;
     // vars
-    uint256 private gasLimit;
-    uint256 private gasPrice;
-    uint256 private maxSubmissionCost;
+    uint32 private gasLimit;
 
     mapping(address => bool) public approved;
 
@@ -44,31 +41,28 @@ contract ArbitrumBridger {
 
     event TransferOwnership(address oldOwner, address newOwner);
 
-    event UpdateSubmissionData(
-        uint256[3] oldSubmissionData,
-        uint256[3] newSubmissionData
+    event UpdateGasLimit(
+        uint32 oldGasLimit,
+        uint32 newGasLimit
     );
 
     constructor(
-        uint256 _gasLimit,
-        uint256 _gasPrice,
-        uint256 _maxSubmissionCost,
-        address _SDL
+        uint32 _gasLimit,
+        address _SDL,
+        address _OP_SDL
     ) {
         SDL = _SDL;
-        // construct submission data
+        OP_SDL = _OP_SDL;
         gasLimit = _gasLimit;
-        gasPrice = _gasPrice;
-        maxSubmissionCost = _maxSubmissionCost;
-        emit UpdateSubmissionData(
-            [uint256(0), uint256(0), uint256(0)],
-            [gasLimit, gasLimit, maxSubmissionCost]
+        emit UpdateGasLimit(
+            uint32(0),
+            gasLimit
         );
 
         // approve token transfer to gateway
         IERC20 sdlToken = IERC20(SDL);
         // TODO: doesn't allow for safeApprove?
-        assert(sdlToken.approve(ARB_GATEWAY, MAX_UINT256));
+        assert(sdlToken.approve(OPTIMISM_L1_STANDARD_BRIDGE, MAX_UINT256));
         approved[SDL] = true;
         owner = msg.sender;
         emit TransferOwnership(ZERO_ADDRESS, msg.sender);
@@ -79,48 +73,41 @@ contract ArbitrumBridger {
         address _to,
         uint256 _amount
     ) external payable {
+
         // TODO: doesn't allow for safeTransferFrom?
         assert(IERC20(_token).transferFrom(msg.sender, address(this), _amount));
         if (_token != SDL && !approved[_token]) {
             // TODO: doesn't allow for safeApprove?
             assert(
                 IERC20(_token).approve(
-                    IGatewayRouter(ARB_GATEWAY_ROUTER).getGateWay(SDL),
+                    OPTIMISM_L1_STANDARD_BRIDGE,
                     MAX_UINT256
                 )
             );
             approved[_token] = true;
         }
-        IGatewayRouter(ARB_GATEWAY_ROUTER).outboundTransfer{
-            value: gasLimit * gasPrice + maxSubmissionCost
-        }(
-            _token,
-            _to,
-            _amount,
-            gasLimit,
-            gasPrice,
-            abi.encode(maxSubmissionCost, new bytes(0))
-        );
+        IOptimismStandardBridge(OPTIMISM_L1_STANDARD_BRIDGE).depositERC20To(
+        SDL,   
+        OP_SDL,      
+        _to, 
+        _amount,                 
+        2000000,                                   
+        "0x");
     }
 
     function cost() external view returns (uint256) {
-        // gasLimit * gasPrice + maxSubmissionCost
-        return (gasLimit * gasPrice + maxSubmissionCost);
+        return (gasLimit );
     }
 
-    function setSubmissionData(
-        uint256 _gasLimit,
-        uint256 _gasPrice,
-        uint256 _maxSubmissionCost
+    function setGasLimit(
+        uint32 _gasLimit
     ) external {
         require(msg.sender == owner, "error msg");
-        emit UpdateSubmissionData(
-            [gasLimit, gasPrice, maxSubmissionCost],
-            [_gasLimit, _gasPrice, _maxSubmissionCost]
+        emit UpdateGasLimit(
+            gasLimit,
+            _gasLimit
         );
         gasLimit = _gasLimit;
-        gasPrice = _gasPrice;
-        maxSubmissionCost = _maxSubmissionCost;
     }
 
     function commitTransferOwnership(address _futureOwner) external {

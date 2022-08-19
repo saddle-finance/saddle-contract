@@ -21,7 +21,6 @@ contract RewardForwarder {
     }
 
     function depositRewardToken(address _rewardToken) external {
-        //TODO: can this really be a view? Is recommened to be
         IGauge(GAUGE).deposit_reward_token(
             _rewardToken,
             IERC20(_rewardToken).balanceOf(address(this))

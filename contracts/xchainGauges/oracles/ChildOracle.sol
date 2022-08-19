@@ -44,9 +44,8 @@ contract ChildOracle {
             msg.sender
         );
     }
-    // TODO: should return uint256
+
     function balanceOf(address _user) external view returns(uint256){
-        // memory as this function is a view
         Point memory lastPoint = userPoints[_user];
         lastPoint.bias -= lastPoint.slope * int128(int(block.timestamp - lastPoint.ts));
         if(lastPoint.bias < 0 ){

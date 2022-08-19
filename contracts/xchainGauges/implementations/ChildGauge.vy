@@ -171,9 +171,6 @@ def _checkpoint(_user: address):
 @internal
 def _update_liquidity_limit(_user: address, _user_balance: uint256, _total_supply: uint256):
     """
-    TODO: change the below
-    @notice Calculate working balances to apply amplification of SDL production.
-    @dev https://resources.curve.fi/guides/boosting-your-crv-rewards#formula
     @param _user The user address
     @param _user_balance User's amount of liquidity (LP tokens)
     @param _total_supply Total amount of liquidity (LP tokens)
