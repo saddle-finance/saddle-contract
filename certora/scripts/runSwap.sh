@@ -1,9 +1,15 @@
+
 if [[ "$1" ]]
 then
     RULE="--rule $1"
 fi
 certoraRun \
-    certora/harness/SwapHarness.sol\
+    certora/harness/SwapHarness.sol \
+    certora/helpers/DummyERC20Impl.sol \
+    certora/helpers/DummyERC20A.sol \
+    certora/helpers/DummyERC20B.sol \
+    certora/munged/LPToken.sol \
+    --solc solc-0.6.12 \
     --verify SwapHarness:certora/spec/Swap.spec \
     --optimistic_loop \
     --cache saddle \
@@ -11,4 +17,5 @@ certoraRun \
     --staging \
     --settings -enableEqualitySaturation=false \
     $RULE \
-    --msg "Swap rules: $1"
+    --send_only \
+    --msg $1 \
