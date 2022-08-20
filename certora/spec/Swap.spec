@@ -1,3 +1,5 @@
+import "../helpers/erc20.spec"
+
 ////////////////////////////////////////////////////////////////////////////
 //                                Methods                                 //
 ////////////////////////////////////////////////////////////////////////////
@@ -52,6 +54,16 @@ methods {
 
     // normal functions
     getTokenBalance(uint8) returns(uint256) envfree
+    owner() returns(address) envfree
+
+    // harness functions
+    getSwapFee() returns(uint256) envfree
+    getAdminFee() returns(uint256) envfree
+
+    // burnableERC20
+    burnFrom(address,uint256) => DISPATCHER(true)
+    mint(address,uint256) => DISPATCHER(true)
+    initialize(string,string) => DISPATCHER(true)
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -193,7 +205,16 @@ invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
 /* 
     Only admin can set swap and admin fees
 */
+rule onlyAdminCanSetFees(method f) {
+    uint256 swapFeeBefore = getSwapFee();
 
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 swapFeeAfter = getSwapFee();
+
+    assert swapFeeAfter != swapFeeBefore => f.selector == setSwapFee(uint256).selector && e.msg.sender == owner();
+}
 
 
 
