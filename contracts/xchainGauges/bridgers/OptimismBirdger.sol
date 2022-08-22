@@ -91,7 +91,7 @@ contract ArbitrumBridger {
         OP_SDL,      
         _to, 
         _amount,                 
-        2000000,                                   
+        gasLimit,                                   
         "0x");
     }
 

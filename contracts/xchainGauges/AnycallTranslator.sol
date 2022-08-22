@@ -88,26 +88,29 @@ contract AnyCallTranslator {
             // 0x0 is the selector for the fallback function
             // Fallback function is not implemented
              // Pass encoded function call to gauge factory, require ensures that the call is successful
-            (bool success, bytes memory returnedData) = gaugeFactory.delegatecall(data);
+            (bool success, bytes memory returnedData) = gaugeFactory.call(data);
             require(success, "Root Gauge Deploy Execution Failed");
             return (success, returnedData);
         }
-        if (selector == 0x6be320d2) { // "deploy_gauge(address, bytes32, address)"
+        else if (selector == 0x6be320d2) { // "deploy_gauge(address, bytes32, address)"
             // Child Gauge Facotry call
             // 0x0 is the selector for the fallback function
             // Fallback function is not implemented
              // Pass encoded function call to gauge factory, require ensures that the call is successful
-            (bool success, bytes memory returnedData) = gaugeFactory.delegatecall(data);
+            (bool success, bytes memory returnedData) = gaugeFactory.call(data);
             require(success, "Child Gauge Deploy Execution Failed");
             return (success, returnedData);
         }
-        if (selector == 0xc80fbe4e) { // "push(uint256 _chainId, address _user)"
+        else if (selector == 0xc80fbe4e) { // "push(uint256 _chainId, address _user)"
             // Oracle Push Call
             // 0x0 is the selector for the fallback function
             // Fallback function is not implemented
-            (bool success, bytes memory returnedData) = oracleContract.delegatecall(data);
+            (bool success, bytes memory returnedData) = oracleContract.call(data);
             require(success, "Oracle Push Execution Failed");
             return (success, returnedData);
+        }
+        else {
+            revert("Unknown selector");
         }
         
     }
