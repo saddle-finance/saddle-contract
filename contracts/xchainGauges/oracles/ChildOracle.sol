@@ -54,7 +54,7 @@ contract ChildOracle {
         return(uint256(uint128(lastPoint.bias)));
     }
 
-    function totatlSupply() external view returns(uint256){
+    function totalSupply() external view returns(uint256){
         Point memory lastPoint = globalPoint;
         lastPoint.bias -= lastPoint.slope * int128(int(block.timestamp - lastPoint.ts));
         if(lastPoint.bias < 0 ){

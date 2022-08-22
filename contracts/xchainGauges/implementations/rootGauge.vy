@@ -128,7 +128,7 @@ def user_checkpoint(_user: address) -> bool:
                 break
             period_time: uint256 = i * WEEK
             weight: uint256 = GaugeController(GAUGE_CONTROLLER).gauge_relative_weight(self, period_time)
-
+            
             if period_time <= params.finish_time and params.finish_time < period_time + WEEK:
                 # calculate with old rate
                 emissions += weight * params.rate * (params.finish_time - period_time) / 10 ** 18
