@@ -15,6 +15,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "Multicall",
     "Muticall2",
     "Muticall3",
+    "PoolRegsitry",
+    "MasterRegistry",
   ]
 
   if ((await getChainId()) === CHAIN_ID.KAVA_MAINNET) {
