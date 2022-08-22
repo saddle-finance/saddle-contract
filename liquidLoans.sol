@@ -7,14 +7,14 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./AggregatorV3Interface.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-contract liquidLoans is ERC20BurnableUpgradeable , OwnableUpgradeable{
+contract liquidLoans is ERC20BurnableUpgradeable , OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     AggregatorV3Interface internal priceFeed1;
     AggregatorV3Interface internal priceFeed2;
     
     event getloan(uint interest, uint amount, address recipient, uint lpLocked, uint _price1, uint _price2);
-    event repayloan(uint amount, uint payee, uint lpReleased);
+    event repayloan(uint amount, address payee, uint lpReleased);
 
 //those are placeholders for the real values
     address public treasury = 0xd744C8812362B9cEFe7D0D0198537F81841A9244;
@@ -45,7 +45,8 @@ contract liquidLoans is ERC20BurnableUpgradeable , OwnableUpgradeable{
     
 
        
-    function mintAndLock (address _to, uint256 amount, address pool) public {
+    function mintAndLock (uint256 amount, address pool) public {
+
        // require ();
         
         uint256 [] memory tokenArray = ISwap(swapAddress).calculateRemoveLiquidity(amount);
@@ -64,8 +65,8 @@ contract liquidLoans is ERC20BurnableUpgradeable , OwnableUpgradeable{
         
      
        
-        IERC20Upgradeable(lpAddress).approve(treasury, amount);
-        IERC20Upgradeable(lpAddress).transferFrom(msg.sender, treasury, amount);
+        IERC20Upgradeable(lpAddress).approve(address(this), amount);
+        IERC20Upgradeable(lpAddress).transferFrom(msg.sender, address(this), amount);
         
 //mint on spot, need to protect the erc20 contract
         accounting[msg.sender].owedBalance = usdPaid;
@@ -74,35 +75,60 @@ contract liquidLoans is ERC20BurnableUpgradeable , OwnableUpgradeable{
         _mint(msg.sender, usdPaid);
        
 
-        emit getloan(usdInterest, usdPaid, _to, amount, a, b);
+        emit getloan(usdInterest, usdPaid, msg.sender, amount, a, b);
 
     }
 
-    function burnAndUnlock (address token, uint256 amount, address _to) public {
-        require (tokenIndex < 2 && amount > 0);
-
-        if address == llUsd {
-            uint256 analogy = accounting[msg.sender].lpLocked.div(accounting[msg.sender].owedBalance);
-            uint256 LpToRelease = amount.mul(analogy);
-            IERC20Upgradeable(lpAddress).transferFrom(msg.sender, _to, LpToRelease);
-
-            _burn(token, amount);
-            
-            emit repayloan(amount, _to, 0);
-        } else {
-           //
-            emit repayloan(amount, _to, 0);
-        }
-
-
+    function burnAndUnlock (address token, uint256 amount) public {
+       
         
 
+        uint256 analogy = accounting[msg.sender].lpLocked.div(accounting[msg.sender].owedBalance);
 
+        if (token == llUsd) {
+            uint256 LpToRelease = amount.mul(analogy);
+            accounting[msg.sender].owedBalance = accounting[msg.sender].owedBalance.sub(amount);
+            accounting[msg.sender].lpLocked = accounting[msg.sender].lpLocked.sub(LpToRelease);
+            IERC20(llUsd).transfer(0x0000000000000000000000000000000000000000, amount);
 
-       
-    }
+            emit repayloan(amount, msg.sender, LpToRelease);
+        } else if (token == 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48) { 
+            int256 usdPrice = getLatestPrice1();
+            uint256 uPrice = uint(usdPrice);
+            uint256 converted = amount.mul(uPrice);
+            uint256 LpToRelease = converted.mul(analogy);
+            
+            accounting[msg.sender].owedBalance = accounting[msg.sender].owedBalance.sub(converted);
+            accounting[msg.sender].lpLocked = accounting[msg.sender].lpLocked.sub(LpToRelease);
 
-   
+            IERC20(token).transfer(address(this), converted);
+            IERC20(lpAddress).transfer(msg.sender, LpToRelease);
+
+            emit repayloan(converted, msg.sender, LpToRelease);
+        }
+
+        else if (token == 0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa) {
+            int256 usdPrice = getLatestPrice2();
+            uint256 uPrice = uint(usdPrice);
+            uint256 converted = amount.mul(uPrice);
+            uint256 LpToRelease = converted.mul(analogy);
+            
+            accounting[msg.sender].owedBalance = accounting[msg.sender].owedBalance.sub(converted);
+            accounting[msg.sender].lpLocked = accounting[msg.sender].lpLocked.sub(LpToRelease);
+
+            IERC20(token).transfer(address(this), converted);
+            IERC20(lpAddress).transfer(msg.sender, LpToRelease);
+            
+            emit repayloan(converted, msg.sender, LpToRelease);
+        }
+
+        else {
+            revert();
+        }
+
+        }
+    
+
 
     function getLatestPrice1() public view returns (int) {
         (
@@ -125,6 +151,8 @@ contract liquidLoans is ERC20BurnableUpgradeable , OwnableUpgradeable{
      }
 
 }
+
+     
 
 
 
