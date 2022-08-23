@@ -49,7 +49,7 @@ MINTER: immutable(address)
 chain_id: public(uint256)
 bridger: public(address)
 factory: public(address)
-name: public(string)
+name: public(String[32])
 inflation_params: public(InflationParams)
 
 last_period: public(uint256)
@@ -190,7 +190,7 @@ def update_bridger():
 
 
 @external
-def initialize(_bridger: address, _chain_id: uint256):
+def initialize(_bridger: address, _chain_id: uint256, _name: String[32]):
     """
     @notice Proxy initialization method
     """
@@ -198,6 +198,7 @@ def initialize(_bridger: address, _chain_id: uint256):
 
     self.chain_id = _chain_id
     self.bridger = _bridger
+    self.name = _name
     self.factory = msg.sender
 
     inflation_params: InflationParams = InflationParams({

@@ -118,21 +118,22 @@ describe("ChildGaugeFactory", () => {
     })
   })
   describe("Successfully deploys a root gauge", () => {
-    // TODO: when implementation has not been set yet thie deploy still happens,
+    // TODO: when implementation has not been set yet the deploy still happens,
     // in addition it happens with LP Token = Zero Address which is explicitly not allowed in the contract
-    it(`Successfully deploys a child gauge when call comes from the anycall translator`, async () => {
-      // ** below needs to be called from the anycallExecuter
-      // const tx = await childGaugeFactory
-      //   .connect(anycallTranslator.address)
-      //   ["deploy_gauge(address,bytes32)"](ZERO_ADDRESS, saltBytes)
-      // const txReceipt = await tx.wait()
-      // const deployEvent = txReceipt.events?.find(
-      //   (event) => event.event === "DeployedGauge",
-      // )
-      // console.log(deployEvent)
-      // expect(deployEvent?.args!["_implementation"]).to.eq(childGauge.address)
-      // expect()
-      // expect("AnyCall").to.be.include(tx.data)
+    it(`Successfully deploys a child gauge when call does not come from the anycall translator`, async () => {
+      console.log(await childGaugeFactory.get_implementation())
+      console.log(await childGaugeFactory.call_proxy())
+      // TODO: below fails typechain not cooperating
+      const tx = await childGaugeFactory[
+        "deploy_gauge(address,bytes32,String[32])"
+      ](MOCK_ADDRESS, saltBytes, "Test")
+
+      const txReceipt = await tx.wait()
+      const deployEvent = txReceipt.events?.find(
+        (event) => event.event === "DeployedGauge",
+      )
+      console.log(deployEvent)
+      expect(deployEvent?.args!["_implementation"]).to.eq(childGauge.address)
     })
   })
 })

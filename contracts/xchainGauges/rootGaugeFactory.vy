@@ -11,7 +11,7 @@ interface Bridger:
 
 interface RootGauge:
     def bridger() -> address: view
-    def initialize(_bridger: address, _chain_id: uint256): nonpayable
+    def initialize(_bridger: address, _chain_id: uint256, _name: String[32]): nonpayable
     def transmit_emissions(): nonpayable
 
 interface CallProxy:
@@ -43,6 +43,12 @@ event UpdateCallProxy:
 event UpdateImplementation:
     _old_implementation: address
     _new_implementation: address
+
+event TestDisplay:
+    _chain_id: uint256
+    _salt: bytes32
+    _name: String[32]
+
 
 
 call_proxy: public(address)
@@ -84,12 +90,13 @@ def transmit_emissions(_gauge: address):
 
 @payable
 @external
-def deploy_gauge(_chain_id: uint256, _salt: bytes32, _name: string) -> address:
+def deploy_gauge(_chain_id: uint256, _salt: bytes32, _name: String[32]) -> address:
     """
     @notice Deploy a root liquidity gauge
     @param _chain_id The chain identifier of the counterpart child gauge
     @param _salt A value to deterministically deploy a gauge
     """
+    log TestDisplay(_chain_id, _salt, _name)
     bridger: address = self.get_bridger[_chain_id]
     assert bridger != ZERO_ADDRESS  # dev: chain id not supported
 
@@ -112,7 +119,7 @@ def deploy_gauge(_chain_id: uint256, _salt: bytes32, _name: string) -> address:
 
 
 @external
-def deploy_child_gauge(_chain_id: uint256, _lp_token: address, _salt: bytes32, _name:string, _manager: address = msg.sender):
+def deploy_child_gauge(_chain_id: uint256, _lp_token: address, _salt: bytes32, _name:String[32], _manager: address = msg.sender):
     bridger: address = self.get_bridger[_chain_id]
     assert bridger != ZERO_ADDRESS  # dev: chain id not supported
 
@@ -123,7 +130,7 @@ def deploy_child_gauge(_chain_id: uint256, _lp_token: address, _salt: bytes32, _
             _salt,
             _name,
             _manager,
-            method_id=method_id("deploy_gauge(address,bytes32,string,address)")
+            method_id=method_id("deploy_gauge(address,bytes32,String[32],address)")
         ),
         ZERO_ADDRESS,
         _chain_id

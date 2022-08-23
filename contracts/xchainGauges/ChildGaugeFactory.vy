@@ -142,7 +142,7 @@ def mint_many(_gauges: address[32]):
 
 
 @external
-def deploy_gauge(_lp_token: address, _salt: bytes32, _name: string, _manager: address = msg.sender) -> address:
+def deploy_gauge(_lp_token: address, _salt: bytes32, _name: String[32], _manager: address = msg.sender) -> address:
     """
     @notice Deploy a liquidity gauge
     @param _lp_token The token to deposit in the gauge
@@ -167,7 +167,7 @@ def deploy_gauge(_lp_token: address, _salt: bytes32, _name: string, _manager: ad
         # issue a call to the root chain to deploy a root gauge
         CallProxy(self.call_proxy).anyCall(
             self,
-            _abi_encode(chain.id, _salt, _name, method_id=method_id("deploy_gauge(uint256,bytes32,string)")),
+            _abi_encode(chain.id, _salt, _name, method_id=method_id("deploy_gauge(uint256,bytes32,String[32])")),
             ZERO_ADDRESS,
             1
         )

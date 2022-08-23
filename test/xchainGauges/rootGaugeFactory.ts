@@ -142,26 +142,30 @@ describe("RootGaugeFactory", () => {
       await rootGaugeFactory.set_call_proxy(mockAnyCall.address)
       // set factory implementation
       await rootGaugeFactory.set_implementation(rootGauge.address)
-      // deploy root gauge (only a call to anycall translator, no events or counts change)
-      const gaugeDeployTx = await rootGaugeFactory[
-        "deploy_child_gauge(uint256,address,bytes32)"
-      ](
-        11,
+      // deploy root gauge (no mirrored gauge, just on mainnet)
+      // TODO: below fails for unknown reason
+      const gaugeDeployTx = await rootGaugeFactory.deploy_gauge(
         // mock non 0-address lp token
-        "0x0000000000000000000000000000000000000001",
+        "0x1B4ab394327FDf9524632dDf2f0F04F9FA1Fe2eC",
         // abcd bytes32()
         "0x6162636400000000000000000000000000000000000000000000000000000000",
+        // below show error but I believe it passes, typeschain is messed up
+        "Sample_Name",
       )
-      // doesn't seem to produce the event
-      // const contractReceipt = await gaugeDeployTx.wait()
+
+      const contractReceipt = await gaugeDeployTx.wait()
       // console.log("receipt: ", contractReceipt.events)
-      // const event = contractReceipt.events?.find(
-      //   (event) => event.event === "DeployedGauge",
-      // )
-      // console.log("event: ", event)
-      // const implementationAddr = event?.args!["_implementation"]
-      // console.log(implementationAddr)
-      // expect(implementationAddr).to.be.eq(rootGauge.address)
+      const test_event = contractReceipt.events?.find(
+        (event) => event.event === "TestDisplay",
+      )
+      console.log(test_event)
+      const event = contractReceipt.events?.find(
+        (event) => event.event === "DeployedGauge",
+      )
+      console.log("event: ", event)
+      const implementationAddr = event?.args!["_implementation"]
+      console.log(implementationAddr)
+      expect(implementationAddr).to.be.eq(rootGauge.address)
     })
   })
 })
