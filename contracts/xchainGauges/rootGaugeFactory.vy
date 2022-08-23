@@ -84,7 +84,7 @@ def transmit_emissions(_gauge: address):
 
 @payable
 @external
-def deploy_gauge(_chain_id: uint256, _salt: bytes32) -> address:
+def deploy_gauge(_chain_id: uint256, _salt: bytes32, _name: string) -> address:
     """
     @notice Deploy a root liquidity gauge
     @param _chain_id The chain identifier of the counterpart child gauge
@@ -105,14 +105,14 @@ def deploy_gauge(_chain_id: uint256, _salt: bytes32) -> address:
     self.get_gauge_count[_chain_id] = idx + 1
     self.is_valid_gauge[gauge] = True
 
-    RootGauge(gauge).initialize(bridger, _chain_id)
+    RootGauge(gauge).initialize(bridger, _chain_id, _name)
 
     log DeployedGauge(implementation, _chain_id, msg.sender, _salt, gauge)
     return gauge
 
 
 @external
-def deploy_child_gauge(_chain_id: uint256, _lp_token: address, _salt: bytes32, _manager: address = msg.sender):
+def deploy_child_gauge(_chain_id: uint256, _lp_token: address, _salt: bytes32, _name:string, _manager: address = msg.sender):
     bridger: address = self.get_bridger[_chain_id]
     assert bridger != ZERO_ADDRESS  # dev: chain id not supported
 
@@ -121,8 +121,9 @@ def deploy_child_gauge(_chain_id: uint256, _lp_token: address, _salt: bytes32, _
         _abi_encode(
             _lp_token,
             _salt,
+            _name,
             _manager,
-            method_id=method_id("deploy_gauge(address,bytes32,address)")
+            method_id=method_id("deploy_gauge(address,bytes32,string,address)")
         ),
         ZERO_ADDRESS,
         _chain_id

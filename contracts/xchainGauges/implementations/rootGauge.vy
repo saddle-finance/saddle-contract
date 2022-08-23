@@ -49,6 +49,7 @@ MINTER: immutable(address)
 chain_id: public(uint256)
 bridger: public(address)
 factory: public(address)
+name: public(string)
 inflation_params: public(InflationParams)
 
 last_period: public(uint256)
@@ -65,6 +66,7 @@ def __init__(_sdl_token: address, _gauge_controller: address, _minter: address):
     SDL = _sdl_token
     GAUGE_CONTROLLER = _gauge_controller
     MINTER = _minter
+
 
 
 @payable

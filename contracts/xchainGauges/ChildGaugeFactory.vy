@@ -142,12 +142,13 @@ def mint_many(_gauges: address[32]):
 
 
 @external
-def deploy_gauge(_lp_token: address, _salt: bytes32, _manager: address = msg.sender) -> address:
+def deploy_gauge(_lp_token: address, _salt: bytes32, _name: string, _manager: address = msg.sender) -> address:
     """
     @notice Deploy a liquidity gauge
     @param _lp_token The token to deposit in the gauge
     @param _manager The address to set as manager of the gauge
     @param _salt A value to deterministically deploy a gauge
+    @param _name The name of the gauge
     """
     if self.get_gauge_from_lp_token[_lp_token] != ZERO_ADDRESS:
         # overwriting lp_token -> gauge mapping requires
@@ -155,6 +156,7 @@ def deploy_gauge(_lp_token: address, _salt: bytes32, _manager: address = msg.sen
 
     gauge_data: uint256 = 1  # set is_valid_gauge = True
     implementation: address = self.get_implementation
+    # TODO: should there be a access check before this?
     gauge: address = create_forwarder_to(
         implementation, salt=keccak256(_abi_encode(chain.id, msg.sender, _salt))
     )
@@ -165,7 +167,7 @@ def deploy_gauge(_lp_token: address, _salt: bytes32, _manager: address = msg.sen
         # issue a call to the root chain to deploy a root gauge
         CallProxy(self.call_proxy).anyCall(
             self,
-            _abi_encode(chain.id, _salt, method_id=method_id("deploy_gauge(uint256,bytes32)")),
+            _abi_encode(chain.id, _salt, _name, method_id=method_id("deploy_gauge(uint256,bytes32,string)")),
             ZERO_ADDRESS,
             1
         )
