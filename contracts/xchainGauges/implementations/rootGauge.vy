@@ -26,6 +26,7 @@ interface Factory:
 interface Minter:
     def mint(_gauge: address): nonpayable
     def rate() -> uint256: view
+    def committed_rate() -> uint256: view
     def future_epoch_time_write() -> uint256: view
 
 
@@ -118,6 +119,9 @@ def user_checkpoint(_user: address) -> bool:
         # checkpoint the gauge filling in any missing weight data
         GaugeController(GAUGE_CONTROLLER).checkpoint_gauge(self)
 
+        rate: uint256 = Minter(MINTER).rate()
+        self.inflation_params.rate = rate
+
         params: InflationParams = self.inflation_params
         emissions: uint256 = 0
 
@@ -128,13 +132,14 @@ def user_checkpoint(_user: address) -> bool:
                 break
             period_time: uint256 = i * WEEK
             weight: uint256 = GaugeController(GAUGE_CONTROLLER).gauge_relative_weight(self, period_time)
-            
+
             if period_time <= params.finish_time and params.finish_time < period_time + WEEK:
                 # calculate with old rate
                 emissions += weight * params.rate * (params.finish_time - period_time) / 10 ** 18
                 # update rate
-                # TODO: for the updated rate do we call our minter.commit_next_emission()? or just take the commited_rate()?
-                params.rate = params.rate * RATE_DENOMINATOR / RATE_REDUCTION_COEFFICIENT
+                params.rate = Minter(MINTER).committed_rate()
+                if (params.rate == MAX_UINT256):
+                    params.rate = rate
                 # calculate with new rate
                 emissions += weight * params.rate * (period_time + WEEK - params.finish_time) / 10 ** 18
                 # update finish time
