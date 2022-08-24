@@ -55,10 +55,14 @@ methods {
     // normal functions
     getTokenBalance(uint8) returns(uint256) envfree
     owner() returns(address) envfree
+    getAdminBalance(uint256) returns(uint256) envfree
+    paused() returns(bool) envfree
 
     // harness functions
     getSwapFee() returns(uint256) envfree
     getAdminFee() returns(uint256) envfree
+    getPaused() returns(bool) envfree
+    getTotalSupply() returns(uint256) envfree
 
     // burnableERC20
     burnFrom(address,uint256) => DISPATCHER(true)
@@ -71,14 +75,9 @@ methods {
 ////////////////////////////////////////////////////////////////////////////
 
 
-rule sanity(method f)
-{
-	env e;
-	calldataarg args;
-	f(e,args);
-	assert false;
-}
-
+/*
+    Getting initialized variable
+*/
 ghost bool initialized {
     init_state axiom initialized == false;
 }
@@ -87,7 +86,38 @@ hook Sload bool init _initialized STORAGE {
     require initialized == init;
 }
 
-// fails due to havoc
+// definition isInitialized() returns bool = 
+// definition initialized() returns bool =
+// definition paused() returns bool = paused()
+// definition inARamp returns bool = // using harness
+// definition notInARamp returns bool = // using harness
+
+/*
+// assume sum of all balances initially equals 0
+ghost sum_all_users_BPT() returns uint256 {
+    init_state axiom sum_all_users_BPT() == 0;
+}
+
+// everytime `balances` is called, update `sum_all_users_BPT` by adding the new value and subtracting the old value
+hook Sstore _balances[KEY address user] uint256 balance (uint256 old_balance) STORAGE {
+  havoc sum_all_users_BPT assuming sum_all_users_BPT@new() == sum_all_users_BPT@old() + balance - old_balance;
+}
+*/
+
+////////////////////////////////////////////////////////////////////////////
+//                               Invariants                               //
+////////////////////////////////////////////////////////////////////////////
+
+rule sanity(method f) {
+	env e;
+	calldataarg args;
+	f(e,args);
+	assert false;
+}
+
+/*
+    cant reinit (fails due to havoc)
+*/
 rule cantReinit(method f) filtered {
     f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
 } {
@@ -99,19 +129,12 @@ rule cantReinit(method f) filtered {
     assert lastReverted;
 }
 
-// definition isInitialized() returns bool = 
-// definition initialized() returns bool =
-// definition paused() returns bool = paused()
-// definition inARamp returns bool = // using harness
-// definition notInARamp returns bool = // using harness
+/*
+    Sum of all users' BPT balance must be less than or equal to BPT's `totalSupply`
+*/
+//invariant solvency()
+//    totalSupply() >= sum_all_users_BPT()
 
-////////////////////////////////////////////////////////////////////////////
-//                               Invariants                               //
-////////////////////////////////////////////////////////////////////////////
-
-// Related groups of variables
-
-//
 /* 
     If balance of one underlying token is zero, the balance of all other 
     underlying tokens must also be zero
@@ -126,6 +149,15 @@ invariant zeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
 invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
     getTokenBalance(tokenA) > 0 => getTokenBalance(tokenX) > 0
 
+/* 
+    If totalSupply of LP token is zero, the balance of all other 
+    underlying tokens must also be zero
+*/
+
+/* 
+    If totalSupply of LP token is non-zero, the balance of all other 
+    underlying tokens must also be non-zero
+*/
 
 /*
     There must not be a transaction that increases or decreases only one 
@@ -175,13 +207,41 @@ invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
     Total LP amount * virtual price must be within x% of sum of underlying tokens
 */
 
-/*
+/* P
     When paused, total LP amount can only decrease
 */
+rule pausedMeansLPMonotonicallyDecreases(method f) {
+    uint256 totalSupplyBefore = getTotalSupply();
+
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 totalSupplyAfter = getTotalSupply();
+
+    assert paused() => totalSupplyAfter <= totalSupplyBefore, "total supply of the lp token must not increase when paused";
+}
 
 /*
     When paused, ratio between underlying tokens must stay constant
 */
+rule pausedMeansTokenRatioConstant(method f) {
+    uint8 tokenAIndex; uint8 tokenBIndex;
+    
+    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+
+    mathint ratioBefore = tokenABalanceBefore / tokenBBalanceBefore;
+
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
+
+    mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
+
+    assert paused() => ratioAfter == ratioBefore, "total supply of the lp token must not increase when paused";
+}
 
 /*
     When trading token A for B, the sum A+B after the trade must always 
@@ -201,11 +261,24 @@ invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
 /*
     Only admin can withdraw adminFees
 */
+rule onlyAdminCanWithdrawFees() {
+    method f;
+    uint256 index;
 
-/* 
+    uint256 balanceBefore = getAdminBalance(index);
+
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 balanceAfter = getAdminBalance(index);
+
+    assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
+}
+
+/* P
     Only admin can set swap and admin fees
 */
-rule onlyAdminCanSetFees(method f) {
+rule onlyAdminCanSetSwapFees(method f) {
     uint256 swapFeeBefore = getSwapFee();
 
     env e; calldataarg args;
@@ -213,10 +286,22 @@ rule onlyAdminCanSetFees(method f) {
 
     uint256 swapFeeAfter = getSwapFee();
 
-    assert swapFeeAfter != swapFeeBefore => f.selector == setSwapFee(uint256).selector && e.msg.sender == owner();
+    assert swapFeeAfter != swapFeeBefore => f.selector == setSwapFee(uint256).selector && e.msg.sender == owner(), "fees must only be changes by admin";
 }
 
+/* P
+    Only admin can set swap and admin fees
+*/
+rule onlyAdminCanSetAdminFees(method f) {
+    uint256 swapFeeBefore = getAdminFee();
 
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 swapFeeAfter = getAdminFee();
+
+    assert swapFeeAfter != swapFeeBefore => f.selector == setAdminFee(uint256).selector && e.msg.sender == owner(), "fees must only be changes by admin";
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //                                 Rules                                  //

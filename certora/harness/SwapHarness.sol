@@ -22,4 +22,16 @@ contract SwapHarness is Swap {
         return address(getToken(uint8(index)));
     }
 
+    function getSwapFee() public view returns(uint256) {
+        return swapStorage.swapFee;
+    }
+
+    function getAdminFee() public view returns(uint256) {
+        return swapStorage.adminFee;
+    }
+
+    function getTotalSupply() public view returns(uint256) {
+        return swapStorage.lpToken.totalSupply();
+    }
+
 }

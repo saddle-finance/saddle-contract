@@ -19,3 +19,4 @@ certoraRun \
     $RULE \
     --send_only \
     --msg $1 \
+    # --rule_sanity advanced \
