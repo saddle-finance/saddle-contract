@@ -44,11 +44,6 @@ event UpdateImplementation:
     _old_implementation: address
     _new_implementation: address
 
-event TestDisplay:
-    _chain_id: uint256
-    _salt: bytes32
-    _name: String[32]
-
 
 
 call_proxy: public(address)
@@ -96,9 +91,9 @@ def deploy_gauge(_chain_id: uint256, _salt: bytes32, _name: String[32]) -> addre
     @param _chain_id The chain identifier of the counterpart child gauge
     @param _salt A value to deterministically deploy a gauge
     """
-    log TestDisplay(_chain_id, _salt, _name)
+
     bridger: address = self.get_bridger[_chain_id]
-    assert bridger != ZERO_ADDRESS  # dev: chain id not supported
+    assert bridger != ZERO_ADDRESS, "chain id not supported" # dev: chain id not supported
 
     implementation: address = self.get_implementation
     gauge: address = create_forwarder_to(

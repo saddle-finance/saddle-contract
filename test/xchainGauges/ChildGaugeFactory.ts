@@ -117,15 +117,16 @@ describe("ChildGaugeFactory", () => {
       ).to.be.reverted
     })
   })
-  describe("Successfully deploys a root gauge", () => {
+  describe("Successfully deploys a child gauge", () => {
     // TODO: when implementation has not been set yet the deploy still happens,
     // in addition it happens with LP Token = Zero Address which is explicitly not allowed in the contract
     it(`Successfully deploys a child gauge when call does not come from the anycall translator`, async () => {
       console.log(await childGaugeFactory.get_implementation())
       console.log(await childGaugeFactory.call_proxy())
       // TODO: below fails typechain not cooperating
+
       const tx = await childGaugeFactory[
-        "deploy_gauge(address,bytes32,String[32])"
+        "deploy_gauge(address,bytes32,string)"
       ](MOCK_ADDRESS, saltBytes, "Test")
 
       const txReceipt = await tx.wait()

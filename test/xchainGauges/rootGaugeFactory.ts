@@ -146,7 +146,7 @@ describe("RootGaugeFactory", () => {
       // TODO: below fails for unknown reason
       const gaugeDeployTx = await rootGaugeFactory.deploy_gauge(
         // mock non 0-address lp token
-        "0x1B4ab394327FDf9524632dDf2f0F04F9FA1Fe2eC",
+        11,
         // abcd bytes32()
         "0x6162636400000000000000000000000000000000000000000000000000000000",
         // below show error but I believe it passes, typeschain is messed up
