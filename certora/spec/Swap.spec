@@ -61,7 +61,6 @@ methods {
     // harness functions
     getSwapFee() returns(uint256) envfree
     getAdminFee() returns(uint256) envfree
-    getPaused() returns(bool) envfree
     getTotalSupply() returns(uint256) envfree
 
     // burnableERC20
@@ -86,23 +85,16 @@ hook Sload bool init _initialized STORAGE {
     require initialized == init;
 }
 
-// definition isInitialized() returns bool = 
-// definition initialized() returns bool =
-// definition paused() returns bool = paused()
-// definition inARamp returns bool = // using harness
-// definition notInARamp returns bool = // using harness
-
-/*
 // assume sum of all balances initially equals 0
-ghost sum_all_users_BPT() returns uint256 {
-    init_state axiom sum_all_users_BPT() == 0;
+ghost sum_all_users_LP() returns uint256 {
+    init_state axiom sum_all_users_LP() == 0;
 }
 
-// everytime `balances` is called, update `sum_all_users_BPT` by adding the new value and subtracting the old value
+// everytime `balances` is called, update `sum_all_users_LP` by adding the new value and subtracting the old value
 hook Sstore _balances[KEY address user] uint256 balance (uint256 old_balance) STORAGE {
-  havoc sum_all_users_BPT assuming sum_all_users_BPT@new() == sum_all_users_BPT@old() + balance - old_balance;
+  havoc sum_all_users_LP assuming sum_all_users_LP@new() == sum_all_users_LP@old() + balance - old_balance;
 }
-*/
+
 
 ////////////////////////////////////////////////////////////////////////////
 //                               Invariants                               //
@@ -114,6 +106,8 @@ rule sanity(method f) {
 	f(e,args);
 	assert false;
 }
+
+
 
 /*
     cant reinit (fails due to havoc)
@@ -132,8 +126,8 @@ rule cantReinit(method f) filtered {
 /*
     Sum of all users' BPT balance must be less than or equal to BPT's `totalSupply`
 */
-//invariant solvency()
-//    totalSupply() >= sum_all_users_BPT()
+invariant solvency()
+    getTotalSupply() == sum_all_users_LP()
 
 /* 
     If balance of one underlying token is zero, the balance of all other 
