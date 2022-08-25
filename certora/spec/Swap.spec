@@ -85,6 +85,18 @@ hook Sload bool init _initialized STORAGE {
     require initialized == init;
 }
 
+/*
+    Getting initializing variable
+*/
+ghost bool initializing {
+    init_state axiom initializing == false;
+}
+
+hook Sload bool init _initializing STORAGE {
+    require initializing == init;
+}
+
+/*
 // assume sum of all balances initially equals 0
 ghost sum_all_users_LP() returns uint256 {
     init_state axiom sum_all_users_LP() == 0;
@@ -93,7 +105,7 @@ ghost sum_all_users_LP() returns uint256 {
 // everytime `balances` is called, update `sum_all_users_LP` by adding the new value and subtracting the old value
 hook Sstore _balances[KEY address user] uint256 balance (uint256 old_balance) STORAGE {
   havoc sum_all_users_LP assuming sum_all_users_LP@new() == sum_all_users_LP@old() + balance - old_balance;
-}
+}*/
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -109,13 +121,14 @@ rule sanity(method f) {
 
 
 
-/*
+/* P
     cant reinit (fails due to havoc)
 */
 rule cantReinit(method f) filtered {
     f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
 } {
     require initialized;
+    require !initializing;
  
     env e; calldataarg args;
     f@withrevert(e,args);
@@ -126,8 +139,10 @@ rule cantReinit(method f) filtered {
 /*
     Sum of all users' BPT balance must be less than or equal to BPT's `totalSupply`
 */
+/*
 invariant solvency()
     getTotalSupply() == sum_all_users_LP()
+*/
 
 /* 
     If balance of one underlying token is zero, the balance of all other 
@@ -234,7 +249,7 @@ rule pausedMeansTokenRatioConstant(method f) {
 
     mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
 
-    assert paused() => ratioAfter == ratioBefore, "total supply of the lp token must not increase when paused";
+    assert paused() && (tokenABalanceAfter != 0 && tokenBBalanceAfter != 0)  => ratioAfter == ratioBefore, "total supply of the lp token must not increase when paused";
 }
 
 /*
