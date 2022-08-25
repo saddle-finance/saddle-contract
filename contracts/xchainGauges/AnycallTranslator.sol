@@ -3,6 +3,8 @@
 pragma solidity ^0.8.6;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts-4.2.0/token/ERC20/utils/SafeERC20.sol";
+
 interface ICallProxy {
     function anyCall(
         address _to,
@@ -11,6 +13,8 @@ interface ICallProxy {
         uint256 _toChainId,
         uint256 _flags
     ) external; // nonpayable
+
+    function deposit(address _account) external payable;
     
     function executor() external view returns (address executor);
 }
@@ -21,6 +25,7 @@ interface IAnycallExecutor {
 
 
 contract AnyCallTranslator {
+    using SafeERC20 for IERC20;
     // consts
     address public owneraddress;
     bytes public dataResult;
@@ -41,27 +46,35 @@ contract AnyCallTranslator {
 
     }
     
-    modifier onlyowner() {
+    modifier onlyOwner() {
         require(msg.sender == owneraddress, "only owner can call this method");
         _;
     }
 
-    function setAnycallImplementation(address _anycallContract) external onlyowner {
+    function setAnycallImplementation(address _anycallContract) external onlyOwner {
         anycallContract = _anycallContract;
     }
 
-    function setOracle(address _oracleContract) external onlyowner {
+    function setOracle(address _oracleContract) external onlyOwner {
         oracleContract = _oracleContract;
     }
 
-    function setGaugeFactory(address _gaugeFactory) external onlyowner {
+    function setGaugeFactory(address _gaugeFactory) external onlyOwner {
         gaugeFactory = _gaugeFactory;
     }
 
-    function updateOwnership(address _newOwner) external onlyowner {
+    function updateOwnership(address _newOwner) external onlyOwner {
         owneraddress = _newOwner;
     }
 
+    function deposit(address _account) external payable {
+        ICallProxy(anycallContract).deposit(_account);
+    }
+
+    function rescue(IERC20 token, address to) external onlyOwner {
+        token.safeTransfer(to, token.balanceOf(address(this)));
+    }
+    
     function anyCall(
         address _to,
         bytes calldata _data,
@@ -69,7 +82,7 @@ contract AnyCallTranslator {
         uint256 _toChainId,
         // Use 0 flag to pay fee on destination chain, 1 to pay on source
         uint256 _flags
-    ) external  onlyowner {
+    ) external payable onlyOwner {
         ICallProxy(anycallContract).anyCall(_to, _data, _fallback, _toChainId,_flags);
     }
 

@@ -167,7 +167,7 @@ describe("RootGaugeFactory", () => {
       console.log(implementationAddr)
       expect(implementationAddr).to.be.eq(rootGauge.address)
       const gaugeAddr = event?.args!["_implementation"]
-      expect(await rootGaugeFactory.get_gauge_count(11))
+      expect((await rootGaugeFactory.get_gauge_count(11).toString()) == "1")
     })
   })
 })
