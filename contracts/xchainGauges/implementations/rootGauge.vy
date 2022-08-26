@@ -60,6 +60,7 @@ is_killed: public(bool)
 
 @external
 def __init__(_sdl_token: address, _gauge_controller: address, _minter: address):
+    # TODO: this is set during deploy and never changes, how is it used to determine if its initialized?
     self.factory = 0x000000000000000000000000000000000000dEaD
 
     # assign immutable variables
@@ -194,7 +195,10 @@ def initialize(_bridger: address, _chain_id: uint256, _name: String[32]):
     """
     @notice Proxy initialization method
     """
-    assert self.factory == ZERO_ADDRESS  # dev: already initialized
+    #TODO: how is this a check for initialize? Its never changed besides contract creation,
+    # this currently passed if called from the factory but not manually calling from a test
+    assert self.factory == ZERO_ADDRESS, "already initialized"
+
 
     self.chain_id = _chain_id
     self.bridger = _bridger
@@ -205,7 +209,7 @@ def initialize(_bridger: address, _chain_id: uint256, _name: String[32]):
         rate: Minter(MINTER).rate(),
         finish_time: Minter(MINTER).future_epoch_time_write()
     })
-    assert inflation_params.rate != 0
+    assert inflation_params.rate != 0, "inflation rate is 0"
 
     self.inflation_params = inflation_params
     self.last_period = block.timestamp / WEEK

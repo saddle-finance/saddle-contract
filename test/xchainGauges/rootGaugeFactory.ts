@@ -105,7 +105,7 @@ describe("RootGaugeFactory", () => {
       // deploy root gauge (no mirrored gauge, just on mainnet)
       // TODO: below fails for unknown reason
       const gaugeDeployTx = await rootGaugeFactory.deploy_gauge(
-        // mock non 0-address lp token
+        // mock chain ID
         11,
         // abcd bytes32()
         "0x6162636400000000000000000000000000000000000000000000000000000000",
