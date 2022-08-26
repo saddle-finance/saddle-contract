@@ -94,6 +94,42 @@ describe("RootGaugeFactory", () => {
     },
   )
 
+  const deployRootGauge = deployments.createFixture(
+    async ({ deployments, ethers }) => {
+      // set bridger to mock birdger
+      await rootGaugeFactory.set_bridger(11, mockBridger.address)
+      // set anycall to mock anycall
+      await rootGaugeFactory.set_call_proxy(mockAnyCall.address)
+      // set factory implementation
+      await rootGaugeFactory.set_implementation(rootGauge.address)
+      // deploy root gauge (no mirrored gauge, just on mainnet)
+      // TODO: below fails for unknown reason
+      const gaugeDeployTx = await rootGaugeFactory.deploy_gauge(
+        // mock non 0-address lp token
+        11,
+        // abcd bytes32()
+        "0x6162636400000000000000000000000000000000000000000000000000000000",
+        "Sample_Name",
+      )
+
+      const contractReceipt = await gaugeDeployTx.wait()
+      // console.log("receipt: ", contractReceipt.events)
+      const test_event = contractReceipt.events?.find(
+        (event) => event.event === "TestDisplay",
+      )
+      console.log(test_event)
+      const event = contractReceipt.events?.find(
+        (event) => event.event === "DeployedGauge",
+      )
+      console.log("event: ", event)
+      const implementationAddr = event?.args!["_implementation"]
+      console.log(implementationAddr)
+      expect(implementationAddr).to.be.eq(rootGauge.address)
+      const gaugeAddr = event?.args!["_implementation"]
+      expect((await rootGaugeFactory.get_gauge_count(11).toString()) == "1")
+    },
+  )
+
   beforeEach(async () => {
     await setupTest()
   })
@@ -136,37 +172,7 @@ describe("RootGaugeFactory", () => {
   })
   describe("Deploy Gauge from RootGaugeFactory", () => {
     it(`Successfully deploys a root gauge`, async () => {
-      // set bridger to mock birdger
-      await rootGaugeFactory.set_bridger(11, mockBridger.address)
-      // set anycall to mock anycall
-      await rootGaugeFactory.set_call_proxy(mockAnyCall.address)
-      // set factory implementation
-      await rootGaugeFactory.set_implementation(rootGauge.address)
-      // deploy root gauge (no mirrored gauge, just on mainnet)
-      // TODO: below fails for unknown reason
-      const gaugeDeployTx = await rootGaugeFactory.deploy_gauge(
-        // mock non 0-address lp token
-        11,
-        // abcd bytes32()
-        "0x6162636400000000000000000000000000000000000000000000000000000000",
-        // below show error but I believe it passes, typeschain is messed up
-        "Sample_Name",
-      )
-
-      const contractReceipt = await gaugeDeployTx.wait()
-      // console.log("receipt: ", contractReceipt.events)
-      const test_event = contractReceipt.events?.find(
-        (event) => event.event === "TestDisplay",
-      )
-      console.log(test_event)
-      const event = contractReceipt.events?.find(
-        (event) => event.event === "DeployedGauge",
-      )
-      console.log("event: ", event)
-      const implementationAddr = event?.args!["_implementation"]
-      console.log(implementationAddr)
-      expect(implementationAddr).to.be.eq(rootGauge.address)
-      const gaugeAddr = event?.args!["_implementation"]
+      deployRootGauge()
       expect((await rootGaugeFactory.get_gauge_count(11).toString()) == "1")
     })
   })

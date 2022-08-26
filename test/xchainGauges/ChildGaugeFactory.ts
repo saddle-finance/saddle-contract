@@ -25,7 +25,9 @@ describe("ChildGaugeFactory", () => {
   let anycallTranslator: AnyCallTranslator
   let mockAnyCall: MockAnyCall
 
-  const MOCK_ADDRESS = "0x0000000000000000000000000000000000000001"
+  const MOCK_ADDRESS = "0x1B4ab394327FDf9524632dDf2f0F04F9FA1Fe2eC"
+  const TEST_BYTES =
+    "0x7465737400000000000000000000000000000000000000000000000000000000"
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -127,7 +129,8 @@ describe("ChildGaugeFactory", () => {
 
       const tx = await childGaugeFactory[
         "deploy_gauge(address,bytes32,string)"
-      ](MOCK_ADDRESS, saltBytes, "Test")
+      ](MOCK_ADDRESS, TEST_BYTES, "Test")
+      console.log("buh")
 
       const txReceipt = await tx.wait()
       const deployEvent = txReceipt.events?.find(

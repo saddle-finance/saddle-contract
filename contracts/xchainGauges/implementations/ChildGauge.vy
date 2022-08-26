@@ -66,7 +66,7 @@ TOKENLESS_PRODUCTION: constant(uint256) = 40
 WEEK: constant(uint256) = 86400 * 7
 VERSION: constant(String[8]) = "v0.1.0"
 
-
+# @dev our oracle's address
 SDL: immutable(address)
 FACTORY: immutable(address)
 
@@ -117,6 +117,8 @@ def __init__(_sdl_token: address, _factory: address):
 
     SDL = _sdl_token
     FACTORY = _factory
+
+
 
 
 @internal
@@ -668,7 +670,7 @@ def factory() -> address:
 
 
 @external
-def initialize(_lp_token: address, _manager: address):
+def initialize(_lp_token: address, _manager: address, _name: String[32]):
     assert self.lp_token == ZERO_ADDRESS  # dev: already initialzed
 
     self.lp_token = _lp_token
@@ -677,16 +679,15 @@ def initialize(_lp_token: address, _manager: address):
     self.voting_escrow = Factory(msg.sender).voting_escrow()
 
     symbol: String[26] = ERC20Extended(_lp_token).symbol()
-    name: String[64] = concat("Curve.fi ", symbol, " Gauge Deposit")
 
-    self.name = name
+    self.name = _name
     self.symbol = concat(symbol, "-gauge")
 
     self.period_timestamp[0] = block.timestamp
     self.DOMAIN_SEPARATOR = keccak256(
         _abi_encode(
             DOMAIN_TYPE_HASH,
-            keccak256(name),
+            keccak256(_name),
             keccak256(VERSION),
             chain.id,
             self

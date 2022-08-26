@@ -7,7 +7,7 @@
 
 
 interface ChildGauge:
-    def initialize(_lp_token: address, _manager: address): nonpayable
+    def initialize(_lp_token: address, _manager: address, _name: String[32]): nonpayable
     def integrate_fraction(_user: address) -> uint256: view
     def user_checkpoint(_user: address) -> bool: nonpayable
 
@@ -23,6 +23,7 @@ event DeployedGauge:
     _deployer: indexed(address)
     _salt: bytes32
     _gauge: address
+    _name: String[32]
 
 event Minted:
     _user: indexed(address)
@@ -142,7 +143,7 @@ def mint_many(_gauges: address[32]):
 
 
 @external
-def deploy_gauge(_lp_token: address, _salt: bytes32, _name: String[32], _manager: address = msg.sender) -> address:
+def deploy_gauge(_lp_token: address, _salt: bytes32,_name: String[32], _manager: address = msg.sender) -> address:
     """
     @notice Deploy a liquidity gauge
     @param _lp_token The token to deposit in the gauge
@@ -156,7 +157,6 @@ def deploy_gauge(_lp_token: address, _salt: bytes32, _name: String[32], _manager
 
     gauge_data: uint256 = 1  # set is_valid_gauge = True
     implementation: address = self.get_implementation
-    # TODO: should there be a access check before this?
     gauge: address = create_forwarder_to(
         implementation, salt=keccak256(_abi_encode(chain.id, msg.sender, _salt))
     )
@@ -167,7 +167,7 @@ def deploy_gauge(_lp_token: address, _salt: bytes32, _name: String[32], _manager
         # issue a call to the root chain to deploy a root gauge
         CallProxy(self.call_proxy).anyCall(
             self,
-            _abi_encode(chain.id, _salt, _name, method_id=method_id("deploy_gauge(uint256,bytes32,String[32])")),
+            _abi_encode(chain.id, _salt, method_id=method_id("deploy_gauge(uint256,bytes32,String[32])")),
             ZERO_ADDRESS,
             1
         )
@@ -179,9 +179,9 @@ def deploy_gauge(_lp_token: address, _salt: bytes32, _name: String[32], _manager
     self.get_gauge_count = idx + 1
     self.get_gauge_from_lp_token[_lp_token] = gauge
 
-    ChildGauge(gauge).initialize(_lp_token, _manager)
+    ChildGauge(gauge).initialize(_lp_token, _manager, _name)
 
-    log DeployedGauge(implementation, _lp_token, msg.sender, _salt, gauge)
+    log DeployedGauge(implementation, _lp_token, msg.sender, _salt, gauge, _name)
     return gauge
 
 
