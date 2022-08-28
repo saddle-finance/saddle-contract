@@ -1,3 +1,12 @@
+import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { Signer } from "ethers"
+import { deployments, ethers } from "hardhat"
+import {
+  GenericERC20WithGovernance,
+  RetroactiveVesting,
+} from "../build/typechain/"
+import * as merkleTreeData from "./merkleTree.json"
 import {
   BIG_NUMBER_1E18,
   forceAdvanceOneBlock,
@@ -7,16 +16,6 @@ import {
   setTimestamp,
   ZERO_ADDRESS,
 } from "./testUtils"
-import { solidity } from "ethereum-waffle"
-import { deployments, ethers } from "hardhat"
-
-import {
-  GenericERC20WithGovernance,
-  RetroactiveVesting,
-} from "../build/typechain/"
-import { Signer } from "ethers"
-import chai from "chai"
-import * as merkleTreeData from "./merkleTree.json"
 
 chai.use(solidity)
 const { expect } = chai

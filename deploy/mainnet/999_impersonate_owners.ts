@@ -1,12 +1,17 @@
-import { asyncForEach, impersonateAccount } from "../../test/testUtils"
+import {
+  asyncForEach,
+  impersonateAccount,
+  setEtherBalance,
+} from "../../test/testUtils"
 
 import { DeployFunction } from "hardhat-deploy/types"
-import { GenericERC20 } from "../../build/typechain/GenericERC20"
+import { GenericERC20 } from "../../build/typechain/"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import dotenv from "dotenv"
 import { ethers } from "hardhat"
 import { isMainnet } from "../../utils/network"
 import path from "path"
+import { getHardhatTestSigners } from "../../scripts/utils"
 
 dotenv.config()
 
@@ -16,6 +21,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   // These addresses are for large holders of the given token (used in forked mainnet testing)
+  // You can find whales' addresses on etherscan's holders page.
+  // Example: https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f#balances
+  // Note that some addresses may be blacklisted so if the top address didnt work, try another instead.
+  // key = token deployment name, value = array of addresses
   const tokenToAccountsMap: Record<string, string[]> = {
     // USD
     DAI: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
@@ -42,18 +51,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (
     isMainnet(await getChainId()) &&
-    process.env.FORK_MAINNET === "true" &&
-    process.env.FUND_FORK_MAINNET === "true"
+    process.env.FORK_NETWORK &&
+    process.env.FUND_FORK_NETWORK
   ) {
+    // Give the deployer tokens from each token holder for testing
     for (const [tokenName, holders] of Object.entries(tokenToAccountsMap)) {
       const contract = (await ethers.getContract(tokenName)) as GenericERC20
 
       await asyncForEach(holders, async (holder) => {
         const balance = await contract.balanceOf(holder)
-        await ethers.provider.send("hardhat_setBalance", [
-          holder,
-          `0x${(1e18).toString(16)}`,
-        ])
+        await setEtherBalance(holder, ethers.constants.WeiPerEther.mul(1000))
         await contract
           .connect(await impersonateAccount(holder))
           .transfer(deployer, await contract.balanceOf(holder))
@@ -65,6 +72,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
       })
     }
+    // Give the deployer some ether to use for testing
+    await setEtherBalance(deployer, ethers.constants.WeiPerEther.mul(1000))
+    // Give hardhat test account some ether
+    await setEtherBalance(
+      await getHardhatTestSigners()[0].getAddress(),
+      ethers.constants.WeiPerEther.mul(1000),
+    )
   } else {
     log(`skipping ${path.basename(__filename)}`)
   }

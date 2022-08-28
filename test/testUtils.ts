@@ -1,13 +1,12 @@
-import { BigNumber, Bytes, ContractFactory, Signer, providers } from "ethers"
-import { ethers, network } from "hardhat"
-
-import { Artifact } from "hardhat/types"
 import { BytesLike } from "@ethersproject/bytes"
 import { Contract } from "@ethersproject/contracts"
+import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
+import { ethers, network } from "hardhat"
 import { DeploymentsExtension } from "hardhat-deploy/dist/types"
-import { ERC20 } from "../build/typechain/ERC20"
-import { Swap } from "../build/typechain/Swap"
+import { Artifact } from "hardhat/types"
+import { IERC20, Swap } from "../build/typechain/"
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
+import { CHAIN_ID } from "../utils/network"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -20,13 +19,6 @@ export enum TIME {
 
 export const BIG_NUMBER_1E18 = BigNumber.from(10).pow(18)
 export const BIG_NUMBER_ZERO = BigNumber.from(0)
-
-export const CHAIN_ID = {
-  MAINNET: "1",
-  ROPSTEN: "3",
-  KOVAN: "42",
-  HARDHAT: "31337",
-}
 
 export function isMainnet(networkId: string): boolean {
   return networkId == CHAIN_ID.MAINNET
@@ -129,7 +121,7 @@ export async function getPoolBalances(
 
 export async function getUserTokenBalances(
   address: string | Signer,
-  tokens: ERC20[],
+  tokens: Contract[] | string[],
 ): Promise<BigNumber[]> {
   const balanceArray = []
 
@@ -137,8 +129,12 @@ export async function getUserTokenBalances(
     address = await address.getAddress()
   }
 
-  for (const token of tokens) {
-    balanceArray.push(await token.balanceOf(address))
+  for (let token of tokens) {
+    if (typeof token == "string") {
+      token = await ethers.getContractAt("GenericERC20", token)
+    }
+
+    balanceArray.push(await (token as IERC20).balanceOf(address))
   }
 
   return balanceArray
@@ -146,12 +142,12 @@ export async function getUserTokenBalances(
 
 export async function getUserTokenBalance(
   address: string | Signer,
-  token: ERC20,
+  token: Contract,
 ): Promise<BigNumber> {
   if (address instanceof Signer) {
     address = await address.getAddress()
   }
-  return token.balanceOf(address)
+  return (token as IERC20).balanceOf(address)
 }
 
 // EVM methods
@@ -196,6 +192,16 @@ export async function impersonateAccount(
   })
 
   return ethers.provider.getSigner(address)
+}
+
+export async function setEtherBalance(
+  address: string,
+  amount: BigNumber,
+): Promise<any> {
+  return ethers.provider.send("hardhat_setBalance", [
+    address,
+    amount.toHexString(),
+  ])
 }
 
 export async function asyncForEach<T>(

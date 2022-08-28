@@ -1,0 +1,253 @@
+{
+  "address": "0x8020E4134AD6a694AdbE9521a12C751e67CE9861",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_masterRegistry",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "MASTER_REGISTRY",
+      "outputs": [
+        {
+          "internalType": "contract IMasterRegistry",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "POOL_REGISTRY_NAME",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "gauge",
+          "type": "address"
+        }
+      ],
+      "name": "gaugeToPoolAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "gauge",
+          "type": "address"
+        }
+      ],
+      "name": "gaugeToPoolData",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "poolAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "lpToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint8",
+              "name": "typeOfAsset",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "poolName",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "targetAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20[]",
+              "name": "tokens",
+              "type": "address[]"
+            },
+            {
+              "internalType": "contract IERC20[]",
+              "name": "underlyingTokens",
+              "type": "address[]"
+            },
+            {
+              "internalType": "address",
+              "name": "basePoolAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "metaSwapDepositAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "isSaddleApproved",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isRemoved",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isGuarded",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct IPoolRegistry.PoolData",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "gauge",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "getClaimableRewards",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "gauge",
+          "type": "address"
+        }
+      ],
+      "name": "getGaugeRewards",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "token",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "distributor",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "period_finish",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "last_update",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "integral",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ILiquidityGaugeV5.Reward[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x7946b1111c64ce0bbabcc24459973d17412ebf52555254e37e6f9dc589febf4a",
+  "receipt": {
+    "to": null,
+    "from": "0x5BDb37d0Ddea3A90F233c7B7F6b9394B6b2eef34",
+    "contractAddress": "0x8020E4134AD6a694AdbE9521a12C751e67CE9861",
+    "transactionIndex": 113,
+    "gasUsed": "991012",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x7087ab307577cf7fb4d93a4443799744a8e685eb4150272f7344c9d1d5f5dfb9",
+    "transactionHash": "0x7946b1111c64ce0bbabcc24459973d17412ebf52555254e37e6f9dc589febf4a",
+    "logs": [],
+    "blockNumber": 14998698,
+    "cumulativeGasUsed": "13586607",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": ["0xc5ad17b98D7fe73B6dD3b0df5b3040457E68C045"],
+  "numDeployments": 1,
+  "solcInputHash": "c686040896eb8f6aa5a808e88bc41205",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_masterRegistry\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"MASTER_REGISTRY\",\"outputs\":[{\"internalType\":\"contract IMasterRegistry\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"POOL_REGISTRY_NAME\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"gauge\",\"type\":\"address\"}],\"name\":\"gaugeToPoolAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"gauge\",\"type\":\"address\"}],\"name\":\"gaugeToPoolData\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"poolAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"lpToken\",\"type\":\"address\"},{\"internalType\":\"uint8\",\"name\":\"typeOfAsset\",\"type\":\"uint8\"},{\"internalType\":\"bytes32\",\"name\":\"poolName\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"targetAddress\",\"type\":\"address\"},{\"internalType\":\"contract IERC20[]\",\"name\":\"tokens\",\"type\":\"address[]\"},{\"internalType\":\"contract IERC20[]\",\"name\":\"underlyingTokens\",\"type\":\"address[]\"},{\"internalType\":\"address\",\"name\":\"basePoolAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"metaSwapDepositAddress\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"isSaddleApproved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isRemoved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isGuarded\",\"type\":\"bool\"}],\"internalType\":\"struct IPoolRegistry.PoolData\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"gauge\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"}],\"name\":\"getClaimableRewards\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"gauge\",\"type\":\"address\"}],\"name\":\"getGaugeRewards\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"distributor\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"period_finish\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rate\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"last_update\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"integral\",\"type\":\"uint256\"}],\"internalType\":\"struct ILiquidityGaugeV5.Reward[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/helper/GaugeHelperContract.sol\":\"GaugeHelperContract\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.6.0 <0.8.0;\\n\\n/**\\n * @dev Interface of the ERC20 standard as defined in the EIP.\\n */\\ninterface IERC20 {\\n    /**\\n     * @dev Returns the amount of tokens in existence.\\n     */\\n    function totalSupply() external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the amount of tokens owned by `account`.\\n     */\\n    function balanceOf(address account) external view returns (uint256);\\n\\n    /**\\n     * @dev Moves `amount` tokens from the caller's account to `recipient`.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transfer(address recipient, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Returns the remaining number of tokens that `spender` will be\\n     * allowed to spend on behalf of `owner` through {transferFrom}. This is\\n     * zero by default.\\n     *\\n     * This value changes when {approve} or {transferFrom} are called.\\n     */\\n    function allowance(address owner, address spender) external view returns (uint256);\\n\\n    /**\\n     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * IMPORTANT: Beware that changing an allowance with this method brings the risk\\n     * that someone may use both the old and the new allowance by unfortunate\\n     * transaction ordering. One possible solution to mitigate this race\\n     * condition is to first reduce the spender's allowance to 0 and set the\\n     * desired value afterwards:\\n     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729\\n     *\\n     * Emits an {Approval} event.\\n     */\\n    function approve(address spender, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Moves `amount` tokens from `sender` to `recipient` using the\\n     * allowance mechanism. `amount` is then deducted from the caller's\\n     * allowance.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Emitted when `value` tokens are moved from one account (`from`) to\\n     * another (`to`).\\n     *\\n     * Note that `value` may be zero.\\n     */\\n    event Transfer(address indexed from, address indexed to, uint256 value);\\n\\n    /**\\n     * @dev Emitted when the allowance of a `spender` for an `owner` is set by\\n     * a call to {approve}. `value` is the new allowance.\\n     */\\n    event Approval(address indexed owner, address indexed spender, uint256 value);\\n}\\n\",\"keccak256\":\"0x5f02220344881ce43204ae4a6281145a67bc52c2bb1290a791857df3d19d78f5\",\"license\":\"MIT\"},\"contracts/helper/GaugeHelperContract.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\nimport \\\"../interfaces/IMasterRegistry.sol\\\";\\nimport \\\"../interfaces/IPoolRegistry.sol\\\";\\n\\ninterface ILiquidityGaugeV5 {\\n    struct Reward {\\n        address token;\\n        address distributor;\\n        uint256 period_finish;\\n        uint256 rate;\\n        uint256 last_update;\\n        uint256 integral;\\n    }\\n\\n    function lp_token() external view returns (address);\\n\\n    // reward_count\\n    function reward_count() external view returns (uint256);\\n\\n    function reward_tokens(uint256) external view returns (address);\\n\\n    function reward_data(address) external view returns (Reward memory);\\n\\n    function claimable_reward(address, address) external view returns (uint256);\\n}\\n\\ninterface ILPToken {\\n    function owner() external view returns (address);\\n}\\n\\ncontract GaugeHelperContract {\\n    IMasterRegistry public immutable MASTER_REGISTRY;\\n    bytes32 public constant POOL_REGISTRY_NAME =\\n        0x506f6f6c52656769737472790000000000000000000000000000000000000000;\\n\\n    constructor(address _masterRegistry) public {\\n        MASTER_REGISTRY = IMasterRegistry(_masterRegistry);\\n    }\\n\\n    function gaugeToPoolAddress(address gauge) public view returns (address) {\\n        try ILiquidityGaugeV5(gauge).lp_token() returns (\\n            address saddleLpToken\\n        ) {\\n            try ILPToken(saddleLpToken).owner() returns (\\n                address saddlePoolAddress\\n            ) {\\n                return saddlePoolAddress;\\n            } catch {\\n                return address(0);\\n            }\\n        } catch {\\n            // Returns zero address if the gauge is not directly using saddle LP token\\n            return address(0);\\n        }\\n    }\\n\\n    function gaugeToPoolData(address gauge)\\n        public\\n        view\\n        returns (IPoolRegistry.PoolData memory)\\n    {\\n        // Get PoolRegistry from MasterRegistry\\n        IPoolRegistry poolRegistry = IPoolRegistry(\\n            MASTER_REGISTRY.resolveNameToLatestAddress(POOL_REGISTRY_NAME)\\n        );\\n\\n        // Try getting pool data\\n        try poolRegistry.getPoolData(gaugeToPoolAddress(gauge)) returns (\\n            IPoolRegistry.PoolData memory poolData\\n        ) {\\n            return poolData;\\n        } catch {\\n            // Returns zero address if the gauge is not directly using saddle LP token\\n            IPoolRegistry.PoolData memory poolData;\\n            return poolData;\\n        }\\n    }\\n\\n    function getGaugeRewards(address gauge)\\n        public\\n        view\\n        returns (ILiquidityGaugeV5.Reward[] memory)\\n    {\\n        uint256 rewardCount = ILiquidityGaugeV5(gauge).reward_count();\\n        address[] memory rewardTokens = new address[](rewardCount);\\n        for (uint256 i = 0; i < rewardCount; i++) {\\n            rewardTokens[i] = ILiquidityGaugeV5(gauge).reward_tokens(i);\\n        }\\n        // call reward_data() will all reward token addresses\\n        ILiquidityGaugeV5.Reward[]\\n            memory rewardData = new ILiquidityGaugeV5.Reward[](rewardCount);\\n        for (uint256 i = 0; i < rewardCount; i++) {\\n            rewardData[i] = ILiquidityGaugeV5(gauge).reward_data(\\n                rewardTokens[i]\\n            );\\n        }\\n        return rewardData;\\n    }\\n\\n    function getClaimableRewards(address gauge, address user)\\n        public\\n        view\\n        returns (uint256[] memory)\\n    {\\n        uint256 rewardCount = ILiquidityGaugeV5(gauge).reward_count();\\n        address[] memory rewardTokens = new address[](rewardCount);\\n        for (uint256 i = 0; i < rewardCount; i++) {\\n            rewardTokens[i] = ILiquidityGaugeV5(gauge).reward_tokens(i);\\n        }\\n        // call reward_data() will all reward token addresses\\n        uint256[] memory claimableRewards = new uint256[](rewardCount);\\n        for (uint256 i = 0; i < rewardCount; i++) {\\n            claimableRewards[i] = ILiquidityGaugeV5(gauge).claimable_reward(\\n                user,\\n                rewardTokens[i]\\n            );\\n        }\\n        return claimableRewards;\\n    }\\n}\\n\",\"keccak256\":\"0x6e4e0ca2b5602a56e4cfae9b50d34e13ab08593faca4b6f461d84d3fae043fb8\",\"license\":\"MIT\"},\"contracts/interfaces/IMasterRegistry.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.6.0;\\npragma experimental ABIEncoderV2;\\n\\ninterface IMasterRegistry {\\n    /* Structs */\\n\\n    struct ReverseRegistryData {\\n        bytes32 name;\\n        uint256 version;\\n    }\\n\\n    /* Functions */\\n\\n    /**\\n     * @notice Add a new registry entry to the master list.\\n     * @param registryName name for the registry\\n     * @param registryAddress address of the new registry\\n     */\\n    function addRegistry(bytes32 registryName, address registryAddress)\\n        external\\n        payable;\\n\\n    /**\\n     * @notice Resolves a name to the latest registry address. Reverts if no match is found.\\n     * @param name name for the registry\\n     * @return address address of the latest registry with the matching name\\n     */\\n    function resolveNameToLatestAddress(bytes32 name)\\n        external\\n        view\\n        returns (address);\\n\\n    /**\\n     * @notice Resolves a name and version to an address. Reverts if there is no registry with given name and version.\\n     * @param name address of the registry you want to resolve to\\n     * @param version version of the registry you want to resolve to\\n     */\\n    function resolveNameAndVersionToAddress(bytes32 name, uint256 version)\\n        external\\n        view\\n        returns (address);\\n\\n    /**\\n     * @notice Resolves a name to an array of all addresses. Reverts if no match is found.\\n     * @param name name for the registry\\n     * @return address address of the latest registry with the matching name\\n     */\\n    function resolveNameToAllAddresses(bytes32 name)\\n        external\\n        view\\n        returns (address[] memory);\\n\\n    /**\\n     * @notice Resolves an address to registry entry data.\\n     * @param registryAddress address of a registry you want to resolve\\n     * @return name name of the resolved registry\\n     * @return version version of the resolved registry\\n     * @return isLatest boolean flag of whether the given address is the latest version of the given registries with\\n     * matching name\\n     */\\n    function resolveAddressToRegistryData(address registryAddress)\\n        external\\n        view\\n        returns (\\n            bytes32 name,\\n            uint256 version,\\n            bool isLatest\\n        );\\n}\\n\",\"keccak256\":\"0x0e403d7e259003f3826b3009ae3e39344706d7af8a0a5bd48ba45a6ca978226b\",\"license\":\"MIT\"},\"contracts/interfaces/IPoolRegistry.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.6.0;\\npragma experimental ABIEncoderV2;\\n\\nimport \\\"@openzeppelin/contracts/token/ERC20/IERC20.sol\\\";\\n\\ninterface IPoolRegistry {\\n    /* Structs */\\n\\n    struct PoolInputData {\\n        address poolAddress;\\n        uint8 typeOfAsset;\\n        bytes32 poolName;\\n        address targetAddress;\\n        address metaSwapDepositAddress;\\n        bool isSaddleApproved;\\n        bool isRemoved;\\n        bool isGuarded;\\n    }\\n\\n    struct PoolData {\\n        address poolAddress;\\n        address lpToken;\\n        uint8 typeOfAsset;\\n        bytes32 poolName;\\n        address targetAddress;\\n        IERC20[] tokens;\\n        IERC20[] underlyingTokens;\\n        address basePoolAddress;\\n        address metaSwapDepositAddress;\\n        bool isSaddleApproved;\\n        bool isRemoved;\\n        bool isGuarded;\\n    }\\n\\n    struct SwapStorageData {\\n        uint256 initialA;\\n        uint256 futureA;\\n        uint256 initialATime;\\n        uint256 futureATime;\\n        uint256 swapFee;\\n        uint256 adminFee;\\n        address lpToken;\\n    }\\n\\n    /* Public Variables */\\n\\n    /**\\n     * @notice Returns the index + 1 of the pool address in the registry\\n     * @param poolAddress address to look for\\n     */\\n    function poolsIndexOfPlusOne(address poolAddress)\\n        external\\n        returns (uint256);\\n\\n    /**\\n     * @notice Returns the index + 1 of the pool name in the registry\\n     * @param poolName pool name in bytes32 format to look for\\n     */\\n    function poolsIndexOfNamePlusOne(bytes32 poolName)\\n        external\\n        returns (uint256);\\n\\n    /* Functions */\\n\\n    /**\\n     * @notice Add a new pool to the registry\\n     * @param inputData PoolInputData struct for the new pool\\n     * @dev Before adding a meta pool, the user must first add the underlying base pool.\\n     * Only Swap and MetaSwap contracts need to be added.\\n     */\\n    function addPool(PoolInputData memory inputData) external payable;\\n\\n    /**\\n     * @notice Add a new pool to the registry\\n     * @param data PoolInputData struct for the new pool\\n     * @dev Before adding a meta pool, the user must first add the underlying base pool.\\n     * Only Swap and MetaSwap contracts need to be added.\\n     */\\n    function addCommunityPool(PoolData memory data) external payable;\\n\\n    /**\\n     * @notice Approve community deployed pools to be upgraded as Saddle owned\\n     * @dev since array entries are difficult to remove, we modify the entry to mark it\\n     * as a Saddle owned pool.\\n     * @param poolAddress address of the community pool\\n     */\\n    function approvePool(address poolAddress) external payable;\\n\\n    /**\\n     * @notice Overwrite existing entry with new PoolData\\n     * @param poolData new PoolData struct to store\\n     */\\n    function updatePool(PoolData memory poolData) external payable;\\n\\n    /**\\n     * @notice Remove pool from the registry\\n     * @dev Since arrays are not easily reducable, the entry will be marked as removed.\\n     * @param poolAddress address of the pool to remove\\n     */\\n    function removePool(address poolAddress) external payable;\\n\\n    /**\\n     * @notice Returns PoolData for given pool address\\n     * @param poolAddress address of the pool to read\\n     */\\n    function getPoolData(address poolAddress)\\n        external\\n        view\\n        returns (PoolData memory);\\n\\n    /**\\n     * @notice Returns PoolData at given index\\n     * @param index index of the pool to read\\n     */\\n    function getPoolDataAtIndex(uint256 index)\\n        external\\n        view\\n        returns (PoolData memory);\\n\\n    /**\\n     * @notice Returns PoolData with given name\\n     * @param poolName name of the pool to read\\n     */\\n    function getPoolDataByName(bytes32 poolName)\\n        external\\n        view\\n        returns (PoolData memory);\\n\\n    /**\\n     * @notice Returns virtual price of the given pool address\\n     * @param poolAddress address of the pool to read\\n     */\\n    function getVirtualPrice(address poolAddress)\\n        external\\n        view\\n        returns (uint256);\\n\\n    /**\\n     * @notice Returns A of the given pool address\\n     * @param poolAddress address of the pool to read\\n     */\\n    function getA(address poolAddress) external view returns (uint256);\\n\\n    /**\\n     * @notice Returns the paused status of the given pool address\\n     * @param poolAddress address of the pool to read\\n     */\\n    function getPaused(address poolAddress) external view returns (bool);\\n\\n    /**\\n     * @notice Returns the SwapStorage struct of the given pool address\\n     * @param poolAddress address of the pool to read\\n     */\\n    function getSwapStorage(address poolAddress)\\n        external\\n        view\\n        returns (SwapStorageData memory swapStorageData);\\n\\n    /**\\n     * @notice Returns the tokens of the given pool address\\n     * @param poolAddress address of the pool to read\\n     */\\n    function getTokens(address poolAddress)\\n        external\\n        view\\n        returns (IERC20[] memory);\\n\\n    /**\\n     * @notice Returns the underlying tokens of the given pool address. Base pools will return an empty array.\\n     * @param poolAddress address of the pool to read\\n     */\\n    function getUnderlyingTokens(address poolAddress)\\n        external\\n        view\\n        returns (IERC20[] memory);\\n\\n    /**\\n     * @notice Returns number of entries in the registry. Includes removed pools\\n     * in the list as well.\\n     */\\n    function getPoolsLength() external view returns (uint256);\\n\\n    /**\\n     * @notice Returns an array of pool addresses that can swap between from and to\\n     * @param from address of the token to swap from\\n     * @param to address of the token to swap to\\n     * @return eligiblePools array of pool addresses that can swap between from and to\\n     */\\n    function getEligiblePools(address from, address to)\\n        external\\n        view\\n        returns (address[] memory eligiblePools);\\n\\n    /**\\n     * @notice Returns an array of balances of the tokens\\n     * @param poolAddress address of the pool to look up the token balances for\\n     * @return balances array of token balances\\n     */\\n    function getTokenBalances(address poolAddress)\\n        external\\n        view\\n        returns (uint256[] memory balances);\\n\\n    /**\\n     * @notice Returns an array of balances of the tokens\\n     * @param poolAddress address of the pool to look up the token balances for\\n     * @return balances array of token balances\\n     */\\n    function getUnderlyingTokenBalances(address poolAddress)\\n        external\\n        view\\n        returns (uint256[] memory balances);\\n}\\n\",\"keccak256\":\"0x7f51230d9e9229a935312bd05f5e93ab8fbb38e6635bbfb9402001b86a795bb2\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60a060405234801561001057600080fd5b5060405161118938038061118983398101604081905261002f91610044565b60601b6001600160601b031916608052610072565b600060208284031215610055578081fd5b81516001600160a01b038116811461006b578182fd5b9392505050565b60805160601c6110f561009460003980610189528061043c52506110f56000f3fe608060405234801561001057600080fd5b50600436106100725760003560e01c8063ac841ed911610050578063ac841ed9146100d5578063db0af732146100dd578063f56f4f0f146100fd57610072565b80634f8d446b14610077578063920d1331146100955780639dcd6578146100b5575b600080fd5b61007f61011d565b60405161008c9190610f4e565b60405180910390f35b6100a86100a3366004610b79565b610141565b60405161008c9190610f57565b6100c86100c3366004610b79565b6102f6565b60405161008c9190610e3a565b6100c861043a565b6100f06100eb366004610b79565b61045e565b60405161008c9190610e82565b61011061010b366004610bb8565b610734565b60405161008c9190610f0a565b7f506f6f6c5265676973747279000000000000000000000000000000000000000081565b6101496109ff565b6040517f3705f62500000000000000000000000000000000000000000000000000000000815260009073ffffffffffffffffffffffffffffffffffffffff7f00000000000000000000000000000000000000000000000000000000000000001690633705f625906101de907f506f6f6c5265676973747279000000000000000000000000000000000000000090600401610f4e565b60206040518083038186803b1580156101f657600080fd5b505afa15801561020a573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061022e9190610b9c565b90508073ffffffffffffffffffffffffffffffffffffffff166313d21cdf610255856102f6565b6040518263ffffffff1660e01b81526004016102719190610e3a565b60006040518083038186803b15801561028957600080fd5b505afa9250505080156102dc57506040513d6000823e601f3d9081017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe01682016040526102d99190810190610bf0565b60015b6102e8576102e86109ff565b91506102f19050565b919050565b60008173ffffffffffffffffffffffffffffffffffffffff166382c630666040518163ffffffff1660e01b815260040160206040518083038186803b15801561033e57600080fd5b505afa92505050801561038c575060408051601f3d9081017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016820190925261038991810190610b9c565b60015b610398575060006102f1565b8073ffffffffffffffffffffffffffffffffffffffff16638da5cb5b6040518163ffffffff1660e01b815260040160206040518083038186803b1580156103de57600080fd5b505afa92505050801561042c575060408051601f3d9081017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016820190925261042991810190610b9c565b60015b6102e85760009150506102f1565b7f000000000000000000000000000000000000000000000000000000000000000081565b606060008273ffffffffffffffffffffffffffffffffffffffff1663963c94b96040518163ffffffff1660e01b815260040160206040518083038186803b1580156104a857600080fd5b505afa1580156104bc573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104e09190610dab565b905060608167ffffffffffffffff811180156104fb57600080fd5b50604051908082528060200260200182016040528015610525578160200160208202803683370190505b50905060005b8281101561060e576040517f54c49fe900000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8616906354c49fe990610585908490600401610f4e565b60206040518083038186803b15801561059d57600080fd5b505afa1580156105b1573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906105d59190610b9c565b8282815181106105e157fe5b73ffffffffffffffffffffffffffffffffffffffff9092166020928302919091019091015260010161052b565b5060608267ffffffffffffffff8111801561062857600080fd5b5060405190808252806020026020018201604052801561066257816020015b61064f610a62565b8152602001906001900390816106475790505b50905060005b8381101561072b578573ffffffffffffffffffffffffffffffffffffffff166348e9c65e84838151811061069857fe5b60200260200101516040518263ffffffff1660e01b81526004016106bc9190610e3a565b60c06040518083038186803b1580156106d457600080fd5b505afa1580156106e8573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061070c9190610d3c565b82828151811061071857fe5b6020908102919091010152600101610668565b50949350505050565b606060008373ffffffffffffffffffffffffffffffffffffffff1663963c94b96040518163ffffffff1660e01b815260040160206040518083038186803b15801561077e57600080fd5b505afa158015610792573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906107b69190610dab565b905060608167ffffffffffffffff811180156107d157600080fd5b506040519080825280602002602001820160405280156107fb578160200160208202803683370190505b50905060005b828110156108e4576040517f54c49fe900000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8716906354c49fe99061085b908490600401610f4e565b60206040518083038186803b15801561087357600080fd5b505afa158015610887573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108ab9190610b9c565b8282815181106108b757fe5b73ffffffffffffffffffffffffffffffffffffffff90921660209283029190910190910152600101610801565b5060608267ffffffffffffffff811180156108fe57600080fd5b50604051908082528060200260200182016040528015610928578160200160208202803683370190505b50905060005b838110156109f3578673ffffffffffffffffffffffffffffffffffffffff166333fd6f748785848151811061095f57fe5b60200260200101516040518363ffffffff1660e01b8152600401610984929190610e5b565b60206040518083038186803b15801561099c57600080fd5b505afa1580156109b0573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109d49190610dab565b8282815181106109e057fe5b602090810291909101015260010161092e565b50925050505b92915050565b604080516101808101825260008082526020820181905291810182905260608082018390526080820183905260a0820181905260c082015260e0810182905261010081018290526101208101829052610140810182905261016081019190915290565b6040518060c00160405280600073ffffffffffffffffffffffffffffffffffffffff168152602001600073ffffffffffffffffffffffffffffffffffffffff168152602001600081526020016000815260200160008152602001600081525090565b80516109f98161109a565b600082601f830112610adf578081fd5b815167ffffffffffffffff811115610af5578182fd5b6020808202610b05828201611073565b83815293508184018583018287018401881015610b2157600080fd5b600092505b84831015610b4d578051610b398161109a565b825260019290920191908301908301610b26565b505050505092915050565b805180151581146109f957600080fd5b805160ff811681146109f957600080fd5b600060208284031215610b8a578081fd5b8135610b958161109a565b9392505050565b600060208284031215610bad578081fd5b8151610b958161109a565b60008060408385031215610bca578081fd5b8235610bd58161109a565b91506020830135610be58161109a565b809150509250929050565b600060208284031215610c01578081fd5b815167ffffffffffffffff80821115610c18578283fd5b8184019150610180808387031215610c2e578384fd5b610c3781611073565b9050610c438684610ac4565b8152610c528660208501610ac4565b6020820152610c648660408501610b68565b604082015260608301516060820152610c808660808501610ac4565b608082015260a083015182811115610c96578485fd5b610ca287828601610acf565b60a08301525060c083015182811115610cb9578485fd5b610cc587828601610acf565b60c083015250610cd88660e08501610ac4565b60e08201526101009150610cee86838501610ac4565b828201526101209150610d0386838501610b58565b828201526101409150610d1886838501610b58565b828201526101609150610d2d86838501610b58565b91810191909152949350505050565b600060c08284031215610d4d578081fd5b610d5760c0611073565b8251610d628161109a565b81526020830151610d728161109a565b8060208301525060408301516040820152606083015160608201526080830151608082015260a083015160a08201528091505092915050565b600060208284031215610dbc578081fd5b5051919050565b73ffffffffffffffffffffffffffffffffffffffff169052565b6000815180845260208085019450808401835b83811015610e2257815173ffffffffffffffffffffffffffffffffffffffff1687529582019590820190600101610df0565b509495945050505050565b15159052565b60ff169052565b73ffffffffffffffffffffffffffffffffffffffff91909116815260200190565b73ffffffffffffffffffffffffffffffffffffffff92831681529116602082015260400190565b602080825282518282018190526000919060409081850190868401855b82811015610efd578151610eb4858251610dc3565b86810151610ec488870182610dc3565b508086015185870152606080820151908601526080808201519086015260a0908101519085015260c09093019290850190600101610e9f565b5091979650505050505050565b6020808252825182820181905260009190848201906040850190845b81811015610f4257835183529284019291840191600101610f26565b50909695505050505050565b90815260200190565b600060208252610f6b602083018451610dc3565b6020830151610f7d6040840182610dc3565b506040830151610f906060840182610e33565b50606083015160808301526080830151610fad60a0840182610dc3565b5060a08301516101808060c0850152610fca6101a0850183610ddd565b915060c08501517fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe08584030160e08601526110058382610ddd565b92505060e085015161010061101c81870183610dc3565b860151905061012061103086820183610dc3565b860151905061014061104486820183610e2d565b860151905061016061105886820183610e2d565b860151905061106985830182610e2d565b5090949350505050565b60405181810167ffffffffffffffff8111828210171561109257600080fd5b604052919050565b73ffffffffffffffffffffffffffffffffffffffff811681146110bc57600080fd5b5056fea26469706673582212206c2f4620d4efe40a0e6aa5f0c8f5e8e472eef869473dcb1f95b0967fc4f09df064736f6c634300060c0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100725760003560e01c8063ac841ed911610050578063ac841ed9146100d5578063db0af732146100dd578063f56f4f0f146100fd57610072565b80634f8d446b14610077578063920d1331146100955780639dcd6578146100b5575b600080fd5b61007f61011d565b60405161008c9190610f4e565b60405180910390f35b6100a86100a3366004610b79565b610141565b60405161008c9190610f57565b6100c86100c3366004610b79565b6102f6565b60405161008c9190610e3a565b6100c861043a565b6100f06100eb366004610b79565b61045e565b60405161008c9190610e82565b61011061010b366004610bb8565b610734565b60405161008c9190610f0a565b7f506f6f6c5265676973747279000000000000000000000000000000000000000081565b6101496109ff565b6040517f3705f62500000000000000000000000000000000000000000000000000000000815260009073ffffffffffffffffffffffffffffffffffffffff7f00000000000000000000000000000000000000000000000000000000000000001690633705f625906101de907f506f6f6c5265676973747279000000000000000000000000000000000000000090600401610f4e565b60206040518083038186803b1580156101f657600080fd5b505afa15801561020a573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061022e9190610b9c565b90508073ffffffffffffffffffffffffffffffffffffffff166313d21cdf610255856102f6565b6040518263ffffffff1660e01b81526004016102719190610e3a565b60006040518083038186803b15801561028957600080fd5b505afa9250505080156102dc57506040513d6000823e601f3d9081017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe01682016040526102d99190810190610bf0565b60015b6102e8576102e86109ff565b91506102f19050565b919050565b60008173ffffffffffffffffffffffffffffffffffffffff166382c630666040518163ffffffff1660e01b815260040160206040518083038186803b15801561033e57600080fd5b505afa92505050801561038c575060408051601f3d9081017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016820190925261038991810190610b9c565b60015b610398575060006102f1565b8073ffffffffffffffffffffffffffffffffffffffff16638da5cb5b6040518163ffffffff1660e01b815260040160206040518083038186803b1580156103de57600080fd5b505afa92505050801561042c575060408051601f3d9081017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016820190925261042991810190610b9c565b60015b6102e85760009150506102f1565b7f000000000000000000000000000000000000000000000000000000000000000081565b606060008273ffffffffffffffffffffffffffffffffffffffff1663963c94b96040518163ffffffff1660e01b815260040160206040518083038186803b1580156104a857600080fd5b505afa1580156104bc573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104e09190610dab565b905060608167ffffffffffffffff811180156104fb57600080fd5b50604051908082528060200260200182016040528015610525578160200160208202803683370190505b50905060005b8281101561060e576040517f54c49fe900000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8616906354c49fe990610585908490600401610f4e565b60206040518083038186803b15801561059d57600080fd5b505afa1580156105b1573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906105d59190610b9c565b8282815181106105e157fe5b73ffffffffffffffffffffffffffffffffffffffff9092166020928302919091019091015260010161052b565b5060608267ffffffffffffffff8111801561062857600080fd5b5060405190808252806020026020018201604052801561066257816020015b61064f610a62565b8152602001906001900390816106475790505b50905060005b8381101561072b578573ffffffffffffffffffffffffffffffffffffffff166348e9c65e84838151811061069857fe5b60200260200101516040518263ffffffff1660e01b81526004016106bc9190610e3a565b60c06040518083038186803b1580156106d457600080fd5b505afa1580156106e8573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061070c9190610d3c565b82828151811061071857fe5b6020908102919091010152600101610668565b50949350505050565b606060008373ffffffffffffffffffffffffffffffffffffffff1663963c94b96040518163ffffffff1660e01b815260040160206040518083038186803b15801561077e57600080fd5b505afa158015610792573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906107b69190610dab565b905060608167ffffffffffffffff811180156107d157600080fd5b506040519080825280602002602001820160405280156107fb578160200160208202803683370190505b50905060005b828110156108e4576040517f54c49fe900000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8716906354c49fe99061085b908490600401610f4e565b60206040518083038186803b15801561087357600080fd5b505afa158015610887573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108ab9190610b9c565b8282815181106108b757fe5b73ffffffffffffffffffffffffffffffffffffffff90921660209283029190910190910152600101610801565b5060608267ffffffffffffffff811180156108fe57600080fd5b50604051908082528060200260200182016040528015610928578160200160208202803683370190505b50905060005b838110156109f3578673ffffffffffffffffffffffffffffffffffffffff166333fd6f748785848151811061095f57fe5b60200260200101516040518363ffffffff1660e01b8152600401610984929190610e5b565b60206040518083038186803b15801561099c57600080fd5b505afa1580156109b0573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109d49190610dab565b8282815181106109e057fe5b602090810291909101015260010161092e565b50925050505b92915050565b604080516101808101825260008082526020820181905291810182905260608082018390526080820183905260a0820181905260c082015260e0810182905261010081018290526101208101829052610140810182905261016081019190915290565b6040518060c00160405280600073ffffffffffffffffffffffffffffffffffffffff168152602001600073ffffffffffffffffffffffffffffffffffffffff168152602001600081526020016000815260200160008152602001600081525090565b80516109f98161109a565b600082601f830112610adf578081fd5b815167ffffffffffffffff811115610af5578182fd5b6020808202610b05828201611073565b83815293508184018583018287018401881015610b2157600080fd5b600092505b84831015610b4d578051610b398161109a565b825260019290920191908301908301610b26565b505050505092915050565b805180151581146109f957600080fd5b805160ff811681146109f957600080fd5b600060208284031215610b8a578081fd5b8135610b958161109a565b9392505050565b600060208284031215610bad578081fd5b8151610b958161109a565b60008060408385031215610bca578081fd5b8235610bd58161109a565b91506020830135610be58161109a565b809150509250929050565b600060208284031215610c01578081fd5b815167ffffffffffffffff80821115610c18578283fd5b8184019150610180808387031215610c2e578384fd5b610c3781611073565b9050610c438684610ac4565b8152610c528660208501610ac4565b6020820152610c648660408501610b68565b604082015260608301516060820152610c808660808501610ac4565b608082015260a083015182811115610c96578485fd5b610ca287828601610acf565b60a08301525060c083015182811115610cb9578485fd5b610cc587828601610acf565b60c083015250610cd88660e08501610ac4565b60e08201526101009150610cee86838501610ac4565b828201526101209150610d0386838501610b58565b828201526101409150610d1886838501610b58565b828201526101609150610d2d86838501610b58565b91810191909152949350505050565b600060c08284031215610d4d578081fd5b610d5760c0611073565b8251610d628161109a565b81526020830151610d728161109a565b8060208301525060408301516040820152606083015160608201526080830151608082015260a083015160a08201528091505092915050565b600060208284031215610dbc578081fd5b5051919050565b73ffffffffffffffffffffffffffffffffffffffff169052565b6000815180845260208085019450808401835b83811015610e2257815173ffffffffffffffffffffffffffffffffffffffff1687529582019590820190600101610df0565b509495945050505050565b15159052565b60ff169052565b73ffffffffffffffffffffffffffffffffffffffff91909116815260200190565b73ffffffffffffffffffffffffffffffffffffffff92831681529116602082015260400190565b602080825282518282018190526000919060409081850190868401855b82811015610efd578151610eb4858251610dc3565b86810151610ec488870182610dc3565b508086015185870152606080820151908601526080808201519086015260a0908101519085015260c09093019290850190600101610e9f565b5091979650505050505050565b6020808252825182820181905260009190848201906040850190845b81811015610f4257835183529284019291840191600101610f26565b50909695505050505050565b90815260200190565b600060208252610f6b602083018451610dc3565b6020830151610f7d6040840182610dc3565b506040830151610f906060840182610e33565b50606083015160808301526080830151610fad60a0840182610dc3565b5060a08301516101808060c0850152610fca6101a0850183610ddd565b915060c08501517fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe08584030160e08601526110058382610ddd565b92505060e085015161010061101c81870183610dc3565b860151905061012061103086820183610dc3565b860151905061014061104486820183610e2d565b860151905061016061105886820183610e2d565b860151905061106985830182610e2d565b5090949350505050565b60405181810167ffffffffffffffff8111828210171561109257600080fd5b604052919050565b73ffffffffffffffffffffffffffffffffffffffff811681146110bc57600080fd5b5056fea26469706673582212206c2f4620d4efe40a0e6aa5f0c8f5e8e472eef869473dcb1f95b0967fc4f09df064736f6c634300060c0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

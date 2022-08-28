@@ -81,4 +81,18 @@ interface ISwapGuarded {
     // withdraw fee update function
     function updateUserWithdrawFee(address recipient, uint256 transferAmount)
         external;
+
+    function swapStorage()
+        external
+        view
+        returns (
+            uint256 initialA,
+            uint256 futureA,
+            uint256 initialATime,
+            uint256 futureATime,
+            uint256 swapFee,
+            uint256 adminFee,
+            uint256 defaultWithdrawFee,
+            address lpToken
+        );
 }

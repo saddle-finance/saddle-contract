@@ -1,16 +1,14 @@
-import { BigNumber, Signer } from "ethers"
-import { solidity } from "ethereum-waffle"
-
-import {
-  SimpleRewarder,
-  MiniChefV2,
-  GenericERC20,
-  Swap,
-  LPToken,
-} from "../../build/typechain/"
-
 import chai from "chai"
+import { solidity } from "ethereum-waffle"
+import { BigNumber, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
+import {
+  GenericERC20,
+  LPToken,
+  MiniChefV2,
+  SimpleRewarder,
+  Swap,
+} from "../../build/typechain/"
 import {
   BIG_NUMBER_1E18,
   BIG_NUMBER_ZERO,
@@ -39,9 +37,15 @@ describe("SimpleRewarder", async () => {
   let farmerAddress: string
   let lazyFarmerAddress: string
 
+  // fixed time for testing
+  const TEST_START_TIMESTAMP = 2362003200
+
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["USDPoolV2"], {
+        fallbackToGlobal: false,
+      })
+      await setTimestamp(TEST_START_TIMESTAMP)
 
       signers = await ethers.getSigners()
       deployer = signers[0]
@@ -329,7 +333,7 @@ describe("SimpleRewarder", async () => {
   })
 
   describe("withdraw", () => {
-    beforeEach(async () => {
+    it("Successfully withdraws and only harvests rewardToken2", async () => {
       await initializeRewarder()
 
       // Set rewarder of pid 0 to the SimpleRewarder contract
@@ -339,9 +343,7 @@ describe("SimpleRewarder", async () => {
 
       await miniChef.connect(farmer).harvest(0, farmerAddress)
       await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
-    })
 
-    it("Successfully withdraws and only harvests rewardToken2", async () => {
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(5),
       )
@@ -363,7 +365,7 @@ describe("SimpleRewarder", async () => {
   })
 
   describe("withdrawAndHarvest", () => {
-    beforeEach(async () => {
+    it("Successfully withdraws and harvests reward tokens", async () => {
       await initializeRewarder()
 
       // Set rewarder of pid 0 to the SimpleRewarder contract
@@ -373,9 +375,7 @@ describe("SimpleRewarder", async () => {
 
       await miniChef.connect(farmer).harvest(0, farmerAddress)
       await setTimestamp((await getCurrentBlockTimestamp()) + 1000)
-    })
 
-    it("Successfully withdraws and harvests reward tokens", async () => {
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(5),
       )
@@ -389,8 +389,10 @@ describe("SimpleRewarder", async () => {
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(6),
       )
-      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
-        BIG_NUMBER_1E18.mul(1006),
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.satisfy(
+        (balance: BigNumber) =>
+          balance.eq(BIG_NUMBER_1E18.mul(1006)) ||
+          balance.eq(BIG_NUMBER_1E18.mul(1007)),
       )
       expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(2002),
@@ -415,16 +417,20 @@ describe("SimpleRewarder", async () => {
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(5),
       )
-      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
-        BIG_NUMBER_1E18.mul(5),
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.satisfy(
+        (balance: BigNumber) =>
+          balance.eq(BIG_NUMBER_1E18.mul(5)) ||
+          balance.eq(BIG_NUMBER_1E18.mul(6)),
       )
       expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(0)
       await miniChef.connect(farmer).emergencyWithdraw(0, farmerAddress)
       expect(await usdv2LpToken.balanceOf(farmerAddress)).to.eq(
         BIG_NUMBER_1E18.mul(6),
       )
-      expect(await rewardToken1.balanceOf(farmerAddress)).to.eq(
-        BIG_NUMBER_1E18.mul(5),
+      expect(await rewardToken1.balanceOf(farmerAddress)).to.satisfy(
+        (balance: BigNumber) =>
+          balance.eq(BIG_NUMBER_1E18.mul(5)) ||
+          balance.eq(BIG_NUMBER_1E18.mul(6)),
       )
       // Emergency withdraw does not withdraw rewardToken2
       expect(await rewardToken2.balanceOf(farmerAddress)).to.eq(

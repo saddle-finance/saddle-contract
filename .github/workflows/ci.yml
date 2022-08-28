@@ -22,10 +22,10 @@ jobs:
           ${{ runner.os }}-node-
     - uses: actions/setup-node@v2
       with:
-        node-version: '12'
+        node-version: '16'
     # fix for forcing git to use https when pulling deps
     - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
-    - run: npm ci
+    - run: npm ci --legacy-peer-deps
     - run: npm run build --if-present
     - run: npm run lint
 
@@ -44,10 +44,10 @@ jobs:
           ${{ runner.os }}-node-
     - uses: actions/setup-node@v2
       with:
-        node-version: '12'
+        node-version: '16'
     # fix for forcing git to use https when pulling deps
     - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
-    - run: npm ci
+    - run: npm ci --legacy-peer-deps
     - run: npm run build --if-present
     - run: npm test
 
@@ -66,38 +66,38 @@ jobs:
           ${{ runner.os }}-node-
     - uses: actions/setup-node@v2
       with:
-        node-version: '12'
+        node-version: '16'
     # fix for forcing git to use https when pulling deps
     - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
-    - run: npm ci
+    - run: npm ci --legacy-peer-deps
     - run: npm run build --if-present
     - run: npm run coverage
     - uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
 
-  slither:
-    runs-on: ubuntu-latest
-    env:
-      ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-      MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '12'
-    # fix for forcing git to use https when pulling deps
-    - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
-    - run: npm ci
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-    - run: python -m pip install --upgrade pip
-    - run: pip3 install slither-analyzer
-    - run: slither . --exclude-informational --exclude-low --exclude-medium --exclude-optimization
+  # slither:
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+  #     MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - uses: actions/cache@v2
+  #     with:
+  #       path: ~/.npm
+  #       key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+  #       restore-keys: |
+  #         ${{ runner.os }}-node-
+  #   - uses: actions/setup-node@v2
+  #     with:
+  #       node-version: '16'
+  #   # fix for forcing git to use https when pulling deps
+  #   - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
+  #   - run: npm ci --legacy-peer-deps
+  #   - uses: actions/setup-python@v2
+  #     with:
+  #       python-version: '3.x'
+  #   - run: python -m pip install --upgrade pip
+  #   - run: pip3 install slither-analyzer
+  #   - run: slither . --exclude-informational --exclude-low --exclude-medium --exclude-optimization
