@@ -196,11 +196,11 @@ export async function impersonateAccount(
 
 export async function setEtherBalance(
   address: string,
-  amount: number,
+  amount: BigNumber,
 ): Promise<any> {
   return ethers.provider.send("hardhat_setBalance", [
     address,
-    `0x${amount.toString(16)}`,
+    amount.toHexString(),
   ])
 }
 
