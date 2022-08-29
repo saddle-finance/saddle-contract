@@ -63,7 +63,7 @@ let config: HardhatUserConfig = {
       verify: {
         etherscan: {
           apiUrl: "https://api.arbiscan.io",
-          apiKey: "6IJ9VIDV55VNTPAA8TRKQREVWQJDA98FEK",
+          apiKey: process.env.ETHERSCAN_ARB_API ?? "NO_KEY",
         },
       },
     },
@@ -82,7 +82,7 @@ let config: HardhatUserConfig = {
       verify: {
         etherscan: {
           apiUrl: "https://api-optimistic.etherscan.io",
-          apiKey: "8A88XPGCP6IQXRJGM5NKMBMMGT7NNRBIMF",
+          apiKey: process.env.ETHERSCAN_OPT_API ?? "NO_KEY",
         },
       },
     },
@@ -101,7 +101,7 @@ let config: HardhatUserConfig = {
       verify: {
         etherscan: {
           apiUrl: "https://api.ftmscan.com",
-          apiKey: "YKFDUZYGB28APW5KQQI4MH1CKRZN8IRYMP",
+          apiKey: process.env.ETHERSCAN_FTM_API ?? "NO_KEY",
         },
       },
     },
