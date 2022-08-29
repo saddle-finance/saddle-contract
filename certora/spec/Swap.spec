@@ -1,6 +1,5 @@
 import "../helpers/erc20.spec"
-
-using LPToken as lpToken
+using LPToken as lptoken
 
 ////////////////////////////////////////////////////////////////////////////
 //                                Methods                                 //
@@ -105,7 +104,7 @@ ghost sum_all_users_LP() returns uint256 {
 }
 
 // everytime `balances` is called, update `sum_all_users_LP` by adding the new value and subtracting the old value
-hook Sstore lpToken._balances[KEY address user] uint256 balance (uint256 old_balance) STORAGE {
+hook Sstore lptoken._balances[KEY address user] uint256 balance (uint256 old_balance) STORAGE {
   havoc sum_all_users_LP assuming sum_all_users_LP@new() == sum_all_users_LP@old() + balance - old_balance;
 }
 
@@ -200,7 +199,9 @@ invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
 /*
     adminFee can never be greater MAX_ADMIN_FEE
 */
-
+rule adminFeeNeverGreaterThanMAX(method f) {
+    assert false;
+}
 /*
     Swap can never happen after deadline
 */
@@ -275,6 +276,8 @@ rule onlyAdminCanWithdrawFees() {
     method f;
     uint256 index;
 
+    requireInvariant solvency;
+
     uint256 balanceBefore = getAdminBalance(index);
 
     env e; calldataarg args;
@@ -283,6 +286,24 @@ rule onlyAdminCanWithdrawFees() {
     uint256 balanceAfter = getAdminBalance(index);
 
     assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
+}
+
+rule monotonicallyIncreasingFees(method f) filtered {
+    f -> f.selector == withdrawAdminFees().selector
+} {
+    uint256 index;
+
+    requireInvariant solvency;
+
+    uint256 balanceBefore = getAdminBalance(index);
+
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 balanceAfter = getAdminBalance(index);
+
+    assert balanceAfter >= balanceBefore , "fees must not decrease, except for withdraw by admin";
+
 }
 
 /* P

@@ -35,11 +35,11 @@ contract SwapHarness is Swap {
     }
 
     function getMaxAdminFee() public view returns(uint256) {
-        return swapStorage.MAX_ADMIN_FEE;
+        return SwapUtils.MAX_ADMIN_FEE;
     }
 
     function getMaxSwapFee() public view returns(uint256) {
-        return swapStorage.MAX_SWAP_FEE;
+        return SwapUtils.MAX_SWAP_FEE;
     }
 
 }

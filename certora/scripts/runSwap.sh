@@ -13,8 +13,9 @@ certoraRun \
     --optimistic_loop \
     --cache saddle \
     --loop_iter 2 \
+    --staging \
     --settings -enableEqualitySaturation=false \
     $RULE \
     --send_only \
-    --msg $1 \
+    --msg "$1" \
     # --rule_sanity advanced \
