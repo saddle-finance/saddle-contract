@@ -11,6 +11,7 @@ import dotenv from "dotenv"
 import { ethers } from "hardhat"
 import { isMainnet } from "../../utils/network"
 import path from "path"
+import { getHardhatTestSigners } from "../../scripts/utils"
 
 dotenv.config()
 
@@ -59,7 +60,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       await asyncForEach(holders, async (holder) => {
         const balance = await contract.balanceOf(holder)
-        await setEtherBalance(holder, 1e20)
+        await setEtherBalance(holder, ethers.constants.WeiPerEther.mul(1000))
         await contract
           .connect(await impersonateAccount(holder))
           .transfer(deployer, await contract.balanceOf(holder))
@@ -72,7 +73,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       })
     }
     // Give the deployer some ether to use for testing
-    await setEtherBalance(deployer, 1e20)
+    await setEtherBalance(deployer, ethers.constants.WeiPerEther.mul(1000))
+    // Give hardhat test account some ether
+    await setEtherBalance(
+      await getHardhatTestSigners()[0].getAddress(),
+      ethers.constants.WeiPerEther.mul(1000),
+    )
   } else {
     log(`skipping ${path.basename(__filename)}`)
   }
