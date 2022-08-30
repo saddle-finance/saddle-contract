@@ -1,15 +1,13 @@
-import chai, { assert } from "chai"
+import chai from "chai"
 import { solidity } from "ethereum-waffle"
-import { Bytes, Signer, utils } from "ethers"
+import { Signer, utils } from "ethers"
 import { deployments } from "hardhat"
 import {
   AnyCallTranslator,
   ChildGauge,
   ChildGaugeFactory,
+  MockAnyCall,
 } from "../../build/typechain"
-import { MockAnyCall } from "../../build/typechain/contracts/xchainGauges/mock/MockAnycall.sol/MockAnyCall"
-
-import { isTestNetwork, ZERO_ADDRESS } from "../testUtils"
 
 chai.use(solidity)
 const { expect } = chai

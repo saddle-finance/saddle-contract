@@ -1,4 +1,4 @@
-import chai, { assert } from "chai"
+import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments } from "hardhat"
@@ -11,7 +11,7 @@ import {
   GenericERC20,
 } from "../../build/typechain"
 
-import { BIG_NUMBER_1E18, ZERO_ADDRESS } from "../testUtils"
+import { BIG_NUMBER_1E18 } from "../testUtils"
 const { execute } = deployments
 
 chai.use(solidity)

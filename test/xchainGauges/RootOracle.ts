@@ -1,21 +1,19 @@
-import chai, { assert } from "chai"
+import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments, network } from "hardhat"
 import {
-  RootGaugeFactory,
-  LPToken,
-  RewardForwarder,
   AnyCallTranslator,
+  ArbitrumBridger,
   ChildGauge,
   GenericERC20,
-  ArbitrumBridger,
+  LPToken,
+  RewardForwarder,
+  RootGaugeFactory,
   RootOracle,
-  VotingEscrow,
   SDL,
+  VotingEscrow,
 } from "../../build/typechain"
-// TODO: why does this not import from just the typechain
-import { MockBridger } from "../../build/typechain/contracts/xchainGauges/mock/mockBridger.sol"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
 
 import {
@@ -23,7 +21,6 @@ import {
   getCurrentBlockTimestamp,
   MAX_UINT256,
   setTimestamp,
-  ZERO_ADDRESS,
 } from "../testUtils"
 const { execute } = deployments
 

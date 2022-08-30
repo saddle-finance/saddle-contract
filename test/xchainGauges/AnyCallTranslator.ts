@@ -1,20 +1,18 @@
-import chai, { assert } from "chai"
+import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
-  LPToken,
-  RewardForwarder,
   AnyCallTranslator,
-  ChildGauge,
   GenericERC20,
+  LPToken,
   MockAnyCall,
-  RootGaugeFactory,
   MockBridger,
+  RewardForwarder,
   RootGauge,
+  RootGaugeFactory,
 } from "../../build/typechain"
 
-import { BIG_NUMBER_1E18, ZERO_ADDRESS } from "../testUtils"
 const { execute } = deployments
 
 chai.use(solidity)
@@ -109,8 +107,8 @@ describe("AnycallTranslator", () => {
       console.log("bridger", rootGaugeFactory.get_bridger(1))
       console.log("implementation", rootGaugeFactory.get_implementation())
 
-      let ABI = ["function deploy_gauge(uint256 _chain_id, bytes32 _salt)"]
-      let iface = new ethers.utils.Interface(ABI)
+      const ABI = ["function deploy_gauge(uint256 _chain_id, bytes32 _salt)"]
+      const iface = new ethers.utils.Interface(ABI)
       const data = iface.encodeFunctionData("deploy_gauge", [
         1,
         "0x6162636400000000000000000000000000000000000000000000000000000000",

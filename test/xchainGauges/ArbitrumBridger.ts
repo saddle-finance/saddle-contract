@@ -1,19 +1,19 @@
-import chai, { assert } from "chai"
+import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments, network } from "hardhat"
 import {
+  AnyCallTranslator,
+  ArbitrumBridger,
+  ChildGauge,
   ChildGaugeFactory,
+  GenericERC20,
   LPToken,
   RewardForwarder,
-  AnyCallTranslator,
-  ChildGauge,
-  GenericERC20,
-  ArbitrumBridger,
 } from "../../build/typechain"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
 
-import { BIG_NUMBER_1E18, setTimestamp, ZERO_ADDRESS } from "../testUtils"
+import { setTimestamp } from "../testUtils"
 const { execute } = deployments
 
 chai.use(solidity)

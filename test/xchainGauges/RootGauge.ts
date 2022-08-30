@@ -1,18 +1,14 @@
-import chai, { assert } from "chai"
+import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
   AnyCallTranslator,
-  LPToken,
+  MockAnyCall,
+  MockBridger,
   RootGauge,
   RootGaugeFactory,
 } from "../../build/typechain"
-import { mock } from "../../build/typechain/contracts/xchainGauges"
-import { MockAnyCall } from "../../build/typechain/contracts/xchainGauges/mock/MockAnycall.sol"
-import { MockBridger } from "../../build/typechain/contracts/xchainGauges/mock/MockBridger.sol"
-
-import { ZERO_ADDRESS } from "../testUtils"
 
 chai.use(solidity)
 const { expect } = chai
@@ -69,6 +65,6 @@ describe("Root_Gauge", () => {
   })
 
   describe("Tests Checkpoint", () => {
-    it(`deploys`, async () => {})
+    it(`deploys`, async () => true)
   })
 })
