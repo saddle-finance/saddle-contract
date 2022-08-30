@@ -1,18 +1,14 @@
-import chai, { assert } from "chai"
+import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
-import { deployments } from "hardhat"
+import { deployments, ethers } from "hardhat"
 import {
   AnyCallTranslator,
-  LPToken,
+  MockAnyCall,
+  MockBridger,
   RootGauge,
   RootGaugeFactory,
 } from "../../build/typechain"
-import { mock } from "../../build/typechain/contracts/xchainGauges"
-import { MockAnyCall } from "../../build/typechain/contracts/xchainGauges/mock/MockAnycall.sol"
-import { MockBridger } from "../../build/typechain/contracts/xchainGauges/mock/MockBridger.sol"
-
-import { ZERO_ADDRESS } from "../testUtils"
 
 chai.use(solidity)
 const { expect } = chai
@@ -94,41 +90,35 @@ describe("RootGaugeFactory", () => {
     },
   )
 
-  const deployRootGauge = deployments.createFixture(
-    async ({ deployments, ethers }) => {
-      // set bridger to mock birdger
-      await rootGaugeFactory.set_bridger(11, mockBridger.address)
-      // set anycall to mock anycall
-      await rootGaugeFactory.set_call_proxy(mockAnyCall.address)
-      // set factory implementation
-      await rootGaugeFactory.set_implementation(rootGauge.address)
-      // deploy root gauge (no mirrored gauge, just on mainnet)
-      // TODO: below fails for unknown reason
-      const gaugeDeployTx = await rootGaugeFactory.deploy_gauge(
-        // mock chain ID
-        11,
-        // abcd bytes32()
-        "0x6162636400000000000000000000000000000000000000000000000000000000",
-        "Sample_Name",
-      )
+  const deployRootGauge = async function () {
+    // set bridger to mock birdger
+    await rootGaugeFactory.set_bridger(11, mockBridger.address)
+    // set anycall to mock anycall
+    await rootGaugeFactory.set_call_proxy(mockAnyCall.address)
+    // set factory implementation
+    await rootGaugeFactory.set_implementation(rootGauge.address)
+    // deploy root gauge (no mirrored gauge, just on mainnet)
+    // TODO: below fails for unknown reason
+    const gaugeDeployTx = await rootGaugeFactory.deploy_gauge(
+      // mock chain ID
+      11,
+      // keccack256(bytes32("Sample_Name"))
+      ethers.utils.keccak256(ethers.utils.formatBytes32String("Sample_Name")),
+      "Sample_Name",
+    )
 
-      const contractReceipt = await gaugeDeployTx.wait()
-      // console.log("receipt: ", contractReceipt.events)
-      const test_event = contractReceipt.events?.find(
-        (event) => event.event === "TestDisplay",
-      )
-      console.log(test_event)
-      const event = contractReceipt.events?.find(
-        (event) => event.event === "DeployedGauge",
-      )
-      console.log("event: ", event)
-      const implementationAddr = event?.args!["_implementation"]
-      console.log(implementationAddr)
-      expect(implementationAddr).to.be.eq(rootGauge.address)
-      const gaugeAddr = event?.args!["_implementation"]
-      expect((await rootGaugeFactory.get_gauge_count(11).toString()) == "1")
-    },
-  )
+    const contractReceipt = await gaugeDeployTx.wait()
+    // console.log("receipt: ", contractReceipt.events)
+    const event = contractReceipt.events?.find(
+      (event) => event.event === "DeployedGauge",
+    )
+    // console.log("event: ", event)
+    const implementationAddr = event?.args!["_implementation"]
+    console.log(implementationAddr)
+    expect(implementationAddr).to.be.eq(rootGauge.address)
+    const gaugeAddr = event?.args!["_gauge"]
+    expect((await rootGaugeFactory.get_gauge_count(11).toString()) == "1")
+  }
 
   beforeEach(async () => {
     await setupTest()
@@ -172,8 +162,11 @@ describe("RootGaugeFactory", () => {
   })
   describe("Deploy Gauge from RootGaugeFactory", () => {
     it(`Successfully deploys a root gauge`, async () => {
-      deployRootGauge()
+      await deployRootGauge()
       expect((await rootGaugeFactory.get_gauge_count(11).toString()) == "1")
+      expect((await rootGaugeFactory.get_gauge(11, 0)).toString()).to.not.eq(
+        ZERO_ADDRESS,
+      )
     })
   })
 })
