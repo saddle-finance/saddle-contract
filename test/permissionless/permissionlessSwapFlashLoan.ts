@@ -2,9 +2,15 @@ import chai from "chai"
 import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
-import { GenericERC20, LPToken, Swap } from "../build/typechain/"
+import {
+  GenericERC20,
+  LPToken,
+  MasterRegistry,
+  Swap,
+} from "../../build/typechain/"
 import {
   asyncForEach,
+  BIG_NUMBER_ZERO,
   getCurrentBlockTimestamp,
   getPoolBalances,
   getUserTokenBalance,
@@ -12,12 +18,12 @@ import {
   MAX_UINT256,
   setTimestamp,
   TIME,
-} from "./testUtils"
+} from "./../testUtils"
 
 chai.use(solidity)
 const { expect } = chai
 
-describe("Swap with 4 tokens", () => {
+describe("PermissionlessSwapFlashLoan with 4 tokens", () => {
   let signers: Array<Signer>
   let swap: Swap
   let DAI: GenericERC20
@@ -89,15 +95,24 @@ describe("Swap with 4 tokens", () => {
         },
       )
 
-      // Deploy Swap contract
+      // Set user1 as the fee collector
+      const masterRegistry: MasterRegistry = await ethers.getContract(
+        "MasterRegistry",
+      )
+      await masterRegistry.addRegistry(
+        ethers.utils.formatBytes32String("FeeCollector"),
+        user1Address,
+      )
+
+      // Deploy PermissionlessSwapFlashLoan contract
       swap = (await (
-        await ethers.getContractFactory("Swap", {
+        await ethers.getContractFactory("PermissionlessSwapFlashLoan", {
           libraries: {
             AmplificationUtils: (await get("AmplificationUtils")).address,
             SwapUtils: (await get("SwapUtils")).address,
           },
         })
-      ).deploy()) as Swap
+      ).deploy((await get("MasterRegistry")).address)) as Swap
 
       await swap.initialize(
         [DAI.address, USDC.address, USDT.address, SUSD.address],
@@ -265,7 +280,6 @@ describe("Swap with 4 tokens", () => {
 
   describe("withdrawAdminFees", () => {
     it("Reverts when called by non-owners", async () => {
-      await expect(swap.connect(user1).withdrawAdminFees()).to.be.reverted
       await expect(swap.connect(user2).withdrawAdminFees()).to.be.reverted
     })
 
@@ -273,23 +287,18 @@ describe("Swap with 4 tokens", () => {
       // Sets adminFee to 1% of the swap fees
       await swap.setAdminFee(BigNumber.from(10 ** 8))
 
-      const balancesBefore = await getUserTokenBalances(owner, [
-        DAI,
-        USDC,
-        USDT,
-        SUSD,
-      ])
+      const balancesBefore = await getUserTokenBalances(owner, TOKENS)
 
       await swap.withdrawAdminFees()
 
-      const balancesAfter = await getUserTokenBalances(owner, [
-        DAI,
-        USDC,
-        USDT,
-        SUSD,
-      ])
+      const balancesAfter = await getUserTokenBalances(owner, TOKENS)
 
       expect(balancesBefore).to.eql(balancesAfter)
+    })
+
+    it("Successfully gets called by both owner and the fee collector", async () => {
+      await swap.withdrawAdminFees()
+      await swap.connect(user1).withdrawAdminFees()
     })
 
     it("Succeeds with expected amount of fees withdrawn", async () => {
@@ -301,26 +310,27 @@ describe("Swap with 4 tokens", () => {
       expect(await swap.getAdminBalance(0)).to.eq(String(10003917589952))
       expect(await swap.getAdminBalance(1)).to.eq(String(9))
 
-      const balancesBefore = await getUserTokenBalances(owner, [
-        DAI,
-        USDC,
-        USDT,
-        SUSD,
-      ])
+      const balancesBefore = await getUserTokenBalances(owner, TOKENS)
+      const collectorBalancesBefore = await getUserTokenBalances(user1, TOKENS)
 
       await swap.withdrawAdminFees()
 
-      const balancesAfter = await getUserTokenBalances(owner, [
-        DAI,
-        USDC,
-        USDT,
-        SUSD,
-      ])
-
-      expect(balancesAfter[0].sub(balancesBefore[0])).to.eq(
-        String(10003917589952),
+      const balancesAfter = await getUserTokenBalances(owner, TOKENS)
+      const collectorBalancesAfter = await getUserTokenBalances(user1, TOKENS)
+      const balancesDelta = balancesAfter.map((balance, i) =>
+        balance.sub(balancesBefore[i]),
       )
-      expect(balancesAfter[1].sub(balancesBefore[1])).to.eq(String(9))
+      const collectorBalancesDelta = collectorBalancesAfter.map((balance, i) =>
+        balance.sub(collectorBalancesBefore[i]),
+      )
+
+      expect(balancesDelta).to.eql(collectorBalancesDelta)
+      expect(balancesDelta).to.eql([
+        BigNumber.from(5001958794976),
+        BigNumber.from(4),
+        BIG_NUMBER_ZERO,
+        BIG_NUMBER_ZERO,
+      ])
     })
 
     it("Withdrawing admin fees has no impact on users' withdrawal", async () => {
