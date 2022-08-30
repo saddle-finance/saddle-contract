@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-4.2.0/token/ERC20/utils/SafeERC20.sol";
 
 interface IOptimismStandardBridge {
-
     function depositERC20To(
         address _l1token,
         address _l2token,
@@ -41,10 +40,7 @@ contract ArbitrumBridger {
 
     event TransferOwnership(address oldOwner, address newOwner);
 
-    event UpdateGasLimit(
-        uint32 oldGasLimit,
-        uint32 newGasLimit
-    );
+    event UpdateGasLimit(uint32 oldGasLimit, uint32 newGasLimit);
 
     constructor(
         uint32 _gasLimit,
@@ -54,10 +50,7 @@ contract ArbitrumBridger {
         SDL = _SDL;
         OP_SDL = _OP_SDL;
         gasLimit = _gasLimit;
-        emit UpdateGasLimit(
-            uint32(0),
-            gasLimit
-        );
+        emit UpdateGasLimit(uint32(0), gasLimit);
 
         // approve token transfer to gateway
         IERC20 sdlToken = IERC20(SDL);
@@ -73,40 +66,32 @@ contract ArbitrumBridger {
         address _to,
         uint256 _amount
     ) external payable {
-
         // TODO: doesn't allow for safeTransferFrom?
         assert(IERC20(_token).transferFrom(msg.sender, address(this), _amount));
         if (_token != SDL && !approved[_token]) {
             // TODO: doesn't allow for safeApprove?
             assert(
-                IERC20(_token).approve(
-                    OPTIMISM_L1_STANDARD_BRIDGE,
-                    MAX_UINT256
-                )
+                IERC20(_token).approve(OPTIMISM_L1_STANDARD_BRIDGE, MAX_UINT256)
             );
             approved[_token] = true;
         }
         IOptimismStandardBridge(OPTIMISM_L1_STANDARD_BRIDGE).depositERC20To(
-        SDL,   
-        OP_SDL,      
-        _to, 
-        _amount,                 
-        gasLimit,                                   
-        "0x");
+            SDL,
+            OP_SDL,
+            _to,
+            _amount,
+            gasLimit,
+            "0x"
+        );
     }
 
     function cost() external view returns (uint256) {
-        return (gasLimit );
+        return (gasLimit);
     }
 
-    function setGasLimit(
-        uint32 _gasLimit
-    ) external {
+    function setGasLimit(uint32 _gasLimit) external {
         require(msg.sender == owner, "error msg");
-        emit UpdateGasLimit(
-            gasLimit,
-            _gasLimit
-        );
+        emit UpdateGasLimit(gasLimit, _gasLimit);
         gasLimit = _gasLimit;
     }
 

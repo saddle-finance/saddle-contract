@@ -29,15 +29,12 @@ contract MockBridger {
     uint256 private constant MAX_UINT256 = 2**256 - 1;
     address private constant ZERO_ADDRESS =
         0x0000000000000000000000000000000000000000;
-   
-    mapping(address => bool) public approved;
 
+    mapping(address => bool) public approved;
 
     using SafeERC20 for IERC20;
 
-
-    constructor(
-    ) {
+    constructor() {
         // // approve token transfer to gateway
         // IERC20 sdlToken = IERC20(SDL);
         // // TODO: doesn't allow for safeApprove?
