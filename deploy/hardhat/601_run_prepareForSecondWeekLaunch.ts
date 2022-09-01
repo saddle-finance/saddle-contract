@@ -1,15 +1,15 @@
-import { ethers } from "hardhat"
-
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import {
-  GaugeHelperContract,
   GaugeController,
+  GaugeHelperContract,
   LiquidityGaugeV5,
-} from "../build/typechain"
+} from "../../build/typechain"
 import {
   BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
   increaseTimestamp,
-} from "../test/testUtils"
+} from "../../test/testUtils"
 
 /**
  * Interface used for the state of each gauge's weights.
@@ -25,16 +25,11 @@ interface GaugeWeight {
   relativeWeight: string
 }
 
-/**
- * Logs current gauge weights.
- * Sets different gauge weights for each gauge.
- * Logs what future gauge weights will change to after epoch.
- * Logs current claimable rewards.
- * Fast forwards time to the next epoch(1 week).
- * Logs claimable rewards after fast forwarding.
- */
+const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deploy, get, getOrNull, execute, read, log } = deployments
+  const { deployer } = await getNamedAccounts()
 
-async function main() {
   // at index 0 is hardhat deployer address
   // on localhost network, we use this address as admins for most contracts
   const signers = await ethers.getSigners()
@@ -230,9 +225,4 @@ async function main() {
   }
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error)
-    process.exit(1)
-  })
+export default func

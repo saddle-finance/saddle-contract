@@ -1,41 +1,32 @@
-import chai from "chai"
-import { ethers } from "hardhat"
-import { solidity } from "ethereum-waffle"
-const { expect } = chai
+import { expect } from "chai"
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import {
   GaugeController,
-  SDL,
   GaugeHelperContract,
-  VotingEscrow,
-  Minter,
-  LiquidityGaugeV5,
   GenericERC20,
-  IPoolRegistry,
   ILiquidityGaugeV5,
-} from "../build/typechain"
+  IPoolRegistry,
+  LiquidityGaugeV5,
+  Minter,
+  SDL,
+  VotingEscrow,
+} from "../../build/typechain"
 import {
+  asyncForEach,
   BIG_NUMBER_1E18,
+  BIG_NUMBER_ZERO,
   getCurrentBlockTimestamp,
   MAX_UINT256,
-  asyncForEach,
-  ZERO_ADDRESS,
   setTimestamp,
-  BIG_NUMBER_ZERO,
-} from "../test/testUtils"
-chai.use(solidity)
+  ZERO_ADDRESS,
+} from "../../test/testUtils"
 
-/**
- * Adds liquidity to all pools with a gauge.
- * Deploys and mints two dummy tokens and
- * adds them as a reward to the USDv2 gauge.
- * Transfers USdv2 LP tokens to signers[1] and
- * signers[2].
- * Transfers SDL to signer[1] and creates a max
- * length lock for veSDL.
- * Both signers deposit their LP into the USDv2 gauge.
- */
+const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deploy, get, getOrNull, execute, read, log } = deployments
+  const { deployer } = await getNamedAccounts()
 
-async function main() {
   const signers = await ethers.getSigners()
 
   const gaugeController = (await ethers.getContract(
@@ -280,9 +271,4 @@ async function main() {
   )
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error)
-    process.exit(1)
-  })
+export default func

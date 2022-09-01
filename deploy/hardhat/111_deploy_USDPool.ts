@@ -73,4 +73,5 @@ func.dependencies = [
   "SwapDeployer",
   "SwapFlashLoan",
   "USDPoolTokens",
+  "BTCPool",
 ]
