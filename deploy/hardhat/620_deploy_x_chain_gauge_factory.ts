@@ -1,42 +1,36 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { RootGaugeFactory } from "../../build/typechain"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { increaseTimestamp } from "../../test/testUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
   const { deployer, libraryDeployer } = await getNamedAccounts()
 
-  const mockBridger = await deploy("MockBridger", {
+  const deployOptions = {
     from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
-  })
-
-  const mockAnyCall = await deploy("MockAnyCall", {
+  }
+  const executeOptions = {
     from: deployer,
     log: true,
-    skipIfAlreadyDeployed: true,
-  })
+  }
 
+  const mockBridger = await deploy("MockBridger", deployOptions)
+  const mockAnyCall = await deploy("MockAnyCall", deployOptions)
   const anyCallTranslator = await deploy("AnyCallTranslator", {
-    from: deployer,
-    log: true,
-    skipIfAlreadyDeployed: true,
+    ...deployOptions,
     args: [deployer, mockAnyCall.address],
   })
 
   const rgf = await deploy("RootGaugeFactory", {
-    from: deployer,
-    log: true,
-    skipIfAlreadyDeployed: true,
+    ...deployOptions,
     args: [anyCallTranslator.address, deployer],
   })
 
   const rootGaugeImpl = await deploy("RootGauge", {
-    from: deployer,
-    log: true,
-    skipIfAlreadyDeployed: true,
+    ...deployOptions,
     args: [
       (await get("SDL")).address,
       (await get("GaugeController")).address,
@@ -47,10 +41,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Add to RootGaugeFactory to master registry
   await execute(
     "MasterRegistry",
-    {
-      from: deployer,
-      log: true,
-    },
+    executeOptions,
     "addRegistry",
     ethers.utils.formatBytes32String("RootGaugeFactory"),
     rgf.address,
@@ -59,39 +50,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Update RootGaugeFactory bridger for chainId 11, set call proxy, set implementation
   await execute(
     "RootGaugeFactory",
-    {
-      from: deployer,
-      log: true,
-    },
+    executeOptions,
     "set_bridger",
     11,
     mockBridger.address,
   )
   await execute(
     "RootGaugeFactory",
-    {
-      from: deployer,
-      log: true,
-    },
+    executeOptions,
     "set_call_proxy",
     mockAnyCall.address,
   )
   await execute(
     "RootGaugeFactory",
-    {
-      from: deployer,
-      log: true,
-    },
+    executeOptions,
     "set_implementation",
     rootGaugeImpl.address,
   )
 
   // Deploy a root gauge with name "Sample_Name" @ chainId 11 for testing
+  // But do not add to gauge controller
   await execute(
     "RootGaugeFactory",
     {
-      from: deployer,
-      log: true,
+      ...executeOptions,
       gasLimit: 500000, // 353411 gas expected
     },
     "deploy_gauge",
@@ -99,6 +81,32 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ethers.utils.keccak256(ethers.utils.formatBytes32String("Sample_Name")),
     "Sample_Name",
   )
+
+  // Deploy a root gauge with name "Sample_Name_2" @ chainId 11 for testing
+  await execute(
+    "RootGaugeFactory",
+    {
+      ...executeOptions,
+      gasLimit: 500000, // 353411 gas expected
+    },
+    "deploy_gauge",
+    11,
+    ethers.utils.keccak256(ethers.utils.formatBytes32String("Sample_Name_2")),
+    "Sample_Name_2",
+  )
+  const deployedGauge = await read("RootGaugeFactory", "get_gauge", 11, 1)
+
+  await execute(
+    "GaugeController",
+    executeOptions,
+    "add_gauge",
+    deployedGauge,
+    1,
+    100,
+  )
+
+  // Skip a week to apply the new weights
+  await increaseTimestamp(86400 * 7)
 }
 
 export default func
