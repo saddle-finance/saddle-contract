@@ -29,16 +29,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       `0x${(1e18).toString(16)}`,
     ])
 
-    const Multicall3 = await ethers.getContractFactory(
+    const multicall3Factory = await ethers.getContractFactory(
       "Multicall3",
       impersonatedOwner,
     )
 
-    const multicall3 = await Multicall3.deploy()
+    const multicall3 = await multicall3Factory.deploy()
     await multicall3.deployed()
 
     await save("Multicall3", {
-      abi: multicall3.abi,
+      abi: multicall3Factory.interface.format() as string[],
       address: multicall3.address,
     })
   }
