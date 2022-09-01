@@ -58,6 +58,7 @@ methods {
     owner() returns(address) envfree
     getAdminBalance(uint256) returns(uint256) envfree
     paused() returns(bool) envfree
+    getVirtualPrice() returns(uint256) envfree
 
     // harness functions
     getSwapFee() returns(uint256) envfree
@@ -138,7 +139,7 @@ rule cantReinit(method f) filtered {
 }
 
 /*
-    Sum of all users' BPT balance must be less than or equal to BPT's `totalSupply`
+    Sum of all users' LP balance must be less than or equal to LP's `totalSupply`
 */
 invariant solvency()
     getTotalSupply() == sum_all_users_LP()
@@ -235,11 +236,12 @@ rule pausedMeansLPMonotonicallyDecreases(method f) {
 /*
     When paused, ratio between underlying tokens must stay constant
 */
-rule pausedMeansTokenRatioConstant(method f) {
+rule pausedImpliesTokenRatioConstant(method f) {
     uint8 tokenAIndex; uint8 tokenBIndex;
     
     uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
     uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+    
 
     mathint ratioBefore = tokenABalanceBefore / tokenBBalanceBefore;
 
@@ -252,6 +254,18 @@ rule pausedMeansTokenRatioConstant(method f) {
     mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
 
     assert paused() && (tokenABalanceAfter != 0 && tokenBBalanceAfter != 0)  => ratioAfter == ratioBefore, "total supply of the lp token must not increase when paused";
+}
+
+/*
+    When paused, all underlying token balances must decrease on LP withdrawal
+*/ 
+rule pausedImpliesNoSingleTokenWithdrawal (method f) {
+    uint8 tokenAIndex; uint8 tokenBIndex;
+    
+    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+    
+    assert false;
 }
 
 /*
@@ -289,15 +303,18 @@ rule onlyAdminCanWithdrawFees() {
 }
 
 rule monotonicallyIncreasingFees(method f) filtered {
-    f -> f.selector == withdrawAdminFees().selector
+    f -> f.selector != withdrawAdminFees().selector && f.selector == removeLiquidity(uint256,uint256[],uint256).selector
 } {
     uint256 index;
+
+    env e;
+    require e.msg.sender != currentContract;
 
     requireInvariant solvency;
 
     uint256 balanceBefore = getAdminBalance(index);
 
-    env e; calldataarg args;
+    calldataarg args;
     f(e, args);
 
     uint256 balanceAfter = getAdminBalance(index);
@@ -305,6 +322,14 @@ rule monotonicallyIncreasingFees(method f) filtered {
     assert balanceAfter >= balanceBefore , "fees must not decrease, except for withdraw by admin";
 
 }
+
+/* 
+    Virtual price should be strictly greater than 1
+*/
+/*
+invariant virtualPriceStrictlyGreaterOne()
+    getVirtualPrice() >= 1
+*/
 
 /* P
     Only admin can set swap and admin fees
@@ -333,6 +358,9 @@ rule onlyAdminCanSetAdminFees(method f) {
 
     assert swapFeeAfter != swapFeeBefore => f.selector == setAdminFee(uint256).selector && e.msg.sender == owner(), "fees must only be changes by admin";
 }
+
+/* 
+    Increasing 
 
 ////////////////////////////////////////////////////////////////////////////
 //                                 Rules                                  //
