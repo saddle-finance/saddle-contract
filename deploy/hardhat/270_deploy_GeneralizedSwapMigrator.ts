@@ -125,4 +125,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["GeneralizedSwapMigrator"]
-func.dependencies = ["WCUSDMetaPoolTokens", "WCUSDMetaPoolUpdated"]
+func.dependencies = [
+  "SUSDMetaPool",
+  "SUSDMetaPoolUpdated",
+  "TBTCMetaPool",
+  "TBTCMetaPoolUpdated",
+  "WCUSDMetaPool",
+  "WCUSDMetaPoolUpdated",
+]
