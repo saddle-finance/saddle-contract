@@ -1,5 +1,3 @@
-import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { ethers, network } from "hardhat"
 import { GaugeController, SDL } from "../../build/typechain"
 import { getHardhatTestSigners, logNetworkDetails } from "../utils"
@@ -8,8 +6,6 @@ import SDLDeployment from "../../deployments/mainnet/SDL.json"
 import { impersonateAccount, setEtherBalance } from "../../test/testUtils"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { CHAIN_ID } from "../../utils/network"
-const { expect } = chai
-chai.use(solidity)
 
 /**
  * Forks mainnet and attempts to enable on-chain gauge voting

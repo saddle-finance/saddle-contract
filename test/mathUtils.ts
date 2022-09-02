@@ -1,10 +1,8 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { constants } from "ethers"
 import { ethers } from "hardhat"
 import { TestMathUtils } from "../build/typechain/"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("MathUtils", () => {
@@ -34,8 +32,12 @@ describe("MathUtils", () => {
       expect(await mathUtils.within1(1, 3)).to.eq(false)
     })
 
-    it("Reverts during an integer overflow", async () => {
-      await expect(mathUtils.within1(constants.MaxUint256, -1)).to.be.reverted
+    it("Returns false when a = 0, b = MaxUint256", async () => {
+      expect(await mathUtils.within1(0, constants.MaxUint256)).to.eq(false)
+    })
+
+    it("Returns false when a = MaxUint256, b = 0", async () => {
+      expect(await mathUtils.within1(constants.MaxUint256, 0)).to.eq(false)
     })
   })
 
@@ -48,9 +50,13 @@ describe("MathUtils", () => {
       expect(await mathUtils.difference(1, 3)).to.eq(2)
     })
 
-    it("Reverts during an integer overflow", async () => {
-      await expect(mathUtils.difference(-1, constants.MaxUint256)).to.be
-        .reverted
+    it("Returns correct difference when a and b are on the extremes", async () => {
+      expect(await mathUtils.difference(0, constants.MaxUint256)).to.be.eq(
+        constants.MaxUint256,
+      )
+      expect(await mathUtils.difference(constants.MaxUint256, 0)).to.be.eq(
+        constants.MaxUint256,
+      )
     })
   })
 })

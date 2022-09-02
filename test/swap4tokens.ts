@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
 import { GenericERC20, LPToken, Swap } from "../build/typechain/"
@@ -14,7 +13,6 @@ import {
   TIME,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Swap with 4 tokens", () => {

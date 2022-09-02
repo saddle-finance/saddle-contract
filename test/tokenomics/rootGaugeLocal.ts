@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
@@ -19,7 +18,6 @@ import {
   setTimestamp,
 } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 const DAY = 86400

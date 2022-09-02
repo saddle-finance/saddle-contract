@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
@@ -13,7 +12,6 @@ import {
   ZERO_ADDRESS,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Vesting", () => {
@@ -112,7 +110,7 @@ describe("Vesting", () => {
           3600,
           7200,
         ),
-      ).to.be.revertedWith("beneficiary cannot be empty")
+      ).to.be.revertedWith("_beneficiary cannot be empty")
     })
 
     it("Fails to initialize a clone with longer cliff than duration", async () => {
