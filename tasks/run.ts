@@ -6,11 +6,11 @@ import { NetworkUserConfig } from "hardhat/types"
  * Allows run command to specify which network to read deployments from
  * This is useful when you have running hardhat network like `hardhat node --fork mainnet`
  * and want to connect to it with existing deployments.
- * example: hardhat --network localhost run --include-network mainnet
+ * example: hardhat --network localhost run --includeNetwork mainnet
  */
 task("run", "Starts a JSON-RPC server on top of Hardhat Network")
   .addOptionalParam(
-    "include-network",
+    "includeNetwork",
     "The name of the network to include the deployments from. Only valid when running with --network localhost",
     "hardhat",
     types.string,
@@ -21,19 +21,19 @@ task("run", "Starts a JSON-RPC server on top of Hardhat Network")
      */
 
     if (
-      taskArgs["include-network"] &&
+      taskArgs.includeNetwork &&
       hre.hardhatArguments.network !== "localhost"
     ) {
       throw new Error(
-        `--include-network can only be used when using run command with "--network localhost"`,
+        `--includeNetwork can only be used when using run command with "--network localhost"`,
       )
     }
 
     // Forks an existing network if the given argument is a network name
     const network: NetworkUserConfig | undefined =
-      hre.userConfig?.networks?.[taskArgs["include-network"]]
+      hre.userConfig?.networks?.[taskArgs.includeNetwork]
     if (network) {
-      const networkName = taskArgs["include-network"]
+      const networkName = taskArgs.includeNetwork
       console.log(`Found matching network name, ${networkName}`)
 
       // Workaround for hardhat-deploy issue #115 https://github.com/wighawag/hardhat-deploy/issues/115
