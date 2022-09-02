@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { solidityPack } from "ethers/lib/utils"
 import { deployments } from "hardhat"
@@ -11,7 +10,6 @@ import {
 } from "../build/typechain/"
 import { asyncForEach, getUserTokenBalance, MAX_UINT256 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Swap Flashloan", () => {

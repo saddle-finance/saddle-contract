@@ -1,13 +1,10 @@
 import { ethers } from "hardhat"
-import { solidity } from "ethereum-waffle"
 
-import chai from "chai"
 import { deployments } from "hardhat"
 import { ZERO_ADDRESS } from "../test/testUtils"
 import { PoolRegistry } from "../build/typechain/"
 import { PoolType } from "../utils/constants"
 
-chai.use(solidity)
 const { get, execute } = deployments
 
 async function registerPools() {

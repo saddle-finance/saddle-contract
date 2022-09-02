@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import { DeployResult } from "hardhat-deploy/dist/types"
@@ -13,7 +12,6 @@ import {
   ZERO_ADDRESS,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Token", () => {

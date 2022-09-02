@@ -1,5 +1,4 @@
 import { JsonRpcProvider } from "@ethersproject/providers"
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { Signer } from "ethers"
 import { ethers } from "hardhat"
 import { Network } from "hardhat/types"

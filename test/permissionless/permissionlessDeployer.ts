@@ -2,7 +2,6 @@
 /*eslint max-len: ["error", { "code": 150 }]*/
 
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
@@ -23,7 +22,6 @@ import {
   setTimestamp,
 } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
 

@@ -1,10 +1,8 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { Signer } from "ethers"
 import { ethers } from "hardhat"
 import { GenericERC20 } from "../build/typechain/"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("GenericERC20", async () => {

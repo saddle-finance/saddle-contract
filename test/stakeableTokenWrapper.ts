@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { Signer, Wallet } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
@@ -8,7 +7,6 @@ import {
   StakeableTokenWrapper,
 } from "../build/typechain/"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("StakeableTokenWrapper", () => {
