@@ -4,13 +4,7 @@ import { deployments } from "hardhat"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
-import {
-  GenericERC20,
-  LPToken,
-  MetaSwap,
-  MetaSwapUtils,
-  Swap,
-} from "../build/typechain/"
+import { GenericERC20, LPToken, MetaSwap, Swap } from "../build/typechain/"
 import {
   asyncForEach,
   deployContractWithLibraries,

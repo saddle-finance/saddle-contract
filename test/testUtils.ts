@@ -1,7 +1,7 @@
 import { BytesLike } from "@ethersproject/bytes"
 import { Contract } from "@ethersproject/contracts"
 import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
-import { ethers, network } from "hardhat"
+import { ethers } from "hardhat"
 import { DeploymentsExtension } from "hardhat-deploy/dist/types"
 import { Artifact } from "hardhat/types"
 import { IERC20, Swap } from "../build/typechain/"
