@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, BigNumberish, Signer } from "ethers"
 import { deployments } from "hardhat"
 import { SDL, VotingEscrow } from "../../build/typechain/"
@@ -11,7 +10,6 @@ import {
   setTimestamp,
 } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 const REVERT_MSG_ONLY_LOCK_FUTURE = "Can only lock until time in the future"

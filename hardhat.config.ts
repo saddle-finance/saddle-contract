@@ -1,11 +1,5 @@
+import "@nomicfoundation/hardhat-toolbox"
 import "@nomiclabs/hardhat-vyper"
-import "@nomiclabs/hardhat-ethers"
-import "@nomiclabs/hardhat-waffle"
-import "@nomiclabs/hardhat-web3"
-import "@nomiclabs/hardhat-etherscan"
-import "@typechain/hardhat"
-import "hardhat-gas-reporter"
-import "solidity-coverage"
 import "hardhat-deploy"
 import "hardhat-spdx-license-identifier"
 

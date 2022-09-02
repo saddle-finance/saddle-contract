@@ -1,12 +1,10 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments, network } from "hardhat"
 import { GenericERC20, Swap, SwapCalculator } from "../build/typechain"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../utils/network"
 import { BIG_NUMBER_1E18 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
 

@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Contract, Signer } from "ethers"
 import { deployments } from "hardhat"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
@@ -13,7 +12,6 @@ import {
   setEtherBalance,
 } from "../../test/testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 const META_SWAP_ADDRESS = "0x824dcD7b044D60df2e89B1bB888e66D8BCf41491"

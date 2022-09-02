@@ -1,11 +1,8 @@
 import chai from "chai"
-import { deployContract, solidity } from "ethereum-waffle"
-import { BigNumber, Signer, Wallet } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
 import GenericERC20Artifact from "../../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import LPTokenArtifact from "../../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import MetaSwapDepositArtifact from "../../build/artifacts/contracts/meta/MetaSwapDeposit.sol/MetaSwapDeposit.json"
-import MetaSwapUtilsArtifact from "../../build/artifacts/contracts/meta/MetaSwapUtils.sol/MetaSwapUtils.json"
 import {
   GenericERC20,
   LPToken,
@@ -21,7 +18,6 @@ import {
   MAX_UINT256,
 } from "./../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("PermissionlessMetaSwapFlashLoan with inflated baseVirtualPrice and 50% admin fees", async () => {
@@ -101,11 +97,9 @@ describe("PermissionlessMetaSwapFlashLoan with inflated baseVirtualPrice and 50%
       )) as GenericERC20
 
       // Deploy dummy tokens
-      susd = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-        "Synthetix USD",
-        "sUSD",
-        "18",
-      ])) as GenericERC20
+      susd = (await (
+        await ethers.getContractFactory("GenericERC20", owner)
+      ).deploy("Synthetix USD", "sUSD", "18")) as GenericERC20
 
       // Mint tokens
       await asyncForEach(
@@ -117,13 +111,6 @@ describe("PermissionlessMetaSwapFlashLoan with inflated baseVirtualPrice and 50%
           await susd.mint(address, BigNumber.from(10).pow(18).mul(100000))
         },
       )
-
-      // Deploy MetaSwapUtils
-      metaSwapUtils = (await deployContract(
-        owner,
-        MetaSwapUtilsArtifact,
-      )) as MetaSwapUtils
-      await metaSwapUtils.deployed()
 
       metaSwap = (await (
         await ethers.getContractFactory("PermissionlessMetaSwapFlashLoan", {
@@ -196,10 +183,9 @@ describe("PermissionlessMetaSwapFlashLoan with inflated baseVirtualPrice and 50%
       })
 
       // Deploy MetaSwapDeposit contract
-      metaSwapDeposit = (await deployContract(
-        owner,
-        MetaSwapDepositArtifact,
-      )) as MetaSwapDeposit
+      metaSwapDeposit = (await (
+        await ethers.getContractFactory("MetaSwapDeposit", owner)
+      ).deploy()) as MetaSwapDeposit
 
       // Initialize MetaSwapDeposit
       await metaSwapDeposit.initialize(

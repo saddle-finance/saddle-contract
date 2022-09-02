@@ -7,6 +7,7 @@ import { Artifact } from "hardhat/types"
 import { IERC20, Swap } from "../build/typechain/"
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
 import { CHAIN_ID } from "../utils/network"
+import * as helpers from "@nomicfoundation/hardhat-network-helpers"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -67,16 +68,16 @@ export async function deployContractWithLibraries(
   libraries: Record<string, string>,
   args?: Array<unknown>,
 ): Promise<Contract> {
-  const swapFactory = (await ethers.getContractFactory(
+  const contractFactory = (await ethers.getContractFactory(
     artifact.abi,
     linkBytecode(artifact, libraries),
     signer,
   )) as ContractFactory
 
   if (args) {
-    return swapFactory.deploy(...args)
+    return contractFactory.deploy(...args)
   } else {
-    return swapFactory.deploy()
+    return contractFactory.deploy()
   }
 }
 
@@ -151,31 +152,20 @@ export async function getUserTokenBalance(
 }
 
 // EVM methods
-
-export async function forceAdvanceOneBlock(timestamp?: number): Promise<any> {
-  const params = timestamp ? [timestamp] : []
-  return ethers.provider.send("evm_mine", params)
+export async function forceAdvanceOneBlock(): Promise<any> {
+  return helpers.mine()
 }
 
 export async function setTimestamp(timestamp: number): Promise<any> {
-  return forceAdvanceOneBlock(timestamp)
+  return helpers.time.increaseTo(timestamp)
 }
 
 export async function increaseTimestamp(timestampDelta: number): Promise<any> {
-  await ethers.provider.send("evm_increaseTime", [timestampDelta])
-  return forceAdvanceOneBlock()
+  return helpers.time.increase(timestampDelta)
 }
 
 export async function setNextTimestamp(timestamp: number): Promise<any> {
-  const chainId = (await ethers.provider.getNetwork()).chainId
-
-  switch (chainId) {
-    case 31337: // buidler evm
-      return ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
-    case 1337: // ganache
-    default:
-      return setTimestamp(timestamp)
-  }
+  return helpers.time.setNextBlockTimestamp(timestamp)
 }
 
 export async function getCurrentBlockTimestamp(): Promise<number> {
@@ -186,11 +176,7 @@ export async function getCurrentBlockTimestamp(): Promise<number> {
 export async function impersonateAccount(
   address: string,
 ): Promise<providers.JsonRpcSigner> {
-  await network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [address],
-  })
-
+  await helpers.impersonateAccount(address)
   return ethers.provider.getSigner(address)
 }
 
@@ -198,10 +184,7 @@ export async function setEtherBalance(
   address: string,
   amount: BigNumber,
 ): Promise<any> {
-  return ethers.provider.send("hardhat_setBalance", [
-    address,
-    amount.toHexString(),
-  ])
+  await helpers.setBalance(address, amount)
 }
 
 export async function asyncForEach<T>(

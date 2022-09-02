@@ -1,5 +1,4 @@
 import chai from "chai"
-import { deployContract, solidity } from "ethereum-waffle"
 import { BigNumber, Signer, Wallet } from "ethers"
 import { deployments } from "hardhat"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
@@ -23,7 +22,6 @@ import {
   MAX_UINT256,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Meta-Swap with inflated baseVirtualPrice", async () => {
@@ -96,11 +94,9 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
       )) as GenericERC20
 
       // Deploy dummy tokens
-      susd = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-        "Synthetix USD",
-        "sUSD",
-        "18",
-      ])) as GenericERC20
+      susd = (await (
+        await ethers.getContractFactory("GenericERC20", owner)
+      ).deploy("Synthetix USD", "sUSD", "18")) as GenericERC20
 
       // Mint tokens
       await asyncForEach(
@@ -112,13 +108,6 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
           await susd.mint(address, BigNumber.from(10).pow(18).mul(100000))
         },
       )
-
-      // Deploy MetaSwapUtils
-      metaSwapUtils = (await deployContract(
-        owner,
-        MetaSwapUtilsArtifact,
-      )) as MetaSwapUtils
-      await metaSwapUtils.deployed()
 
       // Deploy Swap with SwapUtils library
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {
@@ -189,10 +178,9 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
       })
 
       // Deploy MetaSwapDeposit contract
-      metaSwapDeposit = (await deployContract(
-        owner,
-        MetaSwapDepositArtifact,
-      )) as MetaSwapDeposit
+      metaSwapDeposit = (await (
+        await ethers.getContractFactory("MetaSwapDeposit", owner)
+      ).deploy()) as MetaSwapDeposit
 
       // Initialize MetaSwapDeposit
       await metaSwapDeposit.initialize(

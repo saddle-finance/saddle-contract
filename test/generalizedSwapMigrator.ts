@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
@@ -15,7 +14,6 @@ import {
   MAX_UINT256,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("GeneralizedSwapMigrator", () => {

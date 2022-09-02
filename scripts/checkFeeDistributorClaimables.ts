@@ -15,13 +15,7 @@ import {
   VotingEscrow,
 } from "../build/typechain"
 
-import chai from "chai"
 import { ethers } from "hardhat"
-import { solidity } from "ethereum-waffle"
-
-const { expect } = chai
-
-chai.use(solidity)
 
 async function main() {
   // at index 0 is hardhat deployer address

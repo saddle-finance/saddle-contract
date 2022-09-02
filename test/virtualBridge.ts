@@ -1,6 +1,5 @@
 import chai from "chai"
 import dotenv from "dotenv"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer, utils } from "ethers"
 import { deployments, ethers, network } from "hardhat"
 import { Bridge, GenericERC20, LPToken, Swap } from "../build/typechain/"
@@ -15,7 +14,6 @@ import {
 } from "./testUtils"
 
 dotenv.config()
-chai.use(solidity)
 const { expect } = chai
 
 const INITIAL_A_VALUE = 50
