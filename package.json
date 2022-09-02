@@ -74,7 +74,7 @@
     "coverage": "hardhat coverage --temp ./build/artifacts",
     "deploy": "hardhat deploy",
     "start": "hardhat node",
-    "fork": "dotenv -v FORK_NETWORK=$npm_config_network hardhat node",
+    "fork": "hardhat node --fork $npm_config_network",
     "prepare": "npm run build",
     "addresses": "node scripts/print-addresses.js"
   },
