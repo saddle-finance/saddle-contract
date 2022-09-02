@@ -1,7 +1,13 @@
 import { Address, Deployment } from "hardhat-deploy/dist/types"
 
+/**
+ * Prints a table with the new deployments name and address.
+ * Both parameters are object type of { [contractName: string]: string }
+ * @param prevDeployments Object containing the names and addresses of previous deployments
+ * @param currDeployments Object containing the names and addresses of current deployments
+ */
 export function compareDeployments(
-  prevDeplyments: { [contractName: string]: Address },
+  prevDeployments: { [contractName: string]: Address },
   currDeployments: { [contractName: string]: Address },
 ) {
   // Filter out any existing deployments that have not changed
@@ -10,7 +16,7 @@ export function compareDeployments(
   ).reduce((acc: { [contractName: string]: Address }, key) => {
     if (
       !currDeployments.hasOwnProperty(key) ||
-      prevDeplyments[key] !== currDeployments[key]
+      prevDeployments[key] !== currDeployments[key]
     ) {
       acc[key] = currDeployments[key]
     }
@@ -26,6 +32,11 @@ export function compareDeployments(
   }
 }
 
+/**
+ * Converts the deployments from the hardhat-deploy library to a simple address map
+ * @param deploymentMap The deployments you get from the hardhat-deploy library using functions like all()
+ * @returns Object with key value pairs of contract name to address
+ */
 export function convertDeploymentsToSimpleAddressMap(deploymentMap: {
   [p: string]: Deployment
 }): { [p: string]: Address } {

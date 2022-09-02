@@ -5,7 +5,9 @@ import {
   convertDeploymentsToSimpleAddressMap,
 } from "./utils"
 
-// Override the default deploy task
+/*
+ * Prints a table with the new deployments name and address
+ */
 task("deploy", async (taskArgs, hre, runSuper) => {
   const { all } = hre.deployments
   /*

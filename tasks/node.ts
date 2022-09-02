@@ -6,7 +6,11 @@ import {
   convertDeploymentsToSimpleAddressMap,
 } from "./utils"
 
-// Override the default node task
+/*
+ * Extends the --fork option to parse network names
+ * example: hardhat node --fork arbitrum_mainnet --fork-block-number 111111
+ *          hardhat node --fork mainnet
+ */
 task("node", "Starts a JSON-RPC server on top of Hardhat Network").setAction(
   async (taskArgs, hre, runSuper) => {
     const { all } = hre.deployments

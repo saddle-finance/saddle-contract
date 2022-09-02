@@ -2,12 +2,17 @@ import "hardhat-deploy"
 import { task, types } from "hardhat/config"
 import { NetworkUserConfig } from "hardhat/types"
 
-// Override the default run task
+/*
+ * Allows run command to specify which network to read deployments from
+ * This is useful when you have running hardhat network like `hardhat node --fork mainnet`
+ * and want to connect to it with existing deployments.
+ * example: hardhat --network localhost run --include-network mainnet
+ */
 task("run", "Starts a JSON-RPC server on top of Hardhat Network")
   .addOptionalParam(
-    "fork",
-    "The name of the network that localhost is running",
-    "localhost",
+    "include-network",
+    "The name of the network to include the deployments from. Only valid when running with --network localhost",
+    "hardhat",
     types.string,
   )
   .setAction(async (taskArgs, hre, runSuper) => {
@@ -15,17 +20,20 @@ task("run", "Starts a JSON-RPC server on top of Hardhat Network")
      * Pre actions
      */
 
-    if (taskArgs.fork && hre.hardhatArguments.network !== "localhost") {
+    if (
+      taskArgs["include-network"] &&
+      hre.hardhatArguments.network !== "localhost"
+    ) {
       throw new Error(
-        `--fork can only be used when using run command with "--network localhost"`,
+        `--include-network can only be used when using run command with "--network localhost"`,
       )
     }
 
     // Forks an existing network if the given argument is a network name
     const network: NetworkUserConfig | undefined =
-      hre.userConfig?.networks?.[taskArgs.fork]
+      hre.userConfig?.networks?.[taskArgs["include-network"]]
     if (network) {
-      const networkName = taskArgs.fork
+      const networkName = taskArgs["include-network"]
       console.log(`Found matching network name, ${networkName}`)
 
       // Workaround for hardhat-deploy issue #115 https://github.com/wighawag/hardhat-deploy/issues/115
