@@ -1,11 +1,9 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, ContractFactory, ethers, Signer } from "ethers"
 import { deployments } from "hardhat"
 import { MasterRegistry } from "../../build/typechain/"
 import { ZERO_ADDRESS } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Master Registry", async () => {
@@ -38,12 +36,12 @@ describe("Master Registry", async () => {
     it("Reverts when using empty string", async () => {
       await expect(
         masterRegistry.addRegistry(formatBytes32String(""), ownerAddress),
-      ).to.be.revertedWith("name cannot be empty")
+      ).to.be.revertedWith("MR: name cannot be empty")
     })
     it("Reverts when using empty address", async () => {
       await expect(
         masterRegistry.addRegistry(formatBytes32String("TEST"), ZERO_ADDRESS),
-      ).to.be.revertedWith("address cannot be empty")
+      ).to.be.revertedWith("MR: address cannot be empty")
     })
     it("Reverts when using duplicate address", async () => {
       await masterRegistry.addRegistry(
@@ -52,7 +50,7 @@ describe("Master Registry", async () => {
       )
       await expect(
         masterRegistry.addRegistry(formatBytes32String("TEST-2"), ownerAddress),
-      ).to.be.revertedWith("duplicate registry address")
+      ).to.be.revertedWith("MR: duplicate registry address")
     })
 
     it("Successfully adds a new registry with a new name", async () => {
@@ -95,7 +93,7 @@ describe("Master Registry", async () => {
         masterRegistry.resolveNameToLatestAddress(
           formatBytes32String("RANDOM_NAME"),
         ),
-      ).to.be.revertedWith("no match found for name")
+      ).to.be.revertedWith("MR: no match found for name")
     })
     it("Successfully resolves name to latest address", async () => {
       await masterRegistry.addRegistry(
@@ -120,7 +118,7 @@ describe("Master Registry", async () => {
         masterRegistry.resolveNameToAllAddresses(
           formatBytes32String("RANDOM_NAME"),
         ),
-      ).to.be.revertedWith("no match found for name")
+      ).to.be.revertedWith("MR: no match found for name")
     })
     it("Successfully resolves name to all addresses", async () => {
       await masterRegistry.addRegistry(
@@ -146,7 +144,7 @@ describe("Master Registry", async () => {
           formatBytes32String("RANDOM_NAME"),
           0,
         ),
-      ).to.be.revertedWith("no match found for name and version")
+      ).to.be.revertedWith("MR: no match found for name and version")
     })
     it("Successfully resolves name and verion to an address", async () => {
       await masterRegistry.addRegistry(
@@ -176,7 +174,7 @@ describe("Master Registry", async () => {
     it("Reverts when no match is found", async () => {
       await expect(
         masterRegistry.resolveAddressToRegistryData(ownerAddress),
-      ).to.be.revertedWith("no match found for address")
+      ).to.be.revertedWith("MR: no match found for address")
     })
     it("Successfully resolves addresses to registry data", async () => {
       await masterRegistry.addRegistry(

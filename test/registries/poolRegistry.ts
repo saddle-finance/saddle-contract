@@ -2,7 +2,6 @@
 /*eslint max-len: ["error", { "code": 150 }]*/
 
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
@@ -21,7 +20,6 @@ import {
   ZERO_ADDRESS,
 } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
 
@@ -241,7 +239,7 @@ describe("Pool Registry", async () => {
     it("Reverts when adding a meta pool without adding the base pool", async () => {
       await expect(
         poolRegistry.addPool(susdMetaV2InputData),
-      ).to.be.revertedWith("base pool not found")
+      ).to.be.revertedWith("PR: base pool not found")
     })
   })
 

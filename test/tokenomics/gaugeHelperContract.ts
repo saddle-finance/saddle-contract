@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { deployments, ethers } from "hardhat"
 import {
   LPToken,
@@ -13,7 +12,6 @@ import {
 import { PoolType } from "../../utils/constants"
 import { ZERO_ADDRESS } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
 
