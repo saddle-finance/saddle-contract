@@ -33,6 +33,8 @@ import {
   setupRootOracle,
 } from "./utils"
 
+import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs"
+
 const { execute } = deployments
 
 const { expect } = chai
@@ -58,6 +60,8 @@ describe("AnycallTranslator", () => {
   let dummyToken: GenericERC20
 
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+  const GAUGE_NAME = "Dummy Token X-chain Gauge"
+  const GAUGE_SALT = convertGaugeNameToSalt(GAUGE_NAME)
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -132,8 +136,6 @@ describe("AnycallTranslator", () => {
     describe("Is used as source chain, originates anycall()", () => {
       it("Should be able to send message to trigger ChildGaugeFactory.deploy_gauge()", async () => {
         const DUMMY_TOKEN_ADDRESS = dummyToken.address
-        const GAUGE_NAME = "Dummy Token X-chain Gauge"
-        const GAUGE_SALT = convertGaugeNameToSalt(GAUGE_NAME)
         const GAUGE_OWNER = users[0]
 
         const callData = childGaugeFactory.interface.encodeFunctionData(
@@ -212,8 +214,34 @@ describe("AnycallTranslator", () => {
     })
   })
   describe("Is used as destination chain, target.anyExecute() is executed", () => {
-    it("Should be able to recieve the message to deploy a root gauge", async () => {
-      expect(true).to.eq(true)
+    it("Should be able to recieve the message to deploy a root gauge via RootGaugeFactory.deploy_gauge()", async () => {
+      const callData = rootGaugeFactory.interface.encodeFunctionData(
+        "deploy_gauge",
+        [MOCK_CHAIN_ID, GAUGE_SALT, GAUGE_NAME],
+      )
+      const implementation = await rootGaugeFactory.get_implementation()
+
+      // Expect RootGaugeFactory to emit DeployedGauge event
+      await expect(
+        mockAnycall.callAnyExecute(
+          anyCallTranslator.address,
+          ethers.utils.defaultAbiCoder.encode(
+            ["address", "bytes"],
+            [rootGaugeFactory.address, callData],
+          ),
+        ),
+      )
+        .to.emit(rootGaugeFactory, "DeployedGauge")
+        .withArgs(
+          implementation,
+          MOCK_CHAIN_ID,
+          anyCallTranslator.address,
+          GAUGE_SALT,
+          anyValue,
+        )
+
+      // Expect there is a new gauge deployed
+      expect(await rootGaugeFactory.get_gauge_count(MOCK_CHAIN_ID)).to.eq(1)
     })
   })
 })
