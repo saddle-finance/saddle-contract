@@ -2,6 +2,7 @@ import "@nomicfoundation/hardhat-toolbox"
 import "@nomiclabs/hardhat-vyper"
 import "hardhat-deploy"
 import "hardhat-spdx-license-identifier"
+import "hardhat-tracer"
 
 import { HardhatUserConfig, task } from "hardhat/config"
 import dotenv from "dotenv"
