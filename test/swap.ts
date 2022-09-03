@@ -56,7 +56,7 @@ describe("Swap", async () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["Swap", "LPToken"]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       owner = signers[0]
