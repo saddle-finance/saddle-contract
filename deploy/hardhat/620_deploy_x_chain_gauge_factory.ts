@@ -19,14 +19,32 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const mockBridger = await deploy("MockBridger", deployOptions)
   const mockAnyCall = await deploy("MockAnyCall", deployOptions)
-  const anyCallTranslator = await deploy("AnyCallTranslator", {
+  const anyCallTranslatorLogic = await deploy(
+    "AnyCallTranslator",
+    deployOptions,
+  )
+  const proxyAdmin = await deploy("ProxyAdmin", deployOptions)
+
+  const initializeCallData = (
+    await ethers
+      .getContractAt("AnyCallTranslator", anyCallTranslatorLogic.address)
+      .then((c) =>
+        c.populateTransaction.initialize(deployer, mockAnyCall.address),
+      )
+  ).data as string
+
+  const translatorProxy = await deploy("TransparentUpgradeableProxy", {
     ...deployOptions,
-    args: [deployer, mockAnyCall.address],
+    args: [
+      anyCallTranslatorLogic.address, // implementation
+      proxyAdmin.address, // admin
+      initializeCallData, // initialize data
+    ],
   })
 
   const rgf = await deploy("RootGaugeFactory", {
     ...deployOptions,
-    args: [anyCallTranslator.address, deployer],
+    args: [translatorProxy.address, deployer],
   })
 
   const rootGaugeImpl = await deploy("RootGauge", {
@@ -59,7 +77,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "RootGaugeFactory",
     executeOptions,
     "set_call_proxy",
-    mockAnyCall.address,
+    translatorProxy.address,
   )
   await execute(
     "RootGaugeFactory",
