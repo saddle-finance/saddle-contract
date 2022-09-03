@@ -3,7 +3,11 @@
 pragma solidity ^0.8.6;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-4.2.0/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-4.4.0/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts-4.4.0/proxy/transparent/ProxyAdmin.sol";
+
+import "@openzeppelin/contracts-upgradeable-4.4.0/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable-4.4.0/access/OwnableUpgradeable.sol";
 
 interface ICallProxy {
     function anyCall(
@@ -30,36 +34,42 @@ interface IAnycallExecutor {
         );
 }
 
-contract AnyCallTranslator {
-    using SafeERC20 for IERC20;
+// Empty contract to ensure import of TransparentUpgradeableProxy contract
+contract EmptyProxy is TransparentUpgradeableProxy {
+    constructor(
+        address _logic,
+        address admin_,
+        bytes memory _data
+    ) payable TransparentUpgradeableProxy(_logic, admin_, _data) {}
+}
+
+// Empty contract to ensure import of ProxyAdmin contract
+contract EmptyProxyAdmin is ProxyAdmin {
+
+}
+
+// Logic contract that will be used by the proxy
+contract AnyCallTranslator is OwnableUpgradeable {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     // consts
-    address public owneraddress;
-    bytes public dataResult;
-    // TODO: maybe dont need to save this var
-    address private anycallExecutor;
-    address private anycallContract;
-    address private oracleContract;
-    address private gaugeFactory;
+    address public anycallContract;
+    address public oracleContract;
+    address public gaugeFactory;
     address public verifiedcaller;
 
-    // events
-    event NewMsg(bytes msg);
-
-    constructor(address _owner, address _anycallContract) {
-        // Root | Child Gauge Factory
-        owneraddress = _owner;
-        anycallExecutor = ICallProxy(_anycallContract).executor();
+    constructor() initializer {
+        // logic contract
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owneraddress, "only owner can call this method");
-        _;
-    }
-
-    function setAnycallImplementation(address _anycallContract)
-        external
-        onlyOwner
+    function initialize(address _owner, address _anycallContract)
+        public
+        initializer
     {
+        _transferOwnership(_owner);
+        anycallContract = _anycallContract;
+    }
+
+    function setAnycall(address _anycallContract) external onlyOwner {
         anycallContract = _anycallContract;
     }
 
@@ -71,15 +81,11 @@ contract AnyCallTranslator {
         gaugeFactory = _gaugeFactory;
     }
 
-    function updateOwnership(address _newOwner) external onlyOwner {
-        owneraddress = _newOwner;
-    }
-
     function deposit(address _account) external payable {
         ICallProxy(anycallContract).deposit(_account);
     }
 
-    function rescue(IERC20 token, address to) external onlyOwner {
+    function rescue(IERC20Upgradeable token, address to) external onlyOwner {
         token.safeTransfer(to, token.balanceOf(address(this)));
     }
 
@@ -90,7 +96,7 @@ contract AnyCallTranslator {
         uint256 _toChainId,
         // Use 0 flag to pay fee on destination chain, 1 to pay on source
         uint256 _flags
-    ) external payable onlyOwner {
+    ) external payable {
         ICallProxy(anycallContract).anyCall(
             _to,
             _data,
@@ -105,7 +111,7 @@ contract AnyCallTranslator {
         returns (bool, bytes memory)
     {
         // Get address of anycallExecutor
-        (address _from, , ) = IAnycallExecutor(anycallExecutor).context();
+        (address _from, , ) = IAnycallExecutor(msg.sender).context();
         // Check that caller is verified
         require(_from == address(this), "AnycallClient: wrong context");
 
@@ -113,8 +119,8 @@ contract AnyCallTranslator {
         assembly {
             selector := calldataload(data.offset)
         }
-        if (selector == 0xe10a16b8) {
-            // deploy_gauge(uint256,bytes32)
+        if (selector == 0x72a733fc) {
+            // deploy_gauge(uint256,bytes32,string)
             // Root Gauge Facotry call
             // 0x0 is the selector for the fallback function
             // Fallback function is not implemented

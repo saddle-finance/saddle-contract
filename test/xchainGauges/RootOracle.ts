@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments, network } from "hardhat"
 import {
@@ -24,7 +23,6 @@ import {
 } from "../testUtils"
 const { execute } = deployments
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("RootOracle", () => {

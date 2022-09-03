@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
@@ -10,7 +9,6 @@ import {
   RootGaugeFactory,
 } from "../../build/typechain"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Root_Gauge", () => {

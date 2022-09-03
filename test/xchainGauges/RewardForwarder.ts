@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
@@ -14,7 +13,6 @@ import {
 import { BIG_NUMBER_1E18 } from "../testUtils"
 const { execute } = deployments
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("RewardForwarder", () => {

@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
@@ -11,11 +10,12 @@ import {
   RewardForwarder,
   RootGauge,
   RootGaugeFactory,
+  TransparentUpgradeableProxy__factory,
 } from "../../build/typechain"
+import { convertGaugeNameToSalt } from "../testUtils"
 
 const { execute } = deployments
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("AnycallTranslator", () => {
@@ -29,7 +29,7 @@ describe("AnycallTranslator", () => {
   let firstGaugeToken: GenericERC20
   let lpTokenFactory: ContractFactory
   let rootGaugeFactory: RootGaugeFactory
-  let anycallTranslator: AnyCallTranslator
+  let anyCallTranslator: AnyCallTranslator
   let mockBridger: MockBridger
   let rootGauge: RootGauge
 
@@ -49,16 +49,40 @@ describe("AnycallTranslator", () => {
       const mockAnycallFactory = await ethers.getContractFactory("MockAnyCall")
       mockAnycall = (await mockAnycallFactory.deploy()) as MockAnyCall
 
+      // Deploy ProxyAdmin
+      const proxyAdminFactory = await ethers.getContractFactory("ProxyAdmin")
+      const proxyAdmin = await proxyAdminFactory.deploy()
+
       // Deploy AnycallTranslator with mock anycall
       const anycallTranslatorFactory = await ethers.getContractFactory(
         "AnyCallTranslator",
       )
-      anycallTranslator = (await anycallTranslatorFactory.deploy(
-        users[0],
-        mockAnycall.address,
-      )) as AnyCallTranslator
+      const anycallTranslatorLogic =
+        (await anycallTranslatorFactory.deploy()) as AnyCallTranslator
 
-      await mockAnycall.setanyCallTranslator(anycallTranslator.address)
+      // Deploy the proxy that will be used as AnycallTranslator
+      // We want to set the owner of the logic level to be deployer
+      const initializeCallData = (
+        await anycallTranslatorLogic.populateTransaction.initialize(
+          users[0],
+          mockAnycall.address,
+        )
+      ).data as string
+
+      // Deploy the proxy with anycall translator logic and initialize it
+      const proxyFactory: TransparentUpgradeableProxy__factory =
+        await ethers.getContractFactory("TransparentUpgradeableProxy")
+      const proxy = await proxyFactory.deploy(
+        anycallTranslatorLogic.address,
+        proxyAdmin.address,
+        initializeCallData,
+      )
+      anyCallTranslator = await ethers.getContractAt(
+        "AnyCallTranslator",
+        proxy.address,
+      )
+
+      await mockAnycall.setanyCallTranslator(anyCallTranslator.address)
 
       // **** Setup rootGauge Factory ****
 
@@ -66,7 +90,7 @@ describe("AnycallTranslator", () => {
         "RootGaugeFactory",
       )
       rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
-        anycallTranslator.address,
+        anyCallTranslator.address,
         users[0],
       )) as RootGaugeFactory
 
@@ -93,7 +117,7 @@ describe("AnycallTranslator", () => {
       await rootGaugeFactory.set_implementation(rootGauge.address)
 
       // Set Gauge Facotory in AnycallTranslator
-      await anycallTranslator.setGaugeFactory(rootGaugeFactory.address)
+      await anyCallTranslator.setGaugeFactory(rootGaugeFactory.address)
     },
   )
 
@@ -101,35 +125,28 @@ describe("AnycallTranslator", () => {
     await setupTest()
   })
 
-  describe("Initialize AnycallTranslator", () => {
-    it(`Successfully calls anycall execute`, async () => {
+  describe("callAnyExecute()", () => {
+    it(`Successfully deploys a new gauge`, async () => {
       // ensure Root Factory is setup
-      console.log("bridger", rootGaugeFactory.get_bridger(1))
-      console.log("implementation", rootGaugeFactory.get_implementation())
+      console.log("bridger", await rootGaugeFactory.get_bridger(1))
+      console.log("implementation", await rootGaugeFactory.get_implementation())
 
-      const ABI = ["function deploy_gauge(uint256 _chain_id, bytes32 _salt)"]
-      const iface = new ethers.utils.Interface(ABI)
+      const iface = (await ethers.getContractFactory("RootGaugeFactory"))
+        .interface
+
+      // Format deploy_gauge(uint256,bytes32,string) calldata
       const data = iface.encodeFunctionData("deploy_gauge", [
         1,
-        "0x6162636400000000000000000000000000000000000000000000000000000000",
+        convertGaugeNameToSalt("Sample Root Gauge"),
+        "Sample Root Gauge",
       ])
+      console.log(data)
 
-      const gaugeDeployTx = await mockAnycall.callAnyExecute(
-        anycallTranslator.address,
-        data,
-      )
-      const contractReceipt = await gaugeDeployTx.wait()
-      // console.log("receipt: ", contractReceipt)
-      console.log("result: ", await anycallTranslator.dataResult())
-      const event = contractReceipt.events?.find(
-        (event) => event.event === "successMsg",
-      )
-      console.log("successMsg: ", event)
-      const event2 = contractReceipt.events?.find(
-        (event) => event.event === "resultMsg",
-      )
-      console.log("resultMsg: ", event2)
-      console.log("gauge count: ", await rootGaugeFactory.get_gauge_count(1))
+      await expect(mockAnycall.callAnyExecute(anyCallTranslator.address, data))
+        .to.emit(mockAnycall, "successMsg")
+        .and.emit(mockAnycall, "resultMsg")
+
+      expect(await rootGaugeFactory.get_gauge_count(1), "Gauge count").to.eq(1)
     })
   })
 })

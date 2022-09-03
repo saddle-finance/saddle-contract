@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { Signer, utils } from "ethers"
 import { deployments } from "hardhat"
 import {
@@ -9,7 +8,6 @@ import {
   MockAnyCall,
 } from "../../build/typechain"
 
-chai.use(solidity)
 const { expect } = chai
 const saltBytes = utils.formatBytes32String("0")
 
