@@ -168,7 +168,7 @@ def deploy_gauge(_lp_token: address, _salt: bytes32,_name: String[32], _manager:
         # issue a call to the root chain to deploy a root gauge
         CallProxy(self.call_proxy).anyCall(
             self,
-            _abi_encode(chain.id, _salt, _name, method_id=method_id("deploy_gauge(uint256,bytes32,String[32])")),
+            _abi_encode(chain.id, _salt, _name, method_id=method_id("deploy_gauge(uint256,bytes32,string)")),
             ZERO_ADDRESS,
             1,
             0

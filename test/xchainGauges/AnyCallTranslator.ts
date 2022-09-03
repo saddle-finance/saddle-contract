@@ -1,6 +1,6 @@
 import chai from "chai"
 import { ContractFactory, Signer } from "ethers"
-import { deployments, ethers } from "hardhat"
+import { deployments, ethers, tracer } from "hardhat"
 import {
   AnyCallTranslator,
   ChildGaugeFactory,
@@ -242,6 +242,92 @@ describe("AnycallTranslator", () => {
 
       // Expect there is a new gauge deployed
       expect(await rootGaugeFactory.get_gauge_count(MOCK_CHAIN_ID)).to.eq(1)
+    })
+  })
+
+  describe("Side chain", () => {
+    it("AnyCall -> AnyCallTranslator -> ChildGaugeFactory.deploy_gauge() -> AnyCallTranslator -> Anycall", async () => {
+      tracer.enabled = true
+      const DUMMY_TOKEN_ADDRESS = dummyToken.address
+      const GAUGE_OWNER = users[0]
+
+      const callData = childGaugeFactory.interface.encodeFunctionData(
+        "deploy_gauge(address,bytes32,string,address)",
+        [DUMMY_TOKEN_ADDRESS, GAUGE_SALT, GAUGE_NAME, GAUGE_OWNER],
+      )
+
+      // The expected call data for creating root gauge on mainnet
+      const expectedCallDataRoot =
+        rootGaugeFactory.interface.encodeFunctionData("deploy_gauge", [
+          31337,
+          GAUGE_SALT,
+          GAUGE_NAME,
+        ])
+
+      await expect(
+        mockAnycall.callAnyExecute(
+          anyCallTranslator.address,
+          ethers.utils.defaultAbiCoder.encode(
+            ["address", "bytes"],
+            [childGaugeFactory.address, callData],
+          ),
+        ),
+      )
+        .to.emit(mockAnycall, "AnyCallMessage")
+        .withArgs(
+          anyCallTranslator.address,
+          ethers.utils.defaultAbiCoder.encode(
+            ["address", "bytes"],
+            [childGaugeFactory.address, expectedCallDataRoot],
+          ),
+          ZERO_ADDRESS,
+          1, // Expect the message to be sent to mainnet
+          0,
+        )
+        .and.emit(childGaugeFactory, "DeployedGauge")
+    })
+
+    it("AnyCall -> AnyCallTranslator -> ChildOracle.receive()", async () => {
+      // Pretend this is data that was sent from mainnet
+      const userPoint = {
+        bias: 1,
+        slope: 2,
+        ts: 3,
+      }
+
+      const globalPoint = {
+        bias: 4,
+        slope: 5,
+        ts: 6,
+      }
+
+      // receive((int128,int128,uint256),(int128,int128,uint256),address)
+      const callData = childOracle.interface.encodeFunctionData("recieve", [
+        userPoint,
+        globalPoint,
+        users[0],
+      ])
+
+      await expect(
+        mockAnycall.callAnyExecute(
+          anyCallTranslator.address,
+          ethers.utils.defaultAbiCoder.encode(
+            ["address", "bytes"],
+            [childOracle.address, callData],
+          ),
+        ),
+      )
+        .to.emit(mockAnycall, "AnyCallMessage")
+        .withArgs(
+          anyCallTranslator.address,
+          ethers.utils.defaultAbiCoder.encode(
+            ["address", "bytes"],
+            [childOracle.address, callData],
+          ),
+          ZERO_ADDRESS,
+          1, // Expect the message to be sent to mainnet
+          0,
+        )
     })
   })
 })
