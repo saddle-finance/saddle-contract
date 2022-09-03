@@ -15,7 +15,8 @@ interface ICallProxy {
         address _to,
         bytes calldata _data,
         address _fallback,
-        uint256 _toChainId
+        uint256 _toChainId,
+        uint256 _flags
     ) external; // TODO: nonpayable but doesn't let me
 }
 
@@ -26,14 +27,14 @@ interface Factory {
 interface votingEscrow {
     function epoch() external view returns (uint256);
 
-    function pointHistory(uint256 _idx) external view returns (Point memory); // TODO: is memory correct here?
+    function point_history(uint256 _idx) external view returns (Point memory);
 
-    function userPointEpoch(address _user) external view returns (uint256);
+    function user_point_epoch(address _user) external view returns (uint256);
 
-    function userPointHistory(address _user, uint256 _idx)
+    function user_point_history(address _user, uint256 _idx)
         external
         view
-        returns (Point memory); // TODO: is memory correct here?
+        returns (Point memory);
 }
 
 contract RootOracle {
@@ -68,52 +69,51 @@ contract RootOracle {
     }
 
     function push(uint256 _chainId) external {
-        require(msg.sender == callProxy, "not translator");
         address user = msg.sender;
         assert(Factory(FACTORY).get_bridger(_chainId) != ZERO_ADDRESS);
 
         require(IERC20(VE).balanceOf(user) != 0, "no ve balance");
-        Point memory userPoint = votingEscrow(VE).userPointHistory(
+        Point memory userPoint = votingEscrow(VE).user_point_history(
             user,
-            votingEscrow(VE).userPointEpoch(user)
+            votingEscrow(VE).user_point_epoch(user)
         );
-        Point memory globalPoint = votingEscrow(VE).pointHistory(
+        Point memory globalPoint = votingEscrow(VE).point_history(
             votingEscrow(VE).epoch()
         );
         ICallProxy(callProxy).anyCall(
             address(this),
-            abi.encode(
+            abi.encodeWithSelector(
+                bytes4(
+                    keccak256(
+                        "recieve((int128,int128,uint256),(int128,int128,uint256),address)"
+                    )
+                ),
                 userPoint,
                 globalPoint,
-                user,
-                "receive((int128,int128,uint256),(int128,int128,uint256),address)"
+                user
             ),
             ZERO_ADDRESS,
-            _chainId
+            _chainId,
+            0
         );
     }
 
     function push(uint256 _chainId, address _user) external {
-        require(msg.sender == callProxy, "not translator");
         assert(Factory(FACTORY).get_bridger(_chainId) != ZERO_ADDRESS);
         require(IERC20(VE).balanceOf(_user) != 0, "no ve balance");
-        Point memory userPoint = votingEscrow(VE).userPointHistory(
+        Point memory userPoint = votingEscrow(VE).user_point_history(
             _user,
-            votingEscrow(VE).userPointEpoch(_user)
+            votingEscrow(VE).user_point_epoch(_user)
         );
-        Point memory globalPoint = votingEscrow(VE).pointHistory(
+        Point memory globalPoint = votingEscrow(VE).point_history(
             votingEscrow(VE).epoch()
         );
         ICallProxy(callProxy).anyCall(
             address(this),
-            abi.encode(
-                userPoint,
-                globalPoint,
-                _user,
-                "receive((int128,int128,uint256),(int128,int128,uint256),address)"
-            ),
+            abi.encode(userPoint, globalPoint, _user),
             ZERO_ADDRESS,
-            _chainId
+            _chainId,
+            0
         );
     }
 

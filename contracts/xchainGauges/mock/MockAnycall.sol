@@ -14,25 +14,48 @@ contract MockAnyCall {
 
     event successMsg(bool);
     event resultMsg(bytes);
+    event AnyCallMessage(
+        address to,
+        bytes data,
+        address _fallback,
+        uint256 chainId,
+        uint256 flags
+    );
 
+    /**
+     * Mimics the source chain of AnyCall messaging system.
+     * @param _to The address of the contract to call
+     * @param _data The data to send to the contract
+     * @param _fallback The fallback address to call
+     * @param _to_chain_id The chainId of the destination chain
+     * @param _flags The flags for who is paying for the tx.
+     */
     function anyCall(
         address _to,
         bytes memory _data,
         address _fallback,
-        uint256 _to_chain_id
-    ) external pure {
-        return;
+        uint256 _to_chain_id,
+        uint256 _flags
+    ) external payable {
+        emit AnyCallMessage(_to, _data, _fallback, _to_chain_id, _flags);
     }
 
     function setanyCallTranslator(address _anyCallTranslator) external {
         anyCallTranslator = _anyCallTranslator;
     }
 
-    function callAnyExecute(address anycallTranslator, bytes calldata _data)
+    /**
+     * Mimics the destination chain of AnyCall messaging system.
+     * When the destination chain detects incoming message, it will process it
+     * by calling `anyExecute` on the to address.
+     * @param _to address of the contract to call
+     * @param _data bytes of the data to send to the contract
+     */
+    function callAnyExecute(address _to, bytes calldata _data)
         external
         returns (bool success, bytes memory result)
     {
-        (success, ) = IAnyCallTranslator(anycallTranslator).anyExecute(_data);
+        (success, result) = IAnyCallTranslator(_to).anyExecute(_data);
         emit successMsg(success);
         emit resultMsg(result);
     }

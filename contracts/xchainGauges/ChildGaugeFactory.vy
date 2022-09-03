@@ -13,7 +13,7 @@ interface ChildGauge:
 
 interface CallProxy:
     def anyCall(
-        _to: address, _data: Bytes[1024], _fallback: address, _to_chain_id: uint256
+        _to: address, _data: Bytes[1024], _fallback: address, _to_chain_id: uint256, _flags: uint256
     ): nonpayable
 
 
@@ -97,6 +97,7 @@ def _psuedo_mint(_gauge: address, _user: address):
             _abi_encode(_gauge, method_id=method_id("transmit_emissions(address)")),
             ZERO_ADDRESS,
             1,
+            0
         )
         # update last request time
         self.gauge_data[_gauge] = shift(block.timestamp, 2) + 3
@@ -169,7 +170,8 @@ def deploy_gauge(_lp_token: address, _salt: bytes32,_name: String[32], _manager:
             self,
             _abi_encode(chain.id, _salt, _name, method_id=method_id("deploy_gauge(uint256,bytes32,String[32])")),
             ZERO_ADDRESS,
-            1
+            1,
+            0
         )
 
     self.gauge_data[gauge] = gauge_data

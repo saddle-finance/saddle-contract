@@ -16,7 +16,7 @@ interface RootGauge:
 
 interface CallProxy:
     def anyCall(
-        _to: address, _data: Bytes[1024], _fallback: address, _to_chain_id: uint256
+        _to: address, _data: Bytes[1024], _fallback: address, _to_chain_id: uint256, _flags: uint256
     ): nonpayable
 
 
@@ -125,10 +125,11 @@ def deploy_child_gauge(_chain_id: uint256, _lp_token: address, _salt: bytes32, _
             _salt,
             _name,
             _manager,
-            method_id=method_id("deploy_gauge(address,bytes32,String[32],address)")
+            method_id=method_id("deploy_gauge(address,bytes32,string,address)")
         ),
         ZERO_ADDRESS,
-        _chain_id
+        _chain_id,
+        0
     )
 
 

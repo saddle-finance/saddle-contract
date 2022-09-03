@@ -16,9 +16,11 @@ interface ICallProxy {
         address _fallback,
         uint256 _toChainId,
         uint256 _flags
-    ) external; // nonpayable
+    ) external payable; // nonpayable
 
     function deposit(address _account) external payable;
+
+    function withdraw(uint256 amount) external;
 
     function executor() external view returns (address executor);
 }
@@ -53,12 +55,15 @@ contract AnyCallTranslator is OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     // consts
     address public anycallContract;
-    address public oracleContract;
-    address public gaugeFactory;
-    address public verifiedcaller;
+    address public anyCallExecutor;
+    mapping(address => bool) public isKnownCaller;
 
     constructor() initializer {
         // logic contract
+    }
+
+    receive() external payable {
+        // fallback payable function
     }
 
     function initialize(address _owner, address _anycallContract)
@@ -67,22 +72,31 @@ contract AnyCallTranslator is OwnableUpgradeable {
     {
         _transferOwnership(_owner);
         anycallContract = _anycallContract;
+        anyCallExecutor = ICallProxy(_anycallContract).executor();
+    }
+
+    function addKnownCallers(address[] calldata _callers) external onlyOwner {
+        for (uint256 i = 0; i < _callers.length; i++) {
+            isKnownCaller[_callers[i]] = true;
+        }
+    }
+
+    function removeKnownCallers(address[] calldata _callers)
+        external
+        onlyOwner
+    {
+        for (uint256 i = 0; i < _callers.length; i++) {
+            isKnownCaller[_callers[i]] = false;
+        }
     }
 
     function setAnycall(address _anycallContract) external onlyOwner {
         anycallContract = _anycallContract;
+        anyCallExecutor = ICallProxy(_anycallContract).executor();
     }
 
-    function setOracle(address _oracleContract) external onlyOwner {
-        oracleContract = _oracleContract;
-    }
-
-    function setGaugeFactory(address _gaugeFactory) external onlyOwner {
-        gaugeFactory = _gaugeFactory;
-    }
-
-    function deposit(address _account) external payable {
-        ICallProxy(anycallContract).deposit(_account);
+    function withdraw(uint256 _amount) external onlyOwner {
+        ICallProxy(anycallContract).withdraw(_amount);
     }
 
     function rescue(IERC20Upgradeable token, address to) external onlyOwner {
@@ -97,58 +111,37 @@ contract AnyCallTranslator is OwnableUpgradeable {
         // Use 0 flag to pay fee on destination chain, 1 to pay on source
         uint256 _flags
     ) external payable {
-        ICallProxy(anycallContract).anyCall(
-            _to,
-            _data,
+        require(isKnownCaller[msg.sender], "Unknown caller");
+        ICallProxy(anycallContract).anyCall{value: msg.value}(
+            address(this),
+            abi.encode(_to, _data),
             _fallback,
             _toChainId,
             _flags
         );
     }
 
-    function anyExecute(bytes calldata data)
+    function anyExecute(bytes calldata toAndData)
         external
         returns (bool, bytes memory)
     {
+        // Check that caller is anycall executor
+        require(
+            msg.sender == anyCallExecutor,
+            "Caller is not anycall executor"
+        );
         // Get address of anycallExecutor
         (address _from, , ) = IAnycallExecutor(msg.sender).context();
         // Check that caller is verified
-        require(_from == address(this), "AnycallClient: wrong context");
+        require(_from == address(this), "Wrong context");
 
-        bytes4 selector;
-        assembly {
-            selector := calldataload(data.offset)
-        }
-        if (selector == 0x72a733fc) {
-            // deploy_gauge(uint256,bytes32,string)
-            // Root Gauge Facotry call
-            // 0x0 is the selector for the fallback function
-            // Fallback function is not implemented
-            // Pass encoded function call to gauge factory, require ensures that the call is successful
-            (bool success, bytes memory returnedData) = gaugeFactory.call(data);
-            require(success, "Root Gauge Deploy Execution Failed");
-            return (success, returnedData);
-        } else if (selector == 0x6be320d2) {
-            // "deploy_gauge(address, bytes32, address)"
-            // Child Gauge Facotry call
-            // 0x0 is the selector for the fallback function
-            // Fallback function is not implemented
-            // Pass encoded function call to gauge factory, require ensures that the call is successful
-            (bool success, bytes memory returnedData) = gaugeFactory.call(data);
-            require(success, "Child Gauge Deploy Execution Failed");
-            return (success, returnedData);
-        } else if (selector == 0xc80fbe4e) {
-            // "push(uint256 _chainId, address _user)"
-            // Oracle Push Call
-            // 0x0 is the selector for the fallback function
-            // Fallback function is not implemented
-            (bool success, bytes memory returnedData) = oracleContract.call(
-                data
-            );
-            require(success, "Oracle Push Execution Failed");
-            return (success, returnedData);
-        } else {
-            revert("Unknown selector");
-        }
+        // Decode to and data
+        (address to, bytes memory data) = abi.decode(
+            toAndData,
+            (address, bytes)
+        );
+        (bool success, bytes memory returnData) = to.call(data);
+        require(success, "Proxy call failed");
+        return (success, returnData);
     }
 }

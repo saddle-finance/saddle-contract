@@ -7,10 +7,12 @@ import {
   ChildGauge,
   GenericERC20,
   LPToken,
+  MockAnyCall,
   RewardForwarder,
   RootGaugeFactory,
   RootOracle,
   SDL,
+  TransparentUpgradeableProxy__factory,
   VotingEscrow,
 } from "../../build/typechain"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
@@ -36,9 +38,10 @@ describe("RootOracle", () => {
   let lpTokenFactory: ContractFactory
   let rootGaugeFactory: RootGaugeFactory
   let arbitrumBridger: ArbitrumBridger
-  let anycallTranslator: AnyCallTranslator
+  let anyCallTranslator: AnyCallTranslator
   let childGauge: ChildGauge
   let rootOracle: RootOracle
+  let mockAnycall: MockAnyCall
   let veSDL: VotingEscrow
   let sdl: SDL
 
@@ -78,21 +81,49 @@ describe("RootOracle", () => {
         (await getCurrentBlockTimestamp()) + MAXTIME,
       )
 
-      // Deploy anycallTranslator
-      const anyCallTranslatorFactory = await ethers.getContractFactory(
+      // Deploy mock anycall
+      const mockAnycallFactory = await ethers.getContractFactory("MockAnyCall")
+      mockAnycall = (await mockAnycallFactory.deploy()) as MockAnyCall
+
+      // Deploy ProxyAdmin
+      const proxyAdminFactory = await ethers.getContractFactory("ProxyAdmin")
+      const proxyAdmin = await proxyAdminFactory.deploy()
+
+      // Deploy AnycallTranslator with mock anycall
+      const anycallTranslatorFactory = await ethers.getContractFactory(
         "AnyCallTranslator",
       )
-      anycallTranslator = (await anyCallTranslatorFactory.deploy(
-        users[0],
-        anyCallAddress,
-      )) as AnyCallTranslator
+      const anycallTranslatorLogic =
+        (await anycallTranslatorFactory.deploy()) as AnyCallTranslator
+
+      // Deploy the proxy that will be used as AnycallTranslator
+      // We want to set the owner of the logic level to be deployer
+      const initializeCallData = (
+        await anycallTranslatorLogic.populateTransaction.initialize(
+          users[0],
+          mockAnycall.address,
+        )
+      ).data as string
+
+      // Deploy the proxy with anycall translator logic and initialize it
+      const proxyFactory: TransparentUpgradeableProxy__factory =
+        await ethers.getContractFactory("TransparentUpgradeableProxy")
+      const proxy = await proxyFactory.deploy(
+        anycallTranslatorLogic.address,
+        proxyAdmin.address,
+        initializeCallData,
+      )
+      anyCallTranslator = await ethers.getContractAt(
+        "AnyCallTranslator",
+        proxy.address,
+      )
 
       // Deploy Root Gauge factory
       const rootGaugeFactoryFactory = await ethers.getContractFactory(
         "RootGaugeFactory",
       )
       rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
-        anycallTranslator.address,
+        anyCallTranslator.address,
         users[0],
       )) as RootGaugeFactory
 

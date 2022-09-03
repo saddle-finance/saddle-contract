@@ -3,6 +3,8 @@ import { ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
   AnyCallTranslator,
+  ChildGaugeFactory,
+  ChildOracle,
   GenericERC20,
   LPToken,
   MockAnyCall,
@@ -10,9 +12,26 @@ import {
   RewardForwarder,
   RootGauge,
   RootGaugeFactory,
-  TransparentUpgradeableProxy__factory,
+  RootOracle,
+  SDL,
+  VotingEscrow,
 } from "../../build/typechain"
-import { convertGaugeNameToSalt } from "../testUtils"
+import { MAX_LOCK_TIME, WEEK } from "../../utils/time"
+import {
+  BIG_NUMBER_1E18,
+  convertGaugeNameToSalt,
+  getCurrentBlockTimestamp,
+  MAX_UINT256,
+  setTimestamp,
+} from "../testUtils"
+import {
+  MOCK_CHAIN_ID,
+  setupAnyCallTranslator,
+  setupChildGaugeFactory,
+  setupChildOracle,
+  setupRootGaugeFactory,
+  setupRootOracle,
+} from "./utils"
 
 const { execute } = deployments
 
@@ -29,9 +48,14 @@ describe("AnycallTranslator", () => {
   let firstGaugeToken: GenericERC20
   let lpTokenFactory: ContractFactory
   let rootGaugeFactory: RootGaugeFactory
+  let childGaugeFactory: ChildGaugeFactory
   let anyCallTranslator: AnyCallTranslator
   let mockBridger: MockBridger
   let rootGauge: RootGauge
+  let veSDL: VotingEscrow
+  let rootOracle: RootOracle
+  let childOracle: ChildOracle
+  let dummyToken: GenericERC20
 
   const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -45,79 +69,58 @@ describe("AnycallTranslator", () => {
         signers.map(async (signer) => signer.getAddress()),
       )
 
-      // Deploy mock anycall
-      const mockAnycallFactory = await ethers.getContractFactory("MockAnyCall")
-      mockAnycall = (await mockAnycallFactory.deploy()) as MockAnyCall
-
-      // Deploy ProxyAdmin
-      const proxyAdminFactory = await ethers.getContractFactory("ProxyAdmin")
-      const proxyAdmin = await proxyAdminFactory.deploy()
-
-      // Deploy AnycallTranslator with mock anycall
-      const anycallTranslatorFactory = await ethers.getContractFactory(
-        "AnyCallTranslator",
-      )
-      const anycallTranslatorLogic =
-        (await anycallTranslatorFactory.deploy()) as AnyCallTranslator
-
-      // Deploy the proxy that will be used as AnycallTranslator
-      // We want to set the owner of the logic level to be deployer
-      const initializeCallData = (
-        await anycallTranslatorLogic.populateTransaction.initialize(
-          users[0],
-          mockAnycall.address,
-        )
-      ).data as string
-
-      // Deploy the proxy with anycall translator logic and initialize it
-      const proxyFactory: TransparentUpgradeableProxy__factory =
-        await ethers.getContractFactory("TransparentUpgradeableProxy")
-      const proxy = await proxyFactory.deploy(
-        anycallTranslatorLogic.address,
-        proxyAdmin.address,
-        initializeCallData,
-      )
-      anyCallTranslator = await ethers.getContractAt(
-        "AnyCallTranslator",
-        proxy.address,
-      )
-
-      await mockAnycall.setanyCallTranslator(anyCallTranslator.address)
+      const contracts = await setupAnyCallTranslator(users[0])
+      anyCallTranslator = contracts.anyCallTranslator
+      mockAnycall = contracts.mockAnycall
 
       // **** Setup rootGauge Factory ****
 
-      const rootGaugeFactoryFactory = await ethers.getContractFactory(
-        "RootGaugeFactory",
-      )
-      rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
+      rootGaugeFactory = await setupRootGaugeFactory(
         anyCallTranslator.address,
         users[0],
-      )) as RootGaugeFactory
-
-      const mockBridgerFactory = await ethers.getContractFactory("MockBridger")
-      mockBridger = (await mockBridgerFactory.deploy()) as MockBridger
-      // Set Bridger to mock bridger
-      await rootGaugeFactory.set_bridger(1, mockBridger.address)
-
-      // Root Gauge Implementation
-      const gaugeImplementationFactory = await ethers.getContractFactory(
-        "RootGauge",
       )
-      rootGauge = (await gaugeImplementationFactory.deploy(
-        (
-          await ethers.getContract("SDL")
-        ).address,
-        (
-          await ethers.getContract("GaugeController")
-        ).address,
-        (
-          await ethers.getContract("Minter")
-        ).address,
-      )) as RootGauge
-      await rootGaugeFactory.set_implementation(rootGauge.address)
 
-      // Set Gauge Facotory in AnycallTranslator
-      await anyCallTranslator.setGaugeFactory(rootGaugeFactory.address)
+      // **** Setup RootOracle ****
+      rootOracle = await setupRootOracle(
+        anyCallTranslator.address,
+        rootGaugeFactory.address,
+      )
+
+      // **** Setup ChildOracle ****
+      childOracle = await setupChildOracle(anyCallTranslator.address)
+
+      // **** Setup ChildGaugeFactory ****
+      childGaugeFactory = await setupChildGaugeFactory(
+        anyCallTranslator.address,
+        users[0],
+        childOracle.address,
+      )
+
+      // **** Add expected callers to known callers ****
+      anyCallTranslator.addKnownCallers([
+        rootGaugeFactory.address,
+        rootOracle.address,
+        childGaugeFactory.address,
+      ])
+
+      // Set timestamp to start of the week
+      await setTimestamp(
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
+      )
+
+      // Create max lock from deployer address
+      veSDL = await ethers.getContract("VotingEscrow")
+      await ethers
+        .getContract("SDL")
+        .then((sdl) => (sdl as SDL).approve(veSDL.address, MAX_UINT256))
+      await veSDL.create_lock(
+        BIG_NUMBER_1E18.mul(10_000_000),
+        (await getCurrentBlockTimestamp()) + MAX_LOCK_TIME,
+      )
+
+      dummyToken = (await ethers
+        .getContractFactory("GenericERC20")
+        .then((f) => f.deploy("Dummy Token", "DUMMY", 18))) as GenericERC20
     },
   )
 
@@ -125,28 +128,92 @@ describe("AnycallTranslator", () => {
     await setupTest()
   })
 
-  describe("callAnyExecute()", () => {
-    it(`Successfully deploys a new gauge`, async () => {
-      // ensure Root Factory is setup
-      console.log("bridger", await rootGaugeFactory.get_bridger(1))
-      console.log("implementation", await rootGaugeFactory.get_implementation())
+  describe("Root chain", () => {
+    describe("Is used as source chain, originates anycall()", () => {
+      it("Should be able to send message to trigger ChildGaugeFactory.deploy_gauge()", async () => {
+        const DUMMY_TOKEN_ADDRESS = dummyToken.address
+        const GAUGE_NAME = "Dummy Token X-chain Gauge"
+        const GAUGE_SALT = convertGaugeNameToSalt(GAUGE_NAME)
+        const GAUGE_OWNER = users[0]
 
-      const iface = (await ethers.getContractFactory("RootGaugeFactory"))
-        .interface
+        const callData = childGaugeFactory.interface.encodeFunctionData(
+          "deploy_gauge(address,bytes32,string,address)",
+          [dummyToken.address, GAUGE_SALT, GAUGE_NAME, GAUGE_OWNER],
+        )
 
-      // Format deploy_gauge(uint256,bytes32,string) calldata
-      const data = iface.encodeFunctionData("deploy_gauge", [
-        1,
-        convertGaugeNameToSalt("Sample Root Gauge"),
-        "Sample Root Gauge",
-      ])
-      console.log(data)
+        await expect(
+          rootGaugeFactory[
+            "deploy_child_gauge(uint256,address,bytes32,string,address)"
+          ](
+            MOCK_CHAIN_ID,
+            DUMMY_TOKEN_ADDRESS,
+            GAUGE_SALT,
+            GAUGE_NAME,
+            GAUGE_OWNER,
+          ),
+        )
+          .to.emit(mockAnycall, "AnyCallMessage")
+          .withArgs(
+            anyCallTranslator.address,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "bytes"],
+              [rootGaugeFactory.address, callData],
+            ),
+            ZERO_ADDRESS,
+            MOCK_CHAIN_ID,
+            0,
+          )
+      })
 
-      await expect(mockAnycall.callAnyExecute(anyCallTranslator.address, data))
-        .to.emit(mockAnycall, "successMsg")
-        .and.emit(mockAnycall, "resultMsg")
+      it("Should be able to send message to trigger ChildOracle.receive()", async () => {
+        await veSDL.checkpoint()
 
-      expect(await rootGaugeFactory.get_gauge_count(1), "Gauge count").to.eq(1)
+        const returnData = await veSDL.callStatic.user_point_history(
+          users[0],
+          veSDL.callStatic.user_point_epoch(users[0]),
+        )
+
+        const userPoint = {
+          bias: returnData.bias,
+          slope: returnData.slope,
+          ts: returnData.ts,
+        }
+
+        const returnDataGlobal = await veSDL.callStatic.point_history(
+          veSDL.callStatic.epoch(),
+        )
+
+        const globalPoint = {
+          bias: returnDataGlobal.bias,
+          slope: returnDataGlobal.slope,
+          ts: returnDataGlobal.ts,
+        }
+
+        // receive((int128,int128,uint256),(int128,int128,uint256),address)
+        const callData = childOracle.interface.encodeFunctionData("recieve", [
+          userPoint,
+          globalPoint,
+          users[0],
+        ])
+
+        await expect(rootOracle["push(uint256)"](MOCK_CHAIN_ID))
+          .to.emit(mockAnycall, "AnyCallMessage")
+          .withArgs(
+            anyCallTranslator.address,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "bytes"],
+              [rootOracle.address, callData],
+            ),
+            ZERO_ADDRESS,
+            MOCK_CHAIN_ID,
+            0,
+          )
+      })
+    })
+  })
+  describe("Is used as destination chain, target.anyExecute() is executed", () => {
+    it("Should be able to recieve the message to deploy a root gauge", async () => {
+      expect(true).to.eq(true)
     })
   })
 })
