@@ -1,6 +1,6 @@
 import chai from "chai"
 import { ContractFactory, Signer } from "ethers"
-import { deployments, ethers, tracer } from "hardhat"
+import { deployments, ethers } from "hardhat"
 import {
   AnyCallTranslator,
   ChildGaugeFactory,
@@ -247,7 +247,6 @@ describe("AnycallTranslator", () => {
 
   describe("Side chain", () => {
     it("AnyCall -> AnyCallTranslator -> ChildGaugeFactory.deploy_gauge() -> AnyCallTranslator -> Anycall", async () => {
-      tracer.enabled = true
       const DUMMY_TOKEN_ADDRESS = dummyToken.address
       const GAUGE_OWNER = users[0]
 
@@ -317,16 +316,11 @@ describe("AnycallTranslator", () => {
           ),
         ),
       )
-        .to.emit(mockAnycall, "AnyCallMessage")
+        .to.emit(childOracle, "Recieve")
         .withArgs(
-          anyCallTranslator.address,
-          ethers.utils.defaultAbiCoder.encode(
-            ["address", "bytes"],
-            [childOracle.address, callData],
-          ),
-          ZERO_ADDRESS,
-          1, // Expect the message to be sent to mainnet
-          0,
+          Object.values(userPoint),
+          Object.values(globalPoint),
+          users[0],
         )
     })
   })
