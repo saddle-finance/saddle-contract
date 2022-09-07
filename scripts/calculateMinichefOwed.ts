@@ -1,7 +1,8 @@
-import { ethers, deployments, network } from "hardhat"
+import { ethers, deployments, network, getChainId, config } from "hardhat"
 import { BigNumber } from "ethers"
 import fetch from "node-fetch"
 import { MiniChefV2, SDL } from "../build/typechain"
+import { getNetworkNameFromChainId } from "../utils/network"
 
 interface TimeToRateMap {
   [timestamp: number]: BigNumber
@@ -10,9 +11,11 @@ interface TimeToRateMap {
 async function main() {
   const latestBlock = await ethers.provider.getBlock("latest")
   const latestBlockTimestamp = latestBlock.timestamp
+  const chainId = await getChainId()
+  const networkConfig = config.networks[getNetworkNameFromChainId(chainId)]
 
-  const etherscanAPIUrl = network.verify?.etherscan?.apiUrl
-  const etherscanAPIKey = network.verify?.etherscan?.apiKey
+  const etherscanAPIUrl = networkConfig.verify?.etherscan?.apiUrl
+  const etherscanAPIKey = networkConfig.verify?.etherscan?.apiKey
   if (!etherscanAPIUrl) {
     throw new Error(
       `No etherscan API URL found in hardhat.config.js file for network ${network.name}`,
