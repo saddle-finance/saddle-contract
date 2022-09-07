@@ -1,6 +1,7 @@
 import "hardhat-deploy"
 import { task } from "hardhat/config"
 import { NetworkUserConfig } from "hardhat/types"
+import { MULTISIG_ADDRESSES, PROD_DEPLOYER_ADDRESS } from "../utils/accounts"
 import {
   compareDeployments,
   convertDeploymentsToSimpleAddressMap,
@@ -26,7 +27,8 @@ task("node", "Starts a JSON-RPC server on top of Hardhat Network").setAction(
       const networkName = taskArgs.fork
       console.log(`Found matching network name, ${networkName}`)
 
-      // Workaround for hardhat-deploy issue #115 https://github.com/wighawag/hardhat-deploy/issues/115
+      // Workaround for hardhat-deploy issue #115
+      // https://github.com/wighawag/hardhat-deploy/issues/115
       process.env["HARDHAT_DEPLOY_FORK"] = networkName
       const externalDeploymentsFolder = `deployments/${networkName}`
 
@@ -34,7 +36,6 @@ task("node", "Starts a JSON-RPC server on top of Hardhat Network").setAction(
         console.log(`Forking ${networkName} from RPC: ${network.url}`)
 
         // Set the task arguments for the super call
-        taskArgs.noReset = true
         taskArgs.fork = network.url
 
         console.log(
@@ -56,6 +57,21 @@ task("node", "Starts a JSON-RPC server on top of Hardhat Network").setAction(
           hre.config.networks.localhost.verify = network.verify
         }
 
+        // Override namedAccounts settings so that in fork mode, we use
+        // production deployer address as "deployer"
+        // production multisig address of that chain as "multisig"
+        hre.config.namedAccounts = {
+          ...hre.config.namedAccounts,
+          deployer: {
+            [String(network.chainId)]: PROD_DEPLOYER_ADDRESS,
+          },
+          multisig: {
+            [String(network.chainId)]:
+              MULTISIG_ADDRESSES[String(network.chainId)],
+          },
+        }
+
+        // Set external deployments path to copy over deployments before starting node
         hre.config.external = {
           ...hre.config.external,
           deployments: {
