@@ -216,6 +216,10 @@ rule adminFeeNeverGreaterThanMAX(method f) {
 */
 
 /*
+    Tokens in pool must have different addresses
+*/
+
+/*
     Total LP amount * virtual price must be within x% of sum of underlying tokens
 */
 
@@ -302,6 +306,9 @@ rule onlyAdminCanWithdrawFees() {
     assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
 }
 
+/*
+    Admin fees can only increase
+*/
 rule monotonicallyIncreasingFees(method f) filtered {
     f -> f.selector != withdrawAdminFees().selector && f.selector == removeLiquidity(uint256,uint256[],uint256).selector
 } {
