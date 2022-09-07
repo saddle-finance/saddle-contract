@@ -1,13 +1,32 @@
 diff -ruN .gitignore .gitignore
 --- .gitignore	1969-12-31 16:00:00.000000000 -0800
-+++ .gitignore	2022-08-05 11:35:24.000000000 -0700
++++ .gitignore	2022-08-17 08:18:26.000000000 -0700
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
 diff -ruN SwapUtils.sol SwapUtils.sol
---- SwapUtils.sol	2022-08-05 08:23:59.000000000 -0700
-+++ SwapUtils.sol	2022-08-11 10:22:27.000000000 -0700
-@@ -755,7 +755,45 @@
+--- SwapUtils.sol	2022-08-17 22:05:50.000000000 -0700
++++ SwapUtils.sol	2022-09-07 09:00:48.000000000 -0700
+@@ -295,6 +295,10 @@
+         }
+         revert("Approximation did not converge");
+     }
++    
++    function getDApprox(uint256 xp1, uint256 xp2) public pure returns(uint256) {
++        return 0;
++    }
+ 
+     /**
+      * @notice Get D, the StableSwap invariant, based on a set of balances and a particular A.
+@@ -309,6 +313,7 @@
+         pure
+         returns (uint256)
+     {
++        return getDApprox(xp[0], xp[1]);
+         uint256 numTokens = xp.length;
+         uint256 s;
+         for (uint256 i = 0; i < numTokens; i++) {
+@@ -755,7 +760,45 @@
              v.d0 = getD(_xp(v.balances, v.multipliers), v.preciseA);
          }
  
@@ -54,7 +73,7 @@ diff -ruN SwapUtils.sol SwapUtils.sol
  
          for (uint256 i = 0; i < pooledTokens.length; i++) {
              require(
-@@ -782,14 +820,16 @@
+@@ -782,14 +825,16 @@
  
              newBalances[i] = v.balances[i].add(amounts[i]);
          }
@@ -78,7 +97,7 @@ diff -ruN SwapUtils.sol SwapUtils.sol
  
          if (v.totalSupply != 0) {
              uint256 feePerToken = _feePerToken(
-@@ -811,29 +851,8 @@
+@@ -811,29 +856,8 @@
              // the initial depositor doesn't pay fees
              self.balances = newBalances;
          }
@@ -109,7 +128,7 @@ diff -ruN SwapUtils.sol SwapUtils.sol
  
      /**
       * @notice Burn LP tokens to remove liquidity from the pool.
-@@ -910,9 +929,7 @@
+@@ -910,9 +934,7 @@
  
          require(dy >= minAmount, "dy < minAmount");
  
@@ -120,7 +139,7 @@ diff -ruN SwapUtils.sol SwapUtils.sol
          lpToken.burnFrom(msg.sender, tokenAmount);
          pooledTokens[tokenIndex].safeTransfer(msg.sender, dy);
  
-@@ -927,6 +944,12 @@
+@@ -927,6 +949,12 @@
          return dy;
      }
  
@@ -133,7 +152,7 @@ diff -ruN SwapUtils.sol SwapUtils.sol
      /**
       * @notice Remove liquidity from the pool, weighted differently than the
       * pool's current balances.
-@@ -966,33 +989,11 @@
+@@ -966,33 +994,11 @@
                  maxBurnAmount != 0,
              ">LP.balanceOf"
          );
@@ -171,7 +190,7 @@ diff -ruN SwapUtils.sol SwapUtils.sol
          require(tokenAmount != 0, "Burnt amount cannot be zero");
          tokenAmount = tokenAmount.add(1);
  
-@@ -1015,6 +1016,37 @@
+@@ -1015,6 +1021,37 @@
          return tokenAmount;
      }
  
@@ -211,7 +230,7 @@ diff -ruN SwapUtils.sol SwapUtils.sol
       * @param self Swap struct to withdraw fees from
 diff -ruN registries/PoolRegistry.sol registries/PoolRegistry.sol
 --- registries/PoolRegistry.sol	2022-08-05 08:23:59.000000000 -0700
-+++ registries/PoolRegistry.sol	2022-08-05 11:35:24.000000000 -0700
++++ registries/PoolRegistry.sol	2022-08-17 08:18:26.000000000 -0700
 @@ -42,8 +42,8 @@
      /// @inheritdoc IPoolRegistry
      mapping(bytes32 => uint256) public override poolsIndexOfNamePlusOne;

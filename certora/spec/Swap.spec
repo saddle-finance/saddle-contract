@@ -6,8 +6,11 @@ using LPToken as lptoken
 ////////////////////////////////////////////////////////////////////////////
 
 methods {
+    // newly declared function to help with summarization
+    getDApprox(uint256 xp1, uint256 xp2) returns(uint256) => newGetD(xp1,xp2);
+
     // math functions summarized
-	getD(uint256[], uint256) returns (uint256) => NONDET
+	//getD(uint256[], uint256) returns (uint256) => NONDET
     //https://vaas-stg.certora.com/output/93493/d44d3ec77b888ed8ffa8/?anonymousKey=68714450e71c07066b886229e03adac1b7248380
 
 	//getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
@@ -391,3 +394,11 @@ rule onlyAdminCanSetAdminFees(method f) {
 ////////////////////////////////////////////////////////////////////////////
 //                                Helpers                                 //
 ////////////////////////////////////////////////////////////////////////////
+
+
+function newGetD(uint256 balance1, uint256 balance2) returns uint256 {
+    uint256 invar;
+    require invar >= balance1 + balance2;
+    require invar <= balance1 * balance2;
+    return invar;
+}
