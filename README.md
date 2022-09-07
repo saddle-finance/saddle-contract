@@ -36,7 +36,7 @@ $ npm run coverage
 ### Deploying contracts to localhost Hardhat EVM
 
 ```bash
-$ npm run start
+$ npx hardhat node
 ```
 You can connect to this RPC server via `http://localhost:8545` with chain ID of 31337
 

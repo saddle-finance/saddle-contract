@@ -2,7 +2,6 @@ import { ethers, network } from "hardhat"
 import { GaugeController, SDL } from "../../build/typechain"
 import { getHardhatTestSigners, logNetworkDetails } from "../utils"
 import GaugeControllerDeployment from "../../deployments/mainnet/GaugeController.json"
-import SDLDeployment from "../../deployments/mainnet/SDL.json"
 import { impersonateAccount, setEtherBalance } from "../../test/testUtils"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { CHAIN_ID } from "../../utils/network"
@@ -29,7 +28,7 @@ async function main() {
   )
 
   // Send 1000 SDL from multisig to hardhat test account
-  const sdl: SDL = await ethers.getContractAt("SDL", SDLDeployment.address)
+  const sdl: SDL = await ethers.getContract("SDL")
   await sdl
     .connect(multisig)
     .transfer(hardhatTestAccountAddress, ethers.constants.WeiPerEther.mul(1000))

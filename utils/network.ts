@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 
 dotenv.config()
 
+// Record of chain name to chain id
 export const CHAIN_ID: Record<string, string> = {
   MAINNET: "1",
   ROPSTEN: "3",
@@ -18,6 +19,16 @@ export const CHAIN_ID: Record<string, string> = {
   EVMOS_MAINNET: "9001",
   KAVA_TESTNET: "2221",
   KAVA_MAINNET: "2222",
+}
+
+// Reverse lookup of chainId to chain name
+export function getNetworkNameFromChainId(chainId: string): string {
+  for (const [name, id] of Object.entries(CHAIN_ID)) {
+    if (id === chainId) {
+      return name.toLowerCase()
+    }
+  }
+  throw new Error(`Unknown chain id: ${chainId}`)
 }
 
 export function isMainnet(networkId: string): boolean {
