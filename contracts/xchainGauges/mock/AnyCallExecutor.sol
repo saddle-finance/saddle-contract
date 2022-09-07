@@ -4,7 +4,9 @@ pragma solidity ^0.8.6;
 /// IApp interface of the application
 interface IApp {
     /// (required) call on the destination chain to exec the interaction
-    function anyExecute(bytes calldata _data) external returns (bool success, bytes memory result);
+    function anyExecute(bytes calldata _data)
+        external
+        returns (bool success, bytes memory result);
 
     /// (optional,advised) call back on the originating chain if the cross chain interaction fails
     function anyFallback(address _to, bytes calldata _data) external;
@@ -35,7 +37,11 @@ contract AnyCallExecutor {
         if (msg.sender != creator) {
             return (false, "AnyCallExecutor: caller is not the creator");
         }
-        context = Context({from: _from, fromChainID: _fromChainID, nonce: _nonce});
+        context = Context({
+            from: _from,
+            fromChainID: _fromChainID,
+            nonce: _nonce
+        });
         (success, result) = IApp(_to).anyExecute(_data);
         context = Context({from: address(0), fromChainID: 0, nonce: 0});
     }
