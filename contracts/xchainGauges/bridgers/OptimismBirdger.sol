@@ -16,7 +16,7 @@ interface IOptimismStandardBridge {
     ) external payable;
 }
 
-contract ArbitrumBridger {
+contract OptimismBridger {
     // consts
     address private SDL;
     address private OP_SDL;
