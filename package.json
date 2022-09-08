@@ -19,6 +19,7 @@
     "@openzeppelin/contracts-upgradeable-4.4.0": "npm:@openzeppelin/contracts-upgradeable@4.4.0",
     "dotenv": "^10.0.0",
     "hardhat-tracer": "^1.1.0-rc.8",
+    "patch-package": "^6.4.7",
     "synthetix": "2.56.1"
   },
   "devDependencies": {
@@ -77,7 +78,8 @@
     "start": "hardhat node",
     "fork": "hardhat node --fork $npm_config_network",
     "prepare": "npm run build",
-    "addresses": "node scripts/print-addresses.js"
+    "addresses": "node scripts/print-addresses.js",
+    "postinstall": "patch-package"
   },
   "config": {
     "eslintPaths": "test/ deploy/"

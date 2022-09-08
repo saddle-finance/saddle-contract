@@ -50,7 +50,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (
     isMainnet(await getChainId()) &&
-    process.env.FORK_NETWORK &&
+    process.env.HARDHAT_DEPLOY_FORK &&
     process.env.FUND_FORK_NETWORK
   ) {
     // Give the deployer tokens from each token holder for testing
