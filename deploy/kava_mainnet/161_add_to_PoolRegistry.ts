@@ -2,7 +2,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
 import { PoolRegistry } from "../../build/typechain"
 import { ZERO_ADDRESS } from "../../test/testUtils"
-import { PoolType } from "../../utils/constants"
 import { IPoolRegistry } from "../../build/typechain/"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -14,16 +13,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const pools: IPoolRegistry.PoolInputDataStruct[] = [
     {
-      // Saddle3Pool
-      poolAddress: (await get("Saddle3Pool")).address,
-      typeOfAsset: PoolType.USD,
-      poolName: ethers.utils.formatBytes32String("USDC-USDT-DAI"),
+      // SaddleUSDTPool
+      poolAddress: (await get("SaddleUSDTPool")).address,
+      typeOfAsset: 2,
+      poolName: ethers.utils.formatBytes32String("USDC-USDT"),
       targetAddress: (await get("SwapFlashLoan")).address,
       metaSwapDepositAddress: ZERO_ADDRESS,
       isSaddleApproved: true,
       isRemoved: false,
       isGuarded: false,
     },
+    // {
+    //   // Saddle3Pool
+    //   poolAddress: (await get("Saddle3Pool")).address,
+    //   typeOfAsset: PoolType.USD,
+    //   poolName: ethers.utils.formatBytes32String("USDC-USDT-DAI"),
+    //   targetAddress: (await get("SwapFlashLoan")).address,
+    //   metaSwapDepositAddress: ZERO_ADDRESS,
+    //   isSaddleApproved: true,
+    //   isRemoved: false,
+    //   isGuarded: false,
+    // },
   ]
 
   await poolRegistry
