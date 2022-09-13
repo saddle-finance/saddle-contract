@@ -51,7 +51,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // We will be impersonating this account to unpause vesdl and do other various tasks relating to ownership of Saddle.
   const multisig = MULTISIG_ADDRESSES[CHAIN_ID.MAINNET]
   const multisigSigner = await impersonateAccount(multisig)
-  await setEtherBalance(multisig, ethers.constants.WeiPerEther.mul(10000))
+  await setEtherBalance(multisig, 1e20)
 
   // Get all necessary contracts
   const sdl = (await ethers.getContract(SDL_CONTRACT_NAME)) as SDL

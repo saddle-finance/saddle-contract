@@ -1,8 +1,3 @@
-import { ensureEnvVar } from "./utils"
-import dotenv from "dotenv"
-
-dotenv.config()
-
 export const CHAIN_ID: Record<string, string> = {
   MAINNET: "1",
   ROPSTEN: "3",
