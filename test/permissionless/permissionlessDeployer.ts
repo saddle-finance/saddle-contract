@@ -84,7 +84,7 @@ describe("PermissionlessDeployer", async () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["D4PoolTokens", "PermissionlessSwaps"]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       deployer = signers[0]

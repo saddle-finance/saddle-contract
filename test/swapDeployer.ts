@@ -60,7 +60,7 @@ describe("Swap Deployer", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get, deploy } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["Swap", "USDPool", "SwapDeployer"]) // ensure you start from a fresh deployments
 
       TOKENS.length = 0
       signers = await ethers.getSigners()

@@ -37,7 +37,7 @@ describe("Token", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { deploy, deterministic } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture([]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       deployer = signers[0]

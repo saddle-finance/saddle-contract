@@ -17,27 +17,23 @@ describe("SwapCalculator (D4 pool on forked mainnet) [ @skip-on-coverage ]", asy
   let usdv2: Swap
   let d4: Swap
 
-  before(async () => {
-    await network.provider.request({
-      method: "hardhat_reset",
-      params: [
-        {
-          forking: {
-            jsonRpcUrl:
-              ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
-            blockNumber: 14391465,
-            ignoreUnknownTxType: true,
-          },
-        },
-      ],
-    })
-
-    // await setTimestamp(16473514010)
-  })
-
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture([], { keepExistingDeployments: true }) // start from empty state
+      // Fork mainnet at block 14391465
+      await network.provider.request({
+        method: "hardhat_reset",
+        params: [
+          {
+            forking: {
+              jsonRpcUrl:
+                ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] +
+                process.env.ALCHEMY_API_KEY,
+              blockNumber: 14391465,
+              ignoreUnknownTxType: true,
+            },
+          },
+        ],
+      })
 
       signers = await ethers.getSigners()
       owner = signers[0]

@@ -109,4 +109,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["PermissionlessSwaps"]
+func.dependencies = [
+  "SUSDMetaPoolDeposit",
+  "LPToken",
+  "SwapUtils",
+  "MetaSwapUtils",
+  "MasterRegistry",
+  "PoolRegistry",
+  "AmplificationUtils",
+]
 // func.skip = async (env) => (await env.getChainId()) == CHAIN_ID.MAINNET

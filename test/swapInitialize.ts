@@ -6,7 +6,7 @@ import { ZERO_ADDRESS } from "./testUtils"
 
 const { expect } = chai
 
-describe("Swap", () => {
+describe("Swap Initialize", () => {
   let signers: Array<Signer>
   let swap: Swap
   let firstToken: GenericERC20
@@ -22,7 +22,7 @@ describe("Swap", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["Swap"]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       owner = signers[0]
