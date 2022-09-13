@@ -1,16 +1,12 @@
 import chai from "chai"
-import { ContractFactory, Signer } from "ethers"
+import { Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
   AnyCallTranslator,
   ChildGaugeFactory,
   ChildOracle,
   GenericERC20,
-  LPToken,
   MockAnyCall,
-  MockBridger,
-  RewardForwarder,
-  RootGauge,
   RootGaugeFactory,
   RootOracle,
   SDL,
@@ -25,7 +21,7 @@ import {
   setTimestamp,
 } from "../testUtils"
 import {
-  MOCK_CHAIN_ID,
+  TEST_SIDE_CHAIN_ID,
   setupAnyCallTranslator,
   setupChildGaugeFactory,
   setupChildOracle,
@@ -43,17 +39,10 @@ describe("AnycallTranslator", () => {
   let signers: Array<Signer>
   let users: string[]
   let user1: Signer
-  let deployer: Signer
   let mockAnycall: MockAnyCall
-  let rewardForwarder: RewardForwarder
-  let testToken: LPToken
-  let firstGaugeToken: GenericERC20
-  let lpTokenFactory: ContractFactory
   let rootGaugeFactory: RootGaugeFactory
   let childGaugeFactory: ChildGaugeFactory
   let anyCallTranslator: AnyCallTranslator
-  let mockBridger: MockBridger
-  let rootGauge: RootGauge
   let veSDL: VotingEscrow
   let rootOracle: RootOracle
   let childOracle: ChildOracle
@@ -101,7 +90,7 @@ describe("AnycallTranslator", () => {
       )
 
       // **** Add expected callers to known callers ****
-      anyCallTranslator.addKnownCallers([
+      await anyCallTranslator.addKnownCallers([
         rootGaugeFactory.address,
         rootOracle.address,
         childGaugeFactory.address,
@@ -147,7 +136,7 @@ describe("AnycallTranslator", () => {
           rootGaugeFactory[
             "deploy_child_gauge(uint256,address,bytes32,string,address)"
           ](
-            MOCK_CHAIN_ID,
+            TEST_SIDE_CHAIN_ID,
             DUMMY_TOKEN_ADDRESS,
             GAUGE_SALT,
             GAUGE_NAME,
@@ -162,7 +151,7 @@ describe("AnycallTranslator", () => {
               [rootGaugeFactory.address, callData],
             ),
             ZERO_ADDRESS,
-            MOCK_CHAIN_ID,
+            TEST_SIDE_CHAIN_ID,
             0,
           )
       })
@@ -198,7 +187,7 @@ describe("AnycallTranslator", () => {
           users[0],
         ])
 
-        await expect(rootOracle["push(uint256)"](MOCK_CHAIN_ID))
+        await expect(rootOracle["push(uint256)"](TEST_SIDE_CHAIN_ID))
           .to.emit(mockAnycall, "AnyCallMessage")
           .withArgs(
             anyCallTranslator.address,
@@ -207,7 +196,7 @@ describe("AnycallTranslator", () => {
               [rootOracle.address, callData],
             ),
             ZERO_ADDRESS,
-            MOCK_CHAIN_ID,
+            TEST_SIDE_CHAIN_ID,
             0,
           )
       })
@@ -217,7 +206,7 @@ describe("AnycallTranslator", () => {
     it("Should be able to recieve the message to deploy a root gauge via RootGaugeFactory.deploy_gauge()", async () => {
       const callData = rootGaugeFactory.interface.encodeFunctionData(
         "deploy_gauge",
-        [MOCK_CHAIN_ID, GAUGE_SALT, GAUGE_NAME],
+        [TEST_SIDE_CHAIN_ID, GAUGE_SALT, GAUGE_NAME],
       )
       const implementation = await rootGaugeFactory.get_implementation()
 
@@ -234,14 +223,16 @@ describe("AnycallTranslator", () => {
         .to.emit(rootGaugeFactory, "DeployedGauge")
         .withArgs(
           implementation,
-          MOCK_CHAIN_ID,
+          TEST_SIDE_CHAIN_ID,
           anyCallTranslator.address,
           GAUGE_SALT,
           anyValue,
         )
 
       // Expect there is a new gauge deployed
-      expect(await rootGaugeFactory.get_gauge_count(MOCK_CHAIN_ID)).to.eq(1)
+      expect(await rootGaugeFactory.get_gauge_count(TEST_SIDE_CHAIN_ID)).to.eq(
+        1,
+      )
     })
   })
 

@@ -10,7 +10,7 @@ import {
   TransparentUpgradeableProxy__factory,
 } from "../../build/typechain"
 
-export const MOCK_CHAIN_ID = 11
+export const TEST_SIDE_CHAIN_ID = 11
 
 export async function setupChildGaugeFactory(
   anyCallTranslatorAddress: string,
@@ -61,7 +61,7 @@ export async function setupRootGaugeFactory(
   const mockBridgerFactory = await ethers.getContractFactory("MockBridger")
   const mockBridger = await mockBridgerFactory.deploy()
   // Set Bridger to mock bridger
-  await rootGaugeFactory.set_bridger(MOCK_CHAIN_ID, mockBridger.address)
+  await rootGaugeFactory.set_bridger(TEST_SIDE_CHAIN_ID, mockBridger.address)
 
   // Root Gauge Implementation
   const gaugeImplementationFactory = await ethers.getContractFactory(
