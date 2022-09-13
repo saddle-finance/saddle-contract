@@ -38,7 +38,6 @@ const { expect } = chai
 describe("AnycallTranslator", () => {
   let signers: Array<Signer>
   let users: string[]
-  let user1: Signer
   let mockAnycall: MockAnyCall
   let rootGaugeFactory: RootGaugeFactory
   let childGaugeFactory: ChildGaugeFactory
@@ -57,7 +56,6 @@ describe("AnycallTranslator", () => {
       await deployments.fixture(["veSDL"], { fallbackToGlobal: false }) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
-      user1 = signers[1]
       users = await Promise.all(
         signers.map(async (signer) => signer.getAddress()),
       )
