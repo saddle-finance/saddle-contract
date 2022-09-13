@@ -108,12 +108,16 @@ describe("RootOracle", () => {
   })
 
   describe("constructor", () => {
-    it(`Successfully deployed and set storages`, async () => {
+    it(`Successfully sets FACTORY`, async () => {
       expect(await rootOracle.FACTORY()).to.eq(rootGaugeFactory.address)
+    })
+    it(`Successfully sets VE`, async () => {
       expect(await rootOracle.VE()).to.eq(
         (await ethers.getContract("VotingEscrow")).address,
       )
-      expect(await rootOracle.callProxy()).to.eq(anyCallAddress)
+    })
+    it(`Successfully sets callProxy`, async () => {
+      expect(await rootOracle.callProxy()).to.eq(anyCallTranslator.address)
     })
   })
 })
