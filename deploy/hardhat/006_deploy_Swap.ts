@@ -31,4 +31,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["Swap"]
-func.dependencies = ["AmplificationUtils", "SwapUtils"]
+func.dependencies = ["AmplificationUtils", "SwapUtils", "LPToken"]
