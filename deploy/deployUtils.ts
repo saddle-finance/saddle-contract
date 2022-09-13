@@ -606,20 +606,22 @@ export async function registerPools(
   )
   console.log(`Attempting to register ${poolsToBeAdded.length} pool[s]`)
   const poolsToBeRegistered: IPoolRegistry.PoolInputDataStruct[] = []
-  poolsToBeAdded.map(async (pool) => {
-    if (pool.registryName) {
-      poolsToBeRegistered.push({
-        poolAddress: (await get(pool.poolName)).address,
-        typeOfAsset: PoolType.USD,
-        poolName: ethers.utils.formatBytes32String(pool.registryName),
-        targetAddress: (await get("SwapFlashLoan")).address,
-        metaSwapDepositAddress: ZERO_ADDRESS,
-        isSaddleApproved: true,
-        isRemoved: false,
-        isGuarded: false,
-      })
-    }
-  })
+  await Promise.all(
+    poolsToBeAdded.map(async (pool) => {
+      if (pool.registryName) {
+        poolsToBeRegistered.push({
+          poolAddress: (await get(pool.poolName)).address,
+          typeOfAsset: PoolType.USD,
+          poolName: ethers.utils.formatBytes32String(pool.registryName),
+          targetAddress: (await get("SwapFlashLoan")).address,
+          metaSwapDepositAddress: ZERO_ADDRESS,
+          isSaddleApproved: true,
+          isRemoved: false,
+          isGuarded: false,
+        })
+      }
+    }),
+  )
   if (poolsToBeAdded.length > 0) {
     const batchCall = await Promise.all(
       poolsToBeRegistered.map(
