@@ -129,6 +129,21 @@ describe("Meta-Swap", async () => {
           )
       })
 
+      await expect(
+        metaSwap.initialize(
+          [susd.address, baseLPToken.address],
+          [18, 18],
+          LP_TOKEN_NAME,
+          LP_TOKEN_SYMBOL,
+          INITIAL_A_VALUE,
+          SWAP_FEE,
+          0,
+          (
+            await get("LPToken")
+          ).address,
+        ),
+      ).to.be.revertedWith("use initializeMetaSwap() instead")
+
       // Initialize meta swap pool
       // Manually overload the signature
       await metaSwap.initializeMetaSwap(
