@@ -6,6 +6,7 @@ import LPTokenArtifact from "../../build/artifacts/contracts/LPToken.sol/LPToken
 import {
   GenericERC20,
   LPToken,
+  MasterRegistry,
   MetaSwap,
   MetaSwapDeposit,
   MetaSwapUtils,
@@ -48,11 +49,12 @@ describe("PermissionlessMetaSwapFlashLoan with inflated baseVirtualPrice and 50%
 
   const AMOUNT = 1e17
   const INFLATED_VP = "1013335719282759415"
+  const TOKENS: string[] = []
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["USDPool", "MetaSwapUtils", "MasterRegistry"]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       owner = signers[0]
@@ -112,6 +114,15 @@ describe("PermissionlessMetaSwapFlashLoan with inflated baseVirtualPrice and 50%
         },
       )
 
+      // Register user1 as fee collector
+      const masterRegistry: MasterRegistry = await ethers.getContract(
+        "MasterRegistry",
+      )
+      await masterRegistry.addRegistry(
+        ethers.utils.formatBytes32String("FeeCollector"),
+        user1Address,
+      )
+
       metaSwap = (await (
         await ethers.getContractFactory("PermissionlessMetaSwapFlashLoan", {
           libraries: {
@@ -157,6 +168,8 @@ describe("PermissionlessMetaSwapFlashLoan with inflated baseVirtualPrice and 50%
 
       // Initialize meta swap pool
       // Manually overload the signature
+      TOKENS.length = 0
+      TOKENS.push(susd.address, baseLPToken.address)
       await metaSwap.initializeMetaSwap(
         [susd.address, baseLPToken.address],
         [18, 18],
@@ -598,6 +611,56 @@ describe("PermissionlessMetaSwapFlashLoan with inflated baseVirtualPrice and 50%
 
       // two small swaps should not result in more than 0.15% loss
       expect(lossBP).to.lt(15)
+    })
+  })
+
+  describe("withdrawAdminFees", () => {
+    it("Reverts when called by non-owners", async () => {
+      await expect(metaSwap.connect(user2).withdrawAdminFees()).to.be.reverted
+    })
+
+    it("Succeeds when there are no fees withdrawn", async () => {
+      // Sets adminFee to 1% of the swap fees
+      const balancesBefore = await getUserTokenBalances(owner, TOKENS)
+      await metaSwap.withdrawAdminFees()
+      const balancesAfter = await getUserTokenBalances(owner, TOKENS)
+
+      expect(balancesBefore).to.eql(balancesAfter)
+    })
+
+    it("Successfully gets called by both owner and the fee collector", async () => {
+      await metaSwap.withdrawAdminFees()
+      await metaSwap.connect(user1).withdrawAdminFees()
+    })
+
+    it("Succeeds with expected amount of fees withdrawn", async () => {
+      // Sets adminFee to 1% of the swap fees
+      await metaSwap.setAdminFee(BigNumber.from(10 ** 8))
+      await metaSwap.connect(user1).swap(0, 1, String(1e18), 0, MAX_UINT256)
+      await metaSwap.connect(user1).swap(1, 0, String(1e18), 0, MAX_UINT256)
+
+      expect(await metaSwap.getAdminBalance(0)).to.eq("4094214930477")
+      expect(await metaSwap.getAdminBalance(1)).to.eq("3906359586183")
+
+      const balancesBefore = await getUserTokenBalances(owner, TOKENS)
+      const collectorBalancesBefore = await getUserTokenBalances(user1, TOKENS)
+
+      await metaSwap.withdrawAdminFees()
+
+      const balancesAfter = await getUserTokenBalances(owner, TOKENS)
+      const collectorBalancesAfter = await getUserTokenBalances(user1, TOKENS)
+      const balancesDelta = balancesAfter.map((balance, i) =>
+        balance.sub(balancesBefore[i]),
+      )
+      const collectorBalancesDelta = collectorBalancesAfter.map((balance, i) =>
+        balance.sub(collectorBalancesBefore[i]),
+      )
+
+      expect(balancesDelta).to.eql(collectorBalancesDelta)
+      expect(balancesDelta).to.eql([
+        BigNumber.from("2047107465238"),
+        BigNumber.from("1953179793091"),
+      ])
     })
   })
 })

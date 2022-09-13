@@ -378,8 +378,9 @@ describe("VotingEscrow", () => {
 
       // Increase unlock time
       await veSDL.increase_unlock_time(LOCK_START_TIMESTAMP + MAXTIME)
-      expect(await veSDL["balanceOf(address)"](deployerAddress)).to.eq(
-        "14999999682902080113010136",
+      expect(await veSDL["balanceOf(address)"](deployerAddress)).to.closeTo(
+        BIG_NUMBER_1E18.mul(15_000_000),
+        BIG_NUMBER_1E18,
       )
 
       const locked = await veSDL.locked(deployerAddress)

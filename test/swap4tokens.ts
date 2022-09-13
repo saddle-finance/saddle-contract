@@ -1,7 +1,12 @@
 import chai from "chai"
 import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
-import { GenericERC20, LPToken, Swap } from "../build/typechain/"
+import {
+  GenericERC20,
+  GenericERC20__factory,
+  LPToken,
+  Swap,
+} from "../build/typechain/"
 import {
   asyncForEach,
   getCurrentBlockTimestamp,
@@ -50,7 +55,7 @@ describe("Swap with 4 tokens", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get, deploy } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["Swap"]) // ensure you start from a fresh deployments
 
       TOKENS.length = 0
       signers = await ethers.getSigners()
@@ -62,17 +67,13 @@ describe("Swap with 4 tokens", () => {
       user1Address = await user1.getAddress()
       user2Address = await user2.getAddress()
 
-      await deploy("SUSD", {
-        from: ownerAddress,
-        contract: "GenericERC20",
-        args: ["SUSD", "Synthetix USD", "18"],
-        skipIfAlreadyDeployed: true,
-      })
+      const erc20Factory: GenericERC20__factory =
+        await ethers.getContractFactory("GenericERC20")
 
-      DAI = await ethers.getContract("DAI")
-      USDC = await ethers.getContract("USDC")
-      USDT = await ethers.getContract("USDT")
-      SUSD = await ethers.getContract("SUSD")
+      DAI = await erc20Factory.deploy("DAI", "DAI", "18")
+      USDC = await erc20Factory.deploy("USDC", "USDC", "6")
+      USDT = await erc20Factory.deploy("USDT", "USDT", "6")
+      SUSD = await erc20Factory.deploy("SUSD", "SUSD", "18")
 
       TOKENS.push(DAI, USDC, USDT, SUSD)
 
