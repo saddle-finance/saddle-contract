@@ -1,31 +1,29 @@
 diff --git a/node_modules/hardhat/builtin-tasks/node.js b/node_modules/hardhat/builtin-tasks/node.js
-index 3a8cb63..5596a79 100644
+index e7f1a3e..9955841 100644
 --- a/node_modules/hardhat/builtin-tasks/node.js
 +++ b/node_modules/hardhat/builtin-tasks/node.js
-@@ -56,8 +56,9 @@ Private Key: ${privateKey}`;
+@@ -54,7 +54,8 @@ Private Key: ${privateKey}`;
  (0, config_env_1.subtask)(task_names_1.TASK_NODE_GET_PROVIDER)
      .addOptionalParam("forkUrl", undefined, undefined, config_env_1.types.string)
      .addOptionalParam("forkBlockNumber", undefined, undefined, config_env_1.types.int)
 -    .setAction(async ({ forkBlockNumber: forkBlockNumberParam, forkUrl: forkUrlParam, }, { artifacts, config, network, userConfig }) => {
--    var _a, _b, _c, _d, _e;
 +    .addOptionalParam("forkIgnoreUnknownTxType", undefined, undefined, config_env_1.types.boolean)
 +    .setAction(async ({ forkBlockNumber: forkBlockNumberParam, forkUrl: forkUrlParam, forkIgnoreUnknownTxType: forkIgnoreUnknownTxTypeParam, }, { artifacts, config, network, userConfig }) => {
-+    var _a, _b, _c, _d, _e, _f;
      let provider = network.provider;
      if (network.name !== constants_1.HARDHAT_NETWORK_NAME) {
          const networkConfig = config.networks[constants_1.HARDHAT_NETWORK_NAME];
-@@ -67,8 +68,10 @@ Private Key: ${privateKey}`;
+@@ -64,8 +65,10 @@ Private Key: ${privateKey}`;
      const hardhatNetworkConfig = config.networks[constants_1.HARDHAT_NETWORK_NAME];
-     const forkUrlConfig = (_a = hardhatNetworkConfig.forking) === null || _a === void 0 ? void 0 : _a.url;
-     const forkBlockNumberConfig = (_b = hardhatNetworkConfig.forking) === null || _b === void 0 ? void 0 : _b.blockNumber;
-+    const forkIgnoreUnknownTxTypeConfig = (_c = hardhatNetworkConfig.forking) === null || _c === void 0 ? void 0 : _c.ignoreUnknownTxType;
-     const forkUrl = forkUrlParam !== null && forkUrlParam !== void 0 ? forkUrlParam : forkUrlConfig;
-     const forkBlockNumber = forkBlockNumberParam !== null && forkBlockNumberParam !== void 0 ? forkBlockNumberParam : forkBlockNumberConfig;
-+    const forkIgnoreUnknownTxType = forkIgnoreUnknownTxTypeParam !== null && forkIgnoreUnknownTxTypeParam !== void 0 ? forkIgnoreUnknownTxTypeParam : forkIgnoreUnknownTxTypeConfig;
+     const forkUrlConfig = hardhatNetworkConfig.forking?.url;
+     const forkBlockNumberConfig = hardhatNetworkConfig.forking?.blockNumber;
++    const forkIgnoreUnknownTxTypeConfig = hardhatNetworkConfig.forking?.ignoreUnknownTxType;
+     const forkUrl = forkUrlParam ?? forkUrlConfig;
+     const forkBlockNumber = forkBlockNumberParam ?? forkBlockNumberConfig;
++    const forkIgnoreUnknownTxType = forkIgnoreUnknownTxTypeParam ?? forkIgnoreUnknownTxTypeConfig;
      // we throw an error if the user specified a forkBlockNumber but not a
      // forkUrl
      if (forkBlockNumber !== undefined && forkUrl === undefined) {
-@@ -85,16 +88,17 @@ Private Key: ${privateKey}`;
+@@ -82,6 +85,7 @@ Private Key: ${privateKey}`;
                      forking: {
                          jsonRpcUrl: forkUrl,
                          blockNumber: forkBlockNumber,
@@ -33,19 +31,7 @@ index 3a8cb63..5596a79 100644
                      },
                  },
              ],
-         });
-     }
--    const hardhatNetworkUserConfig = (_d = (_c = userConfig.networks) === null || _c === void 0 ? void 0 : _c[constants_1.HARDHAT_NETWORK_NAME]) !== null && _d !== void 0 ? _d : {};
-+    const hardhatNetworkUserConfig = (_e = (_d = userConfig.networks) === null || _d === void 0 ? void 0 : _d[constants_1.HARDHAT_NETWORK_NAME]) !== null && _e !== void 0 ? _e : {};
-     // enable logging
-     await provider.request({
-         method: "hardhat_setLoggingEnabled",
--        params: [(_e = hardhatNetworkUserConfig.loggingEnabled) !== null && _e !== void 0 ? _e : true],
-+        params: [(_f = hardhatNetworkUserConfig.loggingEnabled) !== null && _f !== void 0 ? _f : true],
-     });
-     return provider;
- });
-@@ -142,7 +146,8 @@ Private Key: ${privateKey}`;
+@@ -139,7 +143,8 @@ Private Key: ${privateKey}`;
      .addOptionalParam("port", "The port on which to listen for new connections", 8545, config_env_1.types.int)
      .addOptionalParam("fork", "The URL of the JSON-RPC server to fork from", undefined, config_env_1.types.string)
      .addOptionalParam("forkBlockNumber", "The block number to fork from", undefined, config_env_1.types.int)
@@ -55,7 +41,7 @@ index 3a8cb63..5596a79 100644
      // we throw if the user specified a network argument and it's not hardhat
      if (network.name !== constants_1.HARDHAT_NETWORK_NAME &&
          hardhatArguments.network !== undefined) {
-@@ -152,6 +157,7 @@ Private Key: ${privateKey}`;
+@@ -149,6 +154,7 @@ Private Key: ${privateKey}`;
          const provider = await run(task_names_1.TASK_NODE_GET_PROVIDER, {
              forkBlockNumber,
              forkUrl,
@@ -63,7 +49,7 @@ index 3a8cb63..5596a79 100644
          });
          // the default hostname is "127.0.0.1" unless we are inside a docker
          // container, in that case we use "0.0.0.0"
-@@ -172,6 +178,7 @@ Private Key: ${privateKey}`;
+@@ -169,6 +175,7 @@ Private Key: ${privateKey}`;
              hostname,
              port,
              provider,
@@ -72,22 +58,22 @@ index 3a8cb63..5596a79 100644
          await run(task_names_1.TASK_NODE_SERVER_CREATED, {
              hostname,
 diff --git a/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.d.ts b/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.d.ts
-index b851c8b..42bedf7 100644
+index 2e1d5bc..debe3bb 100644
 --- a/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.d.ts
 +++ b/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.d.ts
-@@ -11,8 +11,9 @@ import { HardhatBlockchainInterface } from "../types/HardhatBlockchainInterface"
+@@ -10,8 +10,9 @@ import { HardhatBlockchainInterface } from "../types/HardhatBlockchainInterface"
  export declare class ForkBlockchain extends BlockchainBase implements HardhatBlockchainInterface {
      private _jsonRpcClient;
      private _forkBlockNumber;
 +    private _forkIgnoreUnknownTxType;
      private _latestBlockNumber;
--    constructor(_jsonRpcClient: JsonRpcClient, _forkBlockNumber: BN, common: Common);
-+    constructor(_jsonRpcClient: JsonRpcClient, _forkBlockNumber: BN, common: Common, _forkIgnoreUnknownTxType: boolean);
-     getLatestBlockNumber(): BN;
-     getBlock(blockHashOrNumber: Buffer | number | BN): Promise<Block | null>;
+-    constructor(_jsonRpcClient: JsonRpcClient, _forkBlockNumber: bigint, common: Common);
++    constructor(_jsonRpcClient: JsonRpcClient, _forkBlockNumber: bigint, common: Common, _forkIgnoreUnknownTxType: boolean);
+     getLatestBlockNumber(): bigint;
+     getBlock(blockHashOrNumber: Buffer | bigint): Promise<Block | null>;
      addBlock(block: Block): Promise<Block>;
 diff --git a/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.js b/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.js
-index 5aa8404..dcc5bc7 100644
+index 147ce9f..3fcbb6a 100644
 --- a/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.js
 +++ b/node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.js
 @@ -1,8 +1,12 @@
@@ -97,8 +83,8 @@ index 5aa8404..dcc5bc7 100644
 +};
  Object.defineProperty(exports, "__esModule", { value: true });
  exports.ForkBlockchain = void 0;
- const block_1 = require("@ethereumjs/block");
- const ethereumjs_util_1 = require("ethereumjs-util");
+ const ethereumjs_block_1 = require("@nomicfoundation/ethereumjs-block");
+ const ethereumjs_util_1 = require("@nomicfoundation/ethereumjs-util");
 +const chalk_1 = __importDefault(require("chalk"));
  const errors_1 = require("../../../core/providers/errors");
  const BlockchainBase_1 = require("../BlockchainBase");
@@ -116,23 +102,22 @@ index 5aa8404..dcc5bc7 100644
          this._latestBlockNumber = this._forkBlockNumber;
      }
      getLatestBlockNumber() {
-@@ -199,7 +204,13 @@ class ForkBlockchain extends BlockchainBase_1.BlockchainBase {
+@@ -203,8 +208,12 @@ class ForkBlockchain extends BlockchainBase_1.BlockchainBase {
+             else if (transaction.type === 2n) {
                  tx = new ReadOnlyValidEIP1559Transaction_1.ReadOnlyValidEIP1559Transaction(new ethereumjs_util_1.Address(transaction.from), (0, rpcToTxData_1.rpcToTxData)(transaction));
              }
++            if (this._forkIgnoreUnknownTxType) {
++                console.log(chalk_1.default.yellow(`Ignored a tx with unknown type ${transaction.type}`));
++                continue;
++            }
              else {
 -                throw new errors_1.InternalError(`Unknown transaction type ${transaction.type.toString()}`);
-+                if (this._forkIgnoreUnknownTxType) {
-+                    console.log(chalk_1.default.yellow(`Ignored a tx with unknown type ${transaction.type}`));
-+                    continue;
-+                }
-+                else {
-+                    throw new errors_1.InternalError(`Unknown transaction type ${transaction.type.toString()}, set --fork-ignore-unknown-tx-type true to ignore`);
-+                }
++                throw new errors_1.InternalError(`Unknown transaction type ${transaction.type.toString()}, set --fork-ignore-unknown-tx-type true to ignore`);
              }
              block.transactions.push(tx);
          }
 diff --git a/node_modules/hardhat/internal/hardhat-network/provider/node-types.d.ts b/node_modules/hardhat/internal/hardhat-network/provider/node-types.d.ts
-index 1dbf710..6361315 100644
+index 605ba72..0f894ea 100644
 --- a/node_modules/hardhat/internal/hardhat-network/provider/node-types.d.ts
 +++ b/node_modules/hardhat/internal/hardhat-network/provider/node-types.d.ts
 @@ -32,6 +32,7 @@ export interface ForkConfig {
@@ -144,44 +129,44 @@ index 1dbf710..6361315 100644
  export interface ForkedNodeConfig extends CommonConfig {
      forkConfig: ForkConfig;
 diff --git a/node_modules/hardhat/internal/hardhat-network/provider/node.js b/node_modules/hardhat/internal/hardhat-network/provider/node.js
-index f60f762..06dcebd 100644
+index 17c5dd2..38089eb 100644
 --- a/node_modules/hardhat/internal/hardhat-network/provider/node.js
 +++ b/node_modules/hardhat/internal/hardhat-network/provider/node.js
-@@ -128,7 +128,7 @@ class HardhatNode extends events_1.default {
-         const hardfork = (0, hardforks_1.getHardforkName)(config.hardfork);
+@@ -152,7 +152,7 @@ class HardhatNode extends events_1.default {
          let forkClient;
+         const common = (0, makeCommon_1.makeCommon)(config);
          if ((0, node_types_1.isForkedNodeConfig)(config)) {
 -            const { forkClient: _forkClient, forkBlockNumber, forkBlockTimestamp, } = await (0, makeForkClient_1.makeForkClient)(config.forkConfig, config.forkCachePath);
 +            const { forkClient: _forkClient, forkBlockNumber, forkBlockTimestamp, forkIgnoreUnknownTxType, } = await (0, makeForkClient_1.makeForkClient)(config.forkConfig, config.forkCachePath);
              forkClient = _forkClient;
-             common = await (0, makeForkCommon_1.makeForkCommon)(config);
              forkNetworkId = forkClient.getNetworkId();
-@@ -137,7 +137,7 @@ class HardhatNode extends events_1.default {
+             forkBlockNum = forkBlockNumber;
+@@ -160,7 +160,7 @@ class HardhatNode extends events_1.default {
              const forkStateManager = new ForkStateManager_1.ForkStateManager(forkClient, forkBlockNumber);
              await forkStateManager.initializeGenesisAccounts(genesisAccounts);
              stateManager = forkStateManager;
 -            blockchain = new ForkBlockchain_1.ForkBlockchain(forkClient, forkBlockNumber, common);
 +            blockchain = new ForkBlockchain_1.ForkBlockchain(forkClient, forkBlockNumber, common, forkIgnoreUnknownTxType);
-             initialBlockTimeOffset = new ethereumjs_util_1.BN((0, date_1.getDifferenceInSeconds)(new Date(forkBlockTimestamp), new Date()));
+             initialBlockTimeOffset = BigInt((0, date_1.getDifferenceInSeconds)(new Date(forkBlockTimestamp), new Date()));
              // If the hardfork is London or later we need a base fee per gas for the
              // first local block. If initialBaseFeePerGas config was provided we use
 diff --git a/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.d.ts b/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.d.ts
-index f79dccb..1f3cb03 100644
+index 3c1b58b..5fd959c 100644
 --- a/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.d.ts
 +++ b/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.d.ts
-@@ -5,5 +5,6 @@ export declare function makeForkClient(forkConfig: ForkConfig, forkCachePath?: s
+@@ -4,5 +4,6 @@ export declare function makeForkClient(forkConfig: ForkConfig, forkCachePath?: s
      forkClient: JsonRpcClient;
-     forkBlockNumber: BN;
+     forkBlockNumber: bigint;
      forkBlockTimestamp: number;
 +    forkIgnoreUnknownTxType: boolean;
  }>;
  //# sourceMappingURL=makeForkClient.d.ts.map
 \ No newline at end of file
 diff --git a/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js b/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js
-index dd37a51..697670d 100644
+index b82d480..3f602c7 100644
 --- a/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js
 +++ b/node_modules/hardhat/internal/hardhat-network/provider/utils/makeForkClient.js
-@@ -18,6 +18,7 @@ const reorgs_protection_1 = require("./reorgs-protection");
+@@ -17,6 +17,7 @@ const reorgs_protection_1 = require("./reorgs-protection");
  //  anymore, so this really should be revisited.
  const FORK_HTTP_TIMEOUT = 35000;
  async function makeForkClient(forkConfig, forkCachePath) {
@@ -189,7 +174,7 @@ index dd37a51..697670d 100644
      const provider = new http_1.HttpProvider(forkConfig.jsonRpcUrl, constants_1.HARDHAT_NETWORK_NAME, forkConfig.httpHeaders, FORK_HTTP_TIMEOUT);
      const networkId = await getNetworkId(provider);
      const actualMaxReorg = (0, reorgs_protection_1.getLargestPossibleReorg)(networkId);
-@@ -43,11 +44,17 @@ Please use block number ${lastSafeBlock} or wait for the block to get ${required
+@@ -42,11 +43,12 @@ Please use block number ${lastSafeBlock} or wait for the block to get ${required
      }
      const block = await getBlockByNumber(provider, forkBlockNumber);
      const forkBlockTimestamp = (0, base_types_1.rpcQuantityToNumber)(block.timestamp) * 1000;
@@ -199,20 +184,15 @@ index dd37a51..697670d 100644
          actualMaxReorg !== undefined;
      const forkClient = new client_1.JsonRpcClient(provider, networkId, latestBlock, maxReorg, cacheToDiskEnabled ? forkCachePath : undefined);
 -    return { forkClient, forkBlockNumber, forkBlockTimestamp };
-+    return {
-+        forkClient,
-+        forkBlockNumber,
-+        forkBlockTimestamp,
-+        forkIgnoreUnknownTxType,
-+    };
++    return { forkClient, forkBlockNumber, forkBlockTimestamp, forkIgnoreUnknownTxType};
  }
  exports.makeForkClient = makeForkClient;
  async function getBlockByNumber(provider, blockNumber) {
 diff --git a/node_modules/hardhat/src/builtin-tasks/node.ts b/node_modules/hardhat/src/builtin-tasks/node.ts
-index 5f608c2..a5d3613 100644
+index 03edd41..6dabab6 100644
 --- a/node_modules/hardhat/src/builtin-tasks/node.ts
 +++ b/node_modules/hardhat/src/builtin-tasks/node.ts
-@@ -97,14 +97,22 @@ Private Key: ${privateKey}`;
+@@ -95,14 +95,22 @@ Private Key: ${privateKey}`;
  subtask(TASK_NODE_GET_PROVIDER)
    .addOptionalParam("forkUrl", undefined, undefined, types.string)
    .addOptionalParam("forkBlockNumber", undefined, undefined, types.int)
@@ -231,11 +211,11 @@ index 5f608c2..a5d3613 100644
        }: {
          forkBlockNumber?: number;
          forkUrl?: string;
-+        forkIgnoreUnknownTxType?: boolean;
++        forkIgnoreUnknownTxType?: boolean,
        },
        { artifacts, config, network, userConfig }
      ): Promise<EthereumProvider> => {
-@@ -126,9 +134,13 @@ subtask(TASK_NODE_GET_PROVIDER)
+@@ -124,9 +132,13 @@ subtask(TASK_NODE_GET_PROVIDER)
  
        const forkUrlConfig = hardhatNetworkConfig.forking?.url;
        const forkBlockNumberConfig = hardhatNetworkConfig.forking?.blockNumber;
@@ -249,7 +229,7 @@ index 5f608c2..a5d3613 100644
  
        // we throw an error if the user specified a forkBlockNumber but not a
        // forkUrl
-@@ -151,6 +163,7 @@ subtask(TASK_NODE_GET_PROVIDER)
+@@ -149,6 +161,7 @@ subtask(TASK_NODE_GET_PROVIDER)
                forking: {
                  jsonRpcUrl: forkUrl,
                  blockNumber: forkBlockNumber,
@@ -257,7 +237,7 @@ index 5f608c2..a5d3613 100644
                },
              },
            ],
-@@ -275,6 +288,12 @@ task(TASK_NODE, "Starts a JSON-RPC server on top of Hardhat Network")
+@@ -273,6 +286,12 @@ task(TASK_NODE, "Starts a JSON-RPC server on top of Hardhat Network")
      undefined,
      types.int
    )
@@ -270,7 +250,7 @@ index 5f608c2..a5d3613 100644
    .setAction(
      async (
        {
-@@ -282,11 +301,13 @@ task(TASK_NODE, "Starts a JSON-RPC server on top of Hardhat Network")
+@@ -280,11 +299,13 @@ task(TASK_NODE, "Starts a JSON-RPC server on top of Hardhat Network")
          fork: forkUrl,
          hostname: hostnameParam,
          port,
@@ -284,7 +264,7 @@ index 5f608c2..a5d3613 100644
        },
        { config, hardhatArguments, network, run }
      ) => {
-@@ -304,6 +325,7 @@ task(TASK_NODE, "Starts a JSON-RPC server on top of Hardhat Network")
+@@ -302,6 +323,7 @@ task(TASK_NODE, "Starts a JSON-RPC server on top of Hardhat Network")
          const provider: EthereumProvider = await run(TASK_NODE_GET_PROVIDER, {
            forkBlockNumber,
            forkUrl,
@@ -292,7 +272,7 @@ index 5f608c2..a5d3613 100644
          });
  
          // the default hostname is "127.0.0.1" unless we are inside a docker
-@@ -324,6 +346,7 @@ task(TASK_NODE, "Starts a JSON-RPC server on top of Hardhat Network")
+@@ -322,6 +344,7 @@ task(TASK_NODE, "Starts a JSON-RPC server on top of Hardhat Network")
            hostname,
            port,
            provider,
@@ -301,13 +281,13 @@ index 5f608c2..a5d3613 100644
  
          await run(TASK_NODE_SERVER_CREATED, {
 diff --git a/node_modules/hardhat/src/internal/hardhat-network/provider/fork/ForkBlockchain.ts b/node_modules/hardhat/src/internal/hardhat-network/provider/fork/ForkBlockchain.ts
-index 1f04ad1..c5e28a7 100644
+index d70b63d..ecb99c1 100644
 --- a/node_modules/hardhat/src/internal/hardhat-network/provider/fork/ForkBlockchain.ts
 +++ b/node_modules/hardhat/src/internal/hardhat-network/provider/fork/ForkBlockchain.ts
-@@ -4,6 +4,7 @@ import { TypedTransaction } from "@ethereumjs/tx";
- import { Address, BN } from "ethereumjs-util";
+@@ -4,6 +4,7 @@ import { TypedTransaction } from "@nomicfoundation/ethereumjs-tx";
+ import { Address } from "@nomicfoundation/ethereumjs-util";
  
- import { FeeMarketEIP1559TxData } from "@ethereumjs/tx/dist/types";
+ import { FeeMarketEIP1559TxData } from "@nomicfoundation/ethereumjs-tx/dist/types";
 +import chalk from "chalk";
  import { RpcBlockWithTransactions } from "../../../core/jsonrpc/types/output/block";
  import { RpcTransactionReceipt } from "../../../core/jsonrpc/types/output/receipt";
@@ -315,14 +295,14 @@ index 1f04ad1..c5e28a7 100644
 @@ -38,7 +39,8 @@ export class ForkBlockchain
    constructor(
      private _jsonRpcClient: JsonRpcClient,
-     private _forkBlockNumber: BN,
+     private _forkBlockNumber: bigint,
 -    common: Common
 +    common: Common,
 +    private _forkIgnoreUnknownTxType: boolean
    ) {
      super(common);
    }
-@@ -295,9 +297,16 @@ export class ForkBlockchain
+@@ -297,9 +299,16 @@ export class ForkBlockchain
            rpcToTxData(transaction) as FeeMarketEIP1559TxData
          );
        } else {
@@ -343,7 +323,7 @@ index 1f04ad1..c5e28a7 100644
  
        block.transactions.push(tx);
 diff --git a/node_modules/hardhat/src/internal/hardhat-network/provider/node-types.ts b/node_modules/hardhat/src/internal/hardhat-network/provider/node-types.ts
-index 5181177..740ee0b 100644
+index 3a790aa..aa59b5b 100644
 --- a/node_modules/hardhat/src/internal/hardhat-network/provider/node-types.ts
 +++ b/node_modules/hardhat/src/internal/hardhat-network/provider/node-types.ts
 @@ -40,6 +40,7 @@ export interface ForkConfig {
@@ -355,71 +335,60 @@ index 5181177..740ee0b 100644
  
  export interface ForkedNodeConfig extends CommonConfig {
 diff --git a/node_modules/hardhat/src/internal/hardhat-network/provider/node.ts b/node_modules/hardhat/src/internal/hardhat-network/provider/node.ts
-index 172cfc3..0b711bf 100644
+index d71abcc..c6df705 100644
 --- a/node_modules/hardhat/src/internal/hardhat-network/provider/node.ts
 +++ b/node_modules/hardhat/src/internal/hardhat-network/provider/node.ts
-@@ -158,6 +158,7 @@ export class HardhatNode extends EventEmitter {
+@@ -171,6 +171,7 @@ export class HardhatNode extends EventEmitter {
          forkClient: _forkClient,
          forkBlockNumber,
          forkBlockTimestamp,
 +        forkIgnoreUnknownTxType,
        } = await makeForkClient(config.forkConfig, config.forkCachePath);
        forkClient = _forkClient;
-       common = await makeForkCommon(config);
-@@ -178,7 +179,12 @@ export class HardhatNode extends EventEmitter {
+ 
+@@ -190,7 +191,7 @@ export class HardhatNode extends EventEmitter {
        await forkStateManager.initializeGenesisAccounts(genesisAccounts);
        stateManager = forkStateManager;
  
 -      blockchain = new ForkBlockchain(forkClient, forkBlockNumber, common);
-+      blockchain = new ForkBlockchain(
-+        forkClient,
-+        forkBlockNumber,
-+        common,
-+        forkIgnoreUnknownTxType
-+      );
++      blockchain = new ForkBlockchain(forkClient, forkBlockNumber, common, forkIgnoreUnknownTxType);
  
-       initialBlockTimeOffset = new BN(
+       initialBlockTimeOffset = BigInt(
          getDifferenceInSeconds(new Date(forkBlockTimestamp), new Date())
 diff --git a/node_modules/hardhat/src/internal/hardhat-network/provider/utils/makeForkClient.ts b/node_modules/hardhat/src/internal/hardhat-network/provider/utils/makeForkClient.ts
-index 51a8c6f..6d1762b 100644
+index 39b695a..511462f 100644
 --- a/node_modules/hardhat/src/internal/hardhat-network/provider/utils/makeForkClient.ts
 +++ b/node_modules/hardhat/src/internal/hardhat-network/provider/utils/makeForkClient.ts
-@@ -30,6 +30,7 @@ export async function makeForkClient(
+@@ -29,6 +29,7 @@ export async function makeForkClient(
    forkClient: JsonRpcClient;
-   forkBlockNumber: BN;
+   forkBlockNumber: bigint;
    forkBlockTimestamp: number;
 +  forkIgnoreUnknownTxType: boolean;
  }> {
    const provider = new HttpProvider(
      forkConfig.jsonRpcUrl,
-@@ -78,6 +79,8 @@ Please use block number ${lastSafeBlock} or wait for the block to get ${
+@@ -77,6 +78,7 @@ Please use block number ${lastSafeBlock} or wait for the block to get ${
  
    const forkBlockTimestamp = rpcQuantityToNumber(block.timestamp) * 1000;
  
 +  const forkIgnoreUnknownTxType = forkConfig.ignoreUnknownTxType ?? false;
-+
    const cacheToDiskEnabled =
      forkConfig.blockNumber !== undefined &&
      forkCachePath !== undefined &&
-@@ -91,7 +94,12 @@ Please use block number ${lastSafeBlock} or wait for the block to get ${
+@@ -90,7 +92,7 @@ Please use block number ${lastSafeBlock} or wait for the block to get ${
      cacheToDiskEnabled ? forkCachePath : undefined
    );
  
 -  return { forkClient, forkBlockNumber, forkBlockTimestamp };
-+  return {
-+    forkClient,
-+    forkBlockNumber,
-+    forkBlockTimestamp,
-+    forkIgnoreUnknownTxType,
-+  };
++  return { forkClient, forkBlockNumber, forkBlockTimestamp, forkIgnoreUnknownTxType};
  }
  
  async function getBlockByNumber(
 diff --git a/node_modules/hardhat/src/types/config.ts b/node_modules/hardhat/src/types/config.ts
-index bb53022..3944364 100644
+index 8d50abb..ad6f9f3 100644
 --- a/node_modules/hardhat/src/types/config.ts
 +++ b/node_modules/hardhat/src/types/config.ts
-@@ -178,6 +178,7 @@ export interface HardhatNetworkForkingConfig {
+@@ -176,6 +176,7 @@ export interface HardhatNetworkForkingConfig {
    url: string;
    blockNumber?: number;
    httpHeaders: { [name: string]: string };
@@ -428,14 +397,14 @@ index bb53022..3944364 100644
  
  export interface HttpNetworkConfig {
 diff --git a/node_modules/hardhat/types/config.d.ts b/node_modules/hardhat/types/config.d.ts
-index b5cd480..2626393 100644
+index 9b00f69..9dd337f 100644
 --- a/node_modules/hardhat/types/config.d.ts
 +++ b/node_modules/hardhat/types/config.d.ts
-@@ -129,6 +129,7 @@ export interface HardhatNetworkForkingConfig {
-     httpHeaders: {
+@@ -61,6 +61,7 @@ export interface HardhatNetworkForkingUserConfig {
+     httpHeaders?: {
          [name: string]: string;
      };
 +    ignoreUnknownTxType?: boolean;
  }
- export interface HttpNetworkConfig {
-     chainId?: number;
+ export declare type HttpNetworkAccountsUserConfig = "remote" | string[] | HDAccountsUserConfig;
+ export interface HttpNetworkUserConfig {
