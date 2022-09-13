@@ -426,9 +426,13 @@ describe("Pool Registry", async () => {
       await poolRegistry.addPool(usdv2Data)
       expect(await poolRegistry.callStatic.getPaused(usdv2Data.poolAddress)).to
         .be.false
-      ;(
-        (await ethers.getContractAt("Swap", usdv2Data.poolAddress)) as Swap
-      ).pause()
+
+      const swap = (await ethers.getContractAt(
+        "Swap",
+        usdv2Data.poolAddress,
+      )) as Swap
+      await swap.pause()
+
       expect(await poolRegistry.callStatic.getPaused(usdv2Data.poolAddress)).to
         .be.true
     })
