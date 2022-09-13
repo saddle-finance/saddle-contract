@@ -680,7 +680,8 @@ def initialize(_lp_token: address, _manager: address, _name: String[32]):
 
     symbol: String[26] = ERC20Extended(_lp_token).symbol()
 
-    self.name = _name
+    name: String[64] = concat("Saddle ", _name, " Child Gauge")
+    self.name = name
     self.symbol = concat(symbol, "-gauge")
 
     self.period_timestamp[0] = block.timestamp

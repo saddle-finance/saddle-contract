@@ -49,7 +49,7 @@ MINTER: immutable(address)
 chain_id: public(uint256)
 bridger: public(address)
 factory: public(address)
-name: public(String[32])
+name: public(String[64])
 inflation_params: public(InflationParams)
 
 last_period: public(uint256)
@@ -202,7 +202,8 @@ def initialize(_bridger: address, _chain_id: uint256, _name: String[32]):
 
     self.chain_id = _chain_id
     self.bridger = _bridger
-    self.name = _name
+    name: String[64] = concat("Saddle ", _name, " Root Gauge")
+    self.name = name
     self.factory = msg.sender
 
     inflation_params: InflationParams = InflationParams({
