@@ -1,6 +1,7 @@
 import "hardhat-deploy"
 import { task, types } from "hardhat/config"
 import { NetworkUserConfig } from "hardhat/types"
+import { MULTISIG_ADDRESSES, PROD_DEPLOYER_ADDRESS } from "../utils/accounts"
 
 /*
  * Allows run command to specify which network to read deployments from
@@ -12,7 +13,7 @@ task("run", "Starts a JSON-RPC server on top of Hardhat Network")
   .addOptionalParam(
     "includeNetwork",
     "The name of the network to include the deployments from. Only valid when running with --network localhost",
-    "hardhat",
+    undefined,
     types.string,
   )
   .setAction(async (taskArgs, hre, runSuper) => {
@@ -55,6 +56,18 @@ task("run", "Starts a JSON-RPC server on top of Hardhat Network")
           hre.config.networks.hardhat.verify = network.verify
           hre.config.networks.localhost.verify = network.verify
           hre.network.verify = network.verify
+        }
+
+        // Set named accounts to use the same as the network we are forking
+        hre.config.namedAccounts = {
+          ...hre.config.namedAccounts,
+          deployer: {
+            [String(network.chainId)]: PROD_DEPLOYER_ADDRESS,
+          },
+          multisig: {
+            [String(network.chainId)]:
+              MULTISIG_ADDRESSES[String(network.chainId)],
+          },
         }
 
         hre.config.external = {
