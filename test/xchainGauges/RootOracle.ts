@@ -1,6 +1,6 @@
 import chai from "chai"
 import { ContractFactory, Signer } from "ethers"
-import { deployments, network } from "hardhat"
+import { deployments, ethers } from "hardhat"
 import {
   AnyCallTranslator,
   ArbitrumBridger,
@@ -12,10 +12,9 @@ import {
   RootGaugeFactory,
   RootOracle,
   SDL,
-  TransparentUpgradeableProxy__factory,
   VotingEscrow,
 } from "../../build/typechain"
-import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
+import { MAX_LOCK_TIME } from "../../utils/time"
 
 import {
   BIG_NUMBER_1E18,
@@ -23,6 +22,11 @@ import {
   MAX_UINT256,
   setTimestamp,
 } from "../testUtils"
+import {
+  setupAnyCallTranslator,
+  setupRootGaugeFactory,
+  setupRootOracle,
+} from "./utils"
 const { execute } = deployments
 
 const { expect } = chai
@@ -60,14 +64,27 @@ describe("RootOracle", () => {
         signers.map(async (signer) => signer.getAddress()),
       )
 
-      // Create SDL lock
-      sdl = await ethers.getContract("SDL")
-      veSDL = await ethers.getContract("VotingEscrow")
+      const contracts = await setupAnyCallTranslator(users[0])
+      anyCallTranslator = contracts.anyCallTranslator
 
-      // Ensure test setup is correct
-      if (await sdl.paused()) {
-        await sdl.enableTransfer()
-      }
+      // **** Setup rootGauge Factory ****
+
+      rootGaugeFactory = await setupRootGaugeFactory(
+        anyCallTranslator.address,
+        users[0],
+      )
+
+      // **** Setup RootOracle ****
+      rootOracle = await setupRootOracle(
+        anyCallTranslator.address,
+        rootGaugeFactory.address,
+      )
+
+      // **** Add expected callers to known callers ****
+      anyCallTranslator.addKnownCallers([
+        rootGaugeFactory.address,
+        rootOracle.address,
+      ])
 
       // Set timestamp to start of the week
       await setTimestamp(
@@ -75,100 +92,28 @@ describe("RootOracle", () => {
       )
 
       // Create max lock from deployer address
-      await sdl.approve(veSDL.address, MAX_UINT256)
+      veSDL = await ethers.getContract("VotingEscrow")
+      await ethers
+        .getContract("SDL")
+        .then((sdl) => (sdl as SDL).approve(veSDL.address, MAX_UINT256))
       await veSDL.create_lock(
         BIG_NUMBER_1E18.mul(10_000_000),
-        (await getCurrentBlockTimestamp()) + MAXTIME,
+        (await getCurrentBlockTimestamp()) + MAX_LOCK_TIME,
       )
-
-      // Deploy mock anycall
-      const mockAnycallFactory = await ethers.getContractFactory("MockAnyCall")
-      mockAnycall = (await mockAnycallFactory.deploy()) as MockAnyCall
-
-      // Deploy ProxyAdmin
-      const proxyAdminFactory = await ethers.getContractFactory("ProxyAdmin")
-      const proxyAdmin = await proxyAdminFactory.deploy()
-
-      // Deploy AnycallTranslator with mock anycall
-      const anycallTranslatorFactory = await ethers.getContractFactory(
-        "AnyCallTranslator",
-      )
-      const anycallTranslatorLogic =
-        (await anycallTranslatorFactory.deploy()) as AnyCallTranslator
-
-      // Deploy the proxy that will be used as AnycallTranslator
-      // We want to set the owner of the logic level to be deployer
-      const initializeCallData = (
-        await anycallTranslatorLogic.populateTransaction.initialize(
-          users[0],
-          mockAnycall.address,
-        )
-      ).data as string
-
-      // Deploy the proxy with anycall translator logic and initialize it
-      const proxyFactory: TransparentUpgradeableProxy__factory =
-        await ethers.getContractFactory("TransparentUpgradeableProxy")
-      const proxy = await proxyFactory.deploy(
-        anycallTranslatorLogic.address,
-        proxyAdmin.address,
-        initializeCallData,
-      )
-      anyCallTranslator = await ethers.getContractAt(
-        "AnyCallTranslator",
-        proxy.address,
-      )
-
-      // Deploy Root Gauge factory
-      const rootGaugeFactoryFactory = await ethers.getContractFactory(
-        "RootGaugeFactory",
-      )
-      rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
-        anyCallTranslator.address,
-        users[0],
-      )) as RootGaugeFactory
-
-      const rootOracleFactory = await ethers.getContractFactory("RootOracle")
-
-      rootOracle = (await rootOracleFactory.deploy(
-        rootGaugeFactory.address,
-        (
-          await ethers.getContract("VeSDLRewards")
-        ).address,
-        anyCallAddress,
-      )) as RootOracle
     },
   )
 
   beforeEach(async () => {
     await setupTest()
-    // fork mainnet
-    before(async () => {
-      await network.provider.request({
-        method: "hardhat_reset",
-        params: [
-          {
-            forking: {
-              jsonRpcUrl:
-                ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] +
-                process.env.ALCHEMY_API_KEY,
-              blockNumber: 11598050,
-            },
-          },
-        ],
-      })
-
-      await setTimestamp(1609896169)
-    })
   })
 
-  describe("Initialize RootOracle", () => {
-    it(`Successfully initializes`, async () => {
+  describe("constructor", () => {
+    it(`Successfully deployed and set storages`, async () => {
+      expect(await rootOracle.FACTORY()).to.eq(rootGaugeFactory.address)
+      expect(await rootOracle.VE()).to.eq(
+        (await ethers.getContract("VotingEscrow")).address,
+      )
       expect(await rootOracle.callProxy()).to.eq(anyCallAddress)
     })
-    // it(`Successfully calls push()`, async () => {
-    //   await rootOracle
-    //     .connect(anycallTranslator.address)
-    //     ["push(uint256)"](42161, { from: anycallTranslator.address })
-    // })
   })
 })

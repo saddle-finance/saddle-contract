@@ -39,10 +39,8 @@ interface votingEscrow {
 
 contract RootOracle {
     // consts
-    address FACTORY;
-    address VE;
-    address private constant ZERO_ADDRESS =
-        0x0000000000000000000000000000000000000000;
+    address public immutable FACTORY;
+    address public immutable VE;
 
     // events
     event TransferOwnership(address oldOwner, address newOwner);
@@ -62,15 +60,15 @@ contract RootOracle {
         VE = _ve;
 
         callProxy = _callProxy;
-        emit UpdateCallProxy(ZERO_ADDRESS, _callProxy);
+        emit UpdateCallProxy(address(0), _callProxy);
 
         owner = msg.sender;
-        emit TransferOwnership(ZERO_ADDRESS, msg.sender);
+        emit TransferOwnership(address(0), msg.sender);
     }
 
     function push(uint256 _chainId) external {
         address user = msg.sender;
-        assert(Factory(FACTORY).get_bridger(_chainId) != ZERO_ADDRESS);
+        assert(Factory(FACTORY).get_bridger(_chainId) != address(0));
 
         require(IERC20(VE).balanceOf(user) != 0, "no ve balance");
         Point memory userPoint = votingEscrow(VE).user_point_history(
@@ -92,14 +90,14 @@ contract RootOracle {
                 globalPoint,
                 user
             ),
-            ZERO_ADDRESS,
+            address(0),
             _chainId,
             0
         );
     }
 
     function push(uint256 _chainId, address _user) external {
-        assert(Factory(FACTORY).get_bridger(_chainId) != ZERO_ADDRESS);
+        assert(Factory(FACTORY).get_bridger(_chainId) != address(0));
         require(IERC20(VE).balanceOf(_user) != 0, "no ve balance");
         Point memory userPoint = votingEscrow(VE).user_point_history(
             _user,
@@ -111,7 +109,7 @@ contract RootOracle {
         ICallProxy(callProxy).anyCall(
             address(this),
             abi.encode(userPoint, globalPoint, _user),
-            ZERO_ADDRESS,
+            address(0),
             _chainId,
             0
         );
