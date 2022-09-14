@@ -1,5 +1,5 @@
 import chai from "chai"
-import { Signer } from "ethers"
+import { Bytes, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
   AnyCallTranslator,
@@ -17,7 +17,9 @@ import {
   BIG_NUMBER_1E18,
   convertGaugeNameToSalt,
   getCurrentBlockTimestamp,
+  impersonateAccount,
   MAX_UINT256,
+  setEtherBalance,
   setTimestamp,
 } from "../testUtils"
 import {
@@ -30,12 +32,13 @@ import {
 } from "./utils"
 
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs"
+import * as helpers from "@nomicfoundation/hardhat-network-helpers"
 
 const { execute } = deployments
 
 const { expect } = chai
 
-describe("AnycallTranslator", () => {
+describe("AnyCallTranslator", () => {
   let signers: Array<Signer>
   let users: string[]
   let mockAnycall: MockAnyCall
@@ -119,89 +122,265 @@ describe("AnycallTranslator", () => {
     await setupTest()
   })
 
-  describe("Root chain", () => {
-    describe("Is used as source chain, originates anycall()", () => {
-      it("Should be able to send message to trigger ChildGaugeFactory.deploy_gauge()", async () => {
-        const DUMMY_TOKEN_ADDRESS = dummyToken.address
-        const GAUGE_OWNER = users[0]
-
-        const callData = childGaugeFactory.interface.encodeFunctionData(
-          "deploy_gauge(address,bytes32,string,address)",
-          [dummyToken.address, GAUGE_SALT, GAUGE_NAME, GAUGE_OWNER],
-        )
-
-        await expect(
-          rootGaugeFactory[
-            "deploy_child_gauge(uint256,address,bytes32,string,address)"
-          ](
-            TEST_SIDE_CHAIN_ID,
-            DUMMY_TOKEN_ADDRESS,
-            GAUGE_SALT,
-            GAUGE_NAME,
-            GAUGE_OWNER,
-          ),
-        )
-          .to.emit(mockAnycall, "AnyCallMessage")
-          .withArgs(
-            anyCallTranslator.address,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "bytes"],
-              [rootGaugeFactory.address, callData],
-            ),
-            ZERO_ADDRESS,
-            TEST_SIDE_CHAIN_ID,
-            0,
-          )
-      })
-
-      it("Should be able to send message to trigger ChildOracle.receive()", async () => {
-        await veSDL.checkpoint()
-
-        const returnData = await veSDL.callStatic.user_point_history(
-          users[0],
-          veSDL.callStatic.user_point_epoch(users[0]),
-        )
-
-        const userPoint = {
-          bias: returnData.bias,
-          slope: returnData.slope,
-          ts: returnData.ts,
-        }
-
-        const returnDataGlobal = await veSDL.callStatic.point_history(
-          veSDL.callStatic.epoch(),
-        )
-
-        const globalPoint = {
-          bias: returnDataGlobal.bias,
-          slope: returnDataGlobal.slope,
-          ts: returnDataGlobal.ts,
-        }
-
-        // receive((int128,int128,uint256),(int128,int128,uint256),address)
-        const callData = childOracle.interface.encodeFunctionData("recieve", [
-          userPoint,
-          globalPoint,
-          users[0],
-        ])
-
-        await expect(rootOracle["push(uint256)"](TEST_SIDE_CHAIN_ID))
-          .to.emit(mockAnycall, "AnyCallMessage")
-          .withArgs(
-            anyCallTranslator.address,
-            ethers.utils.defaultAbiCoder.encode(
-              ["address", "bytes"],
-              [rootOracle.address, callData],
-            ),
-            ZERO_ADDRESS,
-            TEST_SIDE_CHAIN_ID,
-            0,
-          )
-      })
+  describe("initialize", () => {
+    it("Reverts when it is already initialized", async () => {
+      await expect(
+        anyCallTranslator.initialize(users[0], mockAnycall.address),
+      ).to.be.revertedWith("Initializable: contract is already initialized")
     })
   })
-  describe("Is used as destination chain, target.anyExecute() is executed", () => {
-    it("Should be able to recieve the message to deploy a root gauge via RootGaugeFactory.deploy_gauge()", async () => {
+
+  describe("withdraw", () => {
+    it("Successfully withdraws any eth from AnyCall", async () => {
+      const amount = 100
+      await signers[0].sendTransaction({
+        to: mockAnycall.address,
+        value: 100,
+      })
+
+      await expect(anyCallTranslator.withdraw(amount)).to.changeEtherBalance(
+        anyCallTranslator.address,
+        amount,
+      )
+    })
+  })
+
+  describe("setAnyCall", () => {
+    it("Successfully sets AnyCall address", async () => {
+      await anyCallTranslator.setAnyCall(mockAnycall.address)
+    })
+    it("Reverts when given address doesnt have executor() function", async () => {
+      await expect(anyCallTranslator.setAnyCall(ZERO_ADDRESS)).to.be.reverted
+    })
+  })
+
+  describe("addKnownCallers", () => {
+    it("Successfully adds known callers", async () => {
+      expect(await anyCallTranslator.isKnownCaller(users[10])).to.be.false
+      await anyCallTranslator.addKnownCallers([users[10]])
+      expect(await anyCallTranslator.isKnownCaller(users[10])).to.be.true
+    })
+    it("Successfully adds multiple known callers", async () => {
+      expect(await anyCallTranslator.isKnownCaller(users[10])).to.be.false
+      expect(await anyCallTranslator.isKnownCaller(users[11])).to.be.false
+
+      await anyCallTranslator.addKnownCallers([users[10], users[11]])
+      expect(await anyCallTranslator.isKnownCaller(users[10])).to.be.true
+      expect(await anyCallTranslator.isKnownCaller(users[11])).to.be.true
+    })
+  })
+
+  describe("removeKnownCallers", () => {
+    beforeEach(async () => {
+      await anyCallTranslator.addKnownCallers([users[10], users[11]])
+    })
+    it("Successfully removes known callers", async () => {
+      expect(await anyCallTranslator.isKnownCaller(users[10])).to.be.true
+      await anyCallTranslator.removeKnownCallers([users[10]])
+      expect(await anyCallTranslator.isKnownCaller(users[10])).to.be.false
+    })
+    it("Successfully removes multiple known callers", async () => {
+      expect(await anyCallTranslator.isKnownCaller(users[10])).to.be.true
+      expect(await anyCallTranslator.isKnownCaller(users[11])).to.be.true
+
+      await anyCallTranslator.removeKnownCallers([users[10], users[11]])
+      expect(await anyCallTranslator.isKnownCaller(users[10])).to.be.false
+      expect(await anyCallTranslator.isKnownCaller(users[11])).to.be.false
+    })
+  })
+
+  describe("anyCall", () => {
+    it("Reverts when caller is not known", async () => {
+      await expect(
+        anyCallTranslator.anyCall(
+          mockAnycall.address,
+          [],
+          ZERO_ADDRESS,
+          TEST_SIDE_CHAIN_ID,
+          0,
+        ),
+      ).to.be.revertedWith("Unknown caller")
+    })
+
+    it("Successfully sends a message to itself to AnyCall", async () => {
+      await anyCallTranslator.addKnownCallers([users[0]])
+
+      const anyCallTo = users[0]
+      const anyCallData: Bytes = []
+      const flags = 0
+
+      await expect(
+        anyCallTranslator.anyCall(
+          anyCallTo,
+          anyCallData,
+          ZERO_ADDRESS,
+          TEST_SIDE_CHAIN_ID,
+          flags,
+        ),
+      )
+        .to.emit(mockAnycall, "AnyCallMessage")
+        .withArgs(
+          anyCallTranslator.address, // address AnyCallProxy will call
+          ethers.utils.defaultAbiCoder.encode(
+            ["address", "bytes"],
+            [anyCallTo, anyCallData],
+          ), // data AnyCallProxy will pass as data
+          ZERO_ADDRESS,
+          TEST_SIDE_CHAIN_ID,
+          flags,
+        )
+    })
+  })
+
+  describe("anyExecute", () => {
+    it("Reverts when caller is not anyCall executor", async () => {
+      await expect(anyCallTranslator.anyExecute([])).to.be.revertedWith(
+        "Caller is not anyCall executor",
+      )
+    })
+
+    it("Reverts when caller.contexct() is not anyCallTranslator itself", async () => {
+      const executor = await impersonateAccount(mockAnycall.address)
+      await setEtherBalance(
+        await executor.getAddress(),
+        ethers.constants.WeiPerEther.mul(100),
+      )
+
+      // Set straoge slot 0 variable (anyCallTranslator) to a random address
+      await helpers.setStorageAt(mockAnycall.address, 0, users[10])
+
+      await expect(
+        anyCallTranslator.connect(executor).anyExecute([]),
+      ).to.be.revertedWith("Wrong context")
+    })
+
+    it("Successfully processes toAndData and calls the target function", async () => {
+      const executor = await impersonateAccount(mockAnycall.address)
+      await setEtherBalance(
+        await executor.getAddress(),
+        ethers.constants.WeiPerEther.mul(100),
+      )
+
+      const sdl = await ethers.getContract("SDL")
+      const functionData = sdl.interface.encodeFunctionData("totalSupply")
+
+      const toAndData = ethers.utils.defaultAbiCoder.encode(
+        ["address", "bytes"],
+        [sdl.address, functionData],
+      ) // data AnyCallProxy will pass as data
+
+      const sdlBalance = await sdl.totalSupply()
+      const [success, returnData] = await anyCallTranslator
+        .connect(executor)
+        .callStatic.anyExecute(toAndData)
+
+      expect(success).to.be.true
+      expect(returnData).to.eq(sdlBalance)
+
+      // Check that the function was called
+      await anyCallTranslator.connect(executor).anyExecute(toAndData)
+    })
+
+    it("Reverts when the target call fails due to target contract error", async () => {
+      const executor = await impersonateAccount(mockAnycall.address)
+      await setEtherBalance(
+        await executor.getAddress(),
+        ethers.constants.WeiPerEther.mul(100),
+      )
+
+      const sdl = await ethers.getContract("SDL")
+      const functionData = sdl.interface.encodeFunctionData("totalSupply")
+
+      const toAndData = ethers.utils.defaultAbiCoder.encode(
+        ["address", "bytes"],
+        [mockAnycall.address, functionData],
+      ) // data AnyCallProxy will pass as data
+      await expect(
+        anyCallTranslator.connect(executor).anyExecute(toAndData),
+      ).to.be.revertedWith("Target call failed")
+    })
+  })
+
+  describe("Root chain", () => {
+    it("RGF.deploy_child_gauge() sends a message to AnyCall w/ encoded function data for CGF.deploy_gauge()", async () => {
+      const DUMMY_TOKEN_ADDRESS = dummyToken.address
+      const GAUGE_OWNER = users[0]
+
+      const callData = childGaugeFactory.interface.encodeFunctionData(
+        "deploy_gauge(address,bytes32,string,address)",
+        [dummyToken.address, GAUGE_SALT, GAUGE_NAME, GAUGE_OWNER],
+      )
+
+      await expect(
+        rootGaugeFactory[
+          "deploy_child_gauge(uint256,address,bytes32,string,address)"
+        ](
+          TEST_SIDE_CHAIN_ID,
+          DUMMY_TOKEN_ADDRESS,
+          GAUGE_SALT,
+          GAUGE_NAME,
+          GAUGE_OWNER,
+        ),
+      )
+        .to.emit(mockAnycall, "AnyCallMessage")
+        .withArgs(
+          anyCallTranslator.address,
+          ethers.utils.defaultAbiCoder.encode(
+            ["address", "bytes"],
+            [rootGaugeFactory.address, callData],
+          ),
+          ZERO_ADDRESS,
+          TEST_SIDE_CHAIN_ID,
+          0,
+        )
+    })
+
+    it("RootOracle.push() sends a message to AnyCall w/ encoded function data for ChildOracle.receive()", async () => {
+      await veSDL.checkpoint()
+
+      const returnData = await veSDL.callStatic.user_point_history(
+        users[0],
+        veSDL.callStatic.user_point_epoch(users[0]),
+      )
+
+      const userPoint = {
+        bias: returnData.bias,
+        slope: returnData.slope,
+        ts: returnData.ts,
+      }
+
+      const returnDataGlobal = await veSDL.callStatic.point_history(
+        veSDL.callStatic.epoch(),
+      )
+
+      const globalPoint = {
+        bias: returnDataGlobal.bias,
+        slope: returnDataGlobal.slope,
+        ts: returnDataGlobal.ts,
+      }
+
+      // receive((int128,int128,uint256),(int128,int128,uint256),address)
+      const callData = childOracle.interface.encodeFunctionData("recieve", [
+        userPoint,
+        globalPoint,
+        users[0],
+      ])
+
+      await expect(rootOracle["push(uint256)"](TEST_SIDE_CHAIN_ID))
+        .to.emit(mockAnycall, "AnyCallMessage")
+        .withArgs(
+          anyCallTranslator.address,
+          ethers.utils.defaultAbiCoder.encode(
+            ["address", "bytes"],
+            [rootOracle.address, callData],
+          ),
+          ZERO_ADDRESS,
+          TEST_SIDE_CHAIN_ID,
+          0,
+        )
+    })
+
+    it("AnyCall successfully executes RGF.deploy_gauge()", async () => {
       const callData = rootGaugeFactory.interface.encodeFunctionData(
         "deploy_gauge",
         [TEST_SIDE_CHAIN_ID, GAUGE_SALT, GAUGE_NAME],
@@ -235,7 +414,7 @@ describe("AnycallTranslator", () => {
   })
 
   describe("Side chain", () => {
-    it("AnyCall -> AnyCallTranslator -> ChildGaugeFactory.deploy_gauge() -> AnyCallTranslator -> Anycall", async () => {
+    it("AnyCall successfully executes CGF.deploy_gauge() which sends a message to AnyCall w/ encoded function data for RGF.deploy_gauge()", async () => {
       const DUMMY_TOKEN_ADDRESS = dummyToken.address
       const GAUGE_OWNER = users[0]
 
@@ -275,7 +454,7 @@ describe("AnycallTranslator", () => {
         .and.emit(childGaugeFactory, "DeployedGauge")
     })
 
-    it("AnyCall -> AnyCallTranslator -> ChildOracle.receive()", async () => {
+    it("AnyCall successfully executes ChildOracle.receive()", async () => {
       // Pretend this is data that was sent from mainnet
       const userPoint = {
         bias: 1,
