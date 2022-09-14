@@ -75,4 +75,12 @@ contract MockAnyCall {
     function executor() external view returns (address _executor) {
         return (address(this));
     }
+
+    function withdraw(uint256 _amount) external {
+        require(_amount <= address(this).balance, "Not enough balance");
+        payable(msg.sender).transfer(_amount);
+    }
+
+    // Fallback function to receive ETH
+    receive() external payable {}
 }
