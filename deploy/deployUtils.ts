@@ -484,6 +484,8 @@ export async function deploySwapFlashLoanPools(
     })
     // verify contract
     await verifyContract(hre, poolName)
+    // verify lptoken
+    await verifyContract(hre, lpTokenName)
   }
   // register new pools
   if (newDeploypools.length > 0) {
