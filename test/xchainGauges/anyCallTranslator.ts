@@ -41,7 +41,7 @@ const { expect } = chai
 describe("AnyCallTranslator", () => {
   let signers: Array<Signer>
   let users: string[]
-  let mockAnycall: MockAnyCall
+  let mockAnyCall: MockAnyCall
   let rootGaugeFactory: RootGaugeFactory
   let childGaugeFactory: ChildGaugeFactory
   let anyCallTranslator: AnyCallTranslator
@@ -65,7 +65,7 @@ describe("AnyCallTranslator", () => {
 
       const contracts = await setupAnyCallTranslator(users[0])
       anyCallTranslator = contracts.anyCallTranslator
-      mockAnycall = contracts.mockAnycall
+      mockAnyCall = contracts.mockAnyCall
 
       // **** Setup rootGauge Factory ****
 
@@ -125,7 +125,7 @@ describe("AnyCallTranslator", () => {
   describe("initialize", () => {
     it("Reverts when it is already initialized", async () => {
       await expect(
-        anyCallTranslator.initialize(users[0], mockAnycall.address),
+        anyCallTranslator.initialize(users[0], mockAnyCall.address),
       ).to.be.revertedWith("Initializable: contract is already initialized")
     })
   })
@@ -134,7 +134,7 @@ describe("AnyCallTranslator", () => {
     it("Successfully withdraws any eth from AnyCall", async () => {
       const amount = 100
       await signers[0].sendTransaction({
-        to: mockAnycall.address,
+        to: mockAnyCall.address,
         value: 100,
       })
 
@@ -147,7 +147,7 @@ describe("AnyCallTranslator", () => {
 
   describe("setAnyCall", () => {
     it("Successfully sets AnyCall address", async () => {
-      await anyCallTranslator.setAnyCall(mockAnycall.address)
+      await anyCallTranslator.setAnyCall(mockAnyCall.address)
     })
     it("Reverts when given address doesnt have executor() function", async () => {
       await expect(anyCallTranslator.setAnyCall(ZERO_ADDRESS)).to.be.reverted
@@ -193,7 +193,7 @@ describe("AnyCallTranslator", () => {
     it("Reverts when caller is not known", async () => {
       await expect(
         anyCallTranslator.anyCall(
-          mockAnycall.address,
+          mockAnyCall.address,
           [],
           ZERO_ADDRESS,
           TEST_SIDE_CHAIN_ID,
@@ -218,7 +218,7 @@ describe("AnyCallTranslator", () => {
           flags,
         ),
       )
-        .to.emit(mockAnycall, "AnyCallMessage")
+        .to.emit(mockAnyCall, "AnyCallMessage")
         .withArgs(
           anyCallTranslator.address, // address AnyCallProxy will call
           ethers.utils.defaultAbiCoder.encode(
@@ -240,14 +240,14 @@ describe("AnyCallTranslator", () => {
     })
 
     it("Reverts when caller.contexct() is not anyCallTranslator itself", async () => {
-      const executor = await impersonateAccount(mockAnycall.address)
+      const executor = await impersonateAccount(mockAnyCall.address)
       await setEtherBalance(
         await executor.getAddress(),
         ethers.constants.WeiPerEther.mul(100),
       )
 
       // Set straoge slot 0 variable (anyCallTranslator) to a random address
-      await helpers.setStorageAt(mockAnycall.address, 0, users[10])
+      await helpers.setStorageAt(mockAnyCall.address, 0, users[10])
 
       await expect(
         anyCallTranslator.connect(executor).anyExecute([]),
@@ -255,7 +255,7 @@ describe("AnyCallTranslator", () => {
     })
 
     it("Successfully processes toAndData and calls the target function", async () => {
-      const executor = await impersonateAccount(mockAnycall.address)
+      const executor = await impersonateAccount(mockAnyCall.address)
       await setEtherBalance(
         await executor.getAddress(),
         ethers.constants.WeiPerEther.mul(100),
@@ -282,7 +282,7 @@ describe("AnyCallTranslator", () => {
     })
 
     it("Reverts when the target call fails due to target contract error", async () => {
-      const executor = await impersonateAccount(mockAnycall.address)
+      const executor = await impersonateAccount(mockAnyCall.address)
       await setEtherBalance(
         await executor.getAddress(),
         ethers.constants.WeiPerEther.mul(100),
@@ -293,7 +293,7 @@ describe("AnyCallTranslator", () => {
 
       const toAndData = ethers.utils.defaultAbiCoder.encode(
         ["address", "bytes"],
-        [mockAnycall.address, functionData],
+        [mockAnyCall.address, functionData],
       ) // data AnyCallProxy will pass as data
       await expect(
         anyCallTranslator.connect(executor).anyExecute(toAndData),
@@ -322,7 +322,7 @@ describe("AnyCallTranslator", () => {
           GAUGE_OWNER,
         ),
       )
-        .to.emit(mockAnycall, "AnyCallMessage")
+        .to.emit(mockAnyCall, "AnyCallMessage")
         .withArgs(
           anyCallTranslator.address,
           ethers.utils.defaultAbiCoder.encode(
@@ -367,7 +367,7 @@ describe("AnyCallTranslator", () => {
       ])
 
       await expect(rootOracle["push(uint256)"](TEST_SIDE_CHAIN_ID))
-        .to.emit(mockAnycall, "AnyCallMessage")
+        .to.emit(mockAnyCall, "AnyCallMessage")
         .withArgs(
           anyCallTranslator.address,
           ethers.utils.defaultAbiCoder.encode(
@@ -389,7 +389,7 @@ describe("AnyCallTranslator", () => {
 
       // Expect RootGaugeFactory to emit DeployedGauge event
       await expect(
-        mockAnycall.callAnyExecute(
+        mockAnyCall.callAnyExecute(
           anyCallTranslator.address,
           ethers.utils.defaultAbiCoder.encode(
             ["address", "bytes"],
@@ -432,7 +432,7 @@ describe("AnyCallTranslator", () => {
         ])
 
       await expect(
-        mockAnycall.callAnyExecute(
+        mockAnyCall.callAnyExecute(
           anyCallTranslator.address,
           ethers.utils.defaultAbiCoder.encode(
             ["address", "bytes"],
@@ -440,7 +440,7 @@ describe("AnyCallTranslator", () => {
           ),
         ),
       )
-        .to.emit(mockAnycall, "AnyCallMessage")
+        .to.emit(mockAnyCall, "AnyCallMessage")
         .withArgs(
           anyCallTranslator.address,
           ethers.utils.defaultAbiCoder.encode(
@@ -476,7 +476,7 @@ describe("AnyCallTranslator", () => {
       ])
 
       await expect(
-        mockAnycall.callAnyExecute(
+        mockAnyCall.callAnyExecute(
           anyCallTranslator.address,
           ethers.utils.defaultAbiCoder.encode(
             ["address", "bytes"],
