@@ -2,10 +2,6 @@ import "hardhat-deploy"
 import { task } from "hardhat/config"
 import { NetworkUserConfig } from "hardhat/types"
 import { MULTISIG_ADDRESSES, PROD_DEPLOYER_ADDRESS } from "../utils/accounts"
-import {
-  compareDeployments,
-  convertDeploymentsToSimpleAddressMap,
-} from "./utils"
 
 /*
  * Extends the --fork option to parse network names
@@ -14,7 +10,6 @@ import {
  */
 task("node", "Starts a JSON-RPC server on top of Hardhat Network").setAction(
   async (taskArgs, hre, runSuper) => {
-    const { all } = hre.deployments
     /*
      * Pre actions
      */
@@ -22,7 +17,6 @@ task("node", "Starts a JSON-RPC server on top of Hardhat Network").setAction(
     // Forks an existing network if the given argument is a network name
     const network: NetworkUserConfig | undefined =
       hre.userConfig?.networks?.[taskArgs.fork]
-    let prevDeployments = undefined
     if (network) {
       const networkName = taskArgs.fork
       console.log(`Found matching network name, ${networkName}`)
@@ -85,23 +79,11 @@ task("node", "Starts a JSON-RPC server on top of Hardhat Network").setAction(
           `Could not find url to fork inside the "${networkName}" network config`,
         )
       }
-
-      prevDeployments = convertDeploymentsToSimpleAddressMap(await all())
     }
 
     /*
      * Super actions
      */
-    await runSuper(taskArgs)
-
-    /*
-     * Post actions
-     */
-    if (prevDeployments) {
-      compareDeployments(
-        prevDeployments,
-        convertDeploymentsToSimpleAddressMap(await all()),
-      )
-    }
+    return runSuper(taskArgs)
   },
 )
