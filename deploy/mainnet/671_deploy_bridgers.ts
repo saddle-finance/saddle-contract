@@ -32,11 +32,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const gasLimit = 1000000
   const gasPrice = 990000000
   const maxSubmissionCost = 10000000000000
+  const sdlAddress = (await get("SDL")).address
 
   // Deploy Arbitrum Bridger
   await deploy("ArbitrumBridger", {
     ...deployOptions,
-    args: [gasLimit, gasPrice, maxSubmissionCost, (await get("SDL")).address],
+    args: [gasLimit, gasPrice, maxSubmissionCost, sdlAddress],
+  })
+
+  // Get Optimism SDL address
+  const sdlAddressOnOpt = await hre.companionNetworks[
+    "optimism_mainnet"
+  ].deployments
+    .get("SDL")
+    .then((sdl) => sdl.address)
+
+  await deploy("OptimismBridger", {
+    ...deployOptions,
+    args: [200_000, sdlAddress, sdlAddressOnOpt],
   })
 
   // Set Bridger
@@ -50,51 +63,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ).address,
   )
 
-  // Impersonate AnyCall.executor() and call AnyCallTranslatorProxy.anyExecute()
-  // with correct calldata for creating a new child gauge
-  // For testing purposes, we will create a child gauge for SaddleFRAXBPPool
-
-  // const executorAddress = await ethers
-  //   .getContractAt("MockAnyCall", ANYCALL_ADDRESS)
-  //   .then((c) => c.executor())
-  // const executorContract: AnyCallExecutor = await ethers.getContractAt(
-  //   "AnyCallExecutor",
-  //   executorAddress,
-  // )
-  // const executorCreatorAddress = await executorContract.creator()
-  // const executorCreator = await impersonateAccount(executorCreatorAddress)
-  // await setEtherBalance(executorCreatorAddress, BIG_NUMBER_1E18.mul(10000))
-
-  // // Format deploy_gauge call data that will be passed from RootGaugeFactory
-  // const callData = await ethers
-  //   .getContractFactory("ChildGaugeFactory")
-  //   .then(async (c) =>
-  //     c.interface.encodeFunctionData(
-  //       "deploy_gauge(address,bytes32,string,address)",
-  //       [
-  //         (
-  //           await get("SaddleFRAXBPPoolLPToken")
-  //         ).address, // LP token address
-  //         convertGaugeNameToSalt("FraxBP X-Chain Gauge"), // salt
-  //         "FraxBP X-Chain Gauge", // name
-  //         deployer, // manager of the gauge
-  //       ],
-  //     ),
-  //   )
-
-  // // Format additional calldata for calling AnyCallTranslatorProxy.anyExecute()
-  // callData = ethers.utils.defaultAbiCoder.encode(
-  //   ["address", "bytes"],
-  //   [rgf.address, callData],
-  // )
-
-  // // Call anyExecute from impersonated executor account (owned by AnyCall)
-  // await executorContract.connect(executorCreator).execute(
-  //   anyCallTranslatorProxy.address,
-  //   callData,
-  //   anyCallTranslatorProxy.address, // Pretend the call came from same address from source chain
-  //   CHAIN_ID.MAINNET, // Source chain ID
-  //   0, // Source nonce
-  // )
+  await execute(
+    "RootGaugeFactory",
+    executeOptions,
+    "set_bridger",
+    CHAIN_ID.OPTIMISM_MAINNET,
+    (
+      await get("OptimismBridger")
+    ).address,
+  )
 }
 export default func
