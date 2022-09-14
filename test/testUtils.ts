@@ -195,3 +195,7 @@ export async function asyncForEach<T>(
     await callback(array[index], index)
   }
 }
+
+export function convertGaugeNameToSalt(name: string): string {
+  return ethers.utils.keccak256(ethers.utils.formatBytes32String(name))
+}
