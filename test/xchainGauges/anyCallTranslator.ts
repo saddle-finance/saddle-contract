@@ -145,6 +145,68 @@ describe("AnyCallTranslator", () => {
     })
   })
 
+  describe("rescue", () => {
+    it("Successfully rescues ETH", async () => {
+      const amount = 100
+      await signers[0].sendTransaction({
+        to: anyCallTranslator.address,
+        value: amount,
+      })
+      await expect(
+        anyCallTranslator.rescue(ZERO_ADDRESS, users[0], 0),
+      ).to.changeEtherBalance(users[0], amount)
+    })
+
+    it("Successfully rescues specific amount of ETH", async () => {
+      const amount = 100
+      await signers[0].sendTransaction({
+        to: anyCallTranslator.address,
+        value: amount * 2,
+      })
+      await expect(
+        anyCallTranslator.rescue(ZERO_ADDRESS, users[0], amount),
+      ).to.changeEtherBalance(users[0], amount)
+    })
+
+    it("Successfully rescues ERC20", async () => {
+      await dummyToken.mint(
+        anyCallTranslator.address,
+        BIG_NUMBER_1E18.mul(10000),
+      )
+
+      await expect(
+        anyCallTranslator.rescue(dummyToken.address, users[0], 0),
+      ).to.changeTokenBalances(
+        dummyToken,
+        [users[0], anyCallTranslator.address],
+        [BIG_NUMBER_1E18.mul(10000), BIG_NUMBER_1E18.mul(-10000)],
+      )
+    })
+
+    it("Successfully rescues specific amounts of ERC20", async () => {
+      await dummyToken.mint(
+        anyCallTranslator.address,
+        BIG_NUMBER_1E18.mul(10000),
+      )
+
+      await expect(
+        anyCallTranslator.rescue(dummyToken.address, users[0], BIG_NUMBER_1E18),
+      ).to.changeTokenBalances(
+        dummyToken,
+        [users[0], anyCallTranslator.address],
+        [BIG_NUMBER_1E18, BIG_NUMBER_1E18.mul(-1)],
+      )
+    })
+
+    it("Reverts when called by non-owner", async () => {
+      await expect(
+        anyCallTranslator
+          .connect(signers[10])
+          .rescue(dummyToken.address, users[0], BIG_NUMBER_1E18),
+      ).to.be.revertedWith("Ownable: caller is not the owner")
+    })
+  })
+
   describe("setAnyCall", () => {
     it("Successfully sets AnyCall address", async () => {
       await anyCallTranslator.setAnyCall(mockAnyCall.address)
