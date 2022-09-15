@@ -1,12 +1,11 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { MULTISIG_ADDRESSES } from "../utils/accounts"
-import { isTestNetwork } from "../utils/network"
-import { getChainId } from "hardhat"
 import { BigNumber } from "ethers"
+import { getChainId } from "hardhat"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { IPoolRegistry, PoolRegistry } from "../build/typechain"
 import { ZERO_ADDRESS } from "../test/testUtils"
-import { PoolRegistry } from "../build/typechain"
+import { MULTISIG_ADDRESSES } from "../utils/accounts"
 import { PoolType } from "../utils/constants"
-import { IPoolRegistry } from "../build/typechain"
+import { isTestNetwork } from "../utils/network"
 
 export interface PoolData {
   poolName: string // Name of the pool
@@ -482,14 +481,14 @@ export async function deploySwapFlashLoanPools(
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
+    // register new pools
+    if (newDeploypools.length > 0) {
+      await registerPools(hre, newDeploypools)
+    }
     // verify contract
     await verifyContract(hre, poolName)
     // verify lptoken
     await verifyContract(hre, lpTokenName)
-  }
-  // register new pools
-  if (newDeploypools.length > 0) {
-    await registerPools(hre, newDeploypools)
   }
 }
 
