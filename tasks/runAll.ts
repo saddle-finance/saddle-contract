@@ -3,16 +3,16 @@ import { task, types } from "hardhat/config"
 import config from "../hardhat.config"
 require("@nomicfoundation/hardhat-toolbox")
 
-task("runAll", "Runs Script against all configured networks")
+task("runAll", "Runs Script against multiple configured networks")
   .addParam(
     "script",
-    "The name of the script within the scripts folder to run",
+    "The name of the script file within the scripts folder to run",
     undefined,
     types.string,
   )
   .addOptionalParam(
     "networks",
-    "The name of the network to include the deployments from. Only valid when running with --network localhost",
+    "Comma separated name(s) of the network(s) to run the script on",
     undefined,
     types.string,
   )

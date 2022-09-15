@@ -3,6 +3,10 @@ import { PoolRegistry } from "../build/typechain"
 import { logNetworkDetails } from "./utils"
 
 async function main() {
+  // Prints out all entries held in the pool registry
+  // Specify what data to display in console.table() below.
+  // Run with runAll comand to fetch data from all networks.
+
   // Print network details
   await logNetworkDetails(ethers.provider, network)
 
