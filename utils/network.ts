@@ -62,6 +62,7 @@ export function isHardhatNetwork(networkId: string): boolean {
 export const ALCHEMY_BASE_URL = {
   [CHAIN_ID.MAINNET]: "https://eth-mainnet.alchemyapi.io/v2/",
   [CHAIN_ID.ROPSTEN]: "https://eth-ropsten.alchemyapi.io/v2/",
+  [CHAIN_ID.OPTIMISM_MAINNET]: "https://opt-mainnet.g.alchemy.com/v2/",
   [CHAIN_ID.ARBITRUM_MAINNET]: "https://arb-mainnet.g.alchemy.com/v2/",
   [CHAIN_ID.ARBITRUM_TESTNET]: "https://arb-rinkeby.g.alchemy.com/v2/",
 }
