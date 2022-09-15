@@ -1,5 +1,5 @@
 import "hardhat-deploy"
-import { subtask, task, types } from "hardhat/config"
+import { task, types } from "hardhat/config"
 import config from "../hardhat.config"
 require("@nomicfoundation/hardhat-toolbox")
 

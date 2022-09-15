@@ -1,15 +1,5 @@
 import { ethers, network } from "hardhat"
-import {
-  LPToken,
-  PoolRegistry,
-  MasterRegistry,
-  Minter,
-  VotingEscrow,
-  SDL,
-  FeeDistributor,
-} from "../build/typechain"
-import { convertDeploymentsToSimpleAddressMap } from "../tasks/utils"
-import { CHAIN_ID } from "../utils/network"
+import { PoolRegistry } from "../build/typechain"
 import { logNetworkDetails } from "./utils"
 
 async function main() {
@@ -23,8 +13,30 @@ async function main() {
 
   // get all pools from pool registry
   let poolRegLegnth: number = (await poolRegistry.getPoolsLength()).toNumber()
-  const lastpool = await poolRegistry.getPoolDataAtIndex(poolRegLegnth - 1)
-  console.log(lastpool)
+  // let poolEntries: { [poolname: string]: IPoolRegistry.PoolDataStructOutput } =
+  //   {}
+  let poolEntries: { [poolname: string]: any } = {}
+  for (let pid = 0; pid < poolRegLegnth; pid++) {
+    const entry = await poolRegistry.getPoolDataAtIndex(pid)
+    const poolName = ethers.utils.parseBytes32String(entry.poolName)
+    poolEntries[poolName] = {
+      poolAddress: entry.poolAddress,
+      lptokenAddress: entry.lpToken,
+      typeOfAsset: entry.typeOfAsset,
+      poolName: poolName,
+      targetAddress: entry.targetAddress,
+      tokens: entry.tokens,
+      underlyingTokens: entry.underlyingTokens,
+      basePoolAddress: entry.basePoolAddress,
+      metaSwapDepositAddress: entry.metaSwapDepositAddress,
+      isSaddleApproved: entry.isSaddleApproved,
+      isRemoved: entry.isRemoved,
+      isGuarded: entry.isGuarded,
+    }
+  }
+  console.log(`Pool Registry Entries on ${network.name}:`)
+  // specify table columns from above object to display here
+  console.table(poolEntries, ["poolAddress", "lptokenAddress"])
 }
 main()
   .then(() => process.exit(0))
