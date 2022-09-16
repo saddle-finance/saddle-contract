@@ -1,5 +1,5 @@
-import { ethers, deployments, network, getChainId, config } from "hardhat"
 import { BigNumber } from "ethers"
+import { config, deployments, ethers, getChainId, network } from "hardhat"
 import fetch from "node-fetch"
 import { MiniChefV2, SDL } from "../build/typechain"
 import { getNetworkNameFromChainId } from "../utils/network"
@@ -151,6 +151,10 @@ async function main() {
       network.name
     } chain : ${ethers.utils.formatUnits(totalSDLOwed.toString(), 18)}`,
   )
+}
+
+export function calculateMinichefOwed() {
+  main()
 }
 
 main()
