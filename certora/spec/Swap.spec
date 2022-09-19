@@ -62,6 +62,7 @@ methods {
     getAdminBalance(uint256) returns(uint256) envfree
     paused() returns(bool) envfree
     getVirtualPrice() returns(uint256) envfree
+    getToken(uint8) returns(address) envfree
 
     // harness functions
     getSwapFee() returns(uint256) envfree
@@ -142,6 +143,27 @@ rule cantReinit(method f) filtered {
 }
 
 /*
+    Uninitialized contract implies LP totalSupply zero
+*/
+invariant uninitializedImpliesLPTotalSupplyZero()
+    !initialized => getTotalSupply() == 0
+    //!initialized => getTotalSupply@withrevert()
+
+
+rule uninitializedImpliesRevert(method f) filtered {
+    f -> f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
+  }  {
+    require !initialized;
+    env e; 
+    calldataarg args;
+    
+    f@withrevert(e,args);
+
+    assert lastReverted;
+}
+
+
+/*
     Sum of all users' LP balance must be less than or equal to LP's `totalSupply`
 */
 invariant solvency()
@@ -161,6 +183,17 @@ invariant zeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
 */
 invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
     getTokenBalance(tokenA) > 0 => getTokenBalance(tokenX) > 0
+
+/* (P)
+    Two underlying tokens can never have the same address
+*/
+invariant underlyingTokensDifferent()
+    forall uint8 tokenA. forall uint8 tokenX. (tokenA != tokenX) => (getToken(tokenA) != getToken(tokenX))
+    /*{
+        preserved{
+            require tokenA != tokenX;
+        }
+    }*/
 
 /* 
     If totalSupply of LP token is zero, the balance of all other 
@@ -281,6 +314,8 @@ rule pausedImpliesNoSingleTokenWithdrawal (method f) {
     NOTE: might fail in edge cases. find exact conditions where it fails
 */
 
+
+
 /*
     Swapping A for B will always output at least minAmount of tokens B
 */
@@ -319,7 +354,7 @@ rule monotonicallyIncreasingFees(method f) filtered {
 
     env e;
     require e.msg.sender != currentContract;
-
+    requireInvariant underlyingTokensDifferent;
     requireInvariant solvency;
 
     uint256 balanceBefore = getAdminBalance(index);
@@ -331,6 +366,14 @@ rule monotonicallyIncreasingFees(method f) filtered {
 
     assert balanceAfter >= balanceBefore , "fees must not decrease, except for withdraw by admin";
 
+}
+
+/*
+    Remove liquidity doesn't remove admin fees
+*/
+rule removeLiquidityDoesntReduceAdminFees() {
+    uint256 index;
+    assert false;
 }
 
 /* 
