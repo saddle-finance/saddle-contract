@@ -1,5 +1,5 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
@@ -59,15 +59,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("SaddleEvmosBTCPool")
       ).address,
     )
-  }
-  const lpTokenAddress = (await read("SaddleTBTCMetaPool", "swapStorage"))
-    .lpToken
-  log(`Saddle tBTC MetaSwap LP Token at ${lpTokenAddress}`)
 
-  await save("SaddleTBTCMetaPoolLPToken", {
-    abi: (await get("LPToken")).abi, // LPToken ABI
-    address: lpTokenAddress,
-  })
+    const lpTokenAddress = (await read("SaddleTBTCMetaPool", "swapStorage"))
+      .lpToken
+    log(`Saddle tBTC MetaSwap LP Token at ${lpTokenAddress}`)
+
+    await save("SaddleTBTCMetaPoolLPToken", {
+      abi: (await get("LPToken")).abi, // LPToken ABI
+      address: lpTokenAddress,
+    })
+  }
 }
 export default func
 func.tags = ["TBTCMetaPool"]
