@@ -22,6 +22,7 @@ export interface PoolData {
   swapFee: number // % fee charged on swap
   adminFee: number // % of swapFee sent to Saddle
   multisig: boolean // If a multisig on this chain exists
+  deployGauge?: boolean // If a gauge should be deployed
 }
 
 /**
@@ -162,7 +163,6 @@ export async function deployMetaswapPools(
     for (const token in pool.tokenArgs) {
       tokenNames.push(token)
     }
-    // const tokenNames: string[] = ["ALUSD"]
     tokenNames.push(`${basePoolName}LPToken`)
     const lpTokenName = `${metaPoolName}LPToken`
     const lpTokenSymbol = pool.lpTokenSymbol
@@ -245,12 +245,18 @@ export async function deployMetaswapPools(
       basePoolName!,
       metaPoolName,
     )
-    // verify contract
+    // verify contracts
     await verifyContract(hre, metaPoolName)
-  }
-  // register new pools
-  if (newDeploypools.length > 0) {
-    await registerPools(hre, newDeploypools)
+    await verifyContract(hre, lpTokenName)
+
+    // register new pools
+    if (newDeploypools.length > 0) {
+      await registerPools(hre, newDeploypools)
+      // If new pools require a gauge deploy
+      if (pool.deployGauge) {
+        deployLiquidityGauge(hre, lpTokenName, lpTokenAddress)
+      }
+    }
   }
 }
 
@@ -303,6 +309,8 @@ export async function deployMetaswapDeposit(
       ).address,
     )
   }
+  // verify contract
+  await verifyContract(hre, metaPoolDepositName)
 }
 
 /**
@@ -486,13 +494,58 @@ export async function deploySwapFlashLoanPools(
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
-    // verify contract
+    // register new pools
+    if (newDeploypools.length > 0) {
+      await registerPools(hre, newDeploypools)
+      // If new pools require a gauge deploy
+      if (pool.deployGauge) {
+        deployLiquidityGauge(hre, lpTokenName, lpTokenAddress)
+      }
+    }
+    // verify contracts
     await verifyContract(hre, poolName)
+    await verifyContract(hre, lpTokenName)
   }
-  // register new pools
-  if (newDeploypools.length > 0) {
-    await registerPools(hre, newDeploypools)
+}
+
+/**
+ * @notice deploys a LiquidityV5Gauges for each given swap LPToken element that has not yet been deployed.
+ * Deploys and saves deployment for the associated gauge.
+ * @param lpToken string of deployed LPToken name
+ * @param lpTokenAddress string of deployed LPToken address
+ */
+export async function deployLiquidityGauge(
+  hre: HardhatRuntimeEnvironment,
+  lpToken: string,
+  lpTokenAddress: string,
+) {
+  const { deployments, getNamedAccounts } = hre
+  const { deploy, get, getOrNull } = deployments
+  const { deployer } = await getNamedAccounts()
+  const gaugeName = `LiquidityGaugeV5_${lpToken}`
+  const gaugeContract = await getOrNull(gaugeName)
+  if (gaugeContract) {
+    console.log(
+      `Gauge ${gaugeName} already deployed at ${gaugeContract.address}`,
+    )
   }
+  if (!gaugeContract) {
+    console.log(`Attempting to deploy gauge with name: ${gaugeName}`)
+    await deploy(gaugeName, {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+      contract: "LiquidityGaugeV5",
+      args: [
+        lpTokenAddress,
+        (await get("Minter")).address,
+        MULTISIG_ADDRESSES[await getChainId()],
+      ],
+    })
+    console.log(`Successfully deployed gauge with name: ${gaugeName}`)
+  }
+  // verify contract
+  await verifyContract(hre, gaugeName)
 }
 
 /**

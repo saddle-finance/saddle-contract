@@ -17,6 +17,7 @@ const metaPools: PoolData[] = [
     swapFee: 4e6,
     adminFee: 50e8,
     multisig: true,
+    deployGauge: true,
   },
 ]
 
