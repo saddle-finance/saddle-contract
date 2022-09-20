@@ -80,7 +80,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     },
   ]
 
-  let poolsToBeRegistered: IPoolRegistry.PoolInputDataStruct[] = []
+  const poolsToBeRegistered: IPoolRegistry.PoolInputDataStruct[] = []
   for (let pid = 0; pid < pools.length; pid++) {
     await poolRegistry
       .getPoolDataByName(pools[pid].poolName)
