@@ -84,5 +84,5 @@ task("run", "Starts a JSON-RPC server on top of Hardhat Network")
     /*
      * Super actions
      */
-    await runSuper(taskArgs)
+    return runSuper(taskArgs)
   })

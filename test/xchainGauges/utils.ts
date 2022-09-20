@@ -85,11 +85,11 @@ export async function setupRootGaugeFactory(
 
 export async function setupAnyCallTranslator(ownerAddress: string): Promise<{
   anyCallTranslator: AnyCallTranslator
-  mockAnycall: MockAnyCall
+  mockAnyCall: MockAnyCall
 }> {
   // Deploy mock anycall
-  const mockAnycallFactory = await ethers.getContractFactory("MockAnyCall")
-  const mockAnycall = (await mockAnycallFactory.deploy()) as MockAnyCall
+  const mockAnyCallFactory = await ethers.getContractFactory("MockAnyCall")
+  const mockAnyCall = (await mockAnyCallFactory.deploy()) as MockAnyCall
 
   // Deploy ProxyAdmin
   const proxyAdminFactory = await ethers.getContractFactory("ProxyAdmin")
@@ -107,7 +107,7 @@ export async function setupAnyCallTranslator(ownerAddress: string): Promise<{
   const initializeCallData = (
     await anycallTranslatorLogic.populateTransaction.initialize(
       ownerAddress,
-      mockAnycall.address,
+      mockAnyCall.address,
     )
   ).data as string
 
@@ -124,8 +124,8 @@ export async function setupAnyCallTranslator(ownerAddress: string): Promise<{
     proxy.address,
   )) as AnyCallTranslator
 
-  await mockAnycall.setanyCallTranslator(anyCallTranslator.address)
-  return { anyCallTranslator, mockAnycall }
+  await mockAnyCall.setanyCallTranslator(anyCallTranslator.address)
+  return { anyCallTranslator, mockAnyCall }
 }
 
 export async function setupRootOracle(

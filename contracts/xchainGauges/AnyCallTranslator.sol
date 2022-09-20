@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-4.4.0/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts-4.4.0/proxy/transparent/ProxyAdmin.sol";
+import "@openzeppelin/contracts-4.4.0/utils/math/Math.sol";
 
 import "@openzeppelin/contracts-upgradeable-4.4.0/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable-4.4.0/access/OwnableUpgradeable.sol";
@@ -18,14 +19,12 @@ interface ICallProxy {
         uint256 _flags
     ) external payable; // nonpayable
 
-    function deposit(address _account) external payable;
-
     function withdraw(uint256 amount) external;
 
     function executor() external view returns (address executor);
 }
 
-interface IAnycallExecutor {
+interface IAnyCallExecutor {
     function context()
         external
         view
@@ -54,7 +53,7 @@ contract EmptyProxyAdmin is ProxyAdmin {
 contract AnyCallTranslator is OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     // consts
-    address public anycallContract;
+    address public anyCallContract;
     address public anyCallExecutor;
     mapping(address => bool) public isKnownCaller;
 
@@ -71,7 +70,7 @@ contract AnyCallTranslator is OwnableUpgradeable {
         initializer
     {
         _transferOwnership(_owner);
-        anycallContract = _anycallContract;
+        anyCallContract = _anycallContract;
         anyCallExecutor = ICallProxy(_anycallContract).executor();
     }
 
@@ -90,17 +89,39 @@ contract AnyCallTranslator is OwnableUpgradeable {
         }
     }
 
-    function setAnycall(address _anycallContract) external onlyOwner {
-        anycallContract = _anycallContract;
-        anyCallExecutor = ICallProxy(_anycallContract).executor();
+    function setAnyCall(address _anyCallContract) external onlyOwner {
+        anyCallContract = _anyCallContract;
+        anyCallExecutor = ICallProxy(_anyCallContract).executor();
     }
 
     function withdraw(uint256 _amount) external onlyOwner {
-        ICallProxy(anycallContract).withdraw(_amount);
+        ICallProxy(anyCallContract).withdraw(_amount);
     }
 
-    function rescue(IERC20Upgradeable token, address to) external onlyOwner {
-        token.safeTransfer(to, token.balanceOf(address(this)));
+    function rescue(
+        IERC20Upgradeable token,
+        address to,
+        uint256 balance
+    ) external onlyOwner {
+        if (address(token) == address(0)) {
+            // for Ether
+            uint256 totalBalance = address(this).balance;
+            balance = balance == 0
+                ? totalBalance
+                : Math.min(totalBalance, balance);
+            require(balance > 0, "trying to send 0 ETH");
+            // slither-disable-next-line arbitrary-send
+            (bool success, ) = to.call{value: balance}("");
+            require(success, "ETH transfer failed");
+        } else {
+            // any other erc20
+            uint256 totalBalance = token.balanceOf(address(this));
+            balance = balance == 0
+                ? totalBalance
+                : Math.min(totalBalance, balance);
+            require(balance > 0, "trying to send 0 balance");
+            token.safeTransfer(to, balance);
+        }
     }
 
     function anyCall(
@@ -112,7 +133,7 @@ contract AnyCallTranslator is OwnableUpgradeable {
         uint256 _flags
     ) external payable {
         require(isKnownCaller[msg.sender], "Unknown caller");
-        ICallProxy(anycallContract).anyCall{value: msg.value}(
+        ICallProxy(anyCallContract).anyCall{value: msg.value}(
             address(this),
             abi.encode(_to, _data),
             _fallback,
@@ -128,10 +149,10 @@ contract AnyCallTranslator is OwnableUpgradeable {
         // Check that caller is anycall executor
         require(
             msg.sender == anyCallExecutor,
-            "Caller is not anycall executor"
+            "Caller is not anyCall executor"
         );
         // Get address of anycallExecutor
-        (address _from, , ) = IAnycallExecutor(msg.sender).context();
+        (address _from, , ) = IAnyCallExecutor(msg.sender).context();
         // Check that caller is verified
         require(_from == address(this), "Wrong context");
 
@@ -141,7 +162,7 @@ contract AnyCallTranslator is OwnableUpgradeable {
             (address, bytes)
         );
         (bool success, bytes memory returnData) = to.call(data);
-        require(success, "Proxy call failed");
+        require(success, "Target call failed");
         return (success, returnData);
     }
 }

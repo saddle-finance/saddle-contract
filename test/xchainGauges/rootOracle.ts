@@ -1,14 +1,8 @@
 import chai from "chai"
-import { ContractFactory, Signer } from "ethers"
+import { Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
   AnyCallTranslator,
-  ArbitrumBridger,
-  ChildGauge,
-  GenericERC20,
-  LPToken,
-  MockAnyCall,
-  RewardForwarder,
   RootGaugeFactory,
   RootOracle,
   SDL,
@@ -27,29 +21,17 @@ import {
   setupRootGaugeFactory,
   setupRootOracle,
 } from "./utils"
-const { execute } = deployments
 
 const { expect } = chai
 
 describe("RootOracle", () => {
   let signers: Array<Signer>
   let users: string[]
-  let user1: Signer
-  let deployer: Signer
-  let rewardForwarder: RewardForwarder
-  let testToken: LPToken
-  let firstGaugeToken: GenericERC20
-  let lpTokenFactory: ContractFactory
   let rootGaugeFactory: RootGaugeFactory
-  let arbitrumBridger: ArbitrumBridger
   let anyCallTranslator: AnyCallTranslator
-  let childGauge: ChildGauge
   let rootOracle: RootOracle
-  let mockAnycall: MockAnyCall
   let veSDL: VotingEscrow
-  let sdl: SDL
 
-  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
   const WEEK = 86400 * 7
   const MAXTIME = 86400 * 365 * 4
   const anyCallAddress = "0xC10Ef9F491C9B59f936957026020C321651ac078"
@@ -59,7 +41,6 @@ describe("RootOracle", () => {
       await deployments.fixture(["veSDL"], { fallbackToGlobal: false }) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
-      user1 = signers[1]
       users = await Promise.all(
         signers.map(async (signer) => signer.getAddress()),
       )

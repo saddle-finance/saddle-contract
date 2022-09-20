@@ -24,26 +24,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // key = token deployment name, value = array of addresses
   const tokenToAccountsMap: Record<string, string[]> = {
     // USD
-    DAI: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
-    USDC: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
-    USDT: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
-    SUSD: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
-    // BTC
-    WBTC: ["0x7fc77b5c7614e1533320ea6ddc2eb61fa00a9714"],
-    RENBTC: ["0x7fc77b5c7614e1533320ea6ddc2eb61fa00a9714"],
-    SBTC: ["0x7fc77b5c7614e1533320ea6ddc2eb61fa00a9714"],
-    TBTC: ["0xC25099792E9349C7DD09759744ea681C7de2cb66"],
-    // ETH
-    ALETH: ["0x1d2c4cd9bee9dfe088430b95d274e765151c32db"],
-    WETH: ["0xceff51756c56ceffca006cd410b03ffc46dd3a58"],
-    SETH: ["0xc5424b857f758e906013f3555dad202e4bdb4567"],
-    // D4
-    ALUSD: ["0x43b4fdfd4ff969587185cdb6f0bd875c5fc83f8c"],
-    FEI: ["0x94b0a3d511b6ecdb17ebf877278ab030acb0a878"],
-    FRAX: ["0xd632f22692fac7611d2aa1c0d552930d43caed3b"],
-    LUSD: ["0x66017d22b0f8556afdd19fc67041899eb65a21bb"],
-    // TBTC
-    TBTCv2: ["0xf9e11762d522ea29dd78178c9baf83b7b093aacc"],
+    USDC: ["0x625e7708f30ca75bfd92586e17077590c60eb4cd"], // aave
+    FRAX: ["0x98d9ae198f2018503791d1caf23c6807c135bb6b"], // Uniswap USDC/FRAX
+    USDT: ["0x6ab707aca953edaefbc4fd23ba73294241490620"], // aave
   }
 
   // Addresses to receive funds from the whales

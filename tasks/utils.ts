@@ -26,7 +26,7 @@ export function compareDeployments(
   // Print the new deployments to the console
   if (Object.keys(newDeployments).length > 0) {
     console.log("\nNew deployments:")
-    console.table(newDeployments)
+    console.table(Object.entries(newDeployments))
   } else {
     console.warn("\nNo new deployments found")
   }

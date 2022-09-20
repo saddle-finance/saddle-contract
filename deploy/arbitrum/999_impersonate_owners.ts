@@ -1,17 +1,13 @@
-import {
-  asyncForEach,
-  impersonateAccount,
-  setEtherBalance,
-} from "../../test/testUtils"
+import { setEtherBalance } from "../../test/testUtils"
 
-import { DeployFunction } from "hardhat-deploy/types"
-import { GenericERC20 } from "../../build/typechain/"
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import dotenv from "dotenv"
 import { ethers } from "hardhat"
-import { isMainnet } from "../../utils/network"
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import path from "path"
 import { getHardhatTestSigners } from "../../scripts/utils"
+import { isMainnet } from "../../utils/network"
+import { stealFundsFromWhales } from "../deployUtils"
 
 dotenv.config()
 
@@ -19,6 +15,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
   const { execute, log, read, all, get } = deployments
   const { deployer } = await getNamedAccounts()
+  const hardhatTestAccount = getHardhatTestSigners()[0]
 
   // These addresses are for large holders of the given token (used in forked mainnet testing)
   // You can find whales' addresses on etherscan's holders page.
@@ -32,35 +29,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     USDT: ["0x489ee077994b6658eafa855c308275ead8097c4a"],
   }
 
+  // Addresses to receive funds from the whales
+  const receivers = [deployer, await hardhatTestAccount.getAddress()]
+
   if (
     isMainnet(await getChainId()) &&
     process.env.HARDHAT_DEPLOY_FORK &&
     process.env.FUND_FORK_NETWORK
   ) {
-    // Give the deployer tokens from each token holder for testing
-    for (const [tokenName, holders] of Object.entries(tokenToAccountsMap)) {
-      const contract = (await ethers.getContract(tokenName)) as GenericERC20
-
-      await asyncForEach(holders, async (holder) => {
-        const balance = await contract.balanceOf(holder)
-        await setEtherBalance(holder, ethers.constants.WeiPerEther.mul(1000))
-        await contract
-          .connect(await impersonateAccount(holder))
-          .transfer(deployer, await contract.balanceOf(holder))
-        log(
-          `Sent ${ethers.utils.formatUnits(
-            balance,
-            await contract.decimals(),
-          )} ${tokenName} from ${holder} to ${deployer}`,
-        )
-      })
-    }
-    // Give the deployer some ether to use for testing
-    await setEtherBalance(deployer, ethers.constants.WeiPerEther.mul(1000))
-    // Give hardhat test account some ether
-    await setEtherBalance(
-      await getHardhatTestSigners()[0].getAddress(),
-      ethers.constants.WeiPerEther.mul(1000),
+    // Steal funds from whales to the deployer account and hardhat test account
+    await stealFundsFromWhales(hre, tokenToAccountsMap, receivers)
+    // Give some ether to all receivers
+    await Promise.all(
+      receivers.map(async (receiver) =>
+        setEtherBalance(receiver, ethers.constants.WeiPerEther.mul(1000)),
+      ),
     )
   } else {
     log(`skipping ${path.basename(__filename)}`)

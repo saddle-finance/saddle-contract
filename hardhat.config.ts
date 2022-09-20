@@ -18,6 +18,9 @@ const config: HardhatUserConfig = {
     hardhat: {
       deploy: ["./deploy/hardhat/"],
       autoImpersonate: true,
+      companionNetworks: {
+        optimism_mainnet: "optimism_mainnet",
+      },
     },
     mainnet: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
@@ -68,7 +71,8 @@ const config: HardhatUserConfig = {
       deploy: ["./deploy/optimism/"],
     },
     optimism_mainnet: {
-      url: "https://mainnet.optimism.io",
+      url: ALCHEMY_BASE_URL[CHAIN_ID.OPTIMISM_MAINNET] +
+      process.env.ALCHEMY_API_KEY,
       chainId: parseInt(CHAIN_ID.OPTIMISM_MAINNET),
       deploy: ["./deploy/optimism/"],
       verify: {
