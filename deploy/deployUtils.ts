@@ -1,8 +1,13 @@
 import { BigNumber } from "ethers"
 import { getChainId } from "hardhat"
+import { Address } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { IPoolRegistry, PoolRegistry } from "../build/typechain"
-import { ZERO_ADDRESS } from "../test/testUtils"
+import { GenericERC20, IPoolRegistry, PoolRegistry } from "../build/typechain"
+import {
+  impersonateAccount,
+  setEtherBalance,
+  ZERO_ADDRESS,
+} from "../test/testUtils"
 import { MULTISIG_ADDRESSES } from "../utils/accounts"
 import { PoolType } from "../utils/constants"
 import { isTestNetwork } from "../utils/network"
@@ -481,14 +486,12 @@ export async function deploySwapFlashLoanPools(
       abi: (await get("LPToken")).abi, // LPToken ABI
       address: lpTokenAddress,
     })
-    // register new pools
-    if (newDeploypools.length > 0) {
-      await registerPools(hre, newDeploypools)
-    }
     // verify contract
     await verifyContract(hre, poolName)
-    // verify lptoken
-    await verifyContract(hre, lpTokenName)
+  }
+  // register new pools
+  if (newDeploypools.length > 0) {
+    await registerPools(hre, newDeploypools)
   }
 }
 
@@ -659,5 +662,52 @@ export async function verifyContract(
     console.log(`Successfully verified ${contractName} at ${contract.address}`)
   } catch (error) {
     console.log("verification failed with: ", error)
+  }
+}
+
+/**
+ * @notice attempts to transfer ERC20 tokens from set of given addresses to deployer
+ * @param hre HardhatRuntimeEnvironment variable
+ * @param tokenToWhaleAccountsMap Record of token name (deployment json file name) to
+ * array of whale addresses
+ * @param receivers array of addresses to receive tokens
+ */
+export async function stealFundsFromWhales(
+  hre: HardhatRuntimeEnvironment,
+  tokenToWhaleAccountsMap: Record<string, Address[]>,
+  receivers: Address[],
+) {
+  // Give the deployer tokens from each token holder for testing
+  for (const [tokenName, holders] of Object.entries(tokenToWhaleAccountsMap)) {
+    const token = (await hre.ethers.getContract(tokenName)) as GenericERC20
+
+    await Promise.all(
+      holders.map(async (holder) => {
+        // Read the token balance of the whale account
+        const balance = await token.balanceOf(holder)
+        // Set the token holder eth balance to arbitrary amount
+        await setEtherBalance(
+          holder,
+          hre.ethers.constants.WeiPerEther.mul(1000),
+        )
+        // Impersonate holder account if needed
+        const holderSigner = await impersonateAccount(holder)
+        // Transfer tokens to each receiver
+        await Promise.all(
+          receivers.map(async (receiver) => {
+            await token
+              .connect(holderSigner)
+              .transfer(receiver, balance.div(receivers.length))
+            // Log the transfer to the console
+            hre.deployments.log(
+              `Sent ${hre.ethers.utils.formatUnits(
+                balance,
+                await token.decimals(),
+              )} ${tokenName} from ${holder} to ${receiver}`,
+            )
+          }),
+        )
+      }),
+    )
   }
 }
