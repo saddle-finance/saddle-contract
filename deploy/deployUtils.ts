@@ -245,13 +245,14 @@ export async function deployMetaswapPools(
       basePoolName!,
       metaPoolName,
     )
-    // verify contract
-    await verifyContract(hre, metaPoolName)
 
     // If new pools require a gauge deploy
     if (pool.deployGauge) {
-      deployLiquidityGauge(hre, lpTokenName, lpTokenAddress)
+      await deployLiquidityGauge(hre, lpTokenName, lpTokenAddress)
     }
+
+    // verify contract
+    verifyContract(hre, metaPoolName)
   }
   // register new pools
   if (newDeploypools.length > 0) {
@@ -500,8 +501,9 @@ export async function deploySwapFlashLoanPools(
     }
 
     // verify contracts
-    await verifyContract(hre, poolName)
+    verifyContract(hre, poolName)
   }
+
   // register new pools
   if (newDeploypools.length > 0) {
     await registerPools(hre, newDeploypools)
@@ -520,7 +522,7 @@ export async function deployLiquidityGauge(
   lpTokenAddress: string,
 ) {
   const { deployments, getNamedAccounts } = hre
-  const { deploy, get, getOrNull } = deployments
+  const { deploy, get } = deployments
   const { deployer } = await getNamedAccounts()
   const gaugeName = `LiquidityGaugeV5_${lpToken}`
 
