@@ -71,8 +71,9 @@ const config: HardhatUserConfig = {
       deploy: ["./deploy/optimism/"],
     },
     optimism_mainnet: {
-      url: ALCHEMY_BASE_URL[CHAIN_ID.OPTIMISM_MAINNET] +
-      process.env.ALCHEMY_API_KEY,
+      url:
+        ALCHEMY_BASE_URL[CHAIN_ID.OPTIMISM_MAINNET] +
+        process.env.ALCHEMY_API_KEY,
       chainId: parseInt(CHAIN_ID.OPTIMISM_MAINNET),
       deploy: ["./deploy/optimism/"],
       verify: {
