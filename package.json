@@ -46,7 +46,7 @@
     "eslint-plugin-unused-imports": "^2.0.0",
     "ethers": "^5.7.0",
     "ethlint": "^1.2.5",
-    "hardhat": "^2.11.1",
+    "hardhat": "2.11.2",
     "hardhat-deploy": "^0.11.14",
     "hardhat-gas-reporter": "^1.0.8",
     "hardhat-spdx-license-identifier": "^2.0.3",
