@@ -159,6 +159,7 @@ describe("ChildOracle", () => {
   describe("balanceOf", () => {
     it("Successfully calls balanceOf", async () => {
       await pushDummyUserPoints()
+      console.log(await getCurrentBlockTimestamp())
       expect(await childOracle.balanceOf(users[0])).to.be.gt(0)
       expect(await childOracle.balanceOf(users[1])).to.be.gt(0)
       expect(await childOracle.balanceOf(users[2])).to.be.eq(0)
