@@ -108,7 +108,16 @@ contract RootOracle {
         );
         ICallProxy(callProxy).anyCall(
             address(this),
-            abi.encode(userPoint, globalPoint, _user),
+            abi.encodeWithSelector(
+                bytes4(
+                    keccak256(
+                        "recieve((int128,int128,uint256),(int128,int128,uint256),address)"
+                    )
+                ),
+                userPoint,
+                globalPoint,
+                _user
+            ),
             address(0),
             _chainId,
             0
