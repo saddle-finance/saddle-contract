@@ -27,8 +27,6 @@ import {
   setupRootOracle,
 } from "./utils"
 
-const { execute } = deployments
-
 const { expect } = chai
 
 describe("ChildOracle", () => {
@@ -40,6 +38,8 @@ describe("ChildOracle", () => {
   let veSDL: VotingEscrow
   let rootOracle: RootOracle
   let childOracle: ChildOracle
+
+  const TEST_ADDRESS = "0x00000000000000000000000000000000DeaDBeef"
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -101,20 +101,21 @@ describe("ChildOracle", () => {
   )
 
   async function pushDummyUserPoints() {
+    const currentTimestamp = await getCurrentBlockTimestamp()
     const userPoint0 = {
       bias: "5292272140402369232160848",
       slope: "42041442901583344",
-      ts: "1663116133",
+      ts: currentTimestamp,
     }
     const userPoint1 = {
       bias: "1067529802746270691066436",
       slope: "33942146860064543",
-      ts: "1659569348",
+      ts: currentTimestamp,
     }
     const globalPoint = {
       bias: "39021498196781652278562539",
       slope: "518420477278521359",
-      ts: "1663732379",
+      ts: currentTimestamp,
     }
 
     const owner = await impersonateAccount(anyCallTranslator.address)
@@ -158,18 +159,53 @@ describe("ChildOracle", () => {
 
   describe("balanceOf", () => {
     it("Successfully calls balanceOf", async () => {
+      // use fixed timestamp for reading ve balances
       await pushDummyUserPoints()
-      console.log(await getCurrentBlockTimestamp())
-      expect(await childOracle.balanceOf(users[0])).to.be.gt(0)
-      expect(await childOracle.balanceOf(users[1])).to.be.gt(0)
+      expect(await childOracle.balanceOf(users[0])).to.be.eq(
+        "5292272056319483428994160",
+      )
+      expect(await childOracle.balanceOf(users[1])).to.be.eq(
+        "1067529734861976970937350",
+      )
       expect(await childOracle.balanceOf(users[2])).to.be.eq(0)
     })
   })
 
   describe("totalSupply", () => {
     it("Successfully calls totalSupply", async () => {
+      // use fixed timestamp for reading ve balances
       await pushDummyUserPoints()
-      expect(await childOracle.totalSupply()).to.be.gt(0)
+      expect(await childOracle.totalSupply()).to.be.eq(
+        "39021497159940697721519821",
+      )
+    })
+  })
+
+  describe("commitTransferOwnership", () => {
+    it(`Reverts when not called by the owner`, async () => {
+      await expect(
+        childOracle.connect(signers[1]).commitTransferOwnership(TEST_ADDRESS),
+      ).to.be.reverted
+    })
+
+    it(`Successfully sets futureOwner`, async () => {
+      await childOracle.commitTransferOwnership(TEST_ADDRESS)
+      expect(await childOracle.futureOwner()).to.eq(TEST_ADDRESS)
+    })
+  })
+
+  describe("acceptTransferOwnership", () => {
+    it(`Reverts when not called by the futureOwner`, async () => {
+      await expect(childOracle.connect(signers[1]).acceptTransferOwnership()).to
+        .be.reverted
+    })
+
+    it(`Successfully transfers ownership to futureOwner`, async () => {
+      await childOracle.commitTransferOwnership(users[10])
+      await expect(childOracle.connect(signers[10]).acceptTransferOwnership())
+        .to.emit(childOracle, "TransferOwnership")
+        .withArgs(users[0], users[10])
+      expect(await childOracle.owner()).to.eq(users[10])
     })
   })
 })
