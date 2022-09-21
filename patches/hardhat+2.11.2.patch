@@ -331,10 +331,148 @@ index 3a790aa..aa59b5b 100644
  
  export interface ForkedNodeConfig extends CommonConfig {
 diff --git a/node_modules/hardhat/src/internal/hardhat-network/provider/node.ts b/node_modules/hardhat/src/internal/hardhat-network/provider/node.ts
-index df73e5f..798dc05 100644
+index df73e5f..b198053 100644
 --- a/node_modules/hardhat/src/internal/hardhat-network/provider/node.ts
 +++ b/node_modules/hardhat/src/internal/hardhat-network/provider/node.ts
-@@ -168,6 +168,7 @@ export class HardhatNode extends EventEmitter {
+@@ -1,47 +1,43 @@
++import { signTypedData, SignTypedDataVersion } from "@metamask/eth-sig-util";
+ import { Block, HeaderData } from "@nomicfoundation/ethereumjs-block";
+ import { Common } from "@nomicfoundation/ethereumjs-common";
++import { EVM, EVMResult } from "@nomicfoundation/ethereumjs-evm";
++import { ERROR } from "@nomicfoundation/ethereumjs-evm/dist/exceptions";
++import {
++  DefaultStateManager,
++  StateManager
++} from "@nomicfoundation/ethereumjs-statemanager";
+ import {
+   AccessListEIP2930Transaction,
+   FeeMarketEIP1559Transaction,
+   Transaction,
+-  TypedTransaction,
++  TypedTransaction
+ } from "@nomicfoundation/ethereumjs-tx";
+ import {
+-  Address,
+-  ECDSASignature,
+-  bigIntToBuffer,
+-  bufferToHex,
+-  ecsign,
++  Address, bigIntToBuffer,
++  bufferToHex, ECDSASignature, ecsign,
+   hashPersonalMessage,
+   privateToAddress,
+   setLengthLeft,
+-  toBuffer,
++  toBuffer
+ } from "@nomicfoundation/ethereumjs-util";
+ import {
+   Bloom,
+   EEI,
+   RunBlockResult,
+   RunTxResult,
+-  VM,
++  VM
+ } from "@nomicfoundation/ethereumjs-vm";
+-import { EVM, EVMResult } from "@nomicfoundation/ethereumjs-evm";
+-import { ERROR } from "@nomicfoundation/ethereumjs-evm/dist/exceptions";
+-import {
+-  DefaultStateManager,
+-  StateManager,
+-} from "@nomicfoundation/ethereumjs-statemanager";
+-import { SignTypedDataVersion, signTypedData } from "@metamask/eth-sig-util";
+ import chalk from "chalk";
+ import debug from "debug";
+ import EventEmitter from "events";
+ 
+-import * as BigIntUtils from "../../util/bigint";
+ import { CompilerInput, CompilerOutput } from "../../../types";
+ import { HardforkHistoryConfig } from "../../../types/config";
+ import { HARDHAT_NETWORK_SUPPORTED_HARDFORKS } from "../../constants";
+ import {
+   HARDHAT_NETWORK_DEFAULT_INITIAL_BASE_FEE_PER_GAS,
+-  HARDHAT_NETWORK_DEFAULT_MAX_PRIORITY_FEE_PER_GAS,
++  HARDHAT_NETWORK_DEFAULT_MAX_PRIORITY_FEE_PER_GAS
+ } from "../../core/config/default-config";
+ import { assertHardhatInvariant, HardhatError } from "../../core/errors";
+ import { RpcDebugTracingConfig } from "../../core/jsonrpc/types/input/debugTraceTransaction";
+@@ -49,14 +45,15 @@ import {
+   InternalError,
+   InvalidArgumentsError,
+   InvalidInputError,
+-  TransactionExecutionError,
++  TransactionExecutionError
+ } from "../../core/providers/errors";
+ import { Reporter } from "../../sentry/reporter";
++import * as BigIntUtils from "../../util/bigint";
+ import { getDifferenceInSeconds } from "../../util/date";
+ import {
+   getHardforkName,
+   hardforkGte,
+-  HardforkName,
++  HardforkName
+ } from "../../util/hardforks";
+ import { createModelsAndDecodeBytecodes } from "../stack-traces/compiler-to-model";
+ import { ConsoleLogger } from "../stack-traces/consoleLogger";
+@@ -64,11 +61,11 @@ import { ContractsIdentifier } from "../stack-traces/contracts-identifier";
+ import {
+   isCreateTrace,
+   isPrecompileTrace,
+-  MessageTrace,
++  MessageTrace
+ } from "../stack-traces/message-trace";
+ import {
+   encodeSolidityStackTrace,
+-  SolidityError,
++  SolidityError
+ } from "../stack-traces/solidity-errors";
+ import { SolidityStackTrace } from "../stack-traces/solidity-stack-trace";
+ import { SolidityTracer } from "../stack-traces/solidityTracer";
+@@ -76,9 +73,9 @@ import { VMDebugTracer } from "../stack-traces/vm-debug-tracer";
+ import { VmTraceDecoder } from "../stack-traces/vm-trace-decoder";
+ import { VMTracer } from "../stack-traces/vm-tracer";
+ 
+-import "./ethereumjs-workarounds";
+ import { rpcQuantityToBigInt } from "../../core/jsonrpc/types/base-types";
+ import { JsonRpcClient } from "../jsonrpc/client";
++import "./ethereumjs-workarounds";
+ import { bloomFilter, Filter, filterLogs, LATEST_BLOCK, Type } from "./filter";
+ import { ForkBlockchain } from "./fork/ForkBlockchain";
+ import { ForkStateManager } from "./fork/ForkStateManager";
+@@ -98,29 +95,29 @@ import {
+   SendTransactionResult,
+   Snapshot,
+   TracingConfig,
+-  TransactionParams,
++  TransactionParams
+ } from "./node-types";
+ import {
+   getRpcBlock,
+   getRpcReceiptOutputsFromLocalBlockExecution,
+   RpcLogOutput,
+   RpcReceiptOutput,
+-  shouldShowTransactionTypeForHardfork,
++  shouldShowTransactionTypeForHardfork
+ } from "./output";
+ import { ReturnData } from "./return-data";
++import { TransactionQueue } from "./TransactionQueue";
+ import { FakeSenderAccessListEIP2930Transaction } from "./transactions/FakeSenderAccessListEIP2930Transaction";
+ import { FakeSenderEIP1559Transaction } from "./transactions/FakeSenderEIP1559Transaction";
+ import { FakeSenderTransaction } from "./transactions/FakeSenderTransaction";
+ import { TxPool } from "./TxPool";
+-import { TransactionQueue } from "./TransactionQueue";
+ import { HardhatBlockchainInterface } from "./types/HardhatBlockchainInterface";
+ import { getCurrentTimestamp } from "./utils/getCurrentTimestamp";
+ import { makeCommon } from "./utils/makeCommon";
+ import { makeForkClient } from "./utils/makeForkClient";
+ import { makeStateTrie } from "./utils/makeStateTrie";
+ import { putGenesisBlock } from "./utils/putGenesisBlock";
+-import { txMapToArray } from "./utils/txMapToArray";
+ import { RandomBufferGenerator } from "./utils/random";
++import { txMapToArray } from "./utils/txMapToArray";
+ 
+ type ExecResult = EVMResult["execResult"];
+ 
+@@ -168,6 +165,7 @@ export class HardhatNode extends EventEmitter {
          forkClient: _forkClient,
          forkBlockNumber,
          forkBlockTimestamp,
@@ -342,6 +480,15 @@ index df73e5f..798dc05 100644
        } = await makeForkClient(config.forkConfig, config.forkCachePath);
        forkClient = _forkClient;
  
+@@ -187,7 +185,7 @@ export class HardhatNode extends EventEmitter {
+       await forkStateManager.initializeGenesisAccounts(genesisAccounts);
+       stateManager = forkStateManager;
+ 
+-      blockchain = new ForkBlockchain(forkClient, forkBlockNumber, common);
++      blockchain = new ForkBlockchain(forkClient, forkBlockNumber, common, forkIgnoreUnknownTxType);
+ 
+       initialBlockTimeOffset = BigInt(
+         getDifferenceInSeconds(new Date(forkBlockTimestamp), new Date())
 diff --git a/node_modules/hardhat/src/internal/hardhat-network/provider/utils/makeForkClient.ts b/node_modules/hardhat/src/internal/hardhat-network/provider/utils/makeForkClient.ts
 index 82d8d66..2ac4f28 100644
 --- a/node_modules/hardhat/src/internal/hardhat-network/provider/utils/makeForkClient.ts
