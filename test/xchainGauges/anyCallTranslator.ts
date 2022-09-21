@@ -23,12 +23,12 @@ import {
   setTimestamp,
 } from "../testUtils"
 import {
-  TEST_SIDE_CHAIN_ID,
   setupAnyCallTranslator,
   setupChildGaugeFactory,
   setupChildOracle,
   setupRootGaugeFactory,
   setupRootOracle,
+  TEST_SIDE_CHAIN_ID,
 } from "./utils"
 
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs"
@@ -422,7 +422,7 @@ describe("AnyCallTranslator", () => {
       }
 
       // receive((int128,int128,uint256),(int128,int128,uint256),address)
-      const callData = childOracle.interface.encodeFunctionData("recieve", [
+      const callData = childOracle.interface.encodeFunctionData("receive", [
         userPoint,
         globalPoint,
         users[0],
@@ -531,7 +531,7 @@ describe("AnyCallTranslator", () => {
       }
 
       // receive((int128,int128,uint256),(int128,int128,uint256),address)
-      const callData = childOracle.interface.encodeFunctionData("recieve", [
+      const callData = childOracle.interface.encodeFunctionData("receive", [
         userPoint,
         globalPoint,
         users[0],
@@ -546,7 +546,7 @@ describe("AnyCallTranslator", () => {
           ),
         ),
       )
-        .to.emit(childOracle, "Recieve")
+        .to.emit(childOracle, "Receive")
         .withArgs(
           Object.values(userPoint),
           Object.values(globalPoint),
