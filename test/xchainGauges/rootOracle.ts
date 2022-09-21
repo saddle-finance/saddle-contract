@@ -1,8 +1,10 @@
+import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs"
 import chai from "chai"
 import { Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
   AnyCallTranslator,
+  ChildOracle,
   MockAnyCall,
   RootGaugeFactory,
   RootOracle,
@@ -35,9 +37,11 @@ describe("RootOracle", () => {
   let rootOracle: RootOracle
   let veSDL: VotingEscrow
   let mockAnyCall: MockAnyCall
+  let userPoint: ChildOracle.PointStruct
+  let globalPoint: ChildOracle.PointStruct
 
   const WEEK = 86400 * 7
-  const TEST_ADDRESS = "0x00000000000000000000000000000000deadbeef"
+  const TEST_ADDRESS = "0x00000000000000000000000000000000DeaDBeef"
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -85,6 +89,25 @@ describe("RootOracle", () => {
         BIG_NUMBER_1E18.mul(10_000_000),
         (await getCurrentBlockTimestamp()) + MAX_LOCK_TIME,
       )
+
+      // Save user point of users[0] and global point
+      const returnData = await veSDL.callStatic.user_point_history(
+        users[0],
+        veSDL.callStatic.user_point_epoch(users[0]),
+      )
+      const returnDataGlobal = await veSDL.callStatic.point_history(
+        veSDL.callStatic.epoch(),
+      )
+      userPoint = {
+        bias: returnData.bias,
+        slope: returnData.slope,
+        ts: returnData.ts,
+      }
+      globalPoint = {
+        bias: returnDataGlobal.bias,
+        slope: returnDataGlobal.slope,
+        ts: returnDataGlobal.ts,
+      }
     },
   )
 
@@ -108,24 +131,6 @@ describe("RootOracle", () => {
 
   describe("push(uint256 _chainId)", () => {
     it(`Successfully requests a cross chain message`, async () => {
-      const returnData = await veSDL.callStatic.user_point_history(
-        users[0],
-        veSDL.callStatic.user_point_epoch(users[0]),
-      )
-      const returnDataGlobal = await veSDL.callStatic.point_history(
-        veSDL.callStatic.epoch(),
-      )
-      const userPoint = {
-        bias: returnData.bias,
-        slope: returnData.slope,
-        ts: returnData.ts,
-      }
-      const globalPoint = {
-        bias: returnDataGlobal.bias,
-        slope: returnDataGlobal.slope,
-        ts: returnDataGlobal.ts,
-      }
-
       const callData = (
         await ethers.getContractFactory("ChildOracle")
       ).interface.encodeFunctionData("recieve", [
@@ -157,24 +162,6 @@ describe("RootOracle", () => {
 
   describe("push(uint256 _chainId, address _user)", () => {
     it(`Successfully requests a cross chain message`, async () => {
-      const returnData = await veSDL.callStatic.user_point_history(
-        users[0],
-        veSDL.callStatic.user_point_epoch(users[0]),
-      )
-      const returnDataGlobal = await veSDL.callStatic.point_history(
-        veSDL.callStatic.epoch(),
-      )
-      const userPoint = {
-        bias: returnData.bias,
-        slope: returnData.slope,
-        ts: returnData.ts,
-      }
-      const globalPoint = {
-        bias: returnDataGlobal.bias,
-        slope: returnDataGlobal.slope,
-        ts: returnDataGlobal.ts,
-      }
-
       const callData = (
         await ethers.getContractFactory("ChildOracle")
       ).interface.encodeFunctionData("recieve", [
@@ -210,13 +197,13 @@ describe("RootOracle", () => {
     it(`Reverts when not called by the owner`, async () => {
       await expect(
         rootOracle.connect(signers[1]).setCallProxy(TEST_ADDRESS),
-      ).to.be.revertedWith("Ownable: caller is not the owner")
+      ).to.be.revertedWith("not owner")
     })
 
     it(`Successfully sets callProxy`, async () => {
       await expect(rootOracle.setCallProxy(TEST_ADDRESS))
         .to.emit(rootOracle, "UpdateCallProxy")
-        .withArgs(TEST_ADDRESS)
+        .withArgs(anyValue, TEST_ADDRESS)
       expect(await rootOracle.callProxy()).to.eq(TEST_ADDRESS)
     })
   })
