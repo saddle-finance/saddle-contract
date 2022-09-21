@@ -133,7 +133,7 @@ describe("RootOracle", () => {
     it(`Successfully requests a cross chain message`, async () => {
       const callData = (
         await ethers.getContractFactory("ChildOracle")
-      ).interface.encodeFunctionData("recieve", [
+      ).interface.encodeFunctionData("receive", [
         userPoint,
         globalPoint,
         users[0],
@@ -164,7 +164,7 @@ describe("RootOracle", () => {
     it(`Successfully requests a cross chain message`, async () => {
       const callData = (
         await ethers.getContractFactory("ChildOracle")
-      ).interface.encodeFunctionData("recieve", [
+      ).interface.encodeFunctionData("receive", [
         userPoint,
         globalPoint,
         users[0],

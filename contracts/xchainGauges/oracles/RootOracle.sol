@@ -111,7 +111,7 @@ contract RootOracle {
             abi.encodeWithSelector(
                 bytes4(
                     keccak256(
-                        "recieve((int128,int128,uint256),(int128,int128,uint256),address)"
+                        "receive((int128,int128,uint256),(int128,int128,uint256),address)"
                     )
                 ),
                 userPoint,

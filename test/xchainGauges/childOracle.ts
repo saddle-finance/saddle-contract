@@ -31,7 +31,7 @@ const { execute } = deployments
 
 const { expect } = chai
 
-describe("AnyCallTranslator", () => {
+describe("ChildOracle", () => {
   let signers: Array<Signer>
   let users: string[]
   let rootGaugeFactory: RootGaugeFactory
@@ -157,11 +157,8 @@ describe("AnyCallTranslator", () => {
   })
 
   describe("balanceOf", () => {
-    beforeEach(async () => {
-      await pushDummyUserPoints()
-    })
-
     it("Successfully calls balanceOf", async () => {
+      await pushDummyUserPoints()
       expect(await childOracle.balanceOf(users[0])).to.be.gt(0)
       expect(await childOracle.balanceOf(users[1])).to.be.gt(0)
       expect(await childOracle.balanceOf(users[2])).to.be.eq(0)
@@ -169,11 +166,8 @@ describe("AnyCallTranslator", () => {
   })
 
   describe("totalSupply", () => {
-    beforeEach(async () => {
-      await pushDummyUserPoints()
-    })
-
     it("Successfully calls totalSupply", async () => {
+      await pushDummyUserPoints()
       expect(await childOracle.totalSupply()).to.be.gt(0)
     })
   })
