@@ -4,15 +4,14 @@ import { deployMetaswapPools, PoolData } from "../deployUtils"
 
 // Metaswap Inputs
 const metaPools: PoolData[] = [
-  // pool will deploy since a deployement is not found
   {
-    poolName: "SaddleVesperFRAXBPMetaPool",
-    registryName: "veFRAX-FRAX",
+    poolName: "SaddleFRAXBPVesperFRAXMetaPool",
+    registryName: "vesperFRAXEarnPool-FRAXBP",
     basePoolName: "SaddleFRAXBPPool",
     tokenArgs: {
-      veFRAX: ["veFrax", "veFRAX", "18"],
+      vesperFRAXFRAXBP: ["vesperFRAXEarnPool", "veFRAX-FRAXBP", "18"],
     },
-    lpTokenSymbol: "saddleVEFRAXFRAXBP",
+    lpTokenSymbol: "saddleFRAXBP-VesperFRAXBP",
     initialA: 100,
     swapFee: 4e6,
     adminFee: 50e8,
