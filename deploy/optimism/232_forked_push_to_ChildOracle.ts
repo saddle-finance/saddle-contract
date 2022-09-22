@@ -76,10 +76,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   // Call anyExecute from impersonated executor account (owned by AnyCall)
-  // Trigger recieve for hardhat account[0]
+  // Trigger receive for hardhat account[0]
   await executorContract.connect(executorCreator).execute(
     translatorProxy.address,
-    formatRecieveCalldata(
+    formatReceiveCalldata(
       hre,
       childOracle,
       userPoint0,
@@ -91,10 +91,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     0, // Source nonce
   )
 
-  // Trigger recieve for hardhat account[1]
+  // Trigger receive for hardhat account[1]
   await executorContract.connect(executorCreator).execute(
     translatorProxy.address,
-    formatRecieveCalldata(
+    formatReceiveCalldata(
       hre,
       childOracle,
       userPoint1,
@@ -122,16 +122,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
 }
 
-// Helper function to format calldata for recieve function
-function formatRecieveCalldata(
+// Helper function to format calldata for receive function
+function formatReceiveCalldata(
   hre: HardhatRuntimeEnvironment,
   childOracle: ChildOracle,
   userPoint: ChildOracle.PointStruct,
   globalPoint: ChildOracle.PointStruct,
   userAddress: Address,
 ) {
-  // Format recieve() call data
-  const callData = childOracle.interface.encodeFunctionData("recieve", [
+  // Format receive() call data
+  const callData = childOracle.interface.encodeFunctionData("receive", [
     // User point
     userPoint,
     // Global point
