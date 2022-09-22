@@ -13,8 +13,6 @@ import {
   setEtherBalance,
 } from "../testUtils"
 
-const { execute } = deployments
-
 const { expect } = chai
 
 describe("ArbitrumBridger", () => {
