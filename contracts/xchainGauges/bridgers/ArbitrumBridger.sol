@@ -39,7 +39,7 @@ contract ArbitrumBridger is Ownable {
     using SafeERC20 for IERC20;
 
     // consts
-    address private SDL;
+    address private immutable SDL;
     // Arbitrum: L1 ERC20 Gateway
     address private constant ARB_GATEWAY =
         0xa3A7B6F88361F48403514059F1F16C8E78d60EeC;
@@ -62,7 +62,10 @@ contract ArbitrumBridger is Ownable {
         address _SDL
     ) {
         SDL = _SDL;
-        // construct submission data
+        // Construct submission data
+        // uint128 gasLimit
+        // uint128 gasPrice
+        // uint256 submissionData = (gasLimit << 128) + gasPrice
         require(_gasLimit < type(uint128).max && _gasPrice < type(uint128).max);
         submissionData = (_gasLimit << 128) + _gasPrice;
         emit UpdateSubmissionData(
@@ -70,9 +73,8 @@ contract ArbitrumBridger is Ownable {
             [_gasLimit, _gasPrice]
         );
 
-        // approve token transfer to gateway
-        IERC20 sdlToken = IERC20(_SDL);
-        sdlToken.safeApprove(ARB_GATEWAY, type(uint256).max);
+        // Approve SDL to be used by the associated arbitrum gateway contract
+        IERC20(_SDL).safeApprove(ARB_GATEWAY, type(uint256).max);
         approved[_SDL] = true;
     }
 
@@ -81,8 +83,10 @@ contract ArbitrumBridger is Ownable {
         address _to,
         uint256 _amount
     ) external payable {
+        // Transfer tokens from the caller to this
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
+        // If the token is not SDL, approve the token transfer to appropriate gateway
         if (_token != SDL && !approved[_token]) {
             IERC20(_token).safeApprove(
                 IGatewayRouter(ARB_GATEWAY_ROUTER).getGateWay(_token),
@@ -91,21 +95,27 @@ contract ArbitrumBridger is Ownable {
             approved[_token] = true;
         }
 
-        uint256 gasLimit = submissionData >> 128;
-        uint256 gasPrice = submissionData & type(uint128).max;
-        uint256 outboundCalldata;
-        (, outboundCalldata) = IGatewayRouter(ARB_GATEWAY_ROUTER)
+        // Unpack submission data
+        uint256 data = submissionData;
+        uint256 gasLimit = data >> 128;
+        uint256 gasPrice = data & type(uint128).max;
+
+        // Calculate submission cost based on current base fee
+        (, uint256 calldataSize) = IGatewayRouter(ARB_GATEWAY_ROUTER)
             .getOutboundCalldata(_token, address(this), _to, _amount, "");
         uint256 submissionCost = Inbox(INBOX).calculateRetryableSubmissionFee(
-            outboundCalldata + 256,
+            calldataSize + 256,
             block.basefee
         );
 
+        // Use unpacked submission data and calculated submission cost to calculate
+        // value to send with the outbound transfer
+        address _owner = owner();
         IGatewayRouter(ARB_GATEWAY_ROUTER).outboundTransferCustomRefund{
             value: gasLimit * gasPrice + submissionCost
         }(
             _token,
-            owner(),
+            _owner,
             _to,
             _amount,
             gasLimit,
@@ -115,7 +125,7 @@ contract ArbitrumBridger is Ownable {
 
         // Send any remaining ETH to the owner
         if (address(this).balance != 0) {
-            payable(owner()).transfer(address(this).balance);
+            payable(_owner).transfer(address(this).balance);
         }
     }
 
@@ -124,15 +134,15 @@ contract ArbitrumBridger is Ownable {
     }
 
     function cost(uint256 basefee) public view returns (uint256) {
-        // gasLimit * gasPrice + maxSubmissionCost
-        uint256 outboundCalldata;
-        (, outboundCalldata) = IGatewayRouter(ARB_GATEWAY_ROUTER)
+        // Calculate submission cost based on current base fee
+        (, uint256 calldataSize) = IGatewayRouter(ARB_GATEWAY_ROUTER)
             .getOutboundCalldata(SDL, address(this), msg.sender, 10**36, "");
         uint256 submissionCost = Inbox(INBOX).calculateRetryableSubmissionFee(
-            outboundCalldata + 256,
+            calldataSize + 256,
             basefee
         );
         uint256 data = submissionData;
+        // gasLimit * gasPrice + maxSubmissionCost
         return ((data >> 128) * (data & type(uint128).max) + submissionCost);
     }
 
