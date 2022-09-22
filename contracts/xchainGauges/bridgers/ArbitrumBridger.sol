@@ -129,6 +129,18 @@ contract ArbitrumBridger is Ownable {
         }
     }
 
+    function check(address) external pure returns (bool) {
+        return true;
+    }
+
+    function gasLimit() external view returns (uint256) {
+        return submissionData >> 128;
+    }
+
+    function gasPrice() external view returns (uint256) {
+        return submissionData & type(uint128).max;
+    }
+
     function cost() external view returns (uint256) {
         return cost(block.basefee);
     }

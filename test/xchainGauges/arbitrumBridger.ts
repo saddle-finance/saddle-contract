@@ -23,9 +23,8 @@ describe("ArbitrumBridger", () => {
   let arbitrumBridger: ArbitrumBridger
   let sdl: SDL
 
-  const gasLimit = 1000000
-  const gasPrice = 990000000
-  const TEST_ADDRESS = "0x00000000000000000000000000000000DeaDBeef"
+  const GAS_LIMIT = 1000000
+  const GAS_PRICE = 990000000
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -58,8 +57,8 @@ describe("ArbitrumBridger", () => {
 
       const bridgerFactory = await ethers.getContractFactory("ArbitrumBridger")
       arbitrumBridger = (await bridgerFactory.deploy(
-        gasLimit,
-        gasPrice,
+        GAS_LIMIT,
+        GAS_PRICE,
         sdl.address,
       )) as ArbitrumBridger
     },
@@ -73,6 +72,24 @@ describe("ArbitrumBridger", () => {
     await network.provider.request({
       method: "hardhat_reset",
       params: [],
+    })
+  })
+
+  describe("check", () => {
+    it(`Returns true`, async () => {
+      expect(await arbitrumBridger.check(users[0])).to.eq(true)
+    })
+  })
+
+  describe("gasLimit", () => {
+    it(`Returns expected gas limit`, async () => {
+      expect(await arbitrumBridger.gasLimit()).to.eq(GAS_LIMIT)
+    })
+  })
+
+  describe("gasPrice", () => {
+    it(`Returns expected gas price`, async () => {
+      expect(await arbitrumBridger.gasPrice()).to.eq(GAS_PRICE)
     })
   })
 
@@ -98,7 +115,7 @@ describe("ArbitrumBridger", () => {
       const newGasPrice = 990000000
       await expect(arbitrumBridger.setSubmissionData(newGasLimit, newGasPrice))
         .to.emit(arbitrumBridger, "UpdateSubmissionData")
-        .withArgs([gasLimit, gasPrice], [newGasLimit, newGasPrice])
+        .withArgs([GAS_LIMIT, GAS_PRICE], [newGasLimit, newGasPrice])
     })
 
     it(`Reverts when called by non-owner`, async () => {
