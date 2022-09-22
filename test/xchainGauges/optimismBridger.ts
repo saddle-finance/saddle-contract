@@ -89,7 +89,7 @@ describe("OptimismBridger", () => {
 
   describe("check", () => {
     it(`Returns true`, async () => {
-      expect(await optimismBridger.check()).to.eq(true)
+      expect(await optimismBridger.check(users[0])).to.eq(true)
     })
   })
 

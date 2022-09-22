@@ -80,7 +80,7 @@ contract OptimismBridger is Ownable {
         return 0;
     }
 
-    function check() external pure returns (bool) {
+    function check(address) external pure returns (bool) {
         return true;
     }
 
