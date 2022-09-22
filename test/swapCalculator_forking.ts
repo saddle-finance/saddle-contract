@@ -67,6 +67,13 @@ describe("SwapCalculator (D4 pool on forked mainnet) [ @skip-on-coverage ]", asy
     await setupTest()
   })
 
+  after(async () =>
+    network.provider.request({
+      method: "hardhat_reset",
+      params: [],
+    }),
+  )
+
   describe("calculateSwapOutput", () => {
     it("Successfully calculates exact outputs using existing pool address", async () => {
       const expectedOutput = await swapCalculator.calculateSwapOutput(
