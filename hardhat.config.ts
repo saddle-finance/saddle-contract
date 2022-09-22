@@ -18,6 +18,10 @@ const config: HardhatUserConfig = {
     hardhat: {
       deploy: ["./deploy/hardhat/"],
       autoImpersonate: true,
+      companionNetworks: {
+        mainnet: "mainnet",
+        optimism_mainnet: "optimism_mainnet",
+      },
     },
     mainnet: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
@@ -42,7 +46,7 @@ const config: HardhatUserConfig = {
       url:
         ALCHEMY_BASE_URL[CHAIN_ID.ARBITRUM_TESTNET] +
         process.env.ALCHEMY_API_KEY,
-      chainId: parseInt(CHAIN_ID.ROPSTEN),
+      chainId: parseInt(CHAIN_ID.ARBITRUM_TESTNET),
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
@@ -252,20 +256,6 @@ const config: HardhatUserConfig = {
   spdxLicenseIdentifier: {
     overwrite: false,
     runOnCompile: true,
-  },
-}
-
-// Add all non-hardhat networks as companion networks on hardhat network
-const companionNetworks: { [name: string]: string } = {}
-for (const network in config.networks) {
-  network !== "hardhat"
-  companionNetworks[network] = network
-}
-config.networks = {
-  ...config.networks,
-  hardhat: {
-    ...config.networks?.hardhat,
-    companionNetworks,
   },
 }
 
