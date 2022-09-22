@@ -26,7 +26,7 @@ contract ChildOracle {
     // events
     event TransferOwnership(address oldOwner, address newOwner);
     event UpdateCallProxy(address oldCallProxy, address newCallProxy);
-    event Recieve(Point userPoint, Point globalPoint, address user);
+    event Receive(Point userPoint, Point globalPoint, address user);
 
     constructor(address _callProxy) {
         callProxy = _callProxy;
@@ -57,7 +57,7 @@ contract ChildOracle {
         return (uint256(uint128(lastPoint.bias)));
     }
 
-    function recieve(
+    function receive(
         Point memory _userPoint,
         Point memory _globalPoint,
         address _user
@@ -73,7 +73,7 @@ contract ChildOracle {
             globalPoint = _globalPoint;
         }
 
-        emit Recieve(_userPoint, _globalPoint, _user);
+        emit Receive(_userPoint, _globalPoint, _user);
     }
 
     function setCallProxy(address _newCallProxy) external {
