@@ -1,6 +1,7 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import path from "path"
+import { getWithName } from "../../test/testUtils"
 
 import { CHAIN_ID } from "../../utils/network"
 
@@ -41,11 +42,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   })
 
   // Get Optimism SDL address
-  const sdlAddressOnOpt = await hre.companionNetworks[
-    "optimism_mainnet"
-  ].deployments
-    .get("SDL")
-    .then((sdl) => sdl.address)
+  const sdlAddressOnOpt = (await getWithName("SDL", "optimism_mainnet")).address
 
   await deploy("OptimismBridger", {
     ...deployOptions,

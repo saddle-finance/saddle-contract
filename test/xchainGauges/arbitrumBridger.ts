@@ -1,12 +1,13 @@
 import { setNextBlockBaseFeePerGas } from "@nomicfoundation/hardhat-network-helpers"
 import chai from "chai"
 import { Signer } from "ethers"
-import { companionNetworks, deployments, network } from "hardhat"
+import { deployments, network } from "hardhat"
 import { ArbitrumBridger, SDL } from "../../build/typechain"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
 import {
   BIG_NUMBER_1E18,
+  getWithName,
   impersonateAccount,
   MAX_UINT256,
   setEtherBalance,
@@ -50,7 +51,7 @@ describe("ArbitrumBridger", () => {
       sdl = await ethers.getContractAt(
         "SDL",
         (
-          await companionNetworks["mainnet"].deployments.get("SDL")
+          await getWithName("SDL", "mainnet")
         ).address,
       )
 
