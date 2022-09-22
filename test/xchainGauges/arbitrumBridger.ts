@@ -1,7 +1,7 @@
 import { setNextBlockBaseFeePerGas } from "@nomicfoundation/hardhat-network-helpers"
 import chai from "chai"
 import { Signer } from "ethers"
-import { deployments, network } from "hardhat"
+import { deployments, ethers, network } from "hardhat"
 import { ArbitrumBridger, SDL } from "../../build/typechain"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
@@ -37,6 +37,7 @@ describe("ArbitrumBridger", () => {
               jsonRpcUrl:
                 ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] +
                 process.env.ALCHEMY_API_KEY,
+              blockNumber: 15542718,
               ignoreUnknownTxType: true,
             },
           },
@@ -99,43 +100,18 @@ describe("ArbitrumBridger", () => {
         .to.emit(arbitrumBridger, "UpdateSubmissionData")
         .withArgs([gasLimit, gasPrice], [newGasLimit, newGasPrice])
     })
-  })
 
-  describe("commitTransferOwnership", () => {
-    it(`Reverts when not called by the owner`, async () => {
+    it(`Reverts when called by non-owner`, async () => {
       await expect(
         arbitrumBridger
           .connect(signers[1])
-          .commitTransferOwnership(TEST_ADDRESS),
-      ).to.be.reverted
-    })
-
-    it(`Successfully sets futureOwner`, async () => {
-      await arbitrumBridger.commitTransferOwnership(TEST_ADDRESS)
-      expect(await arbitrumBridger.futureOwner()).to.eq(TEST_ADDRESS)
-    })
-  })
-
-  describe("acceptTransferOwnership", () => {
-    it(`Reverts when not called by the futureOwner`, async () => {
-      await expect(
-        arbitrumBridger.connect(signers[1]).acceptTransferOwnership(),
-      ).to.be.reverted
-    })
-
-    it(`Successfully transfers ownership to futureOwner`, async () => {
-      await arbitrumBridger.commitTransferOwnership(users[10])
-      await expect(
-        arbitrumBridger.connect(signers[10]).acceptTransferOwnership(),
-      )
-        .to.emit(arbitrumBridger, "TransferOwnership")
-        .withArgs(users[0], users[10])
-      expect(await arbitrumBridger.owner()).to.eq(users[10])
+          .setSubmissionData(2000000, 990000000),
+      ).to.be.revertedWith("Ownable: caller is not the owner")
     })
   })
 
   describe("bridge", () => {
-    it(`Successfully Sends SDL to Arbitrum Router`, async () => {
+    beforeEach(async () => {
       // Give some SDL to users[0]
       const sdlHolder = await impersonateAccount(
         MULTISIG_ADDRESSES[CHAIN_ID.MAINNET],
@@ -147,11 +123,13 @@ describe("ArbitrumBridger", () => {
       await sdl
         .connect(sdlHolder)
         .transfer(users[0], BIG_NUMBER_1E18.mul(10000))
+    })
 
+    it(`Successfully Sends SDL to Arbitrum Router`, async () => {
       // Approve bridger to use users[0]'s SDL
       await sdl.approve(arbitrumBridger.address, MAX_UINT256)
       // Set base fee for consistent test result
-      await setNextBlockBaseFeePerGas(10653818828)
+      await setNextBlockBaseFeePerGas(10)
       // Expect the bridge call to successfully transfer SDL token to the router
       await expect(
         arbitrumBridger.bridge(
@@ -159,43 +137,36 @@ describe("ArbitrumBridger", () => {
           users[0],
           BIG_NUMBER_1E18.mul(10000),
           {
-            value: await arbitrumBridger["cost(uint256)"](10653818828),
+            value: await arbitrumBridger["cost(uint256)"](10),
+            gasPrice: 10,
           },
         ),
       ).to.changeTokenBalance(sdl, users[0], BIG_NUMBER_1E18.mul(-10000))
     })
-  })
 
-  describe("commitTransferOwnership", () => {
-    it(`Reverts when not called by the owner`, async () => {
+    it(`Successfully Sends SDL to Arbitrum Router with excess gas`, async () => {
+      // Approve bridger to use users[0]'s SDL
+      await sdl.approve(arbitrumBridger.address, MAX_UINT256)
+      // Set base fee for consistent test result
+      await setNextBlockBaseFeePerGas(10)
+      // Expect the bridge call to successfully transfer SDL token to the router
+      // Extra 10 ETH is sent to the router but is sent back to the owner
       await expect(
-        arbitrumBridger
-          .connect(signers[1])
-          .commitTransferOwnership(TEST_ADDRESS),
-      ).to.be.reverted
-    })
-
-    it(`Successfully sets futureOwner`, async () => {
-      await arbitrumBridger.commitTransferOwnership(TEST_ADDRESS)
-      expect(await arbitrumBridger.futureOwner()).to.eq(TEST_ADDRESS)
-    })
-  })
-
-  describe("acceptTransferOwnership", () => {
-    it(`Reverts when not called by the futureOwner`, async () => {
-      await expect(
-        arbitrumBridger.connect(signers[1]).acceptTransferOwnership(),
-      ).to.be.reverted
-    })
-
-    it(`Successfully transfers ownership to futureOwner`, async () => {
-      await arbitrumBridger.commitTransferOwnership(users[10])
-      await expect(
-        arbitrumBridger.connect(signers[10]).acceptTransferOwnership(),
+        arbitrumBridger.bridge(
+          sdl.address,
+          users[0],
+          BIG_NUMBER_1E18.mul(10000),
+          {
+            value: (
+              await arbitrumBridger["cost(uint256)"](10)
+            ).add(ethers.utils.parseEther("10")),
+            gasPrice: 10,
+          },
+        ),
       )
-        .to.emit(arbitrumBridger, "TransferOwnership")
-        .withArgs(users[0], users[10])
-      expect(await arbitrumBridger.owner()).to.eq(users[10])
+        .to.changeTokenBalance(sdl, users[0], BIG_NUMBER_1E18.mul(-10000))
+        .and.changeEtherBalance(users[0], "-990000000073760")
+      // expect the balance only changed by 0.00099 ETH
     })
   })
 })

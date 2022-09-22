@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-4.4.0/access/Ownable.sol";
 
 interface IGatewayRouter {
     function getGateWay(address _token) external view returns (address);
@@ -34,7 +35,7 @@ interface Inbox {
     ) external view returns (uint256);
 }
 
-contract ArbitrumBridger {
+contract ArbitrumBridger is Ownable {
     using SafeERC20 for IERC20;
 
     // consts
@@ -49,10 +50,7 @@ contract ArbitrumBridger {
     // vars
     uint256 private submissionData;
     mapping(address => bool) public approved;
-    address public owner;
-    address public futureOwner;
 
-    event TransferOwnership(address oldOwner, address newOwner);
     event UpdateSubmissionData(
         uint256[2] oldSubmissionData,
         uint256[2] newSubmissionData
@@ -76,10 +74,6 @@ contract ArbitrumBridger {
         IERC20 sdlToken = IERC20(_SDL);
         sdlToken.safeApprove(ARB_GATEWAY, type(uint256).max);
         approved[_SDL] = true;
-
-        // update owner
-        owner = msg.sender;
-        emit TransferOwnership(address(0), msg.sender);
     }
 
     function bridge(
@@ -111,7 +105,7 @@ contract ArbitrumBridger {
             value: gasLimit * gasPrice + submissionCost
         }(
             _token,
-            owner,
+            owner(),
             _to,
             _amount,
             gasLimit,
@@ -121,7 +115,7 @@ contract ArbitrumBridger {
 
         // Send any remaining ETH to the owner
         if (address(this).balance != 0) {
-            payable(owner).transfer(address(this).balance);
+            payable(owner()).transfer(address(this).balance);
         }
     }
 
@@ -142,8 +136,10 @@ contract ArbitrumBridger {
         return ((data >> 128) * (data & type(uint128).max) + submissionCost);
     }
 
-    function setSubmissionData(uint256 _gasLimit, uint256 _gasPrice) external {
-        require(msg.sender == owner, "error msg");
+    function setSubmissionData(uint256 _gasLimit, uint256 _gasPrice)
+        external
+        onlyOwner
+    {
         // construct submission data
         require(_gasLimit < type(uint128).max && _gasPrice < type(uint128).max);
         uint256 data = submissionData;
@@ -154,14 +150,5 @@ contract ArbitrumBridger {
         );
     }
 
-    function commitTransferOwnership(address _futureOwner) external {
-        require(msg.sender == owner);
-        futureOwner = _futureOwner;
-    }
-
-    function acceptTransferOwnership() external {
-        require(msg.sender == futureOwner);
-        emit TransferOwnership(owner, msg.sender);
-        owner = msg.sender;
-    }
+    receive() external payable {}
 }
