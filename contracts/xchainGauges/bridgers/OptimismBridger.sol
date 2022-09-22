@@ -29,7 +29,6 @@ contract OptimismBridger is Ownable {
     uint32 private gasLimit;
     mapping(address => address) public l2AddrMap;
 
-    event TransferOwnership(address oldOwner, address newOwner);
     event UpdateGasLimit(uint32 oldGasLimit, uint32 newGasLimit);
     event UpdateTokenMapping(
         address indexed l1Token,
@@ -79,6 +78,10 @@ contract OptimismBridger is Ownable {
 
     function cost() external pure returns (uint256) {
         return 0;
+    }
+
+    function check() external pure returns (bool) {
+        return true;
     }
 
     function setGasLimit(uint32 _gasLimit) external onlyOwner {

@@ -83,9 +83,13 @@ describe("OptimismBridger", () => {
 
   describe("cost", () => {
     it(`Returns 0`, async () => {
-      // Provide base fee for hardhat workaround
-      // https://github.com/NomicFoundation/hardhat/issues/1688
       expect(await optimismBridger.cost()).to.eq(0)
+    })
+  })
+
+  describe("check", () => {
+    it(`Returns true`, async () => {
+      expect(await optimismBridger.check()).to.eq(true)
     })
   })
 
