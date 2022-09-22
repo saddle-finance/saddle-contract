@@ -18,15 +18,6 @@ interface IGatewayRouter {
         bytes calldata _data
     ) external payable;
 
-    function outboundTransfer(
-        address _token,
-        address _to,
-        uint256 _amount,
-        uint256 _maxGas,
-        uint256 _gasPriceBid,
-        bytes calldata _data // _max_submission_cost, _extra_data
-    ) external payable;
-
     function getOutboundCalldata(
         address _token,
         address _from,
@@ -44,6 +35,8 @@ interface Inbox {
 }
 
 contract ArbitrumBridger {
+    using SafeERC20 for IERC20;
+
     // consts
     address private SDL;
     // Arbitrum: L1 ERC20 Gateway
@@ -52,19 +45,14 @@ contract ArbitrumBridger {
     address private constant ARB_GATEWAY_ROUTER =
         0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef;
     address private constant INBOX = 0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f;
+
     // vars
     uint256 private submissionData;
-
     mapping(address => bool) public approved;
-
-    // owner
     address public owner;
     address public futureOwner;
 
-    using SafeERC20 for IERC20;
-
     event TransferOwnership(address oldOwner, address newOwner);
-
     event UpdateSubmissionData(
         uint256[2] oldSubmissionData,
         uint256[2] newSubmissionData
@@ -146,13 +134,10 @@ contract ArbitrumBridger {
         uint256 outboundCalldata;
         (, outboundCalldata) = IGatewayRouter(ARB_GATEWAY_ROUTER)
             .getOutboundCalldata(SDL, address(this), msg.sender, 10**36, "");
-        console.log("outboundCalldata %s", outboundCalldata);
-        console.log("blockfee %s", basefee);
         uint256 submissionCost = Inbox(INBOX).calculateRetryableSubmissionFee(
             outboundCalldata + 256,
             basefee
         );
-        console.log(submissionCost);
         uint256 data = submissionData;
         return ((data >> 128) * (data & type(uint128).max) + submissionCost);
     }
