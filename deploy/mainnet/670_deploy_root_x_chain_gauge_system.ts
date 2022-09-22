@@ -1,5 +1,6 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
+import path from "path"
 import { AnyCallTranslator } from "../../build/typechain"
 import {
   BIG_NUMBER_1E18,
@@ -8,12 +9,11 @@ import {
   ZERO_ADDRESS,
 } from "../../test/testUtils"
 import { ANYCALL_ADDRESS, PROD_DEPLOYER_ADDRESS } from "../../utils/accounts"
-import path from "path"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
   const { get, execute, deploy, log } = deployments
-  const { deployer, libraryDeployer } = await getNamedAccounts()
+  const { deployer } = await getNamedAccounts()
 
   if (process.env.HARDHAT_DEPLOY_FORK == null) {
     log(`Not running on forked mode, skipping ${path.basename(__filename)}`)
@@ -22,7 +22,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // In prod, update these values
   const owner = deployer
-  const crossChainDeployer = libraryDeployer
+  const crossChainDeployer = deployer
 
   const xChainFactoryDeployOptions = {
     log: true,
