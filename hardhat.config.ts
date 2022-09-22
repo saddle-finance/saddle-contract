@@ -206,6 +206,7 @@ const config: HardhatUserConfig = {
   gasReporter: {
     currency: "USD",
     gasPrice: 21,
+    enabled: process.env.REPORT_GAS ? true : false,
   },
   mocha: {
     timeout: 200000,
