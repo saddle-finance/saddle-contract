@@ -1,13 +1,16 @@
 import { BytesLike } from "@ethersproject/bytes"
 import { Contract } from "@ethersproject/contracts"
+import * as helpers from "@nomicfoundation/hardhat-network-helpers"
+import chalk from "chalk"
 import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
+import { readFile } from "fs/promises"
 import { ethers } from "hardhat"
 import { DeploymentsExtension } from "hardhat-deploy/dist/types"
+import { Deployment } from "hardhat-deploy/types"
 import { Artifact } from "hardhat/types"
 import { IERC20, Swap } from "../build/typechain/"
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
 import { CHAIN_ID } from "../utils/network"
-import * as helpers from "@nomicfoundation/hardhat-network-helpers"
 
 export const MAX_UINT256 = ethers.constants.MaxUint256
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -198,4 +201,43 @@ export async function asyncForEach<T>(
 
 export function convertGaugeNameToSalt(name: string): string {
   return ethers.utils.keccak256(ethers.utils.formatBytes32String(name))
+}
+
+/**
+ * Try to find the deployment json with the given deployment name and return the
+ * deployment json object. Returns null on error.
+ * @param deploymentName Name of the deployment to look up
+ * @param networkName Name of the network the deployment belongs to
+ * @example
+ * getWithNameOrNull("SDL", "mainnet")
+ */
+export async function getWithNameOrNull(
+  deploymentName: string,
+  networkName: string,
+): Promise<Deployment | null> {
+  try {
+    return getWithName(deploymentName, networkName)
+  } catch (e) {
+    console.log(chalk.yellow(e))
+    return null
+  }
+}
+
+/**
+ * Try to find the deployment json with the given deployment name and return the
+ * deployment json object. Throws on error.
+ * @param deploymentName Name of the deployment to look up
+ * @param networkName Name of the network the deployment belongs to
+ * @example
+ * getWithName("SDL", "mainnet")
+ */
+export async function getWithName(
+  deploymentName: string,
+  networkName: string,
+): Promise<Deployment> {
+  const file = await readFile(
+    `deployments/${networkName}/${deploymentName}.json`,
+    "utf8",
+  )
+  return JSON.parse(file)
 }
