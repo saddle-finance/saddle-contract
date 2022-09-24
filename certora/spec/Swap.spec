@@ -118,12 +118,14 @@ hook Sstore lptoken._balances[KEY address user] uint256 balance (uint256 old_bal
 //                               Invariants                               //
 ////////////////////////////////////////////////////////////////////////////
 
+/*
 rule sanity(method f) {
 	env e;
 	calldataarg args;
 	f(e,args);
 	assert false;
 }
+*/
 
 
 
@@ -150,6 +152,9 @@ invariant uninitializedImpliesLPTotalSupplyZero()
     //!initialized => getTotalSupply@withrevert()
 
 
+/*
+    Uninitialized contract state implies all function calls revert
+*/
 rule uninitializedImpliesRevert(method f) filtered {
     f -> f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
   }  {
@@ -177,12 +182,13 @@ invariant solvency()
 invariant zeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
     getTokenBalance(tokenA) == 0 => getTokenBalance(tokenX) == 0
 
-/*
+/* Tautology from above
     If balance of one underlying token is non-zero, the balance of all other
     underlying tokens must also be non-zero
-*/
+
 invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
     getTokenBalance(tokenA) > 0 => getTokenBalance(tokenX) > 0
+*/
 
 /* (P)
     Two underlying tokens can never have the same address
@@ -194,6 +200,40 @@ invariant underlyingTokensDifferent()
             require tokenA != tokenX;
         }
     }*/
+
+/*
+    Two underlying tokens can never have the same address (unintialized)
+*/
+rule underlyingTokensDifferentUninitialized(method f) filtered {
+    f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
+}{
+    uint8 tokenAIndex;
+    uint8 tokenXIndex;
+
+    calldataarg args;
+    env e;
+    f(e,args);
+
+    assert (tokenA != tokenX) => (getToken(tokenA) != getToken(tokenX));
+}
+
+rule underlyingTokensDifferentInitialized(method f) {
+    uint8 tokenAIndex;
+    uint8 tokenXIndex;
+
+    require (tokenA != tokenX) => (getToken(tokenA) != getToken(tokenX));
+
+    calldataarg args;
+    env e;
+    f(e,args);
+
+    assert (tokenA != tokenX) => (getToken(tokenA) != getToken(tokenX));
+}
+
+/*
+    Two underlying tokens can never have the same address (unintialized)
+*/
+// TODO
 
 /* 
     If totalSupply of LP token is zero, the balance of all other 
