@@ -191,7 +191,7 @@ invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
     Two underlying tokens can never have the same address
 */
 invariant underlyingTokensDifferent()
-    forall uint8 tokenA. forall uint8 tokenX. (tokenA != tokenX) => (getToken(tokenA) != getToken(tokenX))
+    forall uint8 tokenAIndex. forall uint8 tokenBIndex. (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex))
     /*{
         preserved{
             require tokenA != tokenX;
