@@ -176,8 +176,8 @@ invariant solvency()
     If balance of one underlying token is zero, the balance of all other 
     underlying tokens must also be zero
 */
-invariant zeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
-    getTokenBalance(tokenA) == 0 => getTokenBalance(tokenX) == 0
+invariant zeroTokenAZeroTokenB(uint8 tokenAIndex, uint8 tokenBIndex)
+    getTokenBalance(tokenAIndex) == 0 => getTokenBalance(tokenBIndex) == 0
 
 /* Tautology from above
     If balance of one underlying token is non-zero, the balance of all other
