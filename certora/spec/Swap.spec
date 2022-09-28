@@ -205,26 +205,26 @@ rule underlyingTokensDifferentUninitialized(method f) filtered {
     f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
 }{
     uint8 tokenAIndex;
-    uint8 tokenXIndex;
+    uint8 tokenBIndex;
 
     calldataarg args;
     env e;
     f(e,args);
 
-    assert (tokenA != tokenX) => (getToken(tokenA) != getToken(tokenX));
+    assert (tokenAIndex != tokenBIndex) => (getToken(tokenBIndex) != getToken(tokenBIndex));
 }
 
 rule underlyingTokensDifferentInitialized(method f) {
     uint8 tokenAIndex;
-    uint8 tokenXIndex;
+    uint8 tokenBIndex;
 
-    require (tokenA != tokenX) => (getToken(tokenA) != getToken(tokenX));
+    require (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
 
     calldataarg args;
     env e;
     f(e,args);
 
-    assert (tokenA != tokenX) => (getToken(tokenA) != getToken(tokenX));
+    assert (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
 }
 
 /*
