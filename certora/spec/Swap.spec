@@ -102,15 +102,14 @@ hook Sload bool init _initializing STORAGE {
     require initializing == init;
 }
 
-
 // assume sum of all balances initially equals 0
-ghost sum_all_users_LP() returns uint256 {
-    init_state axiom sum_all_users_LP() == 0;
+ghost mathint sum_all_users_LP {
+    init_state axiom sum_all_users_BPT == 0;
 }
 
-// everytime `balances` is called, update `sum_all_users_LP` by adding the new value and subtracting the old value
-hook Sstore lptoken._balances[KEY address user] uint256 balance (uint256 old_balance) STORAGE {
-  havoc sum_all_users_LP assuming sum_all_users_LP@new() == sum_all_users_LP@old() + balance - old_balance;
+/// @dev A hook that keeps `sum_all_users_BPT` up to date with the `_balances` mapping.
+hook Sstore _balances[KEY address user] uint256 balance (uint256 old_balance) STORAGE {
+    sum_all_users_LP = sum_all_users_LP + balance - old_balance;
 }
 
 
@@ -126,8 +125,6 @@ rule sanity(method f) {
 	assert false;
 }
 */
-
-
 
 /* P
     cant reinit (fails due to havoc)
