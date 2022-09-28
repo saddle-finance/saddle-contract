@@ -1,5 +1,5 @@
 import "../helpers/erc20.spec"
-using LPToken as lptoken
+using LPToken as lpToken
 
 ////////////////////////////////////////////////////////////////////////////
 //                                Methods                                 //
@@ -104,11 +104,11 @@ hook Sload bool init _initializing STORAGE {
 
 // assume sum of all balances initially equals 0
 ghost mathint sum_all_users_LP {
-    init_state axiom sum_all_users_BPT == 0;
+    init_state axiom sum_all_users_LP == 0;
 }
 
-/// @dev A hook that keeps `sum_all_users_BPT` up to date with the `_balances` mapping.
-hook Sstore _balances[KEY address user] uint256 balance (uint256 old_balance) STORAGE {
+/// @dev A hook that keeps `sum_all_users_LP` up to date with the `_balances` mapping.
+hook Sstore lpToken._balances[KEY address user] uint256 balance (uint256 old_balance) STORAGE {
     sum_all_users_LP = sum_all_users_LP + balance - old_balance;
 }
 
@@ -169,7 +169,7 @@ rule uninitializedImpliesRevert(method f) filtered {
     Sum of all users' LP balance must be less than or equal to LP's `totalSupply`
 */
 invariant solvency()
-    getTotalSupply() == sum_all_users_LP()
+    getTotalSupply() == sum_all_users_LP
 
 
 /* 
