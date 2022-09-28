@@ -7,10 +7,10 @@ using LPToken as lpToken
 
 methods {
     // newly declared function to help with summarization
-    getDApprox(uint256 xp1, uint256 xp2) returns(uint256) => newGetD(xp1,xp2);
+    //getDApprox(uint256 xp1, uint256 xp2) returns(uint256) => newGetD(xp1,xp2);
 
     // math functions summarized
-	//getD(uint256[], uint256) returns (uint256) => NONDET
+	getD(uint256[], uint256) returns (uint256) => NONDET
     //https://vaas-stg.certora.com/output/93493/d44d3ec77b888ed8ffa8/?anonymousKey=68714450e71c07066b886229e03adac1b7248380
 
 	//getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
@@ -148,13 +148,29 @@ invariant uninitializedImpliesLPTotalSupplyZero()
     !initialized => getTotalSupply() == 0
     //!initialized => getTotalSupply@withrevert()
 
+/* 
+    Uninitialized contract state implies all variables are 0
+*/
+rule uninitializedImpliesZeroValue(method f) filtered {
+    f -> f.isView
+} { 
+    require !initialized;
+    env e; 
+    calldataarg args;
+
+    // TODO add CVL function that calls all interesting getters and returns output
+
+    assert 0 == 1;
+}
+
 
 /*
     Uninitialized contract state implies all function calls revert
 */
 rule uninitializedImpliesRevert(method f) filtered {
     f -> f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
-  }  {
+    && !f.isView
+}  {
     require !initialized;
     env e; 
     calldataarg args;
@@ -198,7 +214,7 @@ invariant underlyingTokensDifferent()
         }
     }*/
 
-/*
+/* P
     Two underlying tokens can never have the same address (unintialized)
 */
 rule underlyingTokensDifferentUninitialized(method f) filtered {
@@ -211,8 +227,12 @@ rule underlyingTokensDifferentUninitialized(method f) filtered {
     env e;
     f(e,args);
 
-    assert (tokenAIndex != tokenBIndex) => (getToken(tokenBIndex) != getToken(tokenBIndex));
+    assert (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
 }
+
+/* 
+    Two underlying tokens can never have the same address (intialized)
+*/
 
 rule underlyingTokensDifferentInitialized(method f) {
     uint8 tokenAIndex;
@@ -475,10 +495,13 @@ rule onlyAdminCanSetAdminFees(method f) {
 //                                Helpers                                 //
 ////////////////////////////////////////////////////////////////////////////
 
+ghost mapping(uint256 => mapping(uint256 => uint256)) determinedInvariant;
+
 
 function newGetD(uint256 balance1, uint256 balance2) returns uint256 {
     uint256 invar;
     require invar >= balance1 + balance2;
     require invar <= balance1 * balance2;
+    require invar == determinedInvariant[balance1][balance2];
     return invar;
 }
