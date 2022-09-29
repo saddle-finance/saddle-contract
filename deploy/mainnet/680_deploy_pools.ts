@@ -12,7 +12,7 @@ const metaPools: PoolData[] = [
       vesperFRAXFRAXBP: ["vesperFRAXEarnPool", "veFRAX-FRAXBP", "18"],
     },
     lpTokenSymbol: "saddleFRAXBP-VesperFRAXBP",
-    initialA: 100,
+    initialA: 500,
     swapFee: 4e6,
     adminFee: 50e8,
     multisig: true,

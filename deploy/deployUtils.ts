@@ -501,7 +501,7 @@ export async function deploySwapFlashLoanPools(
     }
 
     // verify contracts
-    verifyContract(hre, poolName)
+    await verifyContract(hre, poolName)
   }
 
   // register new pools
