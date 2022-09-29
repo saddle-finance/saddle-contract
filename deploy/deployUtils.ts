@@ -23,6 +23,7 @@ export interface PoolData {
   adminFee: number // % of swapFee sent to Saddle
   multisig: boolean // If a multisig on this chain exists
   deployGauge?: boolean // If a gauge should be deployed
+  metaswapDeposit?: string // Address of metaswap deposit contract
 }
 
 /**
@@ -239,12 +240,14 @@ export async function deployMetaswapPools(
 
     // deploy the Meta Swap Deposit
     console.log("Deploying Metaswap Deposit")
-    await deployMetaswapDeposit(
+    const metaswapDepositDeployment = await deployMetaswapDeposit(
       hre,
       `${metaPoolName}Deposit`,
       basePoolName!,
       metaPoolName,
     )
+    //
+    pool.metaswapDeposit = metaswapDepositDeployment?.address
 
     // If new pools require a gauge deploy
     if (pool.deployGauge) {
@@ -252,7 +255,7 @@ export async function deployMetaswapPools(
     }
 
     // verify contract
-    verifyContract(hre, metaPoolName)
+    await verifyContract(hre, metaPoolName)
   }
   // register new pools
   if (newDeploypools.length > 0) {
@@ -287,7 +290,7 @@ export async function deployMetaswapDeposit(
     log(`reusing ${metaPoolDepositName} at ${metaPoolDeposit.address}`)
   } else {
     // This is the first time deploying MetaSwapDeposit contract.
-    await deploy(metaPoolDepositName, {
+    const metaswapDepositDeployment = await deploy(metaPoolDepositName, {
       from: deployer,
       log: true,
       contract: "MetaSwapDeposit",
@@ -308,9 +311,11 @@ export async function deployMetaswapDeposit(
         await get(`${metaPoolName}LPToken`)
       ).address,
     )
+    // verify contract
+    await verifyContract(hre, metaPoolDepositName)
+
+    return metaswapDepositDeployment
   }
-  // verify contract
-  await verifyContract(hre, metaPoolDepositName)
 }
 
 /**
@@ -667,7 +672,7 @@ export async function registerPools(
           typeOfAsset: PoolType.USD,
           poolName: ethers.utils.formatBytes32String(pool.registryName),
           targetAddress: (await get("SwapFlashLoan")).address,
-          metaSwapDepositAddress: ZERO_ADDRESS,
+          metaSwapDepositAddress: pool.metaswapDeposit as string,
           isSaddleApproved: true,
           isRemoved: false,
           isGuarded: false,
