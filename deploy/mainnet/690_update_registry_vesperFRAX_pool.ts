@@ -55,3 +55,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log(await poolRegistry.getPoolData(vesperPoolAddress))
 }
 export default func
+func.skip = async () => true
