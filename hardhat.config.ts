@@ -18,9 +18,6 @@ const config: HardhatUserConfig = {
     hardhat: {
       deploy: ["./deploy/hardhat/"],
       autoImpersonate: true,
-      companionNetworks: {
-        optimism_mainnet: "optimism_mainnet",
-      },
     },
     mainnet: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
@@ -45,7 +42,7 @@ const config: HardhatUserConfig = {
       url:
         ALCHEMY_BASE_URL[CHAIN_ID.ARBITRUM_TESTNET] +
         process.env.ALCHEMY_API_KEY,
-      chainId: parseInt(CHAIN_ID.ROPSTEN),
+      chainId: parseInt(CHAIN_ID.ARBITRUM_TESTNET),
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
@@ -71,8 +68,9 @@ const config: HardhatUserConfig = {
       deploy: ["./deploy/optimism/"],
     },
     optimism_mainnet: {
-      url: ALCHEMY_BASE_URL[CHAIN_ID.OPTIMISM_MAINNET] +
-      process.env.ALCHEMY_API_KEY,
+      url:
+        ALCHEMY_BASE_URL[CHAIN_ID.OPTIMISM_MAINNET] +
+        process.env.ALCHEMY_API_KEY,
       chainId: parseInt(CHAIN_ID.OPTIMISM_MAINNET),
       deploy: ["./deploy/optimism/"],
       verify: {
@@ -155,6 +153,15 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
+        version: "0.8.17",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10000,
+          },
+        },
+      },
+      {
         version: "0.8.6",
         settings: {
           optimizer: {
@@ -205,6 +212,7 @@ const config: HardhatUserConfig = {
   gasReporter: {
     currency: "USD",
     gasPrice: 21,
+    enabled: process.env.REPORT_GAS ? true : false,
   },
   mocha: {
     timeout: 200000,

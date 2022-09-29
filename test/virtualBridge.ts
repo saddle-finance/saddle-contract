@@ -138,6 +138,13 @@ describe("Virtual swap bridge [ @skip-on-coverage ]", () => {
     await setTimestamp(1609896169)
   })
 
+  after(async () =>
+    network.provider.request({
+      method: "hardhat_reset",
+      params: [],
+    }),
+  )
+
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
