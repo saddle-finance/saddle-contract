@@ -13,7 +13,7 @@ const metaPools: PoolData[] = [
       USX: ["dForce USD", "USX", "18"],
     },
     lpTokenSymbol: "saddleUSXFRAXBP",
-    initialA: 100,
+    initialA: 500,
     swapFee: 4e6,
     adminFee: 50e8,
     multisig: true,
