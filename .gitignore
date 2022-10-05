@@ -44,3 +44,7 @@ deployments/optimistic/
 
 # VS Code
 .vscode/
+
+# Forge
+forge-cache
+forge-out
