@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "forge-std/Script.sol";
+import "./ScriptWithConstants.s.sol";
 import "../contracts/interfaces/IMasterRegistry.sol";
 
 interface IPoolRegistry {
@@ -43,27 +43,7 @@ interface IPoolRegistry {
         address lpToken;
     }
 
-    /* Public Variables */
-
-    function poolsIndexOfPlusOne(address poolAddress)
-        external
-        returns (uint256);
-
-    function poolsIndexOfNamePlusOne(bytes32 poolName)
-        external
-        returns (uint256);
-
     /* Functions */
-
-    function addPool(PoolInputData memory inputData) external payable;
-
-    function addCommunityPool(PoolData memory data) external payable;
-
-    function approvePool(address poolAddress) external payable;
-
-    function updatePool(PoolData memory poolData) external payable;
-
-    function removePool(address poolAddress) external payable;
 
     function getPoolData(address poolAddress)
         external
@@ -89,11 +69,6 @@ interface IPoolRegistry {
 
     function getPaused(address poolAddress) external view returns (bool);
 
-    function getSwapStorage(address poolAddress)
-        external
-        view
-        returns (SwapStorageData memory swapStorageData);
-
     function getTokens(address poolAddress)
         external
         view
@@ -106,11 +81,6 @@ interface IPoolRegistry {
 
     function getPoolsLength() external view returns (uint256);
 
-    function getEligiblePools(address from, address to)
-        external
-        view
-        returns (address[] memory eligiblePools);
-
     function getTokenBalances(address poolAddress)
         external
         view
@@ -122,33 +92,29 @@ interface IPoolRegistry {
         returns (uint256[] memory balances);
 }
 
-contract PoolRegistryCheckScript is Script {
-    mapping(uint256 => address) masterRegistryMap;
-
-    function setUp() public {
-        masterRegistryMap[1] = 0xc5ad17b98D7fe73B6dD3b0df5b3040457E68C045;
-        masterRegistryMap[10] = 0x0E510c9b20a5D136E75f7FD2a5F344BD98f9d875;
-        masterRegistryMap[42161] = 0xaB94A2c0D8F044AA439A5654f06b5797928396cF;
+contract PoolRegistryCheckScript is ScriptWithConstants {
+    function setUp() public override {
+        super.setUp();
     }
 
-    function run() public {
-        // https://github.com/foundry-rs/forge-std/blob/master/src/Vm.sol
-        vm.startBroadcast();
-
+    function printPools() public {
         // Find MasterRegistry
-        address masterRegistry = masterRegistryMap[block.chainid];
-        require(masterRegistry != address(0), "Invalid chainId");
+        address masterRegistry = getDeploymentAddress("MasterRegistry");
+        require(masterRegistry != address(0), "No master registry found");
+        console.log("MasterRegistry address: %s", masterRegistry);
 
         // Find PoolRegistry
         address poolRegistry = IMasterRegistry(masterRegistry)
             .resolveNameToLatestAddress("PoolRegistry");
-        require(poolRegistry != address(0), "Invalid pool registry");
+        console.log("PoolRegistry address: %s", poolRegistry);
+        require(poolRegistry != address(0), "No pool registry found");
 
         IMasterRegistry mr = IMasterRegistry(masterRegistry);
         IPoolRegistry pr = IPoolRegistry(poolRegistry);
 
         console.log(
-            "PoolRegistry on chainid %s: %s",
+            "PoolRegistry on %s (%s): %s\n",
+            getNetworkName(),
             block.chainid,
             address(pr)
         );
@@ -158,23 +124,58 @@ contract PoolRegistryCheckScript is Script {
 
         // For every pool, print tokens in array format
         for (uint256 i = 0; i < numOfPools; i++) {
+            // Find the pool data at index i
             IPoolRegistry.PoolData memory poolData = pr.getPoolDataAtIndex(i);
             console.log(
                 "index %s: %s",
                 i,
                 string(abi.encodePacked(poolData.poolName))
             );
+
+            // Print the pooled token addresses
             string memory tokens;
             for (uint256 j = 0; j < poolData.tokens.length; j++) {
+                string memory suffix = j + 1 != poolData.tokens.length
+                    ? ", "
+                    : "";
                 tokens = string(
                     abi.encodePacked(
                         tokens,
                         vm.toString(poolData.tokens[j]),
-                        ", "
+                        suffix
                     )
                 );
             }
-            console.log("tokens: [%s]\n", tokens);
+            console.log("tokens: [%s]", tokens);
+
+            // Print the pooled token balances
+            string memory balancesOutput;
+            uint256[] memory balances = pr.getTokenBalances(
+                poolData.poolAddress
+            );
+            for (uint256 j = 0; j < poolData.tokens.length; j++) {
+                string memory suffix = j + 1 != poolData.tokens.length
+                    ? ", "
+                    : "";
+                balancesOutput = string(
+                    abi.encodePacked(
+                        balancesOutput,
+                        vm.toString(balances[j]),
+                        suffix
+                    )
+                );
+            }
+            console.log("balances: [%s]\n", balancesOutput);
+        }
+    }
+
+    function run() public {
+        // https://github.com/foundry-rs/forge-std/blob/master/src/Vm.sol
+        vm.startBroadcast();
+
+        for (uint256 i = 0; i < networkNames.length; i++) {
+            vm.createSelectFork(networkNames[i]);
+            printPools();
         }
 
         vm.stopBroadcast();
