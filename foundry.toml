@@ -15,7 +15,7 @@ remappings = [
 cache_path  = 'forge-cache'
 script = 'forge-script'
 out = 'forge-out'
-fs_permissions = [{ access = "read", path = "./"}]
+fs_permissions = [{ access = "read-write", path = "./"}, { access = "read-write", path = "./output/"}]
 
 [rpc_endpoints]
 mainnet = "https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}"
