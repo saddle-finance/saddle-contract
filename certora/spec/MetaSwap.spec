@@ -17,6 +17,10 @@
 //                                 Rules                                  //
 ////////////////////////////////////////////////////////////////////////////
 
+/* Notes:
+- additional initialization function
+- flattened token resolution in all cases
+
 
 ////////////////////////////////////////////////////////////////////////////
 //                                Helpers                                 //
