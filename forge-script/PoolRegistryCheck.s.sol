@@ -2,7 +2,9 @@
 pragma solidity ^0.8.17;
 
 import "./ScriptWithConstants.s.sol";
+import "./PriceHelper.sol";
 import "../contracts/interfaces/IMasterRegistry.sol";
+import "@openzeppelin/contracts-4.4.0/token/ERC20/IERC20.sol";
 
 interface IPoolRegistry {
     /* Structs */
@@ -93,80 +95,141 @@ interface IPoolRegistry {
 }
 
 contract PoolRegistryCheckScript is ScriptWithConstants {
+    IMasterRegistry mr;
+    IPoolRegistry pr;
+
+    uint256 btcPrice;
+    uint256 ethPrice;
+    uint256 usdPrice;
+
+    uint256 totalSaddleTVL;
+
     function setUp() public override {
         super.setUp();
+        (btcPrice, ethPrice, usdPrice) = (new PriceHelper()).getLatestPrices();
+    }
+
+    function printTokenAddresses(IPoolRegistry.PoolData memory poolData)
+        public
+    {
+        string memory tokens;
+        for (uint256 j = 0; j < poolData.tokens.length; j++) {
+            string memory suffix = j + 1 != poolData.tokens.length ? ", " : "";
+            tokens = string.concat(
+                tokens,
+                vm.toString(poolData.tokens[j]),
+                suffix
+            );
+        }
+        console.log("tokens: [%s]", tokens);
+    }
+
+    function printTokenBalances(IPoolRegistry.PoolData memory poolData) public {
+        string memory balancesOutput;
+        uint256[] memory balances = pr.getTokenBalances(poolData.poolAddress);
+        for (uint256 j = 0; j < poolData.tokens.length; j++) {
+            string memory suffix = j + 1 != poolData.tokens.length ? ", " : "";
+            balancesOutput = string.concat(
+                balancesOutput,
+                vm.toString(balances[j]),
+                suffix
+            );
+        }
+        console.log("balances: [%s]", balancesOutput);
+    }
+
+    function calculatePoolTVL(IPoolRegistry.PoolData memory poolData)
+        public
+        returns (uint256 poolTVL, uint256 withoutBaseLPToken)
+    {
+        uint256 totalSupply = IERC20(poolData.lpToken).totalSupply();
+        uint256 virtualPrice = pr.getVirtualPrice(poolData.poolAddress);
+        uint256 price;
+        if (poolData.typeOfAsset == 0) {
+            price = btcPrice;
+        } else if (poolData.typeOfAsset == 1) {
+            price = ethPrice;
+        } else if (poolData.typeOfAsset == 2) {
+            price = usdPrice;
+        } else {
+            price = 0;
+        }
+        poolTVL = (totalSupply * virtualPrice * price) / (1e18 * 1e8);
+        withoutBaseLPToken = poolTVL;
+
+        if (poolData.basePoolAddress != address(0)) {
+            uint256[] memory balances = pr.getTokenBalances(
+                poolData.poolAddress
+            );
+            withoutBaseLPToken =
+                ((totalSupply - balances[balances.length - 1]) *
+                    virtualPrice *
+                    price) /
+                (1e18 * 1e8);
+        }
+
+        return (poolTVL, withoutBaseLPToken);
     }
 
     function printPools() public {
+        console.log(
+            "** Pools on %s (%s) **\n",
+            getNetworkName(),
+            block.chainid
+        );
+
         // Find MasterRegistry
         address masterRegistry = getDeploymentAddress("MasterRegistry");
         require(masterRegistry != address(0), "No master registry found");
         console.log("MasterRegistry address: %s", masterRegistry);
+        mr = IMasterRegistry(masterRegistry);
 
         // Find PoolRegistry
-        address poolRegistry = IMasterRegistry(masterRegistry)
-            .resolveNameToLatestAddress("PoolRegistry");
-        console.log("PoolRegistry address: %s", poolRegistry);
+        address poolRegistry = mr.resolveNameToLatestAddress("PoolRegistry");
         require(poolRegistry != address(0), "No pool registry found");
-
-        IMasterRegistry mr = IMasterRegistry(masterRegistry);
-        IPoolRegistry pr = IPoolRegistry(poolRegistry);
-
-        console.log(
-            "PoolRegistry on %s (%s): %s\n",
-            getNetworkName(),
-            block.chainid,
-            address(pr)
-        );
+        console.log("PoolRegistry address: %s", poolRegistry);
+        pr = IPoolRegistry(poolRegistry);
 
         uint256 numOfPools = pr.getPoolsLength();
         console.log("Number of pools %s", numOfPools);
 
+        uint256 tvlPerChain = 0;
+
         // For every pool, print tokens in array format
         for (uint256 i = 0; i < numOfPools; i++) {
-            // Find the pool data at index i
+            // Find the pool data at index i and print the pool address
             IPoolRegistry.PoolData memory poolData = pr.getPoolDataAtIndex(i);
             console.log(
-                "index %s: %s",
+                "index %s: %s (%s)",
                 i,
-                string(abi.encodePacked(poolData.poolName))
+                string(abi.encodePacked(poolData.poolName)),
+                poolData.poolAddress
             );
 
             // Print the pooled token addresses
-            string memory tokens;
-            for (uint256 j = 0; j < poolData.tokens.length; j++) {
-                string memory suffix = j + 1 != poolData.tokens.length
-                    ? ", "
-                    : "";
-                tokens = string(
-                    abi.encodePacked(
-                        tokens,
-                        vm.toString(poolData.tokens[j]),
-                        suffix
-                    )
-                );
-            }
-            console.log("tokens: [%s]", tokens);
+            printTokenAddresses(poolData);
 
             // Print the pooled token balances
-            string memory balancesOutput;
-            uint256[] memory balances = pr.getTokenBalances(
-                poolData.poolAddress
+            printTokenBalances(poolData);
+
+            // Print TVL of the pool
+            (uint256 poolTVL, uint256 withoutBaseLPToken) = calculatePoolTVL(
+                poolData
             );
-            for (uint256 j = 0; j < poolData.tokens.length; j++) {
-                string memory suffix = j + 1 != poolData.tokens.length
-                    ? ", "
-                    : "";
-                balancesOutput = string(
-                    abi.encodePacked(
-                        balancesOutput,
-                        vm.toString(balances[j]),
-                        suffix
-                    )
-                );
-            }
-            console.log("balances: [%s]\n", balancesOutput);
+            console.log(
+                "TVL: $%s ($%s)\n",
+                poolTVL / 1e18,
+                withoutBaseLPToken / 1e18
+            );
+            tvlPerChain += withoutBaseLPToken;
+            totalSaddleTVL += withoutBaseLPToken;
         }
+
+        console.log(
+            "Total %s TVL: $%s\n",
+            getNetworkName(),
+            tvlPerChain / 1e18
+        );
     }
 
     function run() public {
@@ -177,6 +240,8 @@ contract PoolRegistryCheckScript is ScriptWithConstants {
             vm.createSelectFork(networkNames[i]);
             printPools();
         }
+
+        console.log("Total Saddle TVL: $%s", totalSaddleTVL / 1e18);
 
         vm.stopBroadcast();
     }
