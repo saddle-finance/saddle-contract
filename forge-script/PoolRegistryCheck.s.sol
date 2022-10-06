@@ -306,7 +306,7 @@ contract PoolRegistryCheckScript is ScriptWithConstants, JsonFormatter {
             json = string.concat(
                 json,
                 ', "poolName": "',
-                string(abi.encodePacked(outputs[i].poolName)),
+                bytes32ToString(outputs[i].poolName),
                 '", "targetAddress": "',
                 vm.toString(outputs[i].targetAddress),
                 '", "tokens": ',
