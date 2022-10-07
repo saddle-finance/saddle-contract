@@ -18,4 +18,5 @@ certoraRun \
     $RULE \
     --send_only \
     --msg "$1" \
+    --solc solc6.12 \
     # --rule_sanity advanced \
