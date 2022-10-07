@@ -7,16 +7,15 @@ certoraRun \
     certora/harness/SwapHarness.sol \
     certora/munged/LPToken.sol \
     --verify SwapHarness:certora/spec/Swap.spec \
-    --link SwapHarness:lpToken=LPToken \
+    --structLink SwapHarness:lpToken=LPToken \
     --optimistic_loop \
     --cache saddle \
-    --loop_iter 2 \
+    --loop_iter 3 \
+    --settings -copyLoopUnroll=16 \
     $RULE \
     --send_only \
-    --solc solc6.12 \
-    --msg "Swap $1 no struct linking" \
-    # --rule_sanity advanced \
+    --msg "Swap $1 $2" \
 
     # --staging yoav/array_of_structs_fix \
     # --settings -enableEqualitySaturation=false \
-    # --structLink SwapHarness:lpToken=LPToken \
+    # 

@@ -11,50 +11,6 @@ methods {
 
     // math functions summarized
 	getD(uint256[], uint256) returns (uint256) => NONDET
-    //https://vaas-stg.certora.com/output/93493/d44d3ec77b888ed8ffa8/?anonymousKey=68714450e71c07066b886229e03adac1b7248380
-
-	//getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
-	//https://vaas-stg.certora.com/output/93493/0ee9d368205356ba46de/?anonymousKey=4c7b157b05ada7e851be8ddbfc1c79734d5118f9
-    
-    //calculateWithdrawOneTokenDY((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint256,uint256) returns (uint256, uint256, uint256) => NONDET 
-	//https://vaas-stg.certora.com/output/93493/f5150de1aa6f21a5d925/?anonymousKey=1a20045ac31f4055094b99665166d68595eede13
-    
-    //calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8)  returns (uint256) => NONDET 
-	//https://vaas-stg.certora.com/output/93493/c9b1695bd9c7f599870d/?anonymousKey=c42e648eafc6ff69a6a3a27ccd316126b71f28d0
-    
-    //_calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8,uint256) returns (uint256, uint256) => NONDET 
-	//https://vaas-stg.certora.com/output/93493/17a060161d640cf5e601/?anonymousKey=114604350bce47447e6828600f62d59d63272dac
-    
-    //xp(uint256[],uint256[]) returns (uint256[] ) => NONDET 
-	//https://vaas-stg.certora.com/output/93493/6624b161d1d32b7d079f/?anonymousKey=18f98080154eb13810ca7394ebd2d7aed9441243
-
-    //getVirtualPrice((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[])) returns (uint256) => CONSTANT 
-	//https://vaas-stg.certora.com/output/93493/7cb06ce3e5996e22bdf8/?anonymousKey=3ce8111b07df862f13a5ead40608bb2219e46523
-
-    //getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
-	//https://vaas-stg.certora.com/output/93493/5000d82bee67f635569f/?anonymousKey=d5a1a618bf7cadd3bd4d7bb128c12787b22bb3ba
-
-    //_calculateSwap((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint8,uint256,uint256[] ) returns (uint256, uint256) => NONDET
-	//https://vaas-stg.certora.com/output/93493/5ed04d8652bb7541d995/?anonymousKey=345819d34703489fe1ac73fc6046e7ef8d4910db
-
-    //_feePerToken(uint256, uint256) returns (uint256) => NONDET
-    //https://vaas-stg.certora.com/output/93493/fce4dd9375bc51e7d274/?anonymousKey=d1d19d0376018d6cd255a3d0b81853e4c9d1fbe6
-
-    //// refactored functions
-    //_addLiquidityHelper1((uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),address[],uint256[]) returns(uint256[]) => NONDET
-    //https://vaas-stg.certora.com/output/93493/a52c5cddea56000b3425/?anonymousKey=82df28494e920dd145c2164e630fb44f693947b9
-    
-    //_addLiquidityHelper2((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),(uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),address[],uint256[]) returns(uint256[]) => NONDET
-    //https://vaas-stg.certora.com/output/93493/4b56f3fe4454fcb081b7/?anonymousKey=97d9e5be959e5f453047964dbfd4056561b51e1c
-
-    //_removeLiquidityImbalanceHelper1((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),(uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),uint256[]) returns (uint256[]) => NONDET
-    //https://vaas-stg.certora.com/output/93493/02ffc66a1a1b6d58d17c/?anonymousKey=273372d8db6c060b54d76a192aa5233648d00c28
-    
-    //_removeLiquidityOneTokenHelper1((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),uint256,uint256,uint8) returns(uint256) => NONDET
-    //https://vaas-stg.certora.com/output/93493/36b8abd73b5fba32a927/?anonymousKey=2f52ea8a6289c42eb2bbcee468b4b5202d06b76c
-
-    // summariazable functions check
-    // https://prover.certora.com/output/93493/9456d9506f97c875cba5/Results.txt?anonymousKey=d95f3e811114cd664bc8f9b20cc8c33ebf94b771
 
     // normal functions
     
@@ -69,7 +25,7 @@ methods {
     calculateSwap(uint8,uint8,uint256) returns (uint256) envfree
     calculateTokenAmount(uint256[],bool) returns (uint256) envfree
     calculateRemoveLiquidity(uint256) returns (uint256[]) envfree
-    calculateRemoveLiquidityOneToken() returns (uint256)  envfree
+    calculateRemoveLiquidityOneToken(uint256,uint8) returns (uint256) envfree
     getAdminBalance(uint256) returns (uint256) envfree
 
     // harness functions
@@ -83,10 +39,10 @@ methods {
     initialize(string,string) => DISPATCHER(true)
 }
 
+
 ////////////////////////////////////////////////////////////////////////////
 //                       Ghosts and definitions                           //
 ////////////////////////////////////////////////////////////////////////////
-
 
 /*
     Getting initialized variable
@@ -125,15 +81,6 @@ hook Sstore lpToken._balances[KEY address user] uint256 balance (uint256 old_bal
 //                               Invariants                               //
 ////////////////////////////////////////////////////////////////////////////
 
-/*
-rule sanity(method f) {
-	env e;
-	calldataarg args;
-	f(e,args);
-	assert false;
-}
-*/
-
 /* P
     cant reinit (fails due to havoc)
 */
@@ -149,78 +96,70 @@ rule cantReinit(method f) filtered {
     assert lastReverted;
 }
 
-/*
-    Uninitialized contract implies LP totalSupply zero
+/* P*
+    proves on constructor that all getters are zero
+    @dev * explained below
 */
-invariant uninitializedImpliesLPTotalSupplyZero()
-    !initialized => getTotalSupply() == 0
-    //!initialized => getTotalSupply@withrevert()
-
 invariant uninitializedImpliesZeroValueInv()
-    getAllGetters() == 0
-    {
-        preserved {
-            require !initialized;        
-        }
-    }
+    getAllGettersRandomInput() == 0
 
-/* 
+function getAllGettersRandomInput() returns uint256 {
+    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
+    uint256 return1 = getA();
+    uint256 return2 = getAPrecise();
+    uint256 return3 = getToken(i1);
+    uint256 return4 = getTokenIndex(i2);
+    uint256 return5 = getTokenBalance(i3);
+    uint256 return6 = getVirtualPrice();
+    uint256 return7 = calculateSwap(i4,j4,k4);
+    uint256 return8 = calculateTokenAmount(i5,j5);
+    uint256 return9 = getAdminBalance(i6);
+    uint256 return10 = owner();
+    uint256 return11 = getTotalSupply();
+    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
+}
+
+/* P*
     Uninitialized contract state implies all variables are 0
+    proves preservation (n+1 case)
+    @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
 */
-rule uninitializedImpliesZeroValue(method f) filtered {
-    f -> f.isView
-} { 
+rule uninitializedImpliesZeroValue(method f) { 
+    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
+
+    require !initialized; // do we need this?
+    uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
+    require valBefore == 0;
+
+    env e; calldataarg args;
+    f(e,args);
+
     require !initialized;
+    uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
 
-    uint256 val = getAllGetters();
-
-    assert val == 0;
+    assert valAfter == 0;
 }
 
-function getAllGetters() returns uint256 {
-    method f; uint256 return1; env e;
-    if (f.selector == getA().selector) {
-        return1 = getA();
-    } else if (f.selector == getAPrecise().selector) {
-        return1 = getAPrecise();
-    } else if (f.selector == getToken(uint8).selector) {
-        uint8 i;
-        return1 = getToken(i);
-    } else if (f.selector == getTokenIndex(address).selector) {
-        address i;
-        return1 = getTokenIndex(i);
-    } else if (f.selector == getTokenBalance(uint8).selector) {
-        uint8 i;
-        return1 = getTokenBalance(i);
-    } else if (f.selector == getVirtualPrice().selector) {
-        return1 = getVirtualPrice();
-    } else if (f.selector == calculateSwap(uint8,uint8,uint256).selector) {
-        uint8 i; uint8 j; uint256 k;
-        return1 = calculateSwap(i,j,k);
-    } else if (f.selector == calculateTokenAmount(uint256[],bool).selector) {
-        uint256[] i; bool j;
-        return1 = calculateTokenAmount(i,j);
-    /*} else if (f.selector == calculateRemoveLiquidity(uint256).selector) {
-        uint256[] return2; uint256 index; uint256 i;
-        return2 = calculateRemoveLiquidity(i);
-        return1 = return2[index];*/
-    } else if (f.selector == getAdminBalance(uint256).selector) {
-        uint256 i;
-        return1 = getAdminBalance(i);
-    } else if (f.selector == owner().selector) {
-        return1 = owner();
-    /*} else if (f.selector == paused().selector) {
-        bool return3 = paused();
-        return1 = to_uint256(return3);*/
-    } else {
-        return1 = 0;
-    }
-    return return1;
-}
+function getAllGettersDefinedInput(uint8 i1, address i2, uint8 i3, uint8 i4, uint8 j4, uint256 k4, uint256[] i5, bool j5, uint256 i6) returns uint256 {
+    uint256 return1 = getA();
+    uint256 return2 = getAPrecise();
+    uint256 return3 = getToken(i1);
+    uint256 return4 = getTokenIndex(i2);
+    uint256 return5 = getTokenBalance(i3);
+    uint256 return6 = getVirtualPrice();
+    uint256 return7 = calculateSwap(i4,j4,k4);
+    uint256 return8 = calculateTokenAmount(i5,j5);
+    uint256 return9 = getAdminBalance(i6);
+    uint256 return10 = owner();
+    uint256 return11 = getTotalSupply();
+    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
+} 
 
 
 /*
-    Uninitialized contract state implies all function calls revert
+    Uninitialized contract state implies all state changing function calls revert
+    @dev might be unnecessary given the above rules and the fact that prover can take 0 address to be a contract which 
+    we safely assume is not
 */
 rule uninitializedImpliesRevert(method f) filtered {
     f -> f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
@@ -238,6 +177,9 @@ rule uninitializedImpliesRevert(method f) filtered {
 
 /*
     Sum of all users' LP balance must be less than or equal to LP's `totalSupply`
+    @dev havoc on addLiq causes failures. Increasing loop_iter > 2 causes havoc on removeLiq. removeLiqOneToken also 
+    has havoc but is passing, might be a similar case with loop_iter being too small
+    @dev waiting on dev to fix this dispatcher bug
 */
 invariant solvency()
     getTotalSupply() == sum_all_users_LP
@@ -258,21 +200,24 @@ invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
     getTokenBalance(tokenA) > 0 => getTokenBalance(tokenX) > 0
 */
 
-/* (P)
+/* (P) 
     Two underlying tokens can never have the same address
+    @dev instate part of invariant is not relevant, need to prove on `initialize` 
+    @dev using invariant to requireInvariant, doesn't pass
 */
-invariant underlyingTokensDifferent()
-    forall uint8 tokenAIndex. forall uint8 tokenBIndex. (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex))
-    /*{
+invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
+    //forall uint8 tokenAIndex. forall uint8 tokenBIndex. 
+    tokenAIndex != tokenBIndex => getToken(tokenAIndex) != getToken(tokenBIndex)
+    {
         preserved{
-            require tokenA != tokenX;
+            require initialized;
         }
-    }*/
+    }
 
 /* P
     Two underlying tokens can never have the same address (unintialized)
 */
-rule underlyingTokensDifferentUninitialized(method f) filtered {
+rule underlyingTokensDifferentInitialization(method f) filtered {
     f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
 }{
     uint8 tokenAIndex;
@@ -285,10 +230,10 @@ rule underlyingTokensDifferentUninitialized(method f) filtered {
     assert (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
 }
 
-/* 
+/* P*
     Two underlying tokens can never have the same address (intialized)
+    @dev only failing on havocing functions due to failed dispatcher
 */
-
 rule underlyingTokensDifferentInitialized(method f) {
     uint8 tokenAIndex;
     uint8 tokenBIndex;
@@ -302,21 +247,25 @@ rule underlyingTokensDifferentInitialized(method f) {
     assert (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
 }
 
-/*
-    Two underlying tokens can never have the same address (unintialized)
-*/
-// TODO
-
 /* 
     If totalSupply of LP token is zero, the balance of all other 
     underlying tokens must also be zero
+    @dev ideally can prove as bi-implication, otherwise use two invariants (other one below)
 */
-
+invariant LPSupplyZeroMeansBalancesZero()
+    forall uint8 index.
+    getTotalSupply() == 0 => getTokenBalance(index) == 0
+    {
+        preserved {
+            require !initializing;
+        }
+    }
 /* 
     If totalSupply of LP token is non-zero, the balance of all other 
     underlying tokens must also be non-zero
+    @dev redundant if the above works as bi-implication
 */
-
+    
 /*
     There must not be a transaction that increases or decreases only one 
     underlying balance, except for withdrawWithOneToken (or something like
@@ -414,10 +363,19 @@ rule pausedImpliesTokenRatioConstant(method f) {
 rule pausedImpliesNoSingleTokenWithdrawal (method f) {
     uint8 tokenAIndex; uint8 tokenBIndex;
     
+    require paused();
     uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
     uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+
+    env e; calldataarg args;
+    f(e,args);
+
+    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
     
-    assert false;
+    assert tokenABalanceAfter <= tokenABalanceBefore, "token balances must not increase when paused";
+    assert tokenBBalanceAfter <= tokenBBalanceBefore, "token balances must not increase when paused";
+    assert tokenABalanceAfter < tokenABalanceBefore <=> tokenBBalanceAfter < tokenBBalanceBefore, "one token must not decrease alone";
 }
 
 /*
@@ -466,7 +424,7 @@ rule monotonicallyIncreasingFees(method f) filtered {
 
     env e;
     require e.msg.sender != currentContract;
-    requireInvariant underlyingTokensDifferent;
+    //requireInvariant underlyingTokensDifferent;
     requireInvariant solvency;
 
     uint256 balanceBefore = getAdminBalance(index);
