@@ -1,8 +1,11 @@
 certoraRun \
-    certora/harness/PoolRegistryHarness.sol certora/helpers/DummyERC20A.sol certora/helpers/DummyERC20B.sol\
-    --verify PoolRegistryHarness:certora/spec/sanity.spec \
+    certora/harness/SwapHarness.sol \
+    certora/helpers/DummyERC20A.sol \
+    certora/helpers/DummyERC20B.sol \
+    certora/munged/LPToken.sol \
+    --verify SwapHarness:certora/spec/sanity.spec \
     --staging \
     --optimistic_loop \
-    --loop_iter 3 \
+    --loop_iter 2 \
     --send_only \
-    --msg "Pool Registry sanity"
+    --msg "Swap sanity"
