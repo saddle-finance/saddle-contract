@@ -57,12 +57,20 @@ methods {
     // https://prover.certora.com/output/93493/9456d9506f97c875cba5/Results.txt?anonymousKey=d95f3e811114cd664bc8f9b20cc8c33ebf94b771
 
     // normal functions
-    getTokenBalance(uint8) returns(uint256) envfree
+    
     owner() returns(address) envfree
-    getAdminBalance(uint256) returns(uint256) envfree
     paused() returns(bool) envfree
-    getVirtualPrice() returns(uint256) envfree
-    getToken(uint8) returns(address) envfree
+    getA() returns (uint256) envfree
+    getAPrecise() returns (uint256) envfree
+    getToken(uint8) returns (address) envfree
+    getTokenIndex(address) returns (uint8) envfree
+    getTokenBalance(uint8) returns (uint256) envfree
+    getVirtualPrice() returns (uint256) envfree
+    calculateSwap(uint8,uint8,uint256) returns (uint256) envfree
+    calculateTokenAmount(uint256[],bool) returns (uint256) envfree
+    calculateRemoveLiquidity(uint256) returns (uint256[]) envfree
+    calculateRemoveLiquidityOneToken() returns (uint256)  envfree
+    getAdminBalance(uint256) returns (uint256) envfree
 
     // harness functions
     getSwapFee() returns(uint256) envfree
@@ -70,7 +78,7 @@ methods {
     getTotalSupply() returns(uint256) envfree
 
     // burnableERC20
-    burnFrom(address,uint256) => DISPATCHER(true)
+    burnFrom(address,int256) => DISPATCHER(true)
     mint(address,uint256) => DISPATCHER(true)
     initialize(string,string) => DISPATCHER(true)
 }
@@ -148,6 +156,14 @@ invariant uninitializedImpliesLPTotalSupplyZero()
     !initialized => getTotalSupply() == 0
     //!initialized => getTotalSupply@withrevert()
 
+invariant uninitializedImpliesZeroValueInv()
+    getAllGetters() == 0
+    {
+        preserved {
+            require !initialized;        
+        }
+    }
+
 /* 
     Uninitialized contract state implies all variables are 0
 */
@@ -155,12 +171,51 @@ rule uninitializedImpliesZeroValue(method f) filtered {
     f -> f.isView
 } { 
     require !initialized;
-    env e; 
-    calldataarg args;
 
-    // TODO add CVL function that calls all interesting getters and returns output
+    uint256 val = getAllGetters();
 
-    assert 0 == 1;
+    assert val == 0;
+}
+
+function getAllGetters() returns uint256 {
+    method f; uint256 return1; env e;
+    if (f.selector == getA().selector) {
+        return1 = getA();
+    } else if (f.selector == getAPrecise().selector) {
+        return1 = getAPrecise();
+    } else if (f.selector == getToken(uint8).selector) {
+        uint8 i;
+        return1 = getToken(i);
+    } else if (f.selector == getTokenIndex(address).selector) {
+        address i;
+        return1 = getTokenIndex(i);
+    } else if (f.selector == getTokenBalance(uint8).selector) {
+        uint8 i;
+        return1 = getTokenBalance(i);
+    } else if (f.selector == getVirtualPrice().selector) {
+        return1 = getVirtualPrice();
+    } else if (f.selector == calculateSwap(uint8,uint8,uint256).selector) {
+        uint8 i; uint8 j; uint256 k;
+        return1 = calculateSwap(i,j,k);
+    } else if (f.selector == calculateTokenAmount(uint256[],bool).selector) {
+        uint256[] i; bool j;
+        return1 = calculateTokenAmount(i,j);
+    /*} else if (f.selector == calculateRemoveLiquidity(uint256).selector) {
+        uint256[] return2; uint256 index; uint256 i;
+        return2 = calculateRemoveLiquidity(i);
+        return1 = return2[index];*/
+    } else if (f.selector == getAdminBalance(uint256).selector) {
+        uint256 i;
+        return1 = getAdminBalance(i);
+    } else if (f.selector == owner().selector) {
+        return1 = owner();
+    /*} else if (f.selector == paused().selector) {
+        bool return3 = paused();
+        return1 = to_uint256(return3);*/
+    } else {
+        return1 = 0;
+    }
+    return return1;
 }
 
 
