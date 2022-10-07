@@ -1,0 +1,26 @@
+[
+    {
+        "networkName": "mainnet",
+        "chainId": 1
+    },
+    {
+        "networkName": "optimism_mainnet",
+        "chainId": 10
+    },
+    {
+        "networkName": "arbitrum_mainnet",
+        "chainId": 42161
+    },
+    {
+        "networkName": "fantom_mainnet",
+        "chainId": 250
+    },
+    {
+        "networkName": "evmos_mainnet",
+        "chainId": 9001
+    },
+    {
+        "networkName": "kava_mainnet",
+        "chainId": 2222
+    }
+]
