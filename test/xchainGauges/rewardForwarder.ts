@@ -146,13 +146,26 @@ describe("RewardForwarder", () => {
     await setupTest()
   })
 
-  describe("constructor", () => {
-    it(`Successfully initializes with child gauge at index 0`, async () => {
-      expect(await rewardForwarder.gauge()).to.eq(
-        await childGaugeFactory.get_gauge(0),
-      )
+  describe("gauge", () => {
+    it(`Successfully initializes with gauge address`, async () => {
+      const storedGaugeAddress = await rewardForwarder.gauge()
+      expect(storedGaugeAddress).to.eq(childGauge.address)
+      expect(storedGaugeAddress).to.eq(await childGaugeFactory.get_gauge(0))
     })
   })
+
+  describe("allow", () => {
+    it(`Successfully sets allowance to max`, async () => {
+      await rewardForwarder.allow(dummyRewardToken.address)
+      expect(
+        await dummyRewardToken.allowance(
+          rewardForwarder.address,
+          childGauge.address,
+        ),
+      ).to.eq(MAX_UINT256)
+    })
+  })
+
   describe("depositRewardToken", () => {
     it(`Successfully deposits lp token`, async () => {
       await childGauge.add_reward(
@@ -174,7 +187,8 @@ describe("RewardForwarder", () => {
         (await childGauge.reward_data(dummyRewardToken.address))["rate"],
       ).to.be.gt(0)
     })
-    it(`Reverts when allow is not called previously`, async () => {
+
+    it(`Reverts when allow() is not called previously`, async () => {
       await childGauge.add_reward(
         dummyRewardToken.address,
         rewardForwarder.address,
@@ -187,7 +201,8 @@ describe("RewardForwarder", () => {
         rewardForwarder.depositRewardToken(dummyRewardToken.address),
       ).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
     })
-    it(`Reverts if ChildGauge does not have matching reward token added`, async () => {
+
+    it(`Reverts when ChildGauge does not have matching reward token added`, async () => {
       await rewardForwarder.allow(childGauge.address)
       await dummyRewardToken.transfer(
         rewardForwarder.address,
