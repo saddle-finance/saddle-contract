@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-4.4.0/access/Ownable.sol";
 import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
+import "./Bridger.sol";
 
 interface IOptimismStandardBridge {
     function depositERC20To(
@@ -17,7 +18,7 @@ interface IOptimismStandardBridge {
     ) external payable;
 }
 
-contract OptimismBridger is Ownable {
+contract OptimismBridger is Bridger {
     using SafeERC20 for IERC20;
 
     // consts
@@ -57,7 +58,7 @@ contract OptimismBridger is Ownable {
         address _token,
         address _to,
         uint256 _amount
-    ) external payable {
+    ) external payable override whenNotPaused {
         // Transfer token to this contract from msg.sender
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -76,11 +77,11 @@ contract OptimismBridger is Ownable {
         );
     }
 
-    function cost() external pure returns (uint256) {
+    function cost() external pure override returns (uint256) {
         return 0;
     }
 
-    function check(address) external pure returns (bool) {
+    function check(address) external pure override returns (bool) {
         return true;
     }
 
@@ -107,4 +108,6 @@ contract OptimismBridger is Ownable {
         emit UpdateTokenMapping(_l1Token, l2AddrMap[_l1Token], _l2Token);
         l2AddrMap[_l1Token] = _l2Token;
     }
+
+    receive() external payable override {}
 }
