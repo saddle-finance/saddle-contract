@@ -11,8 +11,9 @@ interface IGauge {
 }
 
 contract RewardForwarder {
-    // consts
     using SafeERC20 for IERC20;
+
+    // consts
     address immutable GAUGE;
     uint256 private constant MAX_UINT256 = 2**256 - 1;
 

@@ -1,16 +1,35 @@
 import chai from "chai"
-import { ContractFactory, Signer } from "ethers"
+import { Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
-  ChildGaugeFactory,
-  LPToken,
-  RewardForwarder,
   AnyCallTranslator,
   ChildGauge,
+  ChildGaugeFactory,
+  ChildOracle,
   GenericERC20,
+  MockAnyCall,
+  RewardForwarder,
+  RootGaugeFactory,
+  RootOracle,
+  SDL,
+  VotingEscrow,
 } from "../../build/typechain"
+import { MAX_LOCK_TIME, WEEK } from "../../utils/time"
 
-import { BIG_NUMBER_1E18 } from "../testUtils"
+import {
+  BIG_NUMBER_1E18,
+  convertGaugeNameToSalt,
+  getCurrentBlockTimestamp,
+  MAX_UINT256,
+  setTimestamp,
+} from "../testUtils"
+import {
+  setupAnyCallTranslator,
+  setupChildGaugeFactory,
+  setupChildOracle,
+  setupRootGaugeFactory,
+  setupRootOracle,
+} from "./utils"
 const { execute } = deployments
 
 const { expect } = chai
@@ -18,70 +37,108 @@ const { expect } = chai
 describe("RewardForwarder", () => {
   let signers: Array<Signer>
   let users: string[]
-  let user1: Signer
-  let deployer: Signer
-  let rewardForwarder: RewardForwarder
-  let testToken: LPToken
-  let firstGaugeToken: GenericERC20
-  let lpTokenFactory: ContractFactory
+  let mockAnyCall: MockAnyCall
+  let rootGaugeFactory: RootGaugeFactory
   let childGaugeFactory: ChildGaugeFactory
-  let anycallTranslator: AnyCallTranslator
+  let anyCallTranslator: AnyCallTranslator
+  let veSDL: VotingEscrow
+  let rootOracle: RootOracle
+  let childOracle: ChildOracle
+  let dummyToken: GenericERC20
+  let dummyRewardToken: GenericERC20
+  let rewardForwarder: RewardForwarder
   let childGauge: ChildGauge
 
-  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+  const GAUGE_NAME = "Dummy Token X-chain Gauge"
+  const GAUGE_SALT = convertGaugeNameToSalt(GAUGE_NAME)
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       await deployments.fixture(["veSDL"], { fallbackToGlobal: false }) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
-      user1 = signers[1]
       users = await Promise.all(
         signers.map(async (signer) => signer.getAddress()),
       )
 
-      // Deploy child gauge
-      const childGaugeFactoryFactory = await ethers.getContractFactory(
-        "ChildGaugeFactory",
-      )
+      const contracts = await setupAnyCallTranslator(users[0])
+      anyCallTranslator = contracts.anyCallTranslator
+      mockAnyCall = contracts.mockAnyCall
 
-      childGaugeFactory = (await childGaugeFactoryFactory.deploy(
-        ZERO_ADDRESS,
-        (
-          await ethers.getContract("SDL")
-        ).address,
+      // **** Setup rootGauge Factory ****
+
+      rootGaugeFactory = await setupRootGaugeFactory(
+        anyCallTranslator.address,
         users[0],
-      )) as ChildGaugeFactory
-
-      // Root Gauge Implementation
-      const gaugeImplementationFactory = await ethers.getContractFactory(
-        "ChildGauge",
       )
-      childGauge = (await gaugeImplementationFactory.deploy(
-        (
-          await ethers.getContract("SDL")
-        ).address,
+
+      // **** Setup RootOracle ****
+      rootOracle = await setupRootOracle(
+        anyCallTranslator.address,
+        rootGaugeFactory.address,
+      )
+
+      // **** Setup ChildOracle ****
+      childOracle = await setupChildOracle(anyCallTranslator.address)
+
+      // **** Setup ChildGaugeFactory ****
+      childGaugeFactory = await setupChildGaugeFactory(
+        anyCallTranslator.address,
+        users[0],
+        childOracle.address,
+      )
+
+      // **** Add expected callers to known callers ****
+      await anyCallTranslator.addKnownCallers([
+        rootGaugeFactory.address,
+        rootOracle.address,
         childGaugeFactory.address,
-      )) as ChildGauge
+      ])
 
-      // Reward Forwarder Deployment
-      // Root Gauge Implementation
-      const rewardFowarderFactory = await ethers.getContractFactory(
-        "RewardForwarder",
+      // Set timestamp to start of the week
+      await setTimestamp(
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
       )
-      rewardForwarder = (await rewardFowarderFactory.deploy(
-        childGauge.address,
-      )) as RewardForwarder
 
-      // Deploy dummy tokens
-      lpTokenFactory = await ethers.getContractFactory("LPToken")
-      const erc20Factory = await ethers.getContractFactory("GenericERC20")
-      firstGaugeToken = (await erc20Factory.deploy(
-        "First Gauge Token",
-        "GFIRST",
-        "18",
-      )) as GenericERC20
-      await firstGaugeToken.mint(users[0], BIG_NUMBER_1E18)
+      // Create max lock from deployer address
+      veSDL = await ethers.getContract("VotingEscrow")
+      await ethers
+        .getContract("SDL")
+        .then((sdl) => (sdl as SDL).approve(veSDL.address, MAX_UINT256))
+      await veSDL.create_lock(
+        BIG_NUMBER_1E18.mul(10_000_000),
+        (await getCurrentBlockTimestamp()) + MAX_LOCK_TIME,
+      )
+
+      // Deploy dummy token to be used as staking token for test gauge
+      dummyToken = (await ethers
+        .getContractFactory("GenericERC20")
+        .then((f) => f.deploy("Dummy Token", "DUMMY", 18))) as GenericERC20
+      await dummyToken.mint(users[0], BIG_NUMBER_1E18.mul(100_000))
+
+      // Deploy dummy token to be used as reward token
+      dummyRewardToken = (await ethers
+        .getContractFactory("GenericERC20")
+        .then((f) =>
+          f.deploy("Dummy Reward Token", "DUMMYR", 18),
+        )) as GenericERC20
+      await dummyRewardToken.mint(users[0], BIG_NUMBER_1E18.mul(100_000))
+
+      // **** Deploy a child gauge from the child gauge factory ****
+      await childGaugeFactory["deploy_gauge(address,bytes32,string)"](
+        dummyToken.address,
+        GAUGE_SALT,
+        GAUGE_NAME,
+      )
+      childGauge = await ethers.getContractAt(
+        "ChildGauge",
+        await childGaugeFactory.get_gauge(0),
+      )
+
+      // **** Deploy RewardForwarder ****
+      rewardForwarder = (await ethers
+        .getContractFactory("RewardForwarder")
+        .then((f) => f.deploy(childGauge.address))) as RewardForwarder
     },
   )
 
@@ -89,63 +146,55 @@ describe("RewardForwarder", () => {
     await setupTest()
   })
 
-  describe("Initialize RewardForwarder", () => {
-    it(`Successfully initializes with gauge`, async () => {
-      expect(await rewardForwarder.gauge()).to.eq(childGauge.address)
+  describe("constructor", () => {
+    it(`Successfully initializes with child gauge at index 0`, async () => {
+      expect(await rewardForwarder.gauge()).to.eq(
+        await childGaugeFactory.get_gauge(0),
+      )
     })
   })
-  describe("Successfully deposits in RewardForwarder", () => {
+  describe("depositRewardToken", () => {
     it(`Successfully deposits lp token`, async () => {
-      testToken = (await lpTokenFactory.deploy()) as LPToken
-      testToken.initialize("Gauge Test Token", "GT")
-      await testToken.mint(users[0], 100)
-      //   TODO: Property 'deposit' does not exist on type 'ChildGauge', so have to use execute
-      // following does not work await childGauge.deposit(100)
-      // TODO: Execute cannot find the deployment
-      // await execute(
-      //   "ChildGauge",
-      //   { from: users[0], log: true },
-      //   "deposit(uint256)",
-      //   100,
-      // )
-    })
-    it(`Successfully adds reward`, async () => {
-      const firstGaugeTokenAddr = firstGaugeToken.address
-      const rewardForwarderAddr = rewardForwarder.address
-      await childGauge.add_reward(firstGaugeTokenAddr, rewardForwarderAddr)
-      await firstGaugeToken.transfer(rewardForwarderAddr, BIG_NUMBER_1E18)
-      await rewardForwarder.allow(firstGaugeTokenAddr)
-      await rewardForwarder
-        .connect(user1)
-        .depositRewardToken(firstGaugeTokenAddr)
-      expect(await firstGaugeToken.balanceOf(childGauge.address)).to.be.eq(
-        BIG_NUMBER_1E18,
+      await childGauge.add_reward(
+        dummyRewardToken.address,
+        rewardForwarder.address,
+      )
+      await rewardForwarder.allow(dummyRewardToken.address)
+      await dummyRewardToken.transfer(
+        rewardForwarder.address,
+        BIG_NUMBER_1E18.mul(10_000),
+      )
+      // Then call depositRewardToken to deposit the tokens to the associated gauge
+      await rewardForwarder.depositRewardToken(dummyRewardToken.address)
+
+      expect(await dummyRewardToken.balanceOf(childGauge.address)).to.be.eq(
+        BIG_NUMBER_1E18.mul(10_000),
       )
       expect(
-        (await childGauge.reward_data(firstGaugeTokenAddr))["rate"],
+        (await childGauge.reward_data(dummyRewardToken.address))["rate"],
       ).to.be.gt(0)
     })
-    it(`Reverts deposit without allow`, async () => {
-      const firstGaugeTokenAddr = firstGaugeToken.address
-      const rewardForwarderAddr = rewardForwarder.address
-      await childGauge.add_reward(firstGaugeTokenAddr, rewardForwarderAddr)
-      await firstGaugeToken.transfer(rewardForwarderAddr, BIG_NUMBER_1E18)
-      console.log("...")
-      // rewardForwarder cannot deposit if allow(token) is not called
+    it(`Reverts when allow is not called previously`, async () => {
+      await childGauge.add_reward(
+        dummyRewardToken.address,
+        rewardForwarder.address,
+      )
+      await dummyRewardToken.transfer(
+        rewardForwarder.address,
+        BIG_NUMBER_1E18.mul(10_000),
+      )
       await expect(
-        rewardForwarder.depositRewardToken(firstGaugeTokenAddr),
+        rewardForwarder.depositRewardToken(dummyRewardToken.address),
       ).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
     })
-    it(`Reverts if reward token is not added to gauge`, async () => {
-      const firstGaugeTokenAddr = firstGaugeToken.address
-      const rewardForwarderAddr = rewardForwarder.address
-      await firstGaugeToken.transfer(rewardForwarderAddr, BIG_NUMBER_1E18)
-      await rewardForwarder.allow(firstGaugeTokenAddr)
-      // token cannot be deposited without being added as a reward first
-      await expect(
-        rewardForwarder.connect(user1).depositRewardToken(firstGaugeTokenAddr),
-      ).to.be.reverted
+    it(`Reverts if ChildGauge does not have matching reward token added`, async () => {
+      await rewardForwarder.allow(childGauge.address)
+      await dummyRewardToken.transfer(
+        rewardForwarder.address,
+        BIG_NUMBER_1E18.mul(10_000),
+      )
+      await expect(rewardForwarder.depositRewardToken(dummyRewardToken.address))
+        .to.be.reverted
     })
-    // TODO: add test for claiming rewards
   })
 })
