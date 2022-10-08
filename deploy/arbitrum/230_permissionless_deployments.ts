@@ -10,144 +10,114 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get, getOrNull, execute } = deployments
   const { deployer } = await getNamedAccounts()
 
-  const shareProtocolFee = await getOrNull("ShareProtocolFee")
   const permissionlessSwap = await getOrNull("PermissionlessSwap")
   const permissionlessMetaSwap = await getOrNull("PermissionlessMetaSwap")
   const permissionlessDeployer = await getOrNull("PermissionlessDeployer")
-
-  // Get the MasterRegistry contract and address
   const masterRegistry: MasterRegistry = await ethers.getContract(
     "MasterRegistry",
     deployer,
   )
   const masterRegistryAddress = masterRegistry.address
+  const multisigAddress = MULTISIG_ADDRESSES[await getChainId()]
+  const swapUtilsAddress = (await get("SwapUtils")).address
+  const amplificationUtilsAddress = (await get("AmplificationUtils")).address
 
   // see if master registry has a fee collector set
-  const feeCollectorName =
-    "0x466565436f6c6c6563746f720000000000000000000000000000000000000000"
+  const feeCollectorName = ethers.utils.formatBytes32String("FeeCollector")
   try {
     await masterRegistry.resolveNameToLatestAddress(feeCollectorName)
   } catch (error) {
     console.log("No fee collector set, setting now")
-    await masterRegistry.addRegistry(
-      feeCollectorName,
-      MULTISIG_ADDRESSES[await getChainId()],
-    )
+    await masterRegistry.addRegistry(feeCollectorName, multisigAddress)
     console.log("Successfully set fee collector")
-  }
-
-  // deploy ShareProtocolFeel if needed
-  if (shareProtocolFee == null) {
-    console.log("ShareProtocolFee not found, deploying")
-    await deploy("ShareProtocolFee", {
-      from: deployer,
-      log: true,
-      skipIfAlreadyDeployed: true,
-      args: [masterRegistryAddress],
-      libraries: {
-        SwapUtils: (await get("SwapUtils")).address,
-        AmplificationUtils: (await get("AmplificationUtils")).address,
-      },
-    })
-    console.log(
-      `ShareProtocolFee deployed at ${(await get("ShareProtocolFee")).address}`,
-    )
   }
 
   // deploy PermissionlessSwap if needed
   if (permissionlessSwap == null) {
     console.log("PermissionlessSwap not found, deploying")
-    await deploy("PermissionlessSwap", {
+    const permissionlessSwapDeployment = await deploy("PermissionlessSwap", {
       from: deployer,
       log: true,
       skipIfAlreadyDeployed: true,
       args: [masterRegistryAddress],
       libraries: {
-        SwapUtils: (await get("SwapUtils")).address,
-        AmplificationUtils: (await get("AmplificationUtils")).address,
-        ShareProtocolFee: (await get("ShareProtocolFee")).address,
+        SwapUtils: swapUtilsAddress,
+        AmplificationUtils: amplificationUtilsAddress,
       },
     })
     console.log(
-      `PermissionlessSwap deployed at ${
-        (await get("PermissionlessSwap")).address
-      }`,
+      `PermissionlessSwap deployed at ${permissionlessSwapDeployment.address}`,
     )
   }
+  const permissionlessSwapAddress = (await get("PermissionlessSwap")).address
 
-  // deploy ShareProtocolFeel if needed
+  // deploy PermissionlessMetaSwap if needed
   if (permissionlessMetaSwap == null) {
     console.log("PermissionlessMetaSwap not found, deploying")
-    await deploy("PermissionlessMetaSwap", {
-      from: deployer,
-      log: true,
-      skipIfAlreadyDeployed: true,
-      args: [masterRegistryAddress],
-      libraries: {
-        SwapUtils: (await get("SwapUtils")).address,
-        MetaSwapUtils: (await get("MetaSwapUtils")).address,
-        AmplificationUtils: (await get("AmplificationUtils")).address,
+    const permissionlessMetaSwapDeployment = await deploy(
+      "PermissionlessMetaSwap",
+      {
+        from: deployer,
+        log: true,
+        skipIfAlreadyDeployed: true,
+        args: [masterRegistryAddress],
+        libraries: {
+          SwapUtils: swapUtilsAddress,
+          MetaSwapUtils: (await get("MetaSwapUtils")).address,
+          AmplificationUtils: amplificationUtilsAddress,
+        },
       },
-    })
+    )
     console.log(
-      `PermissionlessMetaSwap deployed at ${
-        (await get("PermissionlessMetaSwap")).address
-      }`,
+      `PermissionlessMetaSwap deployed at ${permissionlessMetaSwapDeployment.address}`,
     )
   }
+  const permissionlessMetaSwapAddress = (await get("PermissionlessMetaSwap"))
+    .address
 
   // deploy PermissionlessDeployer if needed
   if (permissionlessDeployer == null) {
     console.log("PermissionlessDeployer not found, deploying")
-    await deploy("PermissionlessDeployer", {
-      from: deployer,
-      log: true,
-      skipIfAlreadyDeployed: true,
-      args: [
-        MULTISIG_ADDRESSES[await getChainId()],
-        (await get("MasterRegistry")).address,
-        (await get("LPToken")).address,
-        (await get("PermissionlessSwap")).address,
-        (await get("PermissionlessMetaSwap")).address,
-        // Below needs to be a non-clone instance of the MetaswapDeposit Contract
-        (
-          await get("MetaSwapDeposit")
-        ).address,
-      ],
-    })
+    const PermissionlessDeployerDeployment = await deploy(
+      "PermissionlessDeployer",
+      {
+        from: deployer,
+        log: true,
+        skipIfAlreadyDeployed: true,
+        args: [
+          multisigAddress,
+          masterRegistryAddress,
+          (await get("LPToken")).address,
+          permissionlessSwapAddress,
+          permissionlessMetaSwapAddress,
+          // Below needs to be a non-clone instance of the MetaswapDeposit Contract
+          (
+            await get("MetaSwapDeposit")
+          ).address,
+        ],
+      },
+    )
     console.log(
-      `Deployed PermissionlessDeployer at ${
-        (await get("PermissionlessDeployer")).address
-      }`,
+      `Deployed PermissionlessDeployer at ${PermissionlessDeployerDeployment.address}`,
     )
 
     // set target swaps for the permissionless deployer,
     // PermissionlessDeployer to the master registry
     console.log("Setting target swaps for PermissionlessDeployer")
-    console.log(
-      `PermissionlessSwap at: ${(await get("PermissionlessSwap")).address}`,
-    )
-    console.log(
-      `PermissionlessMetaSwap at: ${
-        (await get("PermissionlessMetaSwap")).address
-      }`,
-    )
+    console.log(`PermissionlessSwap at: ${permissionlessSwapAddress}`)
+    console.log(`PermissionlessMetaSwap at: ${permissionlessMetaSwapAddress}`)
     await execute(
       "PermissionlessDeployer",
       { from: deployer, log: true },
       "setTargetSwap",
-      (
-        await get("PermissionlessSwap")
-      ).address,
+      permissionlessSwapAddress,
     )
 
     await execute(
       "PermissionlessDeployer",
       { from: deployer, log: true },
       "setTargetMetaSwap",
-      (
-        await get("PermissionlessMetaSwap")
-      ).address,
+      permissionlessMetaSwapAddress,
     )
 
     console.log("Adding PermissionlessDeployer to MasterRegistry")
@@ -159,9 +129,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       },
       "addRegistry",
       ethers.utils.formatBytes32String("PermissionlessDeployer"),
-      (
-        await get("PermissionlessDeployer")
-      ).address,
+      PermissionlessDeployerDeployment.address,
     )
 
     const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
@@ -172,9 +140,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const batchCall = [
       await poolRegistry.populateTransaction.grantRole(
         await poolRegistry.COMMUNITY_MANAGER_ROLE(),
-        (
-          await get("PermissionlessDeployer")
-        ).address,
+        PermissionlessDeployerDeployment.address,
       ),
       await poolRegistry.populateTransaction.grantRole(
         await poolRegistry.COMMUNITY_MANAGER_ROLE(),
@@ -182,7 +148,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ),
       await poolRegistry.populateTransaction.grantRole(
         await poolRegistry.DEFAULT_ADMIN_ROLE(),
-        MULTISIG_ADDRESSES[await getChainId()],
+        multisigAddress,
       ),
     ]
 
