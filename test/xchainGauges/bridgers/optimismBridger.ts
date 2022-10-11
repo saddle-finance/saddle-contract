@@ -2,9 +2,9 @@ import chai from "chai"
 import { Signer } from "ethers"
 import { getAddress } from "ethers/lib/utils"
 import { deployments, ethers, network } from "hardhat"
-import { OptimismBridger, SDL } from "../../build/typechain"
-import { MULTISIG_ADDRESSES } from "../../utils/accounts"
-import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
+import { OptimismBridger, SDL } from "../../../build/typechain"
+import { MULTISIG_ADDRESSES } from "../../../utils/accounts"
+import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../../utils/network"
 import {
   BIG_NUMBER_1E18,
   getWithName,
@@ -12,7 +12,7 @@ import {
   MAX_UINT256,
   setEtherBalance,
   ZERO_ADDRESS,
-} from "../testUtils"
+} from "../../testUtils"
 
 const { expect } = chai
 
