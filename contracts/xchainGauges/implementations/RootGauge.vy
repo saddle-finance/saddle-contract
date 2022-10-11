@@ -37,9 +37,7 @@ struct InflationParams:
 
 WEEK: constant(uint256) = 604800
 YEAR: constant(uint256) = 86400 * 365
-RATE_DENOMINATOR: constant(uint256) = 10 ** 18
-RATE_REDUCTION_COEFFICIENT: constant(uint256) = 1189207115002721024  # 2 ** (1/4) * 1e18
-RATE_REDUCTION_TIME: constant(uint256) = YEAR
+RATE_REDUCTION_TIME: constant(uint256) = WEEK * 2
 
 SDL: immutable(address)
 GAUGE_CONTROLLER: immutable(address)
@@ -60,7 +58,7 @@ is_killed: public(bool)
 
 @external
 def __init__(_sdl_token: address, _gauge_controller: address, _minter: address):
-    # TODO: this is set during deploy and never changes, how is it used to determine if its initialized?
+    # set factory to non-zero value in the logic contract
     self.factory = 0x000000000000000000000000000000000000dEaD
 
     # assign immutable variables
@@ -195,10 +193,7 @@ def initialize(_bridger: address, _chain_id: uint256, _name: String[32]):
     """
     @notice Proxy initialization method
     """
-    #TODO: how is this a check for initialize? Its never changed besides contract creation,
-    # this currently passed if called from the factory but not manually calling from a test
     assert self.factory == ZERO_ADDRESS, "already initialized"
-
 
     self.chain_id = _chain_id
     self.bridger = _bridger
