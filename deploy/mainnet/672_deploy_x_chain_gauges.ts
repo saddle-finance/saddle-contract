@@ -66,21 +66,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // Get RootGaugeFactory contract and interface
   const rgf: RootGaugeFactory = await ethers.getContract("RootGaugeFactory")
-  const callData = rgf.interface.encodeFunctionData("deploy_gauge", [
+  let callData = rgf.interface.encodeFunctionData("deploy_gauge", [
     deployGaugeData.chainId,
     deployGaugeData.salt,
     deployGaugeData.gaugeName,
   ])
-
+  callData = ethers.utils.defaultAbiCoder.encode(
+    ["address", "bytes"],
+    [rgf.address, callData],
+  )
   // Call anyExecute from impersonated executor account (owned by AnyCall)
   // Then confirm new gauge was deployed via event emitted by RootGaugeFactory
   await expect(
     executorContract.connect(executorCreator).execute(
       anyCallTranslatorProxy.address,
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "bytes"],
-        [rgf.address, callData],
-      ),
+      callData,
       anyCallTranslatorProxy.address, // Pretend the call came from same address from source chain
       CHAIN_ID.ARBITRUM_MAINNET, // Source chain ID
       0, // Source nonce
