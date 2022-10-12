@@ -28,6 +28,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     USDC: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
     USDT: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
     SUSD: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
+    USX: ["0x9e8b68e17441413b26c2f18e741eaba69894767c"],
     // BTC
     WBTC: ["0x7fc77b5c7614e1533320ea6ddc2eb61fa00a9714"],
     RENBTC: ["0x7fc77b5c7614e1533320ea6ddc2eb61fa00a9714"],
