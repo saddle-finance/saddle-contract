@@ -390,7 +390,9 @@ describe("ChildGauge", () => {
     })
 
     describe("ChildGaugeFactory.mint()", () => {
-      it(`Mints correct amount of SDL to the stakers`, async () => {})
+      it(`Mints correct amount of SDL to the stakers`, async () => {
+        await childGaugeFactory.mint(childGauge.address)
+      })
     })
   })
 })
