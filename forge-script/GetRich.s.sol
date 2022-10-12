@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import "./ScriptWithConstants.s.sol";
 import "forge-std/Test.sol";
 
-contract GetRich is Test, ScriptWithConstants {
+contract GetRichScript is Test, ScriptWithConstants {
     address USDC;
     address DAI;
 
@@ -13,11 +13,13 @@ contract GetRich is Test, ScriptWithConstants {
     function setUp() public override {
         super.setUp();
 
+        // Get the addresses of the tokens in this network
         USDC = getDeploymentAddress("USDC");
         DAI = getDeploymentAddress("DAI");
     }
 
     function run() public {
+        // Use foundry's cheatcode to give us some tokens
         deal(USDC, hardhatAccount0, 1e6 * 10000);
         deal(DAI, hardhatAccount0, 1e18 * 10000);
     }
