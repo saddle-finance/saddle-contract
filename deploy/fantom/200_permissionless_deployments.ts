@@ -9,10 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { get } = deployments
   const { deployer } = await getNamedAccounts()
 
-  deployPermissionlessPoolComponents(
-    hre,
-    (await get("SaddleFRAXUSDTMetaPoolDeposit")).address,
-  )
+  await deployPermissionlessPoolComponents(hre)
 }
 export default func
 func.tags = ["PermissionlessSwaps"]

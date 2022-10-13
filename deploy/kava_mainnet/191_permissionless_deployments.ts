@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     skipIfAlreadyDeployed: true,
   })
 
-  deployPermissionlessPoolComponents(hre, metaSwapDepositDeployment.address)
+  await deployPermissionlessPoolComponents(hre)
 }
 export default func
 func.tags = ["PermissionlessSwaps"]
