@@ -5,6 +5,8 @@ pragma experimental ABIEncoderV2;
 import "./ScriptWithConstants.s.sol";
 import "../contracts/interfaces/IMasterRegistry.sol";
 
+// TODO: script stack is so deep use --via-ir to bypass
+
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 }
@@ -21,6 +23,7 @@ interface IMiniChefV2{
 
 interface IGaugeController{
     function n_gauges() external view returns (int128);
+    function gauges(uint256) external view returns (address);
 }
 
 interface IPoolRegistry {
@@ -181,12 +184,21 @@ contract UserInterationScript is ScriptWithConstants {
                 );
                 
             }
+
             // log gauge rewards / veSDL locked if on mainnet
             if (block.chainid == 1){
+                // get info on all LiquidityGaugeV5s
                 address gaugeController = getDeploymentAddress("GaugeController");
                 IGaugeController gc = IGaugeController(gaugeController);
-                int128 numberOfGauges = gc.n_gauges();
-                console.log("Number of Gauges %s", numberOfGauges);
+                int256 numberOfGauges = int256(gc.n_gauges());
+                console.log("Number of Gauges ");
+                // TODO: can't seem to console.log the number with the text
+                console.logInt(numberOfGauges);
+                for (int128 j = 0; j < numberOfGauges-1; j++){
+                    address gauge = gc.gauges(j);
+                    console.log("Gauge address: %s", gauge);
+                    console.log("Gauge balance: %s", IERC20(gauge).balanceOf(user));
+                }
             }
         }
     }
