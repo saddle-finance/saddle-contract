@@ -6,15 +6,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get } = deployments
   const { deployer } = await getNamedAccounts()
 
-  await deploy("RewardForwarder", {
-    from: deployer,
-    log: true,
-    skipIfAlreadyDeployed: true,
-    args: [
-      (
-        await get("LiquidityGaugeV5_SaddleFRAXBPVesperFRAXMetaPoolLPToken")
-      ).address,
-    ],
-  })
+  await deploy(
+    "RewardForwarder_VSP_LiquidityGaugeV5_SaddleFRAXBPVesperFRAXMetaPoolLPToken",
+    {
+      from: deployer,
+      contract: "RewardForwarder",
+      log: true,
+      skipIfAlreadyDeployed: true,
+      args: [
+        (
+          await get("LiquidityGaugeV5_SaddleFRAXBPVesperFRAXMetaPoolLPToken")
+        ).address,
+      ],
+    },
+  )
 }
 export default func
