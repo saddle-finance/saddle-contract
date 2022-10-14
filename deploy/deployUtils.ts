@@ -788,7 +788,7 @@ export async function deployPermissionlessPoolComponents(
   const masterRegistryAddress = masterRegistry.address
   const swapUtilsAddress = (await get("SwapUtils")).address
   const amplificationUtilsAddress = (await get("AmplificationUtils")).address
-  let metaswapDeposit = await getOrNull("MetaPoolDeposit")
+  const metaswapDeposit = await getOrNull("MetaPoolDeposit")
   let metaswapDepositAddress = metaswapDeposit?.address
   // see if master registry has a fee collector set
   const feeCollectorName = ethers.utils.formatBytes32String("FeeCollector")
