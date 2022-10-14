@@ -19,6 +19,10 @@ interface IMiniChefV2{
     
 }
 
+interface IGaugeController{
+    function n_gauges() external view returns (int128);
+}
+
 interface IPoolRegistry {
     /* Structs */
 
@@ -158,13 +162,11 @@ contract UserInterationScript is ScriptWithConstants {
             );
             console.log(
                 "lp token: %s",
-                i,
                 poolData.lpToken
             );
             // userInfo
             console.log(
                 "token balance: %s",
-                i,
                 IERC20(poolData.lpToken).balanceOf(user)
             );
             // log minichef rewards only on networks with minichef
@@ -177,20 +179,14 @@ contract UserInterationScript is ScriptWithConstants {
                         i,
                         usersInfo.amount
                 );
-                // Print the pooled token addresses
-                string memory tokens;
-                for (uint256 j = 0; j < poolData.tokens.length; j++) {
-                    string memory suffix = j + 1 != poolData.tokens.length
-                        ? ", "
-                        : "";
-                    tokens = string(
-                        abi.encodePacked(
-                            tokens,
-                            vm.toString(poolData.tokens[j]),
-                            suffix
-                        )
-                    );
-                }   
+                
+            }
+            // log gauge rewards / veSDL locked if on mainnet
+            if (block.chainid == 1){
+                address gaugeController = getDeploymentAddress("GaugeController");
+                IGaugeController gc = IGaugeController(gaugeController);
+                int128 numberOfGauges = gc.n_gauges();
+                console.log("Number of Gauges %s", numberOfGauges);
             }
         }
     }
