@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
 import "./Bridger.sol";
@@ -171,6 +170,4 @@ contract ArbitrumBridger is Bridger {
             [_gasLimit, _gasPrice]
         );
     }
-
-    receive() external payable override {}
 }
