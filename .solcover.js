@@ -11,7 +11,8 @@ module.exports = {
     'AmplificationUtilsV1.sol',
     'SwapFlashLoanV1.sol',
     'SwapUtilsV1.sol',
-    'SwapV1.sol'
+    'SwapV1.sol',
+    'xchainGauges/mock'
   ],
   mocha: {
     grep: "@skip-on-coverage", // Find everything with this tag

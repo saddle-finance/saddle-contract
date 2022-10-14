@@ -2,16 +2,16 @@ import { setNextBlockBaseFeePerGas } from "@nomicfoundation/hardhat-network-help
 import chai from "chai"
 import { Signer } from "ethers"
 import { deployments, ethers, network } from "hardhat"
-import { ArbitrumBridger, SDL } from "../../build/typechain"
-import { MULTISIG_ADDRESSES } from "../../utils/accounts"
-import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
+import { ArbitrumBridger, SDL } from "../../../build/typechain"
+import { MULTISIG_ADDRESSES } from "../../../utils/accounts"
+import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../../utils/network"
 import {
   BIG_NUMBER_1E18,
   getWithName,
   impersonateAccount,
   MAX_UINT256,
   setEtherBalance,
-} from "../testUtils"
+} from "../../testUtils"
 
 const { expect } = chai
 
@@ -91,6 +91,35 @@ describe("ArbitrumBridger", () => {
     })
   })
 
+  describe("pause", () => {
+    it(`Pauses contract`, async () => {
+      await arbitrumBridger.pause()
+      expect(await arbitrumBridger.paused()).to.eq(true)
+    })
+
+    it(`Reverts if called by non-owner`, async () => {
+      await expect(
+        arbitrumBridger.connect(signers[1]).pause(),
+      ).to.be.revertedWith("Ownable: caller is not the owner")
+    })
+  })
+
+  describe("unpause", () => {
+    beforeEach(async () => {
+      await arbitrumBridger.pause()
+      expect(await arbitrumBridger.paused()).to.eq(true)
+    })
+    it(`Unpauses contract`, async () => {
+      await arbitrumBridger.unpause()
+      expect(await arbitrumBridger.paused()).to.eq(false)
+    })
+    it(`Reverts if called by non-owner`, async () => {
+      await expect(
+        arbitrumBridger.connect(signers[1]).unpause(),
+      ).to.be.revertedWith("Ownable: caller is not the owner")
+    })
+  })
+
   describe("cost", () => {
     it(`Returns correct estimation for gas cost`, async () => {
       // Provide base fee for hardhat workaround
@@ -138,6 +167,13 @@ describe("ArbitrumBridger", () => {
       await sdl
         .connect(sdlHolder)
         .transfer(users[0], BIG_NUMBER_1E18.mul(10000))
+    })
+
+    it(`Reverts when paused`, async () => {
+      await arbitrumBridger.pause()
+      await expect(
+        arbitrumBridger.bridge(users[0], users[1], BIG_NUMBER_1E18.mul(100)),
+      ).to.be.revertedWith("Pausable: paused")
     })
 
     it(`Successfully Sends SDL to Arbitrum Router`, async () => {

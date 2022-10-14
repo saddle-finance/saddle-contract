@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts-4.4.0/access/Ownable.sol";
+import "./Bridger.sol";
 
 interface IGatewayRouter {
     function getGateWay(address _token) external view returns (address);
@@ -35,7 +34,7 @@ interface Inbox {
     ) external view returns (uint256);
 }
 
-contract ArbitrumBridger is Ownable {
+contract ArbitrumBridger is Bridger {
     using SafeERC20 for IERC20;
 
     // consts
@@ -82,7 +81,7 @@ contract ArbitrumBridger is Ownable {
         address _token,
         address _to,
         uint256 _amount
-    ) external payable {
+    ) external payable override whenNotPaused {
         // Transfer tokens from the caller to this
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -97,8 +96,8 @@ contract ArbitrumBridger is Ownable {
 
         // Unpack submission data
         uint256 data = submissionData;
-        uint256 gasLimit = data >> 128;
-        uint256 gasPrice = data & type(uint128).max;
+        uint256 _gasLimit = data >> 128;
+        uint256 _gasPrice = data & type(uint128).max;
 
         // Calculate submission cost based on current base fee
         (, uint256 calldataSize) = IGatewayRouter(ARB_GATEWAY_ROUTER)
@@ -112,14 +111,14 @@ contract ArbitrumBridger is Ownable {
         // value to send with the outbound transfer
         address _owner = owner();
         IGatewayRouter(ARB_GATEWAY_ROUTER).outboundTransferCustomRefund{
-            value: gasLimit * gasPrice + submissionCost
+            value: _gasLimit * _gasPrice + submissionCost
         }(
             _token,
             _owner,
             _to,
             _amount,
-            gasLimit,
-            gasPrice,
+            _gasLimit,
+            _gasPrice,
             abi.encode(submissionCost, "")
         );
 
@@ -129,7 +128,7 @@ contract ArbitrumBridger is Ownable {
         }
     }
 
-    function check(address) external pure returns (bool) {
+    function check(address) external pure override returns (bool) {
         return true;
     }
 
@@ -141,7 +140,7 @@ contract ArbitrumBridger is Ownable {
         return submissionData & type(uint128).max;
     }
 
-    function cost() external view returns (uint256) {
+    function cost() external view override returns (uint256) {
         return cost(block.basefee);
     }
 
@@ -171,6 +170,4 @@ contract ArbitrumBridger is Ownable {
             [_gasLimit, _gasPrice]
         );
     }
-
-    receive() external payable {}
 }
