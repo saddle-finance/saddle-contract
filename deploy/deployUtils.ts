@@ -810,8 +810,16 @@ export async function deployPermissionlessPoolComponents(
   } catch (error) {
     console.log("No fee collector set, setting now")
     // setting as the deployer for now as no multisig is available on this network
-    await masterRegistry.addRegistry(feeCollectorName, multisig)
-    console.log("Successfully set fee collector")
+    await execute(
+      "MasterRegistry",
+      {
+        from: deployer,
+        log: true,
+      },
+      "addRegistry",
+      feeCollectorName,
+      multisig,
+    )
   }
 
   // deploy an instance of metaswap deposit if not found (currently only for kava network)
