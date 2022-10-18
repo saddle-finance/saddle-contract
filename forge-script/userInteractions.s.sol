@@ -11,6 +11,20 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 }
 
+interface IVotingEscrow {
+    function balanceOf(address account) external view returns (uint256);
+
+    struct LockedBalance {
+        uint256 amount;
+        uint256 unlockTime;
+    }
+
+    function locked(address account)
+        external
+        view
+        returns (LockedBalance memory);
+}
+
 interface IMiniChefV2 {
     struct UserInfo {
         uint256 amount;
@@ -178,19 +192,21 @@ contract UserInterationScript is ScriptWithConstants {
                 "lp token balance: %s",
                 IERC20(poolData.lpToken).balanceOf(user)
             );
-            // log minichef rewards only on networks with minichef
-            if (
-                block.chainid == 42161 ||
-                block.chainid == 10 ||
-                block.chainid == 9001
-            ) {
-                getMiniChefBalances(user);
-            }
+        }
 
-            // log gauge rewards / veSDL locked if on mainnet
-            if (block.chainid == 1) {
-                getveSDLBalances(user);
-            }
+        // log minichef rewards only on networks with minichef
+        if (
+            block.chainid == 42161 ||
+            block.chainid == 10 ||
+            block.chainid == 9001
+        ) {
+            getMiniChefBalances(user);
+        }
+
+        // log gauge rewards / veSDL locked if on mainnet
+        if (block.chainid == 1) {
+            getGaugeBalances(user);
+            getveSDLBalance(user);
         }
     }
 
@@ -199,13 +215,11 @@ contract UserInterationScript is ScriptWithConstants {
         IMiniChefV2 mc = IMiniChefV2(minichefV2);
         for (uint256 n = 1; n < mc.poolLength(); n++) {
             IMiniChefV2.UserInfo memory usersInfo = mc.userInfo(1, user);
-            address mcLpToken = mc.lpToken(n);
-            uint256 userAmount = usersInfo.amount;
-            console.log("userInfo: %s", mcLpToken, userAmount);
+            console.log("userInfo: %s", mc.lpToken(n), usersInfo.amount);
         }
     }
 
-    function getveSDLBalances(address user) public {
+    function getGaugeBalances(address user) public {
         // get info on all LiquidityGaugeV5s
         address gaugeController = getDeploymentAddress("GaugeController");
         IGaugeController gc = IGaugeController(gaugeController);
@@ -218,6 +232,19 @@ contract UserInterationScript is ScriptWithConstants {
             console.log("Gauge address: %s", gauge);
             console.log("Gauge balance: %s", IERC20(gauge).balanceOf(user));
         }
+    }
+
+    function getveSDLBalance(address user) public {
+        address veSDL = getDeploymentAddress("VotingEscrow");
+        IVotingEscrow ve = IVotingEscrow(veSDL);
+        console.log("veSDL balance: %s", ve.balanceOf(user));
+        IVotingEscrow.LockedBalance memory lockedBalance = ve.locked(user);
+        console.log("veSDL locked balance: %s", lockedBalance.amount);
+        console.log(
+            "veSDL locked balance unlock time: %s",
+            lockedBalance.unlockTime
+        );
+        console.log("current time: %s", block.timestamp);
     }
 
     function run() public {
