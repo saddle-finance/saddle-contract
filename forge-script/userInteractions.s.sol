@@ -11,18 +11,26 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 }
 
-interface IMiniChefV2{
+interface IMiniChefV2 {
     struct UserInfo {
-            uint256 amount;
-            int256 rewardDebt;
-        }
+        uint256 amount;
+        int256 rewardDebt;
+    }
+
     // mapping(uint256 => mapping(address => UserInfo)) public userInfo;
-    function userInfo(uint pid, address user) external view returns (UserInfo memory);
-    
+    function userInfo(uint256 pid, address user)
+        external
+        view
+        returns (UserInfo memory);
+
+    function poolLength() external view returns (uint256 pools);
+
+    function lpToken(uint256 pid) external view returns (address);
 }
 
-interface IGaugeController{
-    function n_gauges() external view returns (int128);
+interface IGaugeController {
+    function n_gauges() external view returns (uint256);
+
     function gauges(uint256) external view returns (address);
 }
 
@@ -66,8 +74,8 @@ interface IPoolRegistry {
     }
 
     struct UserInfo {
-            uint256 amount;
-            int256 rewardDebt;
+        uint256 amount;
+        int256 rewardDebt;
     }
 
     /* Functions */
@@ -123,15 +131,16 @@ contract UserInterationScript is ScriptWithConstants {
     function setUp() public override {
         super.setUp();
     }
+
     struct UserInfo {
-            uint256 amount;
-            int256 rewardDebt;
-        }
+        uint256 amount;
+        int256 rewardDebt;
+    }
 
     function printPools(address user) public {
         // Find MasterRegistry
         address masterRegistry = getDeploymentAddress("MasterRegistry");
-        
+
         require(masterRegistry != address(0), "No master registry found");
         console.log("MasterRegistry address: %s", masterRegistry);
 
@@ -163,50 +172,58 @@ contract UserInterationScript is ScriptWithConstants {
                 i,
                 string(abi.encodePacked(poolData.poolName))
             );
-            console.log(
-                "lp token: %s",
-                poolData.lpToken
-            );
+            console.log("lp token: %s", poolData.lpToken);
             // userInfo
             console.log(
-                "token balance: %s",
+                "lp token balance: %s",
                 IERC20(poolData.lpToken).balanceOf(user)
             );
             // log minichef rewards only on networks with minichef
-            if (block.chainid == 42161 || block.chainid == 10|| block.chainid == 9001) {
-                address minichefV2 = getDeploymentAddress("MiniChefV2");
-                IMiniChefV2 mc = IMiniChefV2(minichefV2);
-                IMiniChefV2.UserInfo memory usersInfo = mc.userInfo(i, user);
-                console.log(
-                        "userInfo: %s",
-                        i,
-                        usersInfo.amount
-                );
-                
+            if (
+                block.chainid == 42161 ||
+                block.chainid == 10 ||
+                block.chainid == 9001
+            ) {
+                getMiniChefBalances(user);
             }
 
             // log gauge rewards / veSDL locked if on mainnet
-            if (block.chainid == 1){
-                // get info on all LiquidityGaugeV5s
-                address gaugeController = getDeploymentAddress("GaugeController");
-                IGaugeController gc = IGaugeController(gaugeController);
-                int256 numberOfGauges = int256(gc.n_gauges());
-                console.log("Number of Gauges ");
-                // TODO: can't seem to console.log the number with the text
-                console.logInt(numberOfGauges);
-                for (int128 j = 0; j < numberOfGauges-1; j++){
-                    address gauge = gc.gauges(j);
-                    console.log("Gauge address: %s", gauge);
-                    console.log("Gauge balance: %s", IERC20(gauge).balanceOf(user));
-                }
+            if (block.chainid == 1) {
+                getveSDLBalances(user);
             }
+        }
+    }
+
+    function getMiniChefBalances(address user) public {
+        address minichefV2 = getDeploymentAddress("MiniChefV2");
+        IMiniChefV2 mc = IMiniChefV2(minichefV2);
+        for (uint256 n = 1; n < mc.poolLength(); n++) {
+            IMiniChefV2.UserInfo memory usersInfo = mc.userInfo(1, user);
+            address mcLpToken = mc.lpToken(n);
+            uint256 userAmount = usersInfo.amount;
+            console.log("userInfo: %s", mcLpToken, userAmount);
+        }
+    }
+
+    function getveSDLBalances(address user) public {
+        // get info on all LiquidityGaugeV5s
+        address gaugeController = getDeploymentAddress("GaugeController");
+        IGaugeController gc = IGaugeController(gaugeController);
+        uint256 numberOfGauges = gc.n_gauges();
+        console.log("Number of Gauges ");
+        // TODO: can't seem to console.log the number with the text
+        console.log(numberOfGauges);
+        for (uint256 j = 0; j < numberOfGauges - 1; j++) {
+            address gauge = gc.gauges(j);
+            console.log("Gauge address: %s", gauge);
+            console.log("Gauge balance: %s", IERC20(gauge).balanceOf(user));
         }
     }
 
     function run() public {
         // https://github.com/foundry-rs/forge-std/blob/master/src/Vm.sol
         vm.startBroadcast();
-        address user = 0xffD2D6d732435505fcAbb5511278a1f6B995E723;
+        address user = 0x92703b74131dABA21d78eabFEf1156C7ffe81dE0;
         // 0x92703b74131dABA21d78eabFEf1156C7ffe81dE0
         for (uint256 i = 0; i < networkNames.length; i++) {
             vm.createSelectFork(networkNames[i]);
