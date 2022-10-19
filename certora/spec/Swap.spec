@@ -282,10 +282,13 @@ rule uninitializedImpliesZeroValue(method f) {
     assert valAfter == 0;
 }
 
-/*
+/* (P)
     Uninitialized contract state implies all state changing function calls revert
+    @dev state-changing functions with 0s as input (LPing 0, swapping 0 for 0) don't revert - and shouldn't.
+         All counter examples are the cases where the functions don't change state
     @dev might be unnecessary given the above rules and the fact that prover can take 0 address to be a contract which 
-    we safely assume is not
+         we safely assume is not
+    Tentatively assumed proven
 */
 rule uninitializedImpliesRevert(method f) filtered {
     f -> f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
@@ -309,6 +312,9 @@ rule onlyWithdrawWithOneTokenDecreasesUnderlyingsOnesided (method f) {
     uint256 _underlyingBalance = getTokenBalance(index);
     mathint _sumBalances = sum_all_underlying_balances;
 
+    require initialized;
+    require _sumBalances >= 0;
+
     calldataarg args;
     env e;
     f(e,args);
@@ -317,9 +323,12 @@ rule onlyWithdrawWithOneTokenDecreasesUnderlyingsOnesided (method f) {
     mathint sumBalances_ = sum_all_underlying_balances;
     if (sumBalances_ > _sumBalances) {
         assert underlyingBalance_ - _underlyingBalance != sumBalances_ - _sumBalances;
-    } else {
+    } else if (sumBalances_ < _sumBalances) {
         assert _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;
-    }        
+    } else {
+        assert true;
+    }
+           
 }
 
 /*
@@ -444,6 +453,8 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
     uint256 minToMint;
     uint256 deadline;
     
+    require initialized && !initializing;
+
     env e;
     addLiquidity(e,tokens,minToMint,deadline);
 
