@@ -9,6 +9,20 @@ methods {
     // newly declared function to help with summarization
     //getDApprox(uint256 xp1, uint256 xp2) returns(uint256) => newGetD(xp1,xp2);
 
+
+    //// refactored functions
+    //_addLiquidityHelper1((uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),address[],uint256[]) returns(uint256[]) => NONDET
+    //https://vaas-stg.certora.com/output/93493/a52c5cddea56000b3425/?anonymousKey=82df28494e920dd145c2164e630fb44f693947b9
+    
+    //_addLiquidityHelper2((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),(uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),address[],uint256[]) returns(uint256[]) => NONDET
+    //https://vaas-stg.certora.com/output/93493/4b56f3fe4454fcb081b7/?anonymousKey=97d9e5be959e5f453047964dbfd4056561b51e1c
+
+    //_removeLiquidityImbalanceHelper1((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),(uint256,uint256,uint256,uint256,address,uint256,uint256[],uint256[]),uint256[]) returns (uint256[]) => NONDET
+    //https://vaas-stg.certora.com/output/93493/02ffc66a1a1b6d58d17c/?anonymousKey=273372d8db6c060b54d76a192aa5233648d00c28
+    
+    //_removeLiquidityOneTokenHelper1((uint256,uint256,uint256,uint256,uint256,uint256,address,address[],uint256[],uint256[]),uint256,uint256,uint8) returns(uint256) => NONDET
+    //https://vaas-stg.certora.com/output/93493/36b8abd73b5fba32a927/?anonymousKey=2f52ea8a6289c42eb2bbcee468b4b5202d06b76c
+
     // math functions summarized
 	getD(uint256[], uint256) returns (uint256) => NONDET
 
@@ -27,12 +41,14 @@ methods {
     calculateRemoveLiquidity(uint256) returns (uint256[]) envfree
     calculateRemoveLiquidityOneToken(uint256,uint8) returns (uint256) envfree
     getAdminBalance(uint256) returns (uint256) envfree
+    addLiquidity(uint256[], uint256, uint256) returns (uint256)
 
     // harness functions
     getSwapFee() returns(uint256) envfree
     getAdminFee() returns(uint256) envfree
     getTotalSupply() returns(uint256) envfree
     getMaxAdminFee() returns(uint256) envfree
+    getMaxSwapFee() returns(uint256) envfree
 
     // burnableERC20
     burnFrom(address,int256) => DISPATCHER(true)
@@ -40,41 +56,13 @@ methods {
     initialize(string,string) => DISPATCHER(true)
 }
 
-function getAllGettersRandomInput() returns uint256 {
-    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
-    uint256 return1 = getA();
-    uint256 return2 = getAPrecise();
-    uint256 return3 = getToken(i1);
-    uint256 return4 = getTokenIndex(i2);
-    uint256 return5 = getTokenBalance(i3);
-    uint256 return6 = getVirtualPrice();
-    uint256 return7 = calculateSwap(i4,j4,k4);
-    uint256 return8 = calculateTokenAmount(i5,j5);
-    uint256 return9 = getAdminBalance(i6);
-    uint256 return10 = owner();
-    uint256 return11 = getTotalSupply();
-    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
-}
-
-function getAllGettersDefinedInput(uint8 i1, address i2, uint8 i3, uint8 i4, uint8 j4, uint256 k4, uint256[] i5, bool j5, uint256 i6) returns uint256 {
-    uint256 return1 = getA();
-    uint256 return2 = getAPrecise();
-    uint256 return3 = getToken(i1);
-    uint256 return4 = getTokenIndex(i2);
-    uint256 return5 = getTokenBalance(i3);
-    uint256 return6 = getVirtualPrice();
-    uint256 return7 = calculateSwap(i4,j4,k4);
-    uint256 return8 = calculateTokenAmount(i5,j5);
-    uint256 return9 = getAdminBalance(i6);
-    uint256 return10 = owner();
-    uint256 return11 = getTotalSupply();
-    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
-} 
 
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Ghosts and definitions                           //
 ////////////////////////////////////////////////////////////////////////////
+
+ghost mapping(uint256 => mapping(uint256 => uint256)) determinedInvariant;
 
 /*
     Getting initialized variable
@@ -179,13 +167,11 @@ invariant adminFeeNeverGreaterThanMAX()
 /*
     swapFee can never be greater MAX_SWAP_FEE
 */
+invariant swapFeeNeverGreaterThanMAX()
+    getSwapFee() <= getMaxSwapFee()
 
 /*
     A parameter can never be zero, once initialized
-*/
-
-/*
-    Virtual price can never be zero, once liquidity has been deposited
 */
 
 /*
@@ -451,6 +437,20 @@ rule pausedImpliesTokenRatioConstant(method f) {
 }
 
 /*
+    Virtual price can never be zero, once liquidity has been deposited
+*/
+rule virtualPriceNeverZeroOnceLiquidityProvided() {
+    uint256[] tokens;
+    uint256 minToMint;
+    uint256 deadline;
+    
+    env e;
+    addLiquidity(e,tokens,minToMint,deadline);
+
+    assert getVirtualPrice() > 0;
+}
+
+/*
     When trading token A for B, the sum A+B after the trade must always 
     be greater than adding liquidity in A and removing liquidity in B
     NOTE: might fail in edge cases. find exact conditions where it fails
@@ -493,11 +493,10 @@ rule pausedImpliesTokenRatioConstant(method f) {
 
 // Mathematical rules (monotonicity, commutativity etc.)
 
+
 ////////////////////////////////////////////////////////////////////////////
 //                                Helpers                                 //
 ////////////////////////////////////////////////////////////////////////////
-
-ghost mapping(uint256 => mapping(uint256 => uint256)) determinedInvariant;
 
 
 function newGetD(uint256 balance1, uint256 balance2) returns uint256 {
@@ -507,3 +506,34 @@ function newGetD(uint256 balance1, uint256 balance2) returns uint256 {
     require invar == determinedInvariant[balance1][balance2];
     return invar;
 }
+
+function getAllGettersRandomInput() returns uint256 {
+    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
+    uint256 return1 = getA();
+    uint256 return2 = getAPrecise();
+    uint256 return3 = getToken(i1);
+    uint256 return4 = getTokenIndex(i2);
+    uint256 return5 = getTokenBalance(i3);
+    uint256 return6 = getVirtualPrice();
+    uint256 return7 = calculateSwap(i4,j4,k4);
+    uint256 return8 = calculateTokenAmount(i5,j5);
+    uint256 return9 = getAdminBalance(i6);
+    uint256 return10 = owner();
+    uint256 return11 = getTotalSupply();
+    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
+}
+
+function getAllGettersDefinedInput(uint8 i1, address i2, uint8 i3, uint8 i4, uint8 j4, uint256 k4, uint256[] i5, bool j5, uint256 i6) returns uint256 {
+    uint256 return1 = getA();
+    uint256 return2 = getAPrecise();
+    uint256 return3 = getToken(i1);
+    uint256 return4 = getTokenIndex(i2);
+    uint256 return5 = getTokenBalance(i3);
+    uint256 return6 = getVirtualPrice();
+    uint256 return7 = calculateSwap(i4,j4,k4);
+    uint256 return8 = calculateTokenAmount(i5,j5);
+    uint256 return9 = getAdminBalance(i6);
+    uint256 return10 = owner();
+    uint256 return11 = getTotalSupply();
+    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
+} 
