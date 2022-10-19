@@ -144,6 +144,18 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    aurora_mainnet: {
+      live: true,
+      url: "https://arb1.arbitrum.io/rpc",
+      chainId: parseInt(CHAIN_ID.AURORA_MAINNET),
+      deploy: ["./deploy/aurora_mainnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.aurorascan.dev/api",
+          apiKey: process.env.AURORA_API_KEY ?? "NO_KEY",
+        },
+      },
+    },
   },
   paths: {
     sources: "./contracts",
@@ -227,7 +239,8 @@ const config: HardhatUserConfig = {
       9000: 0, // use the same address on evmos testnet
       9001: 0, // use the same address on evmos mainnnet
       2221: 0, // use the same address on kava testnet
-      2222: 0, // use the same address on kava testnet
+      2222: 0, // use the same address on kava mainnet
+      1313161554: 0, // use the same address on kava mainnet
       3: 0, // use the same address on ropsten
     },
     libraryDeployer: {
@@ -239,7 +252,8 @@ const config: HardhatUserConfig = {
       9000: 0, // use the same address on evmos testnet
       9001: 0, // use the same address on evmos mainnnet
       2221: 0, // use the same address on kava testnet
-      2222: 0, // use the same address on kava testnet
+      2222: 0, // use the same address on kava mainnet
+      1313161554: 0, // use the same address on kava mainnet
       3: 0, // use the same address on ropsten
     },
     multisig: {
@@ -280,6 +294,10 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
       accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
     },
     kava_mainnet: {
+      ...config.networks?.kava_mainnet,
+      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
+    },
+    aurora_mainnet: {
       ...config.networks?.kava_mainnet,
       accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
     },
