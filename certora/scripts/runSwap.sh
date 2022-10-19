@@ -15,7 +15,6 @@ certoraRun \
     $RULE \
     --send_only \
     --msg "Swap $1 $2" \
-
     # --staging yoav/array_of_structs_fix \
     # --settings -enableEqualitySaturation=false \
     # 
