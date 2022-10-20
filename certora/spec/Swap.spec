@@ -42,6 +42,8 @@ methods {
     calculateRemoveLiquidityOneToken(uint256,uint8) returns (uint256) envfree
     getAdminBalance(uint256) returns (uint256) envfree
     addLiquidity(uint256[], uint256, uint256) returns (uint256)
+    swap(uint8,uint8,uint256,uint256) returns (uint256)
+    removeLiquidity(uint256,uint256[],uint256)
 
     // harness functions
     getSwapFee() returns(uint256) envfree
@@ -172,14 +174,6 @@ invariant swapFeeNeverGreaterThanMAX()
 
 /*
     A parameter can never be zero, once initialized
-*/
-
-/*
-    Total LP amount * virtual price must be within x% of sum of underlying tokens
-*/
-
-/* 
-    Virtual price should be strictly greater than 1
 */
 
 
@@ -464,7 +458,8 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
 /*
     When trading token A for B, the sum A+B after the trade must always 
     be greater than adding liquidity in A and removing liquidity in B
-    NOTE: might fail in edge cases. find exact conditions where it fails
+    @dev Might be difficult to reason about with math functionsummarizations, 
+    currently no plans to implement this rule
 */
 
 
@@ -473,23 +468,93 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
 /*
     Swapping A for B will always output at least minAmount of tokens B
 */
+rule swappingCheckMinAmount() {
+    require initialized;
+    env e;
+    address sender = e.msg.sender;
+    uint8 tokenIndexFrom;
+    uint8 tokenIndexTo;
+    uint256 dx;
+    uint256 minDy;
+    uint256 deadline;
+
+    uint256 _balance = getToken(tokenIndexTo).balanceOf(sender);
+
+    swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
+
+    uint256 balance_ = getToken(tokenIndexTo).balanceOf(sender);
+    assert balance_ >= _balance + minDy; 
+}
 
 /*
     Providing liquidity will always output at least minToMint amount of LP 
     tokens
 */
+rule addLiquidityCheckMinToMint() {
+    require initialized;
+    env e;
+    address sender = e.msg.sender;
+    uint256[] amounts;
+    uint256 minToMint;
+    uint256 deadlin;
+
+    uint256 _balance = lpToken.balanceOf(sender);
+
+    addLiquidity(e, amounts, minToMind, deadline);
+
+    uint256 balance_ = lpToken.balanceOf(sender);
+    assert balance_ >= _balance + minToMint;
+}
 
 /*
     Swap can never happen after deadline
 */
+rule swapAlwaysBeforeDeadline() {
+    require initialized;
+    env e;
+    address sender = e.msg.sender;
+    uint8 tokenIndexFrom;
+    uint8 tokenIndexTo;
+    uint256 dx;
+    uint256 minDy;
+    uint256 deadline;
+
+    swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
+
+    assert e.block.timestamp >= deadline;
+}
 
 /* 
     Add LP can never happen after deadline
 */
+rule addLiquidityAlwaysBeforeDeadline() {
+    require initialized;
+    env e;
+    address sender = e.msg.sender;
+    uint256[] amounts;
+    uint256 minToMint;
+    uint256 deadlin;
+
+    addLiquidity(e, amounts, minToMind, deadline);
+
+    assert e.block.timestamp >= deadline;
+}
 
 /*
     Remove LP can never happen after deadline
 */
+rule removeLiquidityAlwaysBeforeDeadline() {
+    require initialized;
+    env e;
+    address sender = e.msg.sender;
+    uint256 amount;
+    uint256[] minAmounts;
+    uint256 deadline;
+
+    removeLiquidity(e, amount, minAmounts, deadline);
+
+    assert e.block.timestamp >= deadline;
+}
 
 /// Variable change rules (under which conditions is a variable allowed to change, and how)
 
