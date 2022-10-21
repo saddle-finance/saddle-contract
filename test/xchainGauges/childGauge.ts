@@ -45,6 +45,7 @@ describe("ChildGauge", () => {
   let childGaugeFactory: ChildGaugeFactory
   let anyCallTranslator: AnyCallTranslator
   let veSDL: VotingEscrow
+  let sdl: SDL
   let rootOracle: RootOracle
   let childOracle: ChildOracle
   let dummyToken: GenericERC20
@@ -104,7 +105,7 @@ describe("ChildGauge", () => {
 
       // Create max lock from deployer address
       veSDL = await ethers.getContract("VotingEscrow")
-      const sdl: SDL = await ethers.getContract("SDL")
+      sdl = await ethers.getContract("SDL")
       await sdl.enableTransfer()
       await sdl.approve(veSDL.address, MAX_UINT256)
       await veSDL.create_lock(
@@ -125,12 +126,20 @@ describe("ChildGauge", () => {
       await dummyRewardToken.mint(users[0], BIG_NUMBER_1E18.mul(100_000))
 
       // **** Deploy a child gauge from the child gauge factory ****
-      await childGaugeFactory["deploy_gauge(address,bytes32,string,address)"](
-        dummyToken.address,
-        GAUGE_SALT,
-        GAUGE_NAME,
-        users[0],
+      // Impersonate AnyCallTranslator calling ChildGaugeFactory
+      // This is to ensure gauge_data is marked as mirrored
+      const impersonatedAnyCallTranslator = await impersonateAccount(
+        anyCallTranslator.address,
       )
+      await setEtherBalance(anyCallTranslator.address, BIG_NUMBER_1E18.mul(10))
+      await childGaugeFactory
+        .connect(impersonatedAnyCallTranslator)
+        ["deploy_gauge(address,bytes32,string,address)"](
+          dummyToken.address,
+          GAUGE_SALT,
+          GAUGE_NAME,
+          users[0],
+        )
       childGauge = await ethers.getContractAt(
         "ChildGauge",
         await childGaugeFactory.get_gauge(0),
@@ -390,8 +399,103 @@ describe("ChildGauge", () => {
     })
 
     describe("ChildGaugeFactory.mint()", () => {
+      beforeEach(async () => {
+        await childGauge
+          .connect(signers[0])
+          ["deposit(uint256)"](BIG_NUMBER_1E18.mul(100))
+        await childGauge
+          .connect(signers[1])
+          ["deposit(uint256)"](BIG_NUMBER_1E18.mul(100))
+        await increaseTimestamp(DAY)
+
+        // This is the first time a user is attempting to call mint.
+        // In production, this will trigger transmit_emission()
+        // on RootGaugeFactory on Eth mainnet
+        await expect(
+          childGaugeFactory.connect(signers[0]).mint(childGauge.address),
+        ).to.emit(mockAnyCall, "AnyCallMessage")
+
+        // Assume RootGaugeFactory.transmit_emissions() was called
+        // and the SDL was transferred to the ChildGauge
+        await sdl.transfer(childGauge.address, BIG_NUMBER_1E18.mul(1_000_000))
+        // Trigger checkpoint call to make ChildGauge aware of the SDL
+        // This will send SDL from the ChildGauge to ChildGaugeFactory
+        await childGauge.connect(signers[0]).user_checkpoint(users[0])
+      })
+
       it(`Mints correct amount of SDL to the stakers`, async () => {
-        await childGaugeFactory.mint(childGauge.address)
+        // We expect next mint() calls to be successful and actually transfer SDL to users
+        await expect(
+          childGaugeFactory.connect(signers[0]).mint(childGauge.address),
+        )
+          .to.emit(childGaugeFactory, "Minted")
+          .withArgs(users[0], childGauge.address, "1071725209656244100")
+          .and.changeTokenBalance(sdl, users[0], "1071725209656244100")
+
+        // We expect mint() call from signer[1] to transfer more SDL since they have more veSDL
+        await expect(
+          childGaugeFactory.connect(signers[1]).mint(childGauge.address),
+        )
+          .to.emit(childGaugeFactory, "Minted")
+          .withArgs(users[1], childGauge.address, "1714760335449990559")
+          .and.changeTokenBalance(sdl, users[1], "1714760335449990559")
+      })
+
+      it(`Does not 'mint' to users who are not staking`, async () => {
+        // We expect next mint() call from non-staker to not emit any Minted event
+        await expect(
+          childGaugeFactory.connect(signers[3]).mint(childGauge.address),
+        )
+          .to.changeTokenBalance(sdl, users[2], 0)
+          .and.not.emit(childGaugeFactory, "Minted")
+      })
+    })
+
+    describe("ChildGaugeFactory.mint() when bridge is unresponsive", () => {
+      beforeEach(async () => {
+        await childGauge
+          .connect(signers[0])
+          ["deposit(uint256)"](BIG_NUMBER_1E18.mul(100))
+        await childGauge
+          .connect(signers[1])
+          ["deposit(uint256)"](BIG_NUMBER_1E18.mul(100))
+        await increaseTimestamp(DAY)
+
+        // This is the first time a user is attempting to call mint.
+        // In production, this will trigger transmit_emission()
+        // on RootGaugeFactory on Eth mainnet
+        await expect(
+          childGaugeFactory.connect(signers[0]).mint(childGauge.address),
+        ).to.emit(mockAnyCall, "AnyCallMessage")
+        // Assume RootGaugeFactory.transmit_emissions() was NOT called due to
+        // bridge failure. This will cause the SDL to not arrive at the child gauge
+      })
+
+      it(`Correctly mints when bridge is continued`, async () => {
+        await expect(
+          childGaugeFactory.connect(signers[0]).mint(childGauge.address),
+        ).to.not.emit(childGaugeFactory, "Minted")
+        await expect(
+          childGaugeFactory.connect(signers[1]).mint(childGauge.address),
+        ).to.not.emit(childGaugeFactory, "Minted")
+
+        // One day passes and the bridge is fixed
+        await increaseTimestamp(DAY)
+        await sdl.transfer(childGauge.address, BIG_NUMBER_1E18.mul(1_000_000))
+        await childGauge.connect(signers[0]).user_checkpoint(users[0])
+
+        await expect(
+          childGaugeFactory.connect(signers[0]).mint(childGauge.address),
+        )
+          .to.emit(childGaugeFactory, "Minted")
+          .withArgs(users[0], childGauge.address, "1286091588240801600")
+          .and.changeTokenBalance(sdl, users[0], "1286091588240801600")
+        await expect(
+          childGaugeFactory.connect(signers[1]).mint(childGauge.address),
+        )
+          .to.emit(childGaugeFactory, "Minted")
+          .withArgs(users[1], childGauge.address, "2057746541185282559")
+          .and.changeTokenBalance(sdl, users[1], "2057746541185282559")
       })
     })
   })
