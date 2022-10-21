@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-4.4.0/token/ERC20/IERC20.sol";
 
+// POC of a reward scheduler contract that can schedule N weeks worth of rewards
 contract RewardScheduler {
     address public rewardToken;
     uint256 public lastTimestamp;
