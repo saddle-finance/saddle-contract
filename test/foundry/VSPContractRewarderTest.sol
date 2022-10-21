@@ -39,7 +39,8 @@ contract VSPContractRewarderTest is Test {
     address private gaugeDepositor = 0xab58779cec2B82A75Ffd103fDc88D7e3aDb13468;
 
     function setUp() public {
-        // Fork mainnet
+        // Fork mainnet at block 15794506
+        // Timestamp: 1666331495 (Fri Oct 21 2022 05:51:35 GMT+0000)
         vm.createSelectFork("mainnet", 15794506);
 
         // Give some VSP to test account
