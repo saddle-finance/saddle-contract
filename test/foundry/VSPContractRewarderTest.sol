@@ -170,7 +170,7 @@ contract VSPContractRewarderTest is Test {
 
             ) = gauge.reward_data(address(VSP));
 
-            // This batch of VSP rewards will end on Friday, October 28, 2022 5:51:35 AM
+            // This batch of VSP rewards will end on Friday, November 4, 2022 5:51:35 AM
             assertEq(periodFinish, 1667541095);
             // The reward rate is 2500 * 1e18 / 604800 = 4133597883597883
             assertEq(rate, 4133597883597883);
