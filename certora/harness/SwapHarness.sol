@@ -45,4 +45,12 @@ contract SwapHarness is Swap {
         return swapStorage.lpToken.balanceOf(user);
     }
 
+    function getSumOfUnderlyings() public view returns(uint256) {
+        uint256 sum = 0;
+        for (uint8 i = 0; i < swapStorage.pooledTokens.length; i++) {
+            sum = sum.add(swapStorage.balances[i]);
+        }
+        return sum;
+    }
+
 }

@@ -53,6 +53,7 @@ methods {
     getMaxSwapFee() returns(uint256) envfree
     balanceOfUnderlyingOfUser(address,uint8) returns(uint256) envfree
     balanceOfLPOfUser(address) returns(uint256) envfree
+    getSumOfUnderlyings() returns(uint256) envfree
 
     // burnableERC20
     burnFrom(address,int256) => DISPATCHER(true)
@@ -142,8 +143,11 @@ invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
     has havoc but is passing, might be a similar case with loop_iter being too small
     @dev waiting on dev to fix this dispatcher bug
 */
-invariant solvency()
+invariant LPsolvency()
     getTotalSupply() == sum_all_users_LP
+
+invariant underlyingsSolvency()
+    getSumOfUnderlyings() == sum_all_underlying_balances
 
 /* 
     If balance of one underlying token is zero, the balance of all other 
@@ -177,6 +181,20 @@ invariant adminFeeNeverGreaterThanMAX()
 */
 invariant swapFeeNeverGreaterThanMAX()
     getSwapFee() <= getMaxSwapFee()
+
+invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(index i)
+    totalSupply() == 0 => tokenBalance(i) == 0
+    {
+        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) {
+            requireInvariant inv(i1);
+            requireInvariant inv(i2);
+        }
+    }
+
+
+/*invariant getterReturnsZeroInUninitState(method f, env e, uint i1, uint i2, ...)
+    uninitialized() => callGetter(f, e, i1, i2, ...) == 0*/
+
 
 /*
     A parameter can never be zero, once initialized
@@ -289,6 +307,7 @@ rule uninitializedImpliesZeroValue(method f) {
     @dev might be unnecessary given the above rules and the fact that prover can take 0 address to be a contract which 
          we safely assume is not
     Tentatively assumed proven
+    @dev 
 */
 rule uninitializedImpliesRevert(method f) filtered {
     f -> f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
@@ -312,6 +331,7 @@ rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
     uint256 _underlyingBalance = getTokenBalance(index);
     mathint _sumBalances = sum_all_underlying_balances;
 
+    requireInvariant underlyingsSolvency();
     require initialized;
     require _sumBalances >= 0;
 
@@ -324,13 +344,7 @@ rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
     //if (sumBalances_ > _sumBalances) {
     //    assert underlyingBalance_ - _underlyingBalance != sumBalances_ - _sumBalances;
     //} else if (sumBalances_ < _sumBalances) {
-    if (sumBalances_ < _sumBalances) {
-        assert _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;
-    } 
-    else {
-        assert true;
-    }
-           
+    assert (sumBalances_ < _sumBalances) => _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;     
 }
 
 /*
@@ -371,7 +385,7 @@ rule monotonicallyIncreasingFees(method f) filtered {
     env e;
     require e.msg.sender != currentContract;
     //requireInvariant underlyingTokensDifferent;
-    requireInvariant solvency;
+    requireInvariant LPsolvency;
 
     uint256 balanceBefore = getAdminBalance(index);
 
@@ -391,7 +405,7 @@ rule onlyAdminCanWithdrawFees() {
     method f;
     uint256 index;
 
-    requireInvariant solvency;
+    requireInvariant LPsolvency;
 
     uint256 balanceBefore = getAdminBalance(index);
 
@@ -622,3 +636,12 @@ function getAllGettersDefinedInput(uint8 i1, address i2, uint8 i3, uint8 i4, uin
     uint256 return11 = getTotalSupply();
     return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
 } 
+
+/*function callGetter(method f, env e, uint i1, uint i2, uint i3) returns(uint) {
+    if (f.selector == getter1(uint).selector)
+        return getter1(e, i1);
+    else if
+        ///...
+    else return 0;
+}*/
+

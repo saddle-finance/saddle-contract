@@ -8,7 +8,6 @@ certoraRun \
     certora/munged/LPToken.sol \
     --verify SwapHarness:certora/spec/Swap.spec \
     --structLink SwapHarness:lpToken=LPToken \
-    --optimistic_loop \
     --cache saddle \
     --loop_iter 3 \
     --settings -copyLoopUnroll=3 \
@@ -16,6 +15,7 @@ certoraRun \
     --send_only \
     --msg "Swap $1 $2" \
     --staging release/19Sep2022
+    #--optimistic_loop \
     # --staging yoav/array_of_structs_fix \
     # --settings -enableEqualitySaturation=false \
     # 
