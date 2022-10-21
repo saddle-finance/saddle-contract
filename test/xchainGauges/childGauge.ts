@@ -32,9 +32,6 @@ import {
   setupRootGaugeFactory,
   setupRootOracle,
 } from "./utils"
-
-const { execute } = deployments
-
 const { expect } = chai
 
 describe("ChildGauge", () => {
@@ -421,24 +418,36 @@ describe("ChildGauge", () => {
         // Trigger checkpoint call to make ChildGauge aware of the SDL
         // This will send SDL from the ChildGauge to ChildGaugeFactory
         await childGauge.connect(signers[0]).user_checkpoint(users[0])
+        expect(
+          await childGauge.inflation_rate(
+            Math.floor((await getCurrentBlockTimestamp()) / WEEK),
+          ),
+        ).to.closeTo("1929105377381239450", 1e13)
       })
 
       it(`Mints correct amount of SDL to the stakers`, async () => {
         // We expect next mint() calls to be successful and actually transfer SDL to users
+
+        const user0SdlBalanceBefore = await sdl.balanceOf(users[0])
         await expect(
           childGaugeFactory.connect(signers[0]).mint(childGauge.address),
+        ).to.emit(childGaugeFactory, "Minted")
+        const user0SdlBalanceAfter = await sdl.balanceOf(users[0])
+        expect(user0SdlBalanceAfter.sub(user0SdlBalanceBefore)).to.closeTo(
+          "1071725209656244100",
+          1e13,
         )
-          .to.emit(childGaugeFactory, "Minted")
-          .withArgs(users[0], childGauge.address, "1071725209656244100")
-          .and.changeTokenBalance(sdl, users[0], "1071725209656244100")
 
         // We expect mint() call from signer[1] to transfer more SDL since they have more veSDL
+        const user1SdlBalanceBefore = await sdl.balanceOf(users[1])
         await expect(
           childGaugeFactory.connect(signers[1]).mint(childGauge.address),
+        ).to.emit(childGaugeFactory, "Minted")
+        const user1SdlBalanceAfter = await sdl.balanceOf(users[1])
+        expect(user1SdlBalanceAfter.sub(user1SdlBalanceBefore)).to.closeTo(
+          "1714760335449990559",
+          1e13,
         )
-          .to.emit(childGaugeFactory, "Minted")
-          .withArgs(users[1], childGauge.address, "1714760335449990559")
-          .and.changeTokenBalance(sdl, users[1], "1714760335449990559")
       })
 
       it(`Does not 'mint' to users who are not staking`, async () => {
@@ -484,18 +493,25 @@ describe("ChildGauge", () => {
         await sdl.transfer(childGauge.address, BIG_NUMBER_1E18.mul(1_000_000))
         await childGauge.connect(signers[0]).user_checkpoint(users[0])
 
+        const user0SdlBalanceBefore = await sdl.balanceOf(users[0])
         await expect(
           childGaugeFactory.connect(signers[0]).mint(childGauge.address),
+        ).to.emit(childGaugeFactory, "Minted")
+        const user0SdlBalanceAfter = await sdl.balanceOf(users[0])
+        expect(user0SdlBalanceAfter.sub(user0SdlBalanceBefore)).to.closeTo(
+          "1286091588240801600",
+          1e13,
         )
-          .to.emit(childGaugeFactory, "Minted")
-          .withArgs(users[0], childGauge.address, "1286091588240801600")
-          .and.changeTokenBalance(sdl, users[0], "1286091588240801600")
+
+        const user1SdlBalanceBefore = await sdl.balanceOf(users[1])
         await expect(
           childGaugeFactory.connect(signers[1]).mint(childGauge.address),
+        ).to.emit(childGaugeFactory, "Minted")
+        const user1SdlBalanceAfter = await sdl.balanceOf(users[1])
+        expect(user1SdlBalanceAfter.sub(user1SdlBalanceBefore)).to.closeTo(
+          "2057746541185282559",
+          1e13,
         )
-          .to.emit(childGaugeFactory, "Minted")
-          .withArgs(users[1], childGauge.address, "2057746541185282559")
-          .and.changeTokenBalance(sdl, users[1], "2057746541185282559")
       })
     })
   })
