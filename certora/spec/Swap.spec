@@ -42,7 +42,7 @@ methods {
     calculateRemoveLiquidityOneToken(uint256,uint8) returns (uint256) envfree
     getAdminBalance(uint256) returns (uint256) envfree
     addLiquidity(uint256[], uint256, uint256) returns (uint256)
-    swap(uint8,uint8,uint256,uint256) returns (uint256)
+    swap(uint8,uint8,uint256,uint256,uint256) returns (uint256)
     removeLiquidity(uint256,uint256[],uint256)
 
     // harness functions
@@ -51,6 +51,8 @@ methods {
     getTotalSupply() returns(uint256) envfree
     getMaxAdminFee() returns(uint256) envfree
     getMaxSwapFee() returns(uint256) envfree
+    balanceOfUnderlyingOfUser(address,uint8) returns(uint256) envfree
+    balanceOfLPOfUser(address) returns(uint256) envfree
 
     // burnableERC20
     burnFrom(address,int256) => DISPATCHER(true)
@@ -104,7 +106,7 @@ ghost mathint sum_all_underlying_balances {
 }
 
 // @dev A hook that keeps `sum_all_underlying_balances` up to date with the `swapStorage.balances` array
-// offset of 288 bytes (9 storage slots) points to the `balances` array in swapStorage
+// offset of 288 bytes within struct (9 storage slots) points to the `balances` array in swapStorage
 hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 old_balance) STORAGE {
     sum_all_underlying_balances = sum_all_underlying_balances + balance - old_balance;
 }
@@ -134,7 +136,7 @@ invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
         }
     }
 
-/*
+/* P
     Sum of all users' LP balance must be equal to LP's `totalSupply`
     @dev havoc on addLiq causes failures. Increasing loop_iter > 2 causes havoc on removeLiq. removeLiqOneToken also 
     has havoc but is passing, might be a similar case with loop_iter being too small
@@ -150,7 +152,11 @@ invariant solvency()
 invariant zeroTokenAZeroTokenB(uint8 tokenAIndex, uint8 tokenBIndex)
     getTokenBalance(tokenAIndex) == 0 => getTokenBalance(tokenBIndex) == 0
 
-
+/*
+    If balance of one underlying token is non-zero, the balance of all other
+    underlying tokens must also be non-zero
+    @dev complimentary to the invariant above 
+*/
 invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
     getTokenBalance(tokenA) > 0 => getTokenBalance(tokenX) > 0
 
@@ -298,10 +304,10 @@ rule uninitializedImpliesRevert(method f) filtered {
 }
 
 /*
-    There must not be a transaction that increases or decreases only one 
-    underlying balance, except for withdrawWithOneToken 
+    There must not be a transaction that decreases only one 
+    underlying balance, except for removeLiquidityOneToken 
 */
-rule onlyWithdrawWithOneTokenDecreasesUnderlyingsOnesided (method f) {
+rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
     uint8 index;
     uint256 _underlyingBalance = getTokenBalance(index);
     mathint _sumBalances = sum_all_underlying_balances;
@@ -315,11 +321,13 @@ rule onlyWithdrawWithOneTokenDecreasesUnderlyingsOnesided (method f) {
 
     uint256 underlyingBalance_ = getTokenBalance(index);
     mathint sumBalances_ = sum_all_underlying_balances;
-    if (sumBalances_ > _sumBalances) {
-        assert underlyingBalance_ - _underlyingBalance != sumBalances_ - _sumBalances;
-    } else if (sumBalances_ < _sumBalances) {
+    //if (sumBalances_ > _sumBalances) {
+    //    assert underlyingBalance_ - _underlyingBalance != sumBalances_ - _sumBalances;
+    //} else if (sumBalances_ < _sumBalances) {
+    if (sumBalances_ < _sumBalances) {
         assert _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;
-    } else {
+    } 
+    else {
         assert true;
     }
            
@@ -478,11 +486,12 @@ rule swappingCheckMinAmount() {
     uint256 minDy;
     uint256 deadline;
 
-    uint256 _balance = getToken(tokenIndexTo).balanceOf(sender);
+    uint256 _balance = balanceOfUnderlyingOfUser(sender, tokenIndexTo);
+    require e.msg.sender != currentContract;
 
     swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
 
-    uint256 balance_ = getToken(tokenIndexTo).balanceOf(sender);
+    uint256 balance_ = balanceOfUnderlyingOfUser(sender, tokenIndexTo);
     assert balance_ >= _balance + minDy; 
 }
 
@@ -496,13 +505,13 @@ rule addLiquidityCheckMinToMint() {
     address sender = e.msg.sender;
     uint256[] amounts;
     uint256 minToMint;
-    uint256 deadlin;
+    uint256 deadline;
 
-    uint256 _balance = lpToken.balanceOf(sender);
+    uint256 _balance = balanceOfLPOfUser(sender);
 
-    addLiquidity(e, amounts, minToMind, deadline);
+    addLiquidity(e, amounts, minToMint, deadline);
 
-    uint256 balance_ = lpToken.balanceOf(sender);
+    uint256 balance_ = balanceOfLPOfUser(sender);
     assert balance_ >= _balance + minToMint;
 }
 
@@ -533,9 +542,9 @@ rule addLiquidityAlwaysBeforeDeadline() {
     address sender = e.msg.sender;
     uint256[] amounts;
     uint256 minToMint;
-    uint256 deadlin;
+    uint256 deadline;
 
-    addLiquidity(e, amounts, minToMind, deadline);
+    addLiquidity(e, amounts, minToMint, deadline);
 
     assert e.block.timestamp >= deadline;
 }

@@ -1,11 +1,11 @@
 pragma solidity ^0.6.0;
 
-import "../munged/Swap.sol";
+import "../munged/SwapFlashLoan.sol";
 
 // This is the contract that is actually verified; it may contain some helper
 // methods for the spec to access internal state, or may override some of the
 // more complex methods in the original contract.
-contract SwapHarness is Swap {
+contract SwapFlashLoanHarness is SwapFlashLoan {
     //LPToken public lpToken = swapStorage.lpToken;
     function inRampA() public view returns (bool) {
         return (block.timestamp >= swapStorage.initialATime &&
@@ -35,14 +35,6 @@ contract SwapHarness is Swap {
 
     function getMaxSwapFee() public view returns(uint256) {
         return SwapUtils.MAX_SWAP_FEE;
-    }
-
-    function balanceOfUnderlyingOfUser(address user, uint8 index) public view returns(uint256) {
-        return getToken(index).balanceOf(user);
-    }
-
-    function balanceOfLPOfUser(address user) public view returns(uint256) {
-        return swapStorage.lpToken.balanceOf(user);
     }
 
 }
