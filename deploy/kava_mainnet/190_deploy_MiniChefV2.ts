@@ -30,12 +30,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ),
       await minichef.populateTransaction.add(
         0,
-        "0x619535e015f0e46c5984a0B45FD71C0549F001Fc", // 3pool lpToken
+        (
+          await get("Saddle3PoolLPToken")
+        ).address,
         "0x0000000000000000000000000000000000000000",
       ),
       await minichef.populateTransaction.add(
         0,
-        "0xcCf860874cbF2d615192a4C4455580B4d622D3B9", // USDTpool lpToken
+        (
+          await get("SaddleUSDTPoolLPToken")
+        ).address,
         "0x0000000000000000000000000000000000000000",
       ),
     ]
