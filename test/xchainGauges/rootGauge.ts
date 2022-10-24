@@ -1,6 +1,6 @@
 import chai from "chai"
 import { Signer } from "ethers"
-import { deployments, ethers, network, tracer } from "hardhat"
+import { deployments, ethers, network } from "hardhat"
 import {
   AnyCallTranslator,
   ArbitrumBridger,
@@ -160,8 +160,6 @@ describe("RootGauge", () => {
 
     it(`Successfully mints SDL and calls Bridger.bridge()`, async () => {
       // Impersonate root gauge owner and multisig
-      tracer.enabled = true
-      tracer.calls = true
       const owner = await impersonateAccount(rootGaugeFactory.address)
       const multisig = await impersonateAccount(
         MULTISIG_ADDRESSES[CHAIN_ID.MAINNET],

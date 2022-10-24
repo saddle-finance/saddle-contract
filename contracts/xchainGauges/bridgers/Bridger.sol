@@ -24,5 +24,5 @@ abstract contract Bridger is Ownable, Pausable {
 
     function cost() external view virtual returns (uint256);
 
-    receive() external payable virtual;
+    receive() external payable virtual {}
 }
