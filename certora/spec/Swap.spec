@@ -58,9 +58,9 @@ methods {
     getSumOfUnderlyings() returns(uint256) envfree
 
     // burnableERC20
-    burnFrom(address,uint256) => DISPATCHER(true);
-    mint(address,uint256) => DISPATCHER(true);
-    initialize(string,string) => DISPATCHER(true);
+    burnFrom(address,uint256) => DISPATCHER(true)
+    mint(address,uint256) => DISPATCHER(true)
+    initialize(string,string) => DISPATCHER(true)
 }
 
 

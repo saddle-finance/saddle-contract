@@ -59,12 +59,11 @@ hook Sstore lpToken._balances[KEY address user] uint256 balance (uint256 old_bal
 
 /* 
     Sum of all users' LP balance must be equal to LP's `totalSupply`
-    @dev havoc on addLiq causes failures. Increasing loop_iter > 2 causes havoc on removeLiq. removeLiqOneToken also 
-    has havoc but is passing, might be a similar case with loop_iter being too small
-    @dev waiting on dev to fix this dispatcher bug
+    @dev fails on `swapUnderlying`
 */
 invariant LPsolvency()
     getTotalSupply() == sum_all_users_LP
+
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -72,8 +71,10 @@ invariant LPsolvency()
 ////////////////////////////////////////////////////////////////////////////
 
 /* Notes:
-- additional initialization function
-- flattened token resolution in all cases
+    - Which additional properties need to be checked for metaswap? 
+        - All properties that are proven for swap are also proven for metaswap
+        - Would generalized unit tests for added functions suffice?
+*/
 
 
 ////////////////////////////////////////////////////////////////////////////
