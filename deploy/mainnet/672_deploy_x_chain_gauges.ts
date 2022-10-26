@@ -3,7 +3,6 @@ import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import path from "path"
 import { AnyCallExecutor, RootGaugeFactory } from "../../build/typechain"
 import {
   BIG_NUMBER_1E18,
@@ -20,11 +19,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { get, execute, deploy, log } = deployments
   const { deployer, libraryDeployer } = await getNamedAccounts()
 
-  if (process.env.HARDHAT_DEPLOY_FORK == null) {
-    log(`Not running on forked mode, skipping ${path.basename(__filename)}`)
-    return
-  }
-
   // In prod, update these values
   const owner = deployer
   const crossChainDeployer = libraryDeployer
@@ -32,7 +26,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const deployOptions = {
     log: true,
     from: deployer,
-    skipIfAlreadyDeployed: true,
   }
 
   const executeOptions = {
@@ -51,7 +44,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
   const anyCallTranslatorProxy = await ethers.getContract(
     "AnyCallTranslatorProxy",
-    ANYCALL_ADDRESS,
   )
   const executorCreatorAddress = await executorContract.creator()
   const executorCreator = await impersonateAccount(executorCreatorAddress)
@@ -75,24 +67,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ["address", "bytes"],
     [rgf.address, callData],
   )
-  // Call anyExecute from impersonated executor account (owned by AnyCall)
-  // Then confirm new gauge was deployed via event emitted by RootGaugeFactory
-  await expect(
-    executorContract.connect(executorCreator).execute(
-      anyCallTranslatorProxy.address,
-      callData,
-      anyCallTranslatorProxy.address, // Pretend the call came from same address from source chain
-      CHAIN_ID.ARBITRUM_MAINNET, // Source chain ID
-      0, // Source nonce
-    ),
-  )
-    .to.emit(rgf, "DeployedGauge")
-    .withArgs(
-      anyValue,
-      deployGaugeData.chainId,
-      anyValue,
-      deployGaugeData.salt,
-      anyValue,
+
+  if (process.env.HARDHAT_DEPLOY_FORK) {
+    await expect(
+      executorContract.connect(executorCreator).execute(
+        anyCallTranslatorProxy.address,
+        callData,
+        anyCallTranslatorProxy.address, // Pretend the call came from same address from source chain
+        CHAIN_ID.ARBITRUM_MAINNET, // Source chain ID
+        0, // Source nonce
+      ),
     )
+      .to.emit(rgf, "DeployedGauge")
+      .withArgs(
+        anyValue,
+        deployGaugeData.chainId,
+        anyValue,
+        deployGaugeData.salt,
+        anyValue,
+      )
+  }
 }
 export default func
