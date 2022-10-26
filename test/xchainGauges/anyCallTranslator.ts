@@ -21,6 +21,7 @@ import {
   MAX_UINT256,
   setEtherBalance,
   setTimestamp,
+  ZERO_ADDRESS,
 } from "../testUtils"
 import {
   setupAnyCallTranslator,
@@ -33,8 +34,6 @@ import {
 
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs"
 import * as helpers from "@nomicfoundation/hardhat-network-helpers"
-
-const { execute } = deployments
 
 const { expect } = chai
 
@@ -50,7 +49,6 @@ describe("AnyCallTranslator", () => {
   let childOracle: ChildOracle
   let dummyToken: GenericERC20
 
-  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
   const GAUGE_NAME = "Dummy Token X-chain Gauge"
   const GAUGE_SALT = convertGaugeNameToSalt(GAUGE_NAME)
 

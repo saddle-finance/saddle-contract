@@ -32,7 +32,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const deployOptions = {
     log: true,
     from: deployer,
-    skipIfAlreadyDeployed: true,
   }
 
   const executeOptions = {
@@ -51,7 +50,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
   const anyCallTranslatorProxy = await ethers.getContract(
     "AnyCallTranslatorProxy",
-    ANYCALL_ADDRESS,
   )
   const executorCreatorAddress = await executorContract.creator()
   const executorCreator = await impersonateAccount(executorCreatorAddress)
@@ -75,8 +73,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ["address", "bytes"],
     [rgf.address, callData],
   )
-  // Call anyExecute from impersonated executor account (owned by AnyCall)
-  // Then confirm new gauge was deployed via event emitted by RootGaugeFactory
+
   await expect(
     executorContract.connect(executorCreator).execute(
       anyCallTranslatorProxy.address,
