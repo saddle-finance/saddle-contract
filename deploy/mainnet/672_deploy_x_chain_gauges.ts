@@ -1,9 +1,10 @@
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs"
 import { expect } from "chai"
+import { BigNumber } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import path from "path"
-import { AnyCallExecutor } from "../../build/typechain"
+import { AnyCallExecutor, RootGaugeFactory } from "../../build/typechain"
 import {
   BIG_NUMBER_1E18,
   convertGaugeNameToSalt,
@@ -31,7 +32,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const deployOptions = {
     log: true,
     from: deployer,
-    skipIfAlreadyDeployed: true,
   }
 
   const executeOptions = {
@@ -50,7 +50,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
   const anyCallTranslatorProxy = await ethers.getContract(
     "AnyCallTranslatorProxy",
-    ANYCALL_ADDRESS,
   )
   const executorCreatorAddress = await executorContract.creator()
   const executorCreator = await impersonateAccount(executorCreatorAddress)
@@ -58,28 +57,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // Deploy a gauge for Arbitrum FraxBP
   const deployGaugeData = {
-    chainId: CHAIN_ID.ARBITRUM_MAINNET,
+    chainId: BigNumber.from(CHAIN_ID.ARBITRUM_MAINNET),
     salt: convertGaugeNameToSalt("Arb FraxBP"),
     gaugeName: "Arb FraxBP",
   }
 
-  let callData = await ethers
-    .getContractFactory("RootGaugeFactory")
-    .then(async (c) =>
-      c.interface.encodeFunctionData(
-        "deploy_gauge",
-        Object.values(deployGaugeData),
-      ),
-    )
-
-  // Format additional calldata for calling AnyCallTranslatorProxy.anyExecute()
+  // Get RootGaugeFactory contract and interface
+  const rgf: RootGaugeFactory = await ethers.getContract("RootGaugeFactory")
+  let callData = rgf.interface.encodeFunctionData("deploy_gauge", [
+    deployGaugeData.chainId,
+    deployGaugeData.salt,
+    deployGaugeData.gaugeName,
+  ])
   callData = ethers.utils.defaultAbiCoder.encode(
     ["address", "bytes"],
-    [(await get("RootGaugeFactory")).address, callData],
+    [rgf.address, callData],
   )
 
-  // Call anyExecute from impersonated executor account (owned by AnyCall)
-  // Then confirm new gauge was deployed via event emitted by RootGaugeFactory
   await expect(
     executorContract.connect(executorCreator).execute(
       anyCallTranslatorProxy.address,
@@ -89,7 +83,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       0, // Source nonce
     ),
   )
-    .to.emit(await ethers.getContract("RootGaugeFactory"), "DeployedGauge")
+    .to.emit(rgf, "DeployedGauge")
     .withArgs(
       anyValue,
       deployGaugeData.chainId,

@@ -96,7 +96,7 @@ describe("ChildGaugeFactory", () => {
       ).to.be.reverted
     })
   })
-  describe("Successfully deploys a child gauge", () => {
+  describe("deploy_gauge", () => {
     it(`Successfully deploys a child gauge`, async () => {
       await expect(
         childGaugeFactory["deploy_gauge(address,bytes32,string,address)"](

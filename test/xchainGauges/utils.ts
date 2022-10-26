@@ -49,7 +49,21 @@ export async function setupChildGaugeFactory(
 export async function setupRootGaugeFactory(
   anyCallTranslatorAddress: string,
   ownerAddress: string,
+  deployMockBridger = true,
+  sdlAddress?: string,
+  gaugeControllerAddress?: string,
+  minterAddress?: string,
 ): Promise<RootGaugeFactory> {
+  sdlAddress = sdlAddress
+    ? sdlAddress
+    : (await ethers.getContract("SDL")).address
+  gaugeControllerAddress = gaugeControllerAddress
+    ? gaugeControllerAddress
+    : (await ethers.getContract("GaugeController")).address
+  minterAddress = minterAddress
+    ? minterAddress
+    : (await ethers.getContract("Minter")).address
+
   const rootGaugeFactoryFactory = await ethers.getContractFactory(
     "RootGaugeFactory",
   )
@@ -58,38 +72,87 @@ export async function setupRootGaugeFactory(
     ownerAddress,
   )) as RootGaugeFactory
 
-  const mockBridgerFactory = await ethers.getContractFactory("MockBridger")
-  const mockBridger = await mockBridgerFactory.deploy()
-  // Set Bridger to mock bridger
-  await rootGaugeFactory.set_bridger(TEST_SIDE_CHAIN_ID, mockBridger.address)
-
+  if (deployMockBridger) {
+    const mockBridgerFactory = await ethers.getContractFactory("MockBridger")
+    const mockBridger = await mockBridgerFactory.deploy()
+    // Set Bridger to mock bridger
+    await rootGaugeFactory.set_bridger(TEST_SIDE_CHAIN_ID, mockBridger.address)
+  }
   // Root Gauge Implementation
   const gaugeImplementationFactory = await ethers.getContractFactory(
     "RootGauge",
   )
   const rootGauge = await gaugeImplementationFactory.deploy(
-    (
-      await ethers.getContract("SDL")
-    ).address,
-    (
-      await ethers.getContract("GaugeController")
-    ).address,
-    (
-      await ethers.getContract("Minter")
-    ).address,
+    sdlAddress,
+    gaugeControllerAddress,
+    minterAddress,
   )
   await rootGaugeFactory.set_implementation(rootGauge.address)
 
   return rootGaugeFactory
 }
 
-export async function setupAnyCallTranslator(ownerAddress: string): Promise<{
+export async function setupAnyCallTranslatorForkedMainnet(
+  ownerAddress: string,
+  anyCallAddress: string,
+): Promise<{
+  anyCallTranslator: AnyCallTranslator
+}> {
+  // Deploy ProxyAdmin
+  const proxyAdminFactory = await ethers.getContractFactory("ProxyAdmin")
+  const proxyAdmin = await proxyAdminFactory.deploy()
+
+  // Deploy AnycallTranslator with mock anycall
+  const anycallTranslatorFactory = await ethers.getContractFactory(
+    "AnyCallTranslator",
+  )
+  const anycallTranslatorLogic =
+    (await anycallTranslatorFactory.deploy()) as AnyCallTranslator
+
+  // Deploy the proxy that will be used as AnycallTranslator
+  // We want to set the owner of the logic level to be deployer
+  const initializeCallData = (
+    await anycallTranslatorLogic.populateTransaction.initialize(
+      ownerAddress,
+      anyCallAddress,
+    )
+  ).data as string
+
+  // Deploy the proxy with anycall translator logic and initialize it
+  const proxyFactory: TransparentUpgradeableProxy__factory =
+    await ethers.getContractFactory("TransparentUpgradeableProxy")
+  const proxy = await proxyFactory.deploy(
+    anycallTranslatorLogic.address,
+    proxyAdmin.address,
+    initializeCallData,
+  )
+  const anyCallTranslator = (await ethers.getContractAt(
+    "AnyCallTranslator",
+    proxy.address,
+  )) as AnyCallTranslator
+
+  return { anyCallTranslator }
+}
+
+export async function setupAnyCallTranslator(
+  ownerAddress: string,
+  anyCallAddress?: string,
+): Promise<{
   anyCallTranslator: AnyCallTranslator
   mockAnyCall: MockAnyCall
 }> {
-  // Deploy mock anycall
-  const mockAnyCallFactory = await ethers.getContractFactory("MockAnyCall")
-  const mockAnyCall = (await mockAnyCallFactory.deploy()) as MockAnyCall
+  let anyCallAddressToUse: string
+  let mockAnyCall: MockAnyCall | undefined
+
+  // If anyCallAddress is not provided, deploy a mock anycall
+  if (anyCallAddress) {
+    anyCallAddressToUse = anyCallAddress
+  } else {
+    // Deploy mock anycall
+    const mockAnyCallFactory = await ethers.getContractFactory("MockAnyCall")
+    mockAnyCall = (await mockAnyCallFactory.deploy()) as MockAnyCall
+    anyCallAddressToUse = mockAnyCall.address
+  }
 
   // Deploy ProxyAdmin
   const proxyAdminFactory = await ethers.getContractFactory("ProxyAdmin")
@@ -107,7 +170,7 @@ export async function setupAnyCallTranslator(ownerAddress: string): Promise<{
   const initializeCallData = (
     await anycallTranslatorLogic.populateTransaction.initialize(
       ownerAddress,
-      mockAnyCall.address,
+      anyCallAddressToUse,
     )
   ).data as string
 
@@ -124,7 +187,15 @@ export async function setupAnyCallTranslator(ownerAddress: string): Promise<{
     proxy.address,
   )) as AnyCallTranslator
 
-  await mockAnyCall.setanyCallTranslator(anyCallTranslator.address)
+  if (mockAnyCall) {
+    await mockAnyCall.setanyCallTranslator(anyCallTranslator.address)
+  } else {
+    mockAnyCall = (await ethers.getContractAt(
+      "MockAnyCall",
+      anyCallAddressToUse,
+    )) as MockAnyCall
+  }
+
   return { anyCallTranslator, mockAnyCall }
 }
 
