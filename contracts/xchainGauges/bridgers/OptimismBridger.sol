@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.17;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-4.4.0/access/Ownable.sol";
 import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
@@ -108,6 +107,4 @@ contract OptimismBridger is Bridger {
         emit UpdateTokenMapping(_l1Token, l2AddrMap[_l1Token], _l2Token);
         l2AddrMap[_l1Token] = _l2Token;
     }
-
-    receive() external payable override {}
 }
