@@ -3,6 +3,7 @@ import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
+import path from "path"
 import { AnyCallExecutor, RootGaugeFactory } from "../../build/typechain"
 import {
   BIG_NUMBER_1E18,
@@ -18,6 +19,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
   const { get, execute, deploy, log } = deployments
   const { deployer, libraryDeployer } = await getNamedAccounts()
+
+  if (process.env.HARDHAT_DEPLOY_FORK == null) {
+    log(`Not running on forked mode, skipping ${path.basename(__filename)}`)
+    return
+  }
 
   // In prod, update these values
   const owner = deployer
@@ -68,24 +74,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     [rgf.address, callData],
   )
 
-  if (process.env.HARDHAT_DEPLOY_FORK) {
-    await expect(
-      executorContract.connect(executorCreator).execute(
-        anyCallTranslatorProxy.address,
-        callData,
-        anyCallTranslatorProxy.address, // Pretend the call came from same address from source chain
-        CHAIN_ID.ARBITRUM_MAINNET, // Source chain ID
-        0, // Source nonce
-      ),
+  await expect(
+    executorContract.connect(executorCreator).execute(
+      anyCallTranslatorProxy.address,
+      callData,
+      anyCallTranslatorProxy.address, // Pretend the call came from same address from source chain
+      CHAIN_ID.ARBITRUM_MAINNET, // Source chain ID
+      0, // Source nonce
+    ),
+  )
+    .to.emit(rgf, "DeployedGauge")
+    .withArgs(
+      anyValue,
+      deployGaugeData.chainId,
+      anyValue,
+      deployGaugeData.salt,
+      anyValue,
     )
-      .to.emit(rgf, "DeployedGauge")
-      .withArgs(
-        anyValue,
-        deployGaugeData.chainId,
-        anyValue,
-        deployGaugeData.salt,
-        anyValue,
-      )
-  }
 }
 export default func
