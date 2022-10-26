@@ -47,7 +47,8 @@ contract SwapHarness is Swap {
 
     function getSumOfUnderlyings() public view returns(uint256) {
         uint256 sum = 0;
-        for (uint8 i = 0; i < swapStorage.pooledTokens.length; i++) {
+        // loop iterations limited to 3, instead of `swapStorage.pooledTokens.length`
+        for (uint8 i = 0; i < 3; i++) {
             sum = sum.add(swapStorage.balances[i]);
         }
         return sum;

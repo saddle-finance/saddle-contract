@@ -4,10 +4,10 @@ then
     RULE="--rule $1"
 fi
 certoraRun \
-    certora/harness/SwapHarness.sol \
+    certora/harness/MetaSwapHarness.sol \
     certora/munged/LPToken.sol \
-    --verify SwapHarness:certora/spec/Swap.spec \
-    --structLink SwapHarness:lpToken=LPToken \
+    --verify MetaSwapHarness:certora/spec/MetaSwap.spec \
+    --structLink MetaSwapHarness:lpToken=LPToken \
     --cache saddle \
     --loop_iter 4 \
     --settings -copyLoopUnroll=10 \

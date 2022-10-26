@@ -44,6 +44,8 @@ methods {
     addLiquidity(uint256[], uint256, uint256) returns (uint256)
     swap(uint8,uint8,uint256,uint256,uint256) returns (uint256)
     removeLiquidity(uint256,uint256[],uint256)
+    removeLiquidityOneToken(uint256,uint8,uint256,uint256) 
+    removeLiquidityImbalance(uint256[],uint256,uint256)
 
     // harness functions
     getSwapFee() returns(uint256) envfree
@@ -56,9 +58,9 @@ methods {
     getSumOfUnderlyings() returns(uint256) envfree
 
     // burnableERC20
-    burnFrom(address,int256) => DISPATCHER(true)
-    mint(address,uint256) => DISPATCHER(true)
-    initialize(string,string) => DISPATCHER(true)
+    burnFrom(address,uint256) => DISPATCHER(true);
+    mint(address,uint256) => DISPATCHER(true);
+    initialize(string,string) => DISPATCHER(true);
 }
 
 
@@ -167,8 +169,8 @@ invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
 /* 
     If contract is in uninitialized state, all underlying balances must be zero
 */
-invariant uninitializedMeansUnderlyingsZero(uint8 token)
-    !initialized => getTokenBalance(token) == 0
+invariant uninitializedMeansUnderlyingsZero(uint8 index)
+    !initialized => getTokenBalance(index) == 0
 
 /*
     adminFee can never be greater MAX_ADMIN_FEE
@@ -182,14 +184,35 @@ invariant adminFeeNeverGreaterThanMAX()
 invariant swapFeeNeverGreaterThanMAX()
     getSwapFee() <= getMaxSwapFee()
 
-invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(index i)
-    totalSupply() == 0 => tokenBalance(i) == 0
-    {
-        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) {
-            requireInvariant inv(i1);
-            requireInvariant inv(i2);
+invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
+    getTotalSupply() == 0 <=> getTokenBalance(i) == 0
+    /*{
+        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
+            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i1);
+            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i2);
         }
-    }
+    }*/
+
+rule ifLPTotalSupplyZeroThenIndividualUnderlyingsZeroRule (uint8 i) {
+    //uint256 tokenAmount;
+    //uint8 tokenIndex;
+    //uint256 minAmount;
+    //uint256 deadline;
+
+    uint256[] amounts;
+    uint256 maxBurnAmount;
+    uint256 deadline;
+    
+    require getTotalSupply() == 0 <=> getTokenBalance(i) == 0;
+
+    env e;
+
+    //removeLiquidityOneToken@withrevert(e, tokenAmount, tokenIndex , minAmount, deadline);
+    removeLiquidityImbalance@withrevert(e,amounts,maxBurnAmount ,deadline);
+
+    assert lastReverted;
+}
+
 
 
 /*invariant getterReturnsZeroInUninitState(method f, env e, uint i1, uint i2, ...)
@@ -331,7 +354,7 @@ rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
     uint256 _underlyingBalance = getTokenBalance(index);
     mathint _sumBalances = sum_all_underlying_balances;
 
-    requireInvariant underlyingsSolvency();
+    //requireInvariant underlyingsSolvency();
     require initialized;
     require _sumBalances >= 0;
 
