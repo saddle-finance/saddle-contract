@@ -3,6 +3,7 @@
 pragma solidity 0.8.17;
 
 import "../SwapV2.sol";
+import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
 import "./MetaSwapUtilsV1.sol";
 
 /**
@@ -28,10 +29,11 @@ import "./MetaSwapUtilsV1.sol";
  * @dev Most of the logic is stored as a library `MetaSwapUtils` for the sake of reducing contract's
  * deployment size.
  */
-contract MetaSwapV1 is Swap {
-    using MetaSwapUtils for SwapUtils.Swap;
+contract MetaSwapV1 is SwapV2 {
+    using MetaSwapUtilsV1 for SwapUtilsV2.Swap;
+    using SafeERC20 for IERC20; //TODO: is this needed? wont compile without it
 
-    MetaSwapUtils.MetaSwap public metaSwapStorage;
+    MetaSwapUtilsV1.MetaSwap public metaSwapStorage;
 
     uint256 constant MAX_UINT256 = 2**256 - 1;
 
@@ -58,7 +60,7 @@ contract MetaSwapV1 is Swap {
         override
         returns (uint256)
     {
-        return MetaSwapUtils.getVirtualPrice(swapStorage, metaSwapStorage);
+        return MetaSwapUtilsV1.getVirtualPrice(swapStorage, metaSwapStorage);
     }
 
     /**
@@ -75,7 +77,7 @@ contract MetaSwapV1 is Swap {
         uint256 dx
     ) external view virtual override returns (uint256) {
         return
-            MetaSwapUtils.calculateSwap(
+            MetaSwapUtilsV1.calculateSwap(
                 swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
@@ -99,7 +101,7 @@ contract MetaSwapV1 is Swap {
         uint256 dx
     ) external view virtual returns (uint256) {
         return
-            MetaSwapUtils.calculateSwapUnderlying(
+            MetaSwapUtilsV1.calculateSwapUnderlying(
                 swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
@@ -131,7 +133,7 @@ contract MetaSwapV1 is Swap {
         returns (uint256)
     {
         return
-            MetaSwapUtils.calculateTokenAmount(
+            MetaSwapUtilsV1.calculateTokenAmount(
                 swapStorage,
                 metaSwapStorage,
                 amounts,
@@ -152,7 +154,7 @@ contract MetaSwapV1 is Swap {
         uint8 tokenIndex
     ) external view virtual override returns (uint256) {
         return
-            MetaSwapUtils.calculateWithdrawOneToken(
+            MetaSwapUtilsV1.calculateWithdrawOneToken(
                 swapStorage,
                 metaSwapStorage,
                 tokenAmount,
@@ -221,9 +223,9 @@ contract MetaSwapV1 is Swap {
         uint256 _fee,
         uint256 _adminFee,
         address lpTokenTargetAddress,
-        ISwap baseSwap
+        ISwapV2 baseSwap
     ) public payable virtual initializer {
-        Swap.initialize(
+        SwapV2.initialize(
             _pooledTokens,
             decimals,
             lpTokenName,
@@ -256,7 +258,7 @@ contract MetaSwapV1 is Swap {
         // Check the last element of _pooledTokens is owned by baseSwap
         IERC20 baseLPToken = _pooledTokens[_pooledTokens.length - 1];
         require(
-            LPToken(address(baseLPToken)).owner() == address(baseSwap),
+            LPTokenV2(address(baseLPToken)).owner() == address(baseSwap),
             "baseLPToken is not owned by baseSwap"
         );
 
@@ -289,7 +291,7 @@ contract MetaSwapV1 is Swap {
         returns (uint256)
     {
         return
-            MetaSwapUtils.swap(
+            MetaSwapUtilsV1.swap(
                 swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
@@ -322,7 +324,7 @@ contract MetaSwapV1 is Swap {
         returns (uint256)
     {
         return
-            MetaSwapUtils.swapUnderlying(
+            MetaSwapUtilsV1.swapUnderlying(
                 swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
@@ -355,7 +357,7 @@ contract MetaSwapV1 is Swap {
         returns (uint256)
     {
         return
-            MetaSwapUtils.addLiquidity(
+            MetaSwapUtilsV1.addLiquidity(
                 swapStorage,
                 metaSwapStorage,
                 amounts,
@@ -388,7 +390,7 @@ contract MetaSwapV1 is Swap {
         returns (uint256)
     {
         return
-            MetaSwapUtils.removeLiquidityOneToken(
+            MetaSwapUtilsV1.removeLiquidityOneToken(
                 swapStorage,
                 metaSwapStorage,
                 tokenAmount,
@@ -422,7 +424,7 @@ contract MetaSwapV1 is Swap {
         returns (uint256)
     {
         return
-            MetaSwapUtils.removeLiquidityImbalance(
+            MetaSwapUtilsV1.removeLiquidityImbalance(
                 swapStorage,
                 metaSwapStorage,
                 amounts,

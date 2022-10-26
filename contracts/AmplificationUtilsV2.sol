@@ -7,12 +7,10 @@ import "./SwapUtilsV2.sol";
 
 /**
  * @title AmplificationUtils library
- * @notice A library to calculate and ramp the A parameter of a given `SwapUtils.Swap` struct.
+ * @notice A library to calculate and ramp the A parameter of a given `SwapUtilsV2.Swap` struct.
  * This library assumes the struct is fully validated.
  */
 library AmplificationUtilsV2 {
-    using SafeMath for uint256;
-
     event RampA(
         uint256 oldA,
         uint256 newA,
@@ -33,12 +31,12 @@ library AmplificationUtilsV2 {
      * @param self Swap struct to read from
      * @return A parameter
      */
-    function getA(SwapUtilsV1.Swap storage self)
+    function getA(SwapUtilsV2.Swap storage self)
         external
         view
         returns (uint256)
     {
-        return _getAPrecise(self).div(A_PRECISION);
+        return _getAPrecise(self) / (A_PRECISION);
     }
 
     /**
@@ -47,7 +45,7 @@ library AmplificationUtilsV2 {
      * @param self Swap struct to read from
      * @return A parameter in its raw precision form
      */
-    function getAPrecise(SwapUtilsV1.Swap storage self)
+    function getAPrecise(SwapUtilsV2.Swap storage self)
         external
         view
         returns (uint256)
@@ -61,7 +59,7 @@ library AmplificationUtilsV2 {
      * @param self Swap struct to read from
      * @return A parameter in its raw precision form
      */
-    function _getAPrecise(SwapUtilsV1.Swap storage self)
+    function _getAPrecise(SwapUtilsV2.Swap storage self)
         internal
         view
         returns (uint256)
@@ -75,15 +73,11 @@ library AmplificationUtilsV2 {
             if (a1 > a0) {
                 // a0 + (a1 - a0) * (block.timestamp - t0) / (t1 - t0)
                 return
-                    a0.add(
-                        a1.sub(a0).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
-                    );
+                    a0 + (a1 - ((a0) * (block.timestamp - (t0))) / (t1 - (t0)));
             } else {
                 // a0 - (a0 - a1) * (block.timestamp - t0) / (t1 - t0)
                 return
-                    a0.sub(
-                        a0.sub(a1).mul(block.timestamp.sub(t0)).div(t1.sub(t0))
-                    );
+                    a0 - (a0 - ((a1) * (block.timestamp - (t0))) / (t1 - (t0)));
             }
         } else {
             return a1;
@@ -99,16 +93,16 @@ library AmplificationUtilsV2 {
      * @param futureTime_ timestamp when the new A should be reached
      */
     function rampA(
-        SwapUtilsV1.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         uint256 futureA_,
         uint256 futureTime_
     ) external {
         require(
-            block.timestamp >= self.initialATime.add(1 days),
+            block.timestamp >= self.initialATime + (1 days),
             "Wait 1 day before starting ramp"
         );
         require(
-            futureTime_ >= block.timestamp.add(MIN_RAMP_TIME),
+            futureTime_ >= block.timestamp + (MIN_RAMP_TIME),
             "Insufficient ramp time"
         );
         require(
@@ -117,16 +111,16 @@ library AmplificationUtilsV2 {
         );
 
         uint256 initialAPrecise = _getAPrecise(self);
-        uint256 futureAPrecise = futureA_.mul(A_PRECISION);
+        uint256 futureAPrecise = futureA_ * (A_PRECISION);
 
         if (futureAPrecise < initialAPrecise) {
             require(
-                futureAPrecise.mul(MAX_A_CHANGE) >= initialAPrecise,
+                futureAPrecise * (MAX_A_CHANGE) >= initialAPrecise,
                 "futureA_ is too small"
             );
         } else {
             require(
-                futureAPrecise <= initialAPrecise.mul(MAX_A_CHANGE),
+                futureAPrecise <= initialAPrecise * (MAX_A_CHANGE),
                 "futureA_ is too large"
             );
         }
@@ -149,7 +143,7 @@ library AmplificationUtilsV2 {
      * cannot be called for another 24 hours
      * @param self Swap struct to update
      */
-    function stopRampA(SwapUtilsV1.Swap storage self) external {
+    function stopRampA(SwapUtilsV2.Swap storage self) external {
         require(self.futureATime > block.timestamp, "Ramp is already stopped");
 
         uint256 currentA = _getAPrecise(self);

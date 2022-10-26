@@ -24,8 +24,8 @@ import "../SwapUtilsV2.sol";
 library MetaSwapUtilsV1 {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
-    using MathUtils for uint256;
-    using AmplificationUtils for SwapUtils.Swap;
+    using MathUtilsV1 for uint256;
+    using AmplificationUtilsV2 for SwapUtilsV2.Swap;
 
     /*** EVENTS ***/
 
@@ -70,7 +70,7 @@ library MetaSwapUtilsV1 {
 
     struct MetaSwap {
         // Meta-Swap related parameters
-        ISwap baseSwap;
+        ISwapV2 baseSwap;
         uint256 baseVirtualPrice;
         uint256 baseCacheLastUpdated;
         IERC20[] baseTokens;
@@ -93,7 +93,7 @@ library MetaSwapUtilsV1 {
         uint256 d0;
         uint256 d1;
         uint256 d2;
-        LPToken lpToken;
+        LPTokenV2 lpToken;
         uint256 totalSupply;
         uint256 preciseA;
         uint256 baseVirtualPrice;
@@ -117,7 +117,7 @@ library MetaSwapUtilsV1 {
 
     struct CalculateSwapUnderlyingInfo {
         uint256 baseVirtualPrice;
-        ISwap baseSwap;
+        ISwapV2 baseSwap;
         uint8 baseLPTokenIndex;
         uint8 baseTokensLength;
         uint8 metaIndexTo;
@@ -156,12 +156,12 @@ library MetaSwapUtilsV1 {
         return metaSwapStorage.baseVirtualPrice;
     }
 
-    function _getBaseSwapFee(ISwap baseSwap)
+    function _getBaseSwapFee(ISwapV2 baseSwap)
         internal
         view
         returns (uint256 swapFee)
     {
-        (, , , , swapFee, , ) = baseSwap.swapStorage();
+        (, , , , swapFee, , ) = baseSwap.swapStorage(); //TODO: not sure how to import this?
     }
 
     /**
@@ -173,7 +173,7 @@ library MetaSwapUtilsV1 {
      * @return dy the amount of token user will receive
      */
     function calculateWithdrawOneToken(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage,
         uint256 tokenAmount,
         uint8 tokenIndex
@@ -188,7 +188,7 @@ library MetaSwapUtilsV1 {
     }
 
     function _calculateWithdrawOneToken(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         uint256 tokenAmount,
         uint8 tokenIndex,
         uint256 baseVirtualPrice,
@@ -229,7 +229,7 @@ library MetaSwapUtilsV1 {
      * @return the dy excluding swap fee, the new y after withdrawing one token, and current y
      */
     function _calculateWithdrawOneTokenDY(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         uint8 tokenIndex,
         uint256 tokenAmount,
         uint256 baseVirtualPrice,
@@ -257,16 +257,16 @@ library MetaSwapUtilsV1 {
                 self._getAPrecise(),
                 0
             );
-        v.d0 = SwapUtils.getD(xp, v.preciseA);
+        v.d0 = SwapUtilsV2.getD(xp, v.preciseA);
         v.d1 = v.d0.sub(tokenAmount.mul(v.d0).div(totalSupply));
 
         require(tokenAmount <= xp[tokenIndex], "Withdraw exceeds available");
 
-        v.newY = SwapUtils.getYD(v.preciseA, tokenIndex, xp, v.d1);
+        v.newY = SwapUtilsV2.getYD(v.preciseA, tokenIndex, xp, v.d1);
 
         uint256[] memory xpReduced = new uint256[](xp.length);
 
-        v.feePerToken = SwapUtils._feePerToken(self.swapFee, xp.length);
+        v.feePerToken = SwapUtilsV2._feePerToken(self.swapFee, xp.length);
         for (uint256 i = 0; i < xp.length; i++) {
             v.xpi = xp[i];
             // if i == tokenIndex, dxExpected = xp[i] * d1 / d0 - newY
@@ -282,7 +282,7 @@ library MetaSwapUtilsV1 {
         }
 
         uint256 dy = xpReduced[tokenIndex].sub(
-            SwapUtils.getYD(v.preciseA, tokenIndex, xpReduced, v.d1)
+            SwapUtilsV2.getYD(v.preciseA, tokenIndex, xpReduced, v.d1)
         );
 
         if (tokenIndex == xp.length.sub(1)) {
@@ -321,7 +321,7 @@ library MetaSwapUtilsV1 {
         uint256[] memory precisionMultipliers,
         uint256 baseVirtualPrice
     ) internal pure returns (uint256[] memory) {
-        uint256[] memory xp = SwapUtils._xp(balances, precisionMultipliers);
+        uint256[] memory xp = SwapUtilsV2._xp(balances, precisionMultipliers);
         uint256 baseLPTokenIndex = balances.length.sub(1);
         xp[baseLPTokenIndex] = xp[baseLPTokenIndex].mul(baseVirtualPrice).div(
             BASE_VIRTUAL_PRICE_PRECISION
@@ -335,7 +335,7 @@ library MetaSwapUtilsV1 {
      * @return the pool balances "scaled" to the pool's precision, allowing
      * them to be more easily compared.
      */
-    function _xp(SwapUtils.Swap storage self, uint256 baseVirtualPrice)
+    function _xp(SwapUtilsV2.Swap storage self, uint256 baseVirtualPrice)
         internal
         view
         returns (uint256[] memory)
@@ -355,10 +355,10 @@ library MetaSwapUtilsV1 {
      * @return the virtual price, scaled to precision of BASE_VIRTUAL_PRICE_PRECISION
      */
     function getVirtualPrice(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage
     ) external view returns (uint256) {
-        uint256 d = SwapUtils.getD(
+        uint256 d = SwapUtilsV2.getD(
             _xp(
                 self.balances,
                 self.tokenPrecisionMultipliers,
@@ -385,7 +385,7 @@ library MetaSwapUtilsV1 {
      * @return dy the number of tokens the user will get
      */
     function calculateSwap(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
@@ -415,7 +415,7 @@ library MetaSwapUtilsV1 {
      * @return dy the number of tokens the user will get and dyFee the associated fee
      */
     function _calculateSwap(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
         uint256 dx,
@@ -435,7 +435,7 @@ library MetaSwapUtilsV1 {
         }
         x = x.add(xp[tokenIndexFrom]);
 
-        uint256 y = SwapUtils.getY(
+        uint256 y = SwapUtilsV2.getY(
             self._getAPrecise(),
             tokenIndexFrom,
             tokenIndexTo,
@@ -468,7 +468,7 @@ library MetaSwapUtilsV1 {
      * @return dy the number of tokens the user will get
      */
     function calculateSwapUnderlying(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
@@ -537,7 +537,7 @@ library MetaSwapUtilsV1 {
         }
 
         {
-            uint256 y = SwapUtils.getY(
+            uint256 y = SwapUtilsV2.getY(
                 self._getAPrecise(),
                 tokenIndexFrom,
                 v.metaIndexTo,
@@ -582,7 +582,7 @@ library MetaSwapUtilsV1 {
      * deposit was false, total amount of lp token that will be burned
      */
     function calculateTokenAmount(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage,
         uint256[] calldata amounts,
         bool deposit
@@ -596,7 +596,7 @@ library MetaSwapUtilsV1 {
             uint256[] memory tokenPrecisionMultipliers = self
                 .tokenPrecisionMultipliers;
             uint256 numTokens = balances1.length;
-            d0 = SwapUtils.getD(
+            d0 = SwapUtilsV2.getD(
                 _xp(balances1, tokenPrecisionMultipliers, baseVirtualPrice),
                 a
             );
@@ -610,7 +610,7 @@ library MetaSwapUtilsV1 {
                     );
                 }
             }
-            d1 = SwapUtils.getD(
+            d1 = SwapUtilsV2.getD(
                 _xp(balances1, tokenPrecisionMultipliers, baseVirtualPrice),
                 a
             );
@@ -637,7 +637,7 @@ library MetaSwapUtilsV1 {
      * @return amount of token user received on swap
      */
     function swap(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
@@ -721,7 +721,7 @@ library MetaSwapUtilsV1 {
      * @return amount of token user received on swap
      */
     function swapUnderlying(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage,
         uint8 tokenIndexFrom,
         uint8 tokenIndexTo,
@@ -752,7 +752,7 @@ library MetaSwapUtilsV1 {
             );
         }
 
-        ISwap baseSwap = metaSwapStorage.baseSwap;
+        ISwapV2 baseSwap = metaSwapStorage.baseSwap;
 
         // Find the address of the token swapping from and the index in MetaSwap's token list
         if (tokenIndexFrom < baseLPTokenIndex) {
@@ -815,7 +815,7 @@ library MetaSwapUtilsV1 {
             // Calculate how much to withdraw in MetaSwap level and the the associated swap fee
             uint256 dyFee;
             {
-                uint256 y = SwapUtils.getY(
+                uint256 y = SwapUtilsV2.getY(
                     self._getAPrecise(),
                     v.metaIndexFrom,
                     v.metaIndexTo,
@@ -906,7 +906,7 @@ library MetaSwapUtilsV1 {
      * @return amount of LP token user received
      */
     function addLiquidity(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage,
         uint256[] memory amounts,
         uint256 minToMint
@@ -934,7 +934,7 @@ library MetaSwapUtilsV1 {
         v.totalSupply = v.lpToken.totalSupply();
 
         if (v.totalSupply != 0) {
-            v.d0 = SwapUtils.getD(
+            v.d0 = SwapUtilsV2.getD(
                 _xp(
                     v.newBalances,
                     v.tokenPrecisionMultipliers,
@@ -971,7 +971,7 @@ library MetaSwapUtilsV1 {
         }
 
         // invariant after change
-        v.d1 = SwapUtils.getD(
+        v.d1 = SwapUtilsV2.getD(
             _xp(v.newBalances, v.tokenPrecisionMultipliers, v.baseVirtualPrice),
             v.preciseA
         );
@@ -982,7 +982,7 @@ library MetaSwapUtilsV1 {
         uint256 toMint;
 
         if (v.totalSupply != 0) {
-            uint256 feePerToken = SwapUtils._feePerToken(
+            uint256 feePerToken = SwapUtilsV2._feePerToken(
                 self.swapFee,
                 pooledTokens.length
             );
@@ -996,7 +996,7 @@ library MetaSwapUtilsV1 {
                 );
                 v.newBalances[i] = v.newBalances[i].sub(fees[i]);
             }
-            v.d2 = SwapUtils.getD(
+            v.d2 = SwapUtilsV2.getD(
                 _xp(
                     v.newBalances,
                     v.tokenPrecisionMultipliers,
@@ -1037,13 +1037,13 @@ library MetaSwapUtilsV1 {
      * @return amount chosen token that user received
      */
     function removeLiquidityOneToken(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage,
         uint256 tokenAmount,
         uint8 tokenIndex,
         uint256 minAmount
     ) external returns (uint256) {
-        LPToken lpToken = self.lpToken;
+        LPTokenV2 lpToken = self.lpToken;
         uint256 totalSupply = lpToken.totalSupply();
         uint256 numTokens = self.pooledTokens.length;
         require(tokenAmount <= lpToken.balanceOf(msg.sender), ">LP.balanceOf");
@@ -1094,7 +1094,7 @@ library MetaSwapUtilsV1 {
      * @return actual amount of LP tokens burned in the withdrawal
      */
     function removeLiquidityImbalance(
-        SwapUtils.Swap storage self,
+        SwapUtilsV2.Swap storage self,
         MetaSwap storage metaSwapStorage,
         uint256[] memory amounts,
         uint256 maxBurnAmount
@@ -1119,7 +1119,7 @@ library MetaSwapUtilsV1 {
         );
         require(maxBurnAmount != 0, "Must burn more than 0");
 
-        uint256 feePerToken = SwapUtils._feePerToken(
+        uint256 feePerToken = SwapUtilsV2._feePerToken(
             self.swapFee,
             v.newBalances.length
         );
@@ -1129,7 +1129,7 @@ library MetaSwapUtilsV1 {
         {
             uint256[] memory balances1 = new uint256[](v.newBalances.length);
 
-            v.d0 = SwapUtils.getD(
+            v.d0 = SwapUtilsV2.getD(
                 _xp(
                     v.newBalances,
                     v.tokenPrecisionMultipliers,
@@ -1143,7 +1143,7 @@ library MetaSwapUtilsV1 {
                     "Cannot withdraw more than available"
                 );
             }
-            v.d1 = SwapUtils.getD(
+            v.d1 = SwapUtilsV2.getD(
                 _xp(balances1, v.tokenPrecisionMultipliers, v.baseVirtualPrice),
                 v.preciseA
             );
@@ -1158,7 +1158,7 @@ library MetaSwapUtilsV1 {
                 balances1[i] = balances1[i].sub(fees[i]);
             }
 
-            v.d2 = SwapUtils.getD(
+            v.d2 = SwapUtilsV2.getD(
                 _xp(balances1, v.tokenPrecisionMultipliers, v.baseVirtualPrice),
                 v.preciseA
             );
@@ -1206,7 +1206,7 @@ library MetaSwapUtilsV1 {
             metaSwapStorage.baseCacheLastUpdated + BASE_CACHE_EXPIRE_TIME
         ) {
             // When the cache is expired, update it
-            uint256 baseVirtualPrice = ISwap(metaSwapStorage.baseSwap)
+            uint256 baseVirtualPrice = ISwapV2(metaSwapStorage.baseSwap)
                 .getVirtualPrice();
             metaSwapStorage.baseVirtualPrice = baseVirtualPrice;
             metaSwapStorage.baseCacheLastUpdated = block.timestamp;

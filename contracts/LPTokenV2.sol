@@ -13,8 +13,6 @@ import "./interfaces/ISwapV2.sol";
  * @dev Only Swap contracts should initialize and own LPToken contracts.
  */
 contract LPTokenV2 is ERC20BurnableUpgradeable, OwnableUpgradeable {
-    using SafeMathUpgradeable for uint256;
-
     /**
      * @notice Initializes this LPToken contract with the given name and symbol
      * @dev The caller of this function will become the owner. A Swap contract should call this
@@ -56,6 +54,5 @@ contract LPTokenV2 is ERC20BurnableUpgradeable, OwnableUpgradeable {
     ) internal virtual override(ERC20Upgradeable) {
         super._beforeTokenTransfer(from, to, amount);
         require(to != address(this), "LPToken: cannot send to itself");
-        ISwapV1(owner()).updateUserWithdrawFee(to, amount);
     }
 }

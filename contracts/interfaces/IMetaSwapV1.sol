@@ -77,7 +77,7 @@ interface IMetaSwapV1 {
         uint256 _fee,
         uint256 _adminFee,
         address lpTokenTargetAddress,
-        ISwap baseSwap
+        ISwapV2 baseSwap
     ) external;
 
     function swap(

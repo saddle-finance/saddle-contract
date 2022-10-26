@@ -27,8 +27,8 @@ contract MetaSwapDepositV1 is Initializable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    ISwap public baseSwap;
-    IMetaSwap public metaSwap;
+    ISwapV2 public baseSwap;
+    IMetaSwapV1 public metaSwap;
     IERC20[] public baseTokens;
     IERC20[] public metaTokens;
     IERC20[] public tokens;
@@ -37,8 +37,8 @@ contract MetaSwapDepositV1 is Initializable, ReentrancyGuardUpgradeable {
     uint256 constant MAX_UINT256 = 2**256 - 1;
 
     struct RemoveLiquidityImbalanceInfo {
-        ISwap baseSwap;
-        IMetaSwap metaSwap;
+        ISwapV2 baseSwap;
+        IMetaSwapV1 metaSwap;
         IERC20 metaLPToken;
         uint8 baseLPTokenIndex;
         bool withdrawFromBase;
@@ -53,8 +53,8 @@ contract MetaSwapDepositV1 is Initializable, ReentrancyGuardUpgradeable {
      * @param _metaLPToken the address of the MetaSwap LP token contract
      */
     function initialize(
-        ISwap _baseSwap,
-        IMetaSwap _metaSwap,
+        ISwapV2 _baseSwap,
+        IMetaSwapV1 _metaSwap,
         IERC20 _metaLPToken
     ) external initializer {
         __ReentrancyGuard_init();

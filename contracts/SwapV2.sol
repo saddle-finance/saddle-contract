@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-4.4.0/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
@@ -27,15 +27,14 @@ import "./AmplificationUtilsV2.sol";
  * @dev Most of the logic is stored as a library `SwapUtils` for the sake of reducing contract's
  * deployment size.
  */
-contract SwapV2 is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
+contract SwapV2 is OwnerPausableUpgradeableV1, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
-    using SwapUtils for SwapUtils.Swap;
-    using AmplificationUtils for SwapUtils.Swap;
+    using SwapUtilsV2 for SwapUtilsV2.Swap;
+    using AmplificationUtilsV2 for SwapUtilsV2.Swap;
 
     // Struct storing data responsible for automatic market maker functionalities. In order to
     // access this data, this contract uses SwapUtils library. For more details, see SwapUtils.sol
-    SwapUtils.Swap public swapStorage;
+    SwapUtilsV2.Swap public swapStorage;
 
     // Maps token address to an index in the pool. Used to prevent duplicate tokens in the pool.
     // getTokenIndex function also relies on this mapping to retrieve token index.
@@ -142,27 +141,25 @@ contract SwapV2 is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
                 "The 0 address isn't an ERC-20"
             );
             require(
-                decimals[i] <= SwapUtils.POOL_PRECISION_DECIMALS,
+                decimals[i] <= SwapUtilsV2.POOL_PRECISION_DECIMALS,
                 "Token decimals exceeds max"
             );
             precisionMultipliers[i] =
-                10 **
-                    uint256(SwapUtils.POOL_PRECISION_DECIMALS).sub(
-                        uint256(decimals[i])
-                    );
+                10**uint256(SwapUtilsV2.POOL_PRECISION_DECIMALS) -
+                (uint256(decimals[i]));
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
         // Check _a, _fee, _adminFee, _withdrawFee parameters
-        require(_a < AmplificationUtils.MAX_A, "_a exceeds maximum");
-        require(_fee < SwapUtils.MAX_SWAP_FEE, "_fee exceeds maximum");
+        require(_a < AmplificationUtilsV2.MAX_A, "_a exceeds maximum");
+        require(_fee < SwapUtilsV2.MAX_SWAP_FEE, "_fee exceeds maximum");
         require(
-            _adminFee < SwapUtils.MAX_ADMIN_FEE,
+            _adminFee < SwapUtilsV2.MAX_ADMIN_FEE,
             "_adminFee exceeds maximum"
         );
 
         // Clone and initialize a LPToken contract
-        LPToken lpToken = LPToken(Clones.clone(lpTokenTargetAddress));
+        LPTokenV2 lpToken = LPTokenV2(Clones.clone(lpTokenTargetAddress));
         require(
             lpToken.initialize(lpTokenName, lpTokenSymbol),
             "could not init lpToken clone"
@@ -173,8 +170,8 @@ contract SwapV2 is OwnerPausableUpgradeable, ReentrancyGuardUpgradeable {
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisionMultipliers;
         swapStorage.balances = new uint256[](_pooledTokens.length);
-        swapStorage.initialA = _a.mul(AmplificationUtils.A_PRECISION);
-        swapStorage.futureA = _a.mul(AmplificationUtils.A_PRECISION);
+        swapStorage.initialA = _a * (AmplificationUtilsV2.A_PRECISION);
+        swapStorage.futureA = _a * (AmplificationUtilsV2.A_PRECISION);
         // swapStorage.initialATime = 0;
         // swapStorage.futureATime = 0;
         swapStorage.swapFee = _fee;
