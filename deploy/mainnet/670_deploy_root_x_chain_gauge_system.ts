@@ -1,18 +1,13 @@
+import { expect } from "chai"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import path from "path"
-import { AnyCallTranslator } from "../../build/typechain"
-import {
-  BIG_NUMBER_1E18,
-  impersonateAccount,
-  setEtherBalance,
-  ZERO_ADDRESS,
-} from "../../test/testUtils"
-import { ANYCALL_ADDRESS, PROD_DEPLOYER_ADDRESS } from "../../utils/accounts"
+import { ZERO_ADDRESS } from "../../test/testUtils"
+import { ANYCALL_ADDRESS } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
-  const { get, execute, deploy, log } = deployments
+  const { get, execute, deploy, log, save, read } = deployments
   const { deployer } = await getNamedAccounts()
 
   if (process.env.HARDHAT_DEPLOY_FORK == null) {
@@ -27,7 +22,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const xChainFactoryDeployOptions = {
     log: true,
     from: crossChainDeployer,
-    skipIfAlreadyDeployed: true,
   }
 
   const executeOptions = {
@@ -53,6 +47,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (await get("Minter")).address,
     ],
   })
+  expect(await read("RootGauge", "factory")).not.eq(ZERO_ADDRESS)
 
   // 2: Deploy ProxyAdmin to be used as admin of AnyCallTranslator
   const proxyAdmin = await deploy("ProxyAdmin", xChainFactoryDeployOptions)
@@ -77,6 +72,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ...xChainFactoryDeployOptions,
     contract: "TransparentUpgradeableProxy",
     args: [anyCallTranslatorLogic.address, proxyAdmin.address, initData],
+  })
+
+  // Save a reference to the proxy contract with the same abi as the logic contract
+  await save("AnyCallTranslator", {
+    abi: anyCallTranslatorLogic.abi,
+    address: anyCallTranslatorProxy.address,
   })
 
   // 5: Deploy Root Oracle
@@ -104,24 +105,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
 
   // Add RootGaugeFactory to master registry
-  const prodDeployer = await impersonateAccount(PROD_DEPLOYER_ADDRESS)
-  await setEtherBalance(PROD_DEPLOYER_ADDRESS, BIG_NUMBER_1E18.mul(10000))
-  const mr = await ethers.getContract("MasterRegistry")
-  await mr
-    .connect(prodDeployer)
-    .addRegistry(
-      ethers.utils.formatBytes32String("RootGaugeFactory"),
-      rgf.address,
-    )
+  await execute(
+    "MasterRegistry",
+    executeOptions,
+    "addRegistry",
+    ethers.utils.formatBytes32String("RootGaugeFactory"),
+    rgf.address,
+  )
 
   // Add RGF and RootOracle to addKnownCallers from owner
-  const anyCallTranslatorProxyContract: AnyCallTranslator =
-    await ethers.getContractAt(
-      "AnyCallTranslator",
-      anyCallTranslatorProxy.address,
-    )
-  await anyCallTranslatorProxyContract
-    .connect(await impersonateAccount(owner))
-    .addKnownCallers([rgf.address, rootOracle.address])
+  await execute("AnyCallTranslator", executeOptions, "addKnownCallers", [
+    rgf.address,
+    rootOracle.address,
+  ])
 }
 export default func
