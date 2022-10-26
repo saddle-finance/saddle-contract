@@ -7,7 +7,7 @@ import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
-  const { get, execute, deploy, log } = deployments
+  const { get, execute, deploy, log, read } = deployments
   const { deployer, libraryDeployer } = await getNamedAccounts()
 
   if (process.env.HARDHAT_DEPLOY_FORK == null) {
@@ -48,7 +48,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [200_000, sdlAddress, sdlAddressOnOpt],
   })
 
-  // Set Bridger
+  // Set Bridgers
   await execute(
     "RootGaugeFactory",
     executeOptions,
