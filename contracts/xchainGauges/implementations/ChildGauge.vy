@@ -119,8 +119,6 @@ def __init__(_sdl_token: address, _factory: address):
     FACTORY = _factory
 
 
-
-
 @internal
 def _checkpoint(_user: address):
     """
@@ -144,7 +142,6 @@ def _checkpoint(_user: address):
                 # we don't have to worry about crossing inflation epochs
                 # and if we miss any weeks, those weeks inflation rates will be 0 for sure
                 # but that means no one interacted with the gauge for that long
-                # TODO: is this the same calculation for us?
                 integrate_inv_supply += self.inflation_rate[prev_week_time / WEEK] * 10 ** 18 * dt / working_supply
 
             if week_time == block.timestamp:
@@ -566,6 +563,7 @@ def add_reward(_reward_token: address, _distributor: address):
 
     reward_count: uint256 = self.reward_count
     assert reward_count < MAX_REWARDS
+    assert _distributor != ZERO_ADDRESS
     assert self.reward_data[_reward_token].distributor == ZERO_ADDRESS
 
     self.reward_data[_reward_token].distributor = _distributor
