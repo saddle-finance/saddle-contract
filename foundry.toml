@@ -15,7 +15,7 @@ remappings = [
 cache_path  = 'forge-cache'
 script = 'forge-script'
 out = 'forge-out'
-fs_permissions = [{ access = "read", path = "./"}]
+fs_permissions = [{ access = "read-write", path = "./"}, { access = "read-write", path = "./output/"}]
 
 [rpc_endpoints]
 mainnet = "https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}"
@@ -23,7 +23,7 @@ arbitrum_mainnet = "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
 optimism_mainnet = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
 fantom_mainnet = "https://rpc.ftm.tools/"
 evmos_mainnet = "https://evmos-mainnet.public.blastapi.io"
-kava_mainnet = "https://evm.kava.io"
+kava_mainnet = "https://evm2.kava.io"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API}" }
