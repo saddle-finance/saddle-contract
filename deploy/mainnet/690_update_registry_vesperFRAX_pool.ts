@@ -51,7 +51,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     batchCallData,
     true,
   )
-  console.log("buh")
   console.log(await poolRegistry.getPoolData(vesperPoolAddress))
 }
 export default func
