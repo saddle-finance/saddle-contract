@@ -1,0 +1,9 @@
+@boringcrypto/=node_modules/@boringcrypto/
+@openzeppelin/=node_modules/@openzeppelin/
+ds-test/=lib/forge-std/lib/ds-test/src/
+eth-gas-reporter/=node_modules/eth-gas-reporter/
+forge-std/=lib/forge-std/src/
+hardhat-deploy/=node_modules/hardhat-deploy/
+hardhat/=node_modules/hardhat/
+sol-explore/=node_modules/sol-explore/
+synthetix/=node_modules/synthetix/
