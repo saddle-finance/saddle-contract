@@ -134,7 +134,7 @@ const config: HardhatUserConfig = {
     },
     kava_mainnet: {
       live: true,
-      url: "https://evm.kava.io",
+      url: "https://evm2.kava.io",
       chainId: parseInt(CHAIN_ID.KAVA_MAINNET),
       deploy: ["./deploy/kava_mainnet/"],
       verify: {

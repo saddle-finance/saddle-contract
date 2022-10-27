@@ -110,10 +110,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       { from: deployer, log: true },
       "batch",
       batchCallData,
-      true,
+      false,
     )
   } else {
     log("No pools to be registered")
   }
 }
 export default func
+func.skip = async () => true
