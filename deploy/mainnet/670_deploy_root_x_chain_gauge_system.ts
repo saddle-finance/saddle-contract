@@ -1,23 +1,21 @@
 import { expect } from "chai"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import path from "path"
-import { ZERO_ADDRESS } from "../../test/testUtils"
+import { setEtherBalance, ZERO_ADDRESS } from "../../test/testUtils"
 import { ANYCALL_ADDRESS } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
   const { get, execute, deploy, log, save, read } = deployments
-  const { deployer } = await getNamedAccounts()
+  const { deployer, crossChainDeployer } = await getNamedAccounts()
 
-  if (process.env.HARDHAT_DEPLOY_FORK == null) {
-    log(`Not running on forked mode, skipping ${path.basename(__filename)}`)
-    return
+  if (process.env.HARDHAT_DEPLOY_FORK) {
+    // set balance of cross chain deployer in forked network
+    await setEtherBalance(crossChainDeployer, ethers.utils.parseEther("10000"))
   }
 
-  // In prod, update these values
+  // Set owners to deployer until all contracts are fully deployed
   const owner = deployer
-  const crossChainDeployer = deployer
 
   const xChainFactoryDeployOptions = {
     log: true,
@@ -53,10 +51,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const proxyAdmin = await deploy("ProxyAdmin", xChainFactoryDeployOptions)
 
   // 3: Deploy AnyCallTranslator as a logic contract
-  const anyCallTranslatorLogic = await deploy(
-    "AnyCallTranslator",
-    xChainFactoryDeployOptions,
-  )
+  const anyCallTranslatorLogic = await deploy("AnyCallTranslatorLogic", {
+    ...xChainFactoryDeployOptions,
+    contract: "AnyCallTranslator",
+  })
 
   // Function data for AnyCallTranslator.initialize(multisigAddress, anyCallAddress)
   // This will be passed as 3rd parameter when intiaizing the proxy
@@ -120,3 +118,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ])
 }
 export default func
+func.skip = async () => false

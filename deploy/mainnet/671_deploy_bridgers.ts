@@ -1,6 +1,5 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import path from "path"
 import { getWithName } from "../../test/testUtils"
 
 import { CHAIN_ID } from "../../utils/network"
@@ -8,21 +7,11 @@ import { CHAIN_ID } from "../../utils/network"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
   const { get, execute, deploy, log, read } = deployments
-  const { deployer, libraryDeployer } = await getNamedAccounts()
-
-  if (process.env.HARDHAT_DEPLOY_FORK == null) {
-    log(`Not running on forked mode, skipping ${path.basename(__filename)}`)
-    return
-  }
-
-  // In prod, update these values
-  const owner = deployer
-  const crossChainDeployer = libraryDeployer
+  const { deployer, crossChainDeployer } = await getNamedAccounts()
 
   const deployOptions = {
     log: true,
     from: deployer,
-    skipIfAlreadyDeployed: true,
   }
 
   const executeOptions = {
@@ -70,3 +59,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
 }
 export default func
+func.skip = async () => false
