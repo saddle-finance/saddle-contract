@@ -864,7 +864,7 @@ export async function deployCrossChainSystemOnSideChain(
     anyCallTranslatorProxy.address,
   )
 
-  // Add to RootGaugeFactory to master registry
+  // Add to ChildGaugeFactory to master registry
   await execute(
     "MasterRegistry",
     executeOptions,
