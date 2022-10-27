@@ -9,6 +9,7 @@ struct Network {
     string networkName;
 }
 
+
 contract ScriptWithConstants is Script {
     using stdJson for string;
 
