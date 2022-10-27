@@ -56,7 +56,7 @@ contract VSPContractRewarderTest is Test {
     function testDepositVSP() public {
         // First, transfer some VSP to rewardForwarder contract
         VSP.transfer(address(rewardForwarder), 10000 * 1e18);
-        // Then, approve rewardForwarder to spend VSP
+        // Then allow the associated gauge to use VSP from rewardForwarder
         rewardForwarder.allow(address(VSP));
         // Then, call depositRewardToken. This will call deposit_reward_token on the gauge
         // which will use the VSP in the rewardForwarder contract as the new weekly reward emission
@@ -104,7 +104,7 @@ contract VSPContractRewarderTest is Test {
         assertEq(VSP.balanceOf(address(rewardScheduler)), 7500 * 1e18);
         assertEq(VSP.balanceOf(address(rewardForwarder)), 2500 * 1e18);
 
-        // Then, approve rewardForwarder to spend VSP
+        // Then allow the associated gauge to use VSP from rewardForwarder
         rewardForwarder.allow(address(VSP));
         // Then, call depositRewardToken. This will call deposit_reward_token on the gauge
         // which will use the VSP in the rewardForwarder contract as the new weekly reward emission
