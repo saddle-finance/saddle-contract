@@ -95,6 +95,11 @@ describe("LPTokenV2", async () => {
       firstToken.address,
     )
 
+    const poolLPTokenAddress = await (await swapV2.swapStorage()).lpToken
+    const poolLPToken = (await ethers.getContractAt(
+      "LPTokenV2",
+      poolLPTokenAddress,
+    )) as LPTokenV2
     const ownerAddress = await owner.getAddress()
 
     await asyncForEach([usdc, usdt], async (token) => {
@@ -115,11 +120,11 @@ describe("LPTokenV2", async () => {
 
     // Verify current balance
     console.log("buh")
-    expect(await firstToken.balanceOf(ownerAddress)).to.eq(String(20e18))
+    expect(await poolLPToken.balanceOf(ownerAddress)).to.eq(String(20e18))
 
     // Transferring LPTokenV2 to itself should revert
     await expect(
-      firstToken.transfer(firstToken.address, String(100e18)),
+      poolLPToken.transfer(firstToken.address, String(100e18)),
     ).to.be.revertedWith("LPTokenV2: cannot send to itself")
   })
 })
