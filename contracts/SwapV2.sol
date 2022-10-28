@@ -146,7 +146,7 @@ contract SwapV2 is OwnerPausableUpgradeableV1, ReentrancyGuardUpgradeable {
             );
             precisionMultipliers[i] =
                 10**uint256(SwapUtilsV2.POOL_PRECISION_DECIMALS) -
-                (uint256(decimals[i]));
+                uint256(decimals[i]);
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
@@ -170,8 +170,8 @@ contract SwapV2 is OwnerPausableUpgradeableV1, ReentrancyGuardUpgradeable {
         swapStorage.pooledTokens = _pooledTokens;
         swapStorage.tokenPrecisionMultipliers = precisionMultipliers;
         swapStorage.balances = new uint256[](_pooledTokens.length);
-        swapStorage.initialA = _a * (AmplificationUtilsV2.A_PRECISION);
-        swapStorage.futureA = _a * (AmplificationUtilsV2.A_PRECISION);
+        swapStorage.initialA = _a * AmplificationUtilsV2.A_PRECISION;
+        swapStorage.futureA = _a * AmplificationUtilsV2.A_PRECISION;
         // swapStorage.initialATime = 0;
         // swapStorage.futureATime = 0;
         swapStorage.swapFee = _fee;

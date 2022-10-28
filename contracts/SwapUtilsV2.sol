@@ -171,10 +171,8 @@ library SwapUtilsV2 {
         // dy_0 (without fees)
         // dy, dy_0 - dy
 
-        uint256 dySwapFee = currentY -
-            newY /
-            self.tokenPrecisionMultipliers[tokenIndex] -
-            dy;
+        uint256 dySwapFee = ((currentY - newY) /
+            self.tokenPrecisionMultipliers[tokenIndex]) - dy;
 
         return (dy, dySwapFee);
     }
@@ -228,14 +226,14 @@ library SwapUtilsV2 {
                 xpi -
                 (((
                     (i == tokenIndex)
-                        ? (xpi * (v.d1)) / (v.d0) - (v.newY)
-                        : xpi - ((xpi * (v.d1)) / (v.d0))
-                ) * (v.feePerToken)) / (FEE_DENOMINATOR));
+                        ? ((xpi * v.d1) / (v.d0)) - (v.newY)
+                        : xpi - ((xpi * v.d1) / (v.d0))
+                ) * (v.feePerToken)) / FEE_DENOMINATOR);
         }
 
         uint256 dy = xpReduced[tokenIndex] -
             (getYD(v.preciseA, tokenIndex, xpReduced, v.d1));
-        dy = dy - (1) / (self.tokenPrecisionMultipliers[tokenIndex]);
+        dy = (dy - 1) / (self.tokenPrecisionMultipliers[tokenIndex]);
 
         return (dy, v.newY, xp[tokenIndex]);
     }
@@ -273,21 +271,21 @@ library SwapUtilsV2 {
 
         for (uint256 i = 0; i < numTokens; i++) {
             if (i != tokenIndex) {
-                s = s + (xp[i]);
-                c = (c * (d)) / (xp[i] * (numTokens));
+                s = s + xp[i];
+                c = (c * d) / (xp[i] * (numTokens));
                 // If we were to protect the division loss we would have to keep the denominator separate
                 // and divide at the end. However this leads to overflow with large numTokens or/and D.
                 // c = c * D * D * D * ... overflow!
             }
         }
-        c = (c * (d) * (AmplificationUtilsV2.A_PRECISION)) / (nA * (numTokens));
+        c = (c * d * (AmplificationUtilsV2.A_PRECISION)) / (nA * numTokens);
 
-        uint256 b = s + ((d * (AmplificationUtilsV2.A_PRECISION)) / (nA));
+        uint256 b = s + ((d * AmplificationUtilsV2.A_PRECISION) / nA);
         uint256 yPrev;
         uint256 y = d;
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
             yPrev = y;
-            y = y * (y) + (c) / (y * (2) + (b) - (d));
+            y = ((y * y) + c) / ((y * 2) + b - d);
             if (y.within1(yPrev)) {
                 return y;
             }
@@ -324,7 +322,7 @@ library SwapUtilsV2 {
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
             uint256 dP = d;
             for (uint256 j = 0; j < numTokens; j++) {
-                dP = (dP * (d)) / (xp[j] * (numTokens));
+                dP = (dP * d) / (xp[j] * numTokens);
                 // If we were to protect the division loss we would have to keep the denominator separate
                 // and divide at the end. However this leads to overflow with large numTokens or/and D.
                 // dP = dP * D * D * D * ... overflow!
@@ -437,7 +435,7 @@ library SwapUtilsV2 {
         uint256 d = getD(xp, preciseA);
         uint256 c = d;
         uint256 s;
-        uint256 nA = numTokens * (preciseA);
+        uint256 nA = numTokens * preciseA;
 
         uint256 _x;
         for (uint256 i = 0; i < numTokens; i++) {
@@ -448,21 +446,21 @@ library SwapUtilsV2 {
             } else {
                 continue;
             }
-            s = s + (_x);
-            c = (c * (d)) / (_x * (numTokens));
+            s = s + _x;
+            c = (c * d) / (_x * numTokens);
             // If we were to protect the division loss we would have to keep the denominator separate
             // and divide at the end. However this leads to overflow with large numTokens or/and D.
             // c = c * D * D * D * ... overflow!
         }
-        c = (c * (d) * (AmplificationUtilsV2.A_PRECISION)) / (nA * (numTokens));
-        uint256 b = s + ((d * (AmplificationUtilsV2.A_PRECISION)) / (nA));
+        c = (c * d * (AmplificationUtilsV2.A_PRECISION)) / (nA * numTokens);
+        uint256 b = s + ((d * AmplificationUtilsV2.A_PRECISION) / nA);
         uint256 yPrev;
         uint256 y = d;
 
         // iterative approximation
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
             yPrev = y;
-            y = (y * (y) + (c)) / (y * (2) + (b) - (d));
+            y = (y * y + c) / (y * 2 + b - d);
             if (y.within1(yPrev)) {
                 return y;
             }
@@ -521,7 +519,7 @@ library SwapUtilsV2 {
             tokenIndexFrom < xp.length && tokenIndexTo < xp.length,
             "Token index out of range"
         );
-        uint256 x = dx * (multipliers[tokenIndexFrom]) + (xp[tokenIndexFrom]);
+        uint256 x = dx * multipliers[tokenIndexFrom] + xp[tokenIndexFrom];
         uint256 y = getY(
             _getAPrecise(self),
             tokenIndexFrom,
@@ -529,9 +527,9 @@ library SwapUtilsV2 {
             x,
             xp
         );
-        dy = xp[tokenIndexTo] - (y) - (1);
-        dyFee = (dy * (self.swapFee)) / (FEE_DENOMINATOR);
-        dy = (dy - (dyFee)) / (multipliers[tokenIndexTo]);
+        dy = xp[tokenIndexTo] - y - 1;
+        dyFee = (dy * self.swapFee) / FEE_DENOMINATOR;
+        dy = (dy - dyFee) / multipliers[tokenIndexTo];
     }
 
     /**
@@ -566,7 +564,7 @@ library SwapUtilsV2 {
         uint256[] memory amounts = new uint256[](balances.length);
 
         for (uint256 i = 0; i < balances.length; i++) {
-            amounts[i] = (balances[i] * (amount)) / (totalSupply);
+            amounts[i] = (balances[i] * amount) / totalSupply;
         }
         return amounts;
     }
@@ -600,7 +598,7 @@ library SwapUtilsV2 {
         uint256 d0 = getD(_xp(balances, multipliers), a);
         for (uint256 i = 0; i < balances.length; i++) {
             if (deposit) {
-                balances[i] = balances[i] + (amounts[i]);
+                balances[i] = balances[i] + amounts[i];
             } else {
                 balances[i] = balances[i] - amounts[i]; // TODO: remove? "Cannot withdraw more than available";
             }
@@ -609,9 +607,9 @@ library SwapUtilsV2 {
         uint256 totalSupply = self.lpToken.totalSupply();
 
         if (deposit) {
-            return ((d1 - (d0)) * totalSupply) / (d0);
+            return ((d1 - d0) * totalSupply) / d0;
         } else {
-            return ((d0 - (d1)) * totalSupply) / (d0);
+            return ((d0 - d1) * totalSupply) / d0;
         }
     }
 
@@ -629,7 +627,7 @@ library SwapUtilsV2 {
         require(index < self.pooledTokens.length, "Token index out of range");
         return
             self.pooledTokens[index].balanceOf(address(this)) -
-            (self.balances[index]);
+            self.balances[index];
     }
 
     /**
@@ -643,7 +641,7 @@ library SwapUtilsV2 {
         pure
         returns (uint256)
     {
-        return (swapFee * numTokens) / ((numTokens - (1)) * (4));
+        return (swapFee * numTokens) / ((numTokens - 1) * 4);
     }
 
     /*** STATE MODIFYING FUNCTIONS ***/
@@ -675,7 +673,7 @@ library SwapUtilsV2 {
             tokenFrom.safeTransferFrom(msg.sender, address(this), dx);
 
             // Use the actual transferred amount for AMM math
-            dx = tokenFrom.balanceOf(address(this)) - (beforeBalance);
+            dx = tokenFrom.balanceOf(address(this)) - beforeBalance;
         }
 
         uint256 dy;
@@ -690,15 +688,11 @@ library SwapUtilsV2 {
         );
         require(dy >= minDy, "Swap didn't result in min tokens");
 
-        uint256 dyAdminFee = (dyFee * (self.adminFee)) /
-            (FEE_DENOMINATOR) /
-            (self.tokenPrecisionMultipliers[tokenIndexTo]);
+        uint256 dyAdminFee = ((dyFee * self.adminFee) / FEE_DENOMINATOR) /
+            self.tokenPrecisionMultipliers[tokenIndexTo];
 
-        self.balances[tokenIndexFrom] = balances[tokenIndexFrom] + (dx);
-        self.balances[tokenIndexTo] =
-            balances[tokenIndexTo] -
-            (dy) -
-            (dyAdminFee);
+        self.balances[tokenIndexFrom] = balances[tokenIndexFrom] + dx;
+        self.balances[tokenIndexTo] = balances[tokenIndexTo] - dy - dyAdminFee;
 
         self.pooledTokens[tokenIndexTo].safeTransfer(msg.sender, dy);
 
@@ -766,16 +760,14 @@ library SwapUtilsV2 {
                 // Update the amounts[] with actual transfer amount
                 amounts[i] =
                     pooledTokens[i].balanceOf(address(this)) -
-                    (beforeBalance);
+                    beforeBalance;
             }
 
-            newBalances[i] = v.balances[i] + (amounts[i]);
+            newBalances[i] = v.balances[i] + amounts[i];
         }
-        console2.log("buh1");
         // invariant after change
         v.d1 = getD(_xp(newBalances, v.multipliers), v.preciseA);
         require(v.d1 > v.d0, "D should increase");
-        console2.log("buh2");
         // updated to reflect fees and calculate the user's LP tokens
         v.d2 = v.d1;
         uint256[] memory fees = new uint256[](pooledTokens.length);
@@ -786,26 +778,25 @@ library SwapUtilsV2 {
                 pooledTokens.length
             );
             for (uint256 i = 0; i < pooledTokens.length; i++) {
-                uint256 idealBalance = (v.d1 * (v.balances[i])) / (v.d0);
+                uint256 idealBalance = (v.d1 * v.balances[i]) / v.d0;
                 fees[i] =
                     (feePerToken * (idealBalance.difference(newBalances[i]))) /
-                    (FEE_DENOMINATOR);
+                    FEE_DENOMINATOR;
                 self.balances[i] =
                     newBalances[i] -
-                    ((fees[i] * (self.adminFee)) / (FEE_DENOMINATOR));
-                newBalances[i] = newBalances[i] - (fees[i]);
+                    ((fees[i] * self.adminFee) / FEE_DENOMINATOR);
+                newBalances[i] = newBalances[i] - fees[i];
             }
             v.d2 = getD(_xp(newBalances, v.multipliers), v.preciseA);
         } else {
             // the initial depositor doesn't pay fees
             self.balances = newBalances;
         }
-        console2.log("buh3");
         uint256 toMint;
         if (v.totalSupply == 0) {
             toMint = v.d1;
         } else {
-            toMint = ((v.d2 - (v.d0)) * (v.totalSupply)) / (v.d0);
+            toMint = ((v.d2 - v.d0) * v.totalSupply) / v.d0;
         }
 
         require(toMint >= minToMint, "Couldn't mint min requested");
@@ -818,7 +809,7 @@ library SwapUtilsV2 {
             amounts,
             fees,
             v.d1,
-            v.totalSupply + (toMint)
+            v.totalSupply + toMint
         );
 
         return toMint;
@@ -857,13 +848,13 @@ library SwapUtilsV2 {
 
         for (uint256 i = 0; i < amounts.length; i++) {
             require(amounts[i] >= minAmounts[i], "amounts[i] < minAmounts[i]");
-            self.balances[i] = balances[i] - (amounts[i]);
+            self.balances[i] = balances[i] - amounts[i];
             pooledTokens[i].safeTransfer(msg.sender, amounts[i]);
         }
 
         lpToken.burnFrom(msg.sender, amount);
 
-        emit RemoveLiquidity(msg.sender, amounts, totalSupply - (amount));
+        emit RemoveLiquidity(msg.sender, amounts, totalSupply - amount);
 
         return amounts;
     }
@@ -901,7 +892,7 @@ library SwapUtilsV2 {
 
         self.balances[tokenIndex] =
             self.balances[tokenIndex] -
-            (dy + ((dyFee * (self.adminFee)) / (FEE_DENOMINATOR)));
+            (dy + ((dyFee * self.adminFee) / FEE_DENOMINATOR));
         lpToken.burnFrom(msg.sender, tokenAmount);
         pooledTokens[tokenIndex].safeTransfer(msg.sender, dy);
 
@@ -967,20 +958,20 @@ library SwapUtilsV2 {
             v.d1 = getD(_xp(balances1, v.multipliers), v.preciseA);
 
             for (uint256 i = 0; i < pooledTokens.length; i++) {
-                uint256 idealBalance = (v.d1 * (v.balances[i])) / (v.d0);
+                uint256 idealBalance = (v.d1 * v.balances[i]) / v.d0;
                 uint256 difference = idealBalance.difference(balances1[i]);
-                fees[i] = (feePerToken * (difference)) / (FEE_DENOMINATOR);
+                fees[i] = (feePerToken * difference) / FEE_DENOMINATOR;
                 self.balances[i] =
                     balances1[i] -
-                    ((fees[i] * (self.adminFee)) / (FEE_DENOMINATOR));
-                balances1[i] = balances1[i] - (fees[i]);
+                    ((fees[i] * self.adminFee) / FEE_DENOMINATOR);
+                balances1[i] = balances1[i] - fees[i];
             }
 
             v.d2 = getD(_xp(balances1, v.multipliers), v.preciseA);
         }
-        uint256 tokenAmount = v.d0 - ((v.d2) * (v.totalSupply)) / (v.d0);
+        uint256 tokenAmount = ((v.d0 - v.d2) * v.totalSupply) / v.d0;
         require(tokenAmount != 0, "Burnt amount cannot be zero");
-        tokenAmount = tokenAmount + (1);
+        tokenAmount = tokenAmount + 1;
 
         require(tokenAmount <= maxBurnAmount, "tokenAmount > maxBurnAmount");
 
@@ -995,7 +986,7 @@ library SwapUtilsV2 {
             amounts,
             fees,
             v.d1,
-            v.totalSupply - (tokenAmount)
+            v.totalSupply - tokenAmount
         );
 
         return tokenAmount;
@@ -1010,8 +1001,7 @@ library SwapUtilsV2 {
         IERC20[] memory pooledTokens = self.pooledTokens;
         for (uint256 i = 0; i < pooledTokens.length; i++) {
             IERC20 token = pooledTokens[i];
-            uint256 balance = token.balanceOf(address(this)) -
-                (self.balances[i]);
+            uint256 balance = token.balanceOf(address(this)) - self.balances[i];
             if (balance != 0) {
                 token.safeTransfer(to, balance);
             }

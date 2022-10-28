@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-4.4.0/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable-4.4.0/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable-4.4.0/security/ReentrancyGuardUpgradeable.sol";
@@ -25,7 +24,6 @@ import "../interfaces/IMetaSwapV1.sol";
  */
 contract MetaSwapDepositV1 is Initializable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
 
     ISwapV2 public baseSwap;
     IMetaSwapV1 public metaSwap;
@@ -403,11 +401,9 @@ contract MetaSwapDepositV1 is Initializable, ReentrancyGuardUpgradeable {
 
         // Calculate how much base LP token we need to get the desired amount of underlying tokens
         if (v.withdrawFromBase) {
-            metaAmounts[v.baseLPTokenIndex] = v
-                .baseSwap
-                .calculateTokenAmount(baseAmounts, false)
-                .mul(10005)
-                .div(10000);
+            metaAmounts[v.baseLPTokenIndex] =
+                (v.baseSwap.calculateTokenAmount(baseAmounts, false) * 10005) /
+                10000;
         }
 
         // Transfer MetaSwap LP token from the caller to this contract
@@ -423,9 +419,7 @@ contract MetaSwapDepositV1 is Initializable, ReentrancyGuardUpgradeable {
             maxBurnAmount,
             deadline
         );
-        v.leftoverMetaLPTokenAmount = maxBurnAmount.sub(
-            burnedMetaLPTokenAmount
-        );
+        v.leftoverMetaLPTokenAmount = maxBurnAmount - burnedMetaLPTokenAmount;
 
         // If underlying tokens are desired, withdraw them from the base Swap pool
         if (v.withdrawFromBase) {
@@ -444,9 +438,9 @@ contract MetaSwapDepositV1 is Initializable, ReentrancyGuardUpgradeable {
             );
             if (leftoverBaseLPTokenAmount > 0) {
                 leftovers[v.baseLPTokenIndex] = leftoverBaseLPTokenAmount;
-                v.leftoverMetaLPTokenAmount = v.leftoverMetaLPTokenAmount.add(
-                    v.metaSwap.addLiquidity(leftovers, 0, deadline)
-                );
+                v.leftoverMetaLPTokenAmount =
+                    v.leftoverMetaLPTokenAmount +
+                    v.metaSwap.addLiquidity(leftovers, 0, deadline);
             }
         }
 

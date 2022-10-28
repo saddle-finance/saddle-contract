@@ -36,7 +36,7 @@ library AmplificationUtilsV2 {
         view
         returns (uint256)
     {
-        return _getAPrecise(self) / (A_PRECISION);
+        return _getAPrecise(self) / A_PRECISION;
     }
 
     /**
@@ -72,12 +72,10 @@ library AmplificationUtilsV2 {
             uint256 a0 = self.initialA; // initial A value when ramp is started
             if (a1 > a0) {
                 // a0 + (a1 - a0) * (block.timestamp - t0) / (t1 - t0)
-                return
-                    a0 + (a1 - ((a0) * (block.timestamp - (t0))) / (t1 - (t0)));
+                return a0 + ((a1 - a0) * (block.timestamp - t0)) / (t1 - t0);
             } else {
                 // a0 - (a0 - a1) * (block.timestamp - t0) / (t1 - t0)
-                return
-                    a0 - (a0 - ((a1) * (block.timestamp - (t0))) / (t1 - (t0)));
+                return a0 - ((a0 - a1) * (block.timestamp - t0)) / (t1 - t0);
             }
         } else {
             return a1;
@@ -102,7 +100,7 @@ library AmplificationUtilsV2 {
             "Wait 1 day before starting ramp"
         );
         require(
-            futureTime_ >= block.timestamp + (MIN_RAMP_TIME),
+            futureTime_ >= block.timestamp + MIN_RAMP_TIME,
             "Insufficient ramp time"
         );
         require(
@@ -111,16 +109,16 @@ library AmplificationUtilsV2 {
         );
 
         uint256 initialAPrecise = _getAPrecise(self);
-        uint256 futureAPrecise = futureA_ * (A_PRECISION);
+        uint256 futureAPrecise = futureA_ * A_PRECISION;
 
         if (futureAPrecise < initialAPrecise) {
             require(
-                futureAPrecise * (MAX_A_CHANGE) >= initialAPrecise,
+                (futureAPrecise * MAX_A_CHANGE) >= initialAPrecise,
                 "futureA_ is too small"
             );
         } else {
             require(
-                futureAPrecise <= initialAPrecise * (MAX_A_CHANGE),
+                futureAPrecise <= initialAPrecise * MAX_A_CHANGE,
                 "futureA_ is too large"
             );
         }
