@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
 import "./AmplificationUtilsV2.sol";
 import "./LPTokenV2.sol";
 import "./MathUtilsV1.sol";
+import "../lib/forge-std/src/console2.sol";
 
 /**
  * @title SwapUtils library
@@ -330,13 +331,10 @@ library SwapUtilsV2 {
             }
             prevD = d;
             d =
-                (nA * (s)) /
-                (AmplificationUtilsV2.A_PRECISION) +
-                ((dP * (numTokens)) * (d)) /
-                (nA -
-                    ((AmplificationUtilsV2.A_PRECISION) * (d)) /
-                    (AmplificationUtilsV2.A_PRECISION) +
-                    (numTokens + (1) * (dP)));
+                ((((nA * s) / AmplificationUtilsV2.A_PRECISION) +
+                    (dP * numTokens)) * d) /
+                (((((nA - AmplificationUtilsV2.A_PRECISION) * d)) /
+                    AmplificationUtilsV2.A_PRECISION) + ((numTokens + 1) * dP));
             if (d.within1(prevD)) {
                 return d;
             }
@@ -464,7 +462,7 @@ library SwapUtilsV2 {
         // iterative approximation
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
             yPrev = y;
-            y = y * (y) + (c) / (y * (2) + (b) - (d));
+            y = (y * (y) + (c)) / (y * (2) + (b) - (d));
             if (y.within1(yPrev)) {
                 return y;
             }
@@ -533,7 +531,7 @@ library SwapUtilsV2 {
         );
         dy = xp[tokenIndexTo] - (y) - (1);
         dyFee = (dy * (self.swapFee)) / (FEE_DENOMINATOR);
-        dy = dy - (dyFee) / (multipliers[tokenIndexTo]);
+        dy = (dy - (dyFee)) / (multipliers[tokenIndexTo]);
     }
 
     /**
@@ -611,9 +609,9 @@ library SwapUtilsV2 {
         uint256 totalSupply = self.lpToken.totalSupply();
 
         if (deposit) {
-            return d1 - ((d0) * (totalSupply)) / (d0);
+            return ((d1 - (d0)) * totalSupply) / (d0);
         } else {
-            return d0 - ((d1) * (totalSupply)) / (d0);
+            return ((d0 - (d1)) * totalSupply) / (d0);
         }
     }
 
@@ -645,7 +643,7 @@ library SwapUtilsV2 {
         pure
         returns (uint256)
     {
-        return (swapFee * (numTokens)) / (numTokens - (1) * (4));
+        return (swapFee * numTokens) / ((numTokens - (1)) * (4));
     }
 
     /*** STATE MODIFYING FUNCTIONS ***/
@@ -773,11 +771,11 @@ library SwapUtilsV2 {
 
             newBalances[i] = v.balances[i] + (amounts[i]);
         }
-
+        console2.log("buh1");
         // invariant after change
         v.d1 = getD(_xp(newBalances, v.multipliers), v.preciseA);
         require(v.d1 > v.d0, "D should increase");
-
+        console2.log("buh2");
         // updated to reflect fees and calculate the user's LP tokens
         v.d2 = v.d1;
         uint256[] memory fees = new uint256[](pooledTokens.length);
@@ -802,12 +800,12 @@ library SwapUtilsV2 {
             // the initial depositor doesn't pay fees
             self.balances = newBalances;
         }
-
+        console2.log("buh3");
         uint256 toMint;
         if (v.totalSupply == 0) {
             toMint = v.d1;
         } else {
-            toMint = v.d2 - ((v.d0) * (v.totalSupply)) / (v.d0);
+            toMint = ((v.d2 - (v.d0)) * (v.totalSupply)) / (v.d0);
         }
 
         require(toMint >= minToMint, "Couldn't mint min requested");
