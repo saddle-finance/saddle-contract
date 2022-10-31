@@ -81,11 +81,8 @@ describe("LPTokenV2", async () => {
     await swapV2.deployed()
 
     usdc = await ethers.getContract("USDC")
-    console.log("usdc", usdc.address)
     usdt = await ethers.getContract("USDT")
-    console.log("usdt", usdt.address)
     dai = await ethers.getContract("DAI")
-    console.log("DAI", dai.address)
 
     await swapV2.initialize(
       [dai.address, usdc.address, usdt.address],
