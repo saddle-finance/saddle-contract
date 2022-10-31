@@ -18,10 +18,10 @@ import {
 const { expect } = chai
 const { get } = deployments
 
-const testTokenDecimals = [6, 6]
-const INITIAL_A_VALUE = 50
-const SWAP_FEE = 1e7
-const ADMIN_FEE = 1e6
+const testTokenDecimals = [18, 6, 6]
+const INITIAL_A_VALUE = 200
+const SWAP_FEE = 4e6
+const ADMIN_FEE = 0
 const LP_TOKEN_NAME = "Test LP Token Name"
 const LP_TOKEN_SYMBOL = "TESTLP"
 
@@ -30,6 +30,7 @@ describe("LPTokenV2", async () => {
   let owner: Signer
   let usdc: GenericERC20
   let usdt: GenericERC20
+  let dai: GenericERC20
   let firstToken: LPTokenV2
   let lpTokenFactory: ContractFactory
   let swapFactory: ContractFactory
@@ -83,9 +84,11 @@ describe("LPTokenV2", async () => {
     console.log("usdc", usdc.address)
     usdt = await ethers.getContract("USDT")
     console.log("usdt", usdt.address)
+    dai = await ethers.getContract("DAI")
+    console.log("DAI", dai.address)
 
     await swapV2.initialize(
-      [usdc.address, usdt.address],
+      [dai.address, usdc.address, usdt.address],
       testTokenDecimals,
       LP_TOKEN_NAME,
       LP_TOKEN_SYMBOL,
@@ -102,29 +105,30 @@ describe("LPTokenV2", async () => {
     )) as LPTokenV2
     const ownerAddress = await owner.getAddress()
 
-    await asyncForEach([usdc, usdt], async (token) => {
+    await asyncForEach([dai, usdc, usdt], async (token) => {
       await token.mint(
         ownerAddress,
         BigNumber.from(10)
           .pow(await token.decimals())
           .mul(1000),
       )
-      console.log("minted")
       await token.approve(swapV2.address, MAX_UINT256)
     })
-    console.log("math ahead")
     console.log((await usdc.balanceOf(ownerAddress)).toString())
     console.log((await usdt.balanceOf(ownerAddress)).toString())
+    console.log((await dai.balanceOf(ownerAddress)).toString())
 
-    await swapV2.addLiquidity([String(10e6), String(10e6)], 0, MAX_UINT256)
-
+    await swapV2.addLiquidity(
+      [String(10e18), String(10e6), String(10e6)],
+      0,
+      MAX_UINT256,
+    )
     // Verify current balance
-    console.log("buh")
-    expect(await poolLPToken.balanceOf(ownerAddress)).to.eq(String(20e18))
+    expect(await poolLPToken.balanceOf(ownerAddress)).to.eq(String(30e18))
 
     // Transferring LPTokenV2 to itself should revert
     await expect(
-      poolLPToken.transfer(firstToken.address, String(100e18)),
-    ).to.be.revertedWith("LPTokenV2: cannot send to itself")
+      poolLPToken.transfer(poolLPToken.address, String(100e18)),
+    ).to.be.revertedWith("LPToken: cannot send to itself")
   })
 })

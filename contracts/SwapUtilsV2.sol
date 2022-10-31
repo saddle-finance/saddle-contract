@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
 import "./AmplificationUtilsV2.sol";
 import "./LPTokenV2.sol";
 import "./MathUtilsV1.sol";
-import "../lib/forge-std/src/console2.sol";
 
 /**
  * @title SwapUtils library
@@ -226,9 +225,9 @@ library SwapUtilsV2 {
                 xpi -
                 (((
                     (i == tokenIndex)
-                        ? ((xpi * v.d1) / (v.d0)) - (v.newY)
-                        : xpi - ((xpi * v.d1) / (v.d0))
-                ) * (v.feePerToken)) / FEE_DENOMINATOR);
+                        ? ((xpi * v.d1) / v.d0) - v.newY
+                        : xpi - ((xpi * v.d1) / v.d0)
+                ) * v.feePerToken) / FEE_DENOMINATOR);
         }
 
         uint256 dy = xpReduced[tokenIndex] -
@@ -278,7 +277,7 @@ library SwapUtilsV2 {
                 // c = c * D * D * D * ... overflow!
             }
         }
-        c = (c * d * (AmplificationUtilsV2.A_PRECISION)) / (nA * numTokens);
+        c = (c * d * AmplificationUtilsV2.A_PRECISION) / (nA * numTokens);
 
         uint256 b = s + ((d * AmplificationUtilsV2.A_PRECISION) / nA);
         uint256 yPrev;
@@ -309,7 +308,7 @@ library SwapUtilsV2 {
         uint256 numTokens = xp.length;
         uint256 s;
         for (uint256 i = 0; i < numTokens; i++) {
-            s = s + (xp[i]);
+            s = s + xp[i];
         }
         if (s == 0) {
             return 0;
@@ -317,7 +316,7 @@ library SwapUtilsV2 {
 
         uint256 prevD;
         uint256 d = s;
-        uint256 nA = a * (numTokens);
+        uint256 nA = a * numTokens;
 
         for (uint256 i = 0; i < MAX_LOOP_LIMIT; i++) {
             uint256 dP = d;
@@ -368,7 +367,7 @@ library SwapUtilsV2 {
         );
         uint256[] memory xp = new uint256[](numTokens);
         for (uint256 i = 0; i < numTokens; i++) {
-            xp[i] = balances[i] * (precisionMultipliers[i]);
+            xp[i] = balances[i] * precisionMultipliers[i];
         }
         return xp;
     }
@@ -397,7 +396,7 @@ library SwapUtilsV2 {
         LPTokenV2 lpToken = self.lpToken;
         uint256 supply = lpToken.totalSupply();
         if (supply > 0) {
-            return (d * (10**uint256(POOL_PRECISION_DECIMALS))) / (supply);
+            return (d * (10**uint256(POOL_PRECISION_DECIMALS))) / supply;
         }
         return 0;
     }
@@ -452,7 +451,7 @@ library SwapUtilsV2 {
             // and divide at the end. However this leads to overflow with large numTokens or/and D.
             // c = c * D * D * D * ... overflow!
         }
-        c = (c * d * (AmplificationUtilsV2.A_PRECISION)) / (nA * numTokens);
+        c = (c * d * AmplificationUtilsV2.A_PRECISION) / (nA * numTokens);
         uint256 b = s + ((d * AmplificationUtilsV2.A_PRECISION) / nA);
         uint256 yPrev;
         uint256 y = d;
@@ -780,7 +779,7 @@ library SwapUtilsV2 {
             for (uint256 i = 0; i < pooledTokens.length; i++) {
                 uint256 idealBalance = (v.d1 * v.balances[i]) / v.d0;
                 fees[i] =
-                    (feePerToken * (idealBalance.difference(newBalances[i]))) /
+                    (feePerToken * idealBalance.difference(newBalances[i])) /
                     FEE_DENOMINATOR;
                 self.balances[i] =
                     newBalances[i] -

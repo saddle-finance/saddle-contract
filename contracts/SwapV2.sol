@@ -145,8 +145,9 @@ contract SwapV2 is OwnerPausableUpgradeableV1, ReentrancyGuardUpgradeable {
                 "Token decimals exceeds max"
             );
             precisionMultipliers[i] =
-                10**uint256(SwapUtilsV2.POOL_PRECISION_DECIMALS) -
-                uint256(decimals[i]);
+                10 **
+                    (uint256(SwapUtilsV2.POOL_PRECISION_DECIMALS) -
+                        uint256(decimals[i]));
             tokenIndexes[address(_pooledTokens[i])] = i;
         }
 
