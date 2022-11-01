@@ -2,8 +2,8 @@ import chai from "chai"
 import { BigNumber, ContractFactory, Signer } from "ethers"
 import { deployments } from "hardhat"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
-import LPTokenArtifactV2 from "../build/artifacts/contracts/LPTokenV2.sol/LPTokenV2.json"
-import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwapV1.sol/MetaSwapV1.json"
+import LPTokenV2Artifact from "../build/artifacts/contracts/LPTokenV2.sol/LPTokenV2.json"
+import MetaSwapV1Artifact from "../build/artifacts/contracts/meta/MetaSwapV1.sol/MetaSwapV1.json"
 import SwapV2Artifact from "../build/artifacts/contracts/SwapV2.sol/SwapV2.json"
 import {
   AmplificationUtilsV2,
@@ -105,13 +105,6 @@ describe("Meta-SwapV1", async () => {
       firstToken = (await lpTokenFactory.deploy()) as LPTokenV2
       firstToken.initialize("Test Token", "TEST")
 
-      dai = (await ethers.getContractAt(
-        GenericERC20Artifact.abi,
-        (
-          await baseSwap.swapStorage()
-        ).lpToken,
-      )) as LPTokenV2
-
       usdc = await ethers.getContract("USDC")
       usdt = await ethers.getContract("USDT")
       dai = await ethers.getContract("DAI")
@@ -155,23 +148,12 @@ describe("Meta-SwapV1", async () => {
         await ethers.getContractFactory("MetaSwapUtilsV1", owner)
       ).deploy()) as MetaSwapUtilsV1
 
-      // metaSwapUtilsV1Factory = await ethers.getContractFactory(
-      //   "MetaSwapUtilsV1",
-      // )
-      // metaSwapUtilsV1 =
-      //   (await metaSwapUtilsV1Factory.deploy()) as MetaSwapUtilsV1
-      // await metaSwapUtilsV1.deployed()
-      console.log("Deploying MetaSwapV1")
-      console.log(swapUtilsV2.address)
-      console.log(amplificationUtilsV2.address)
-      console.log(metaSwapUtilsV1.address)
-      metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {
+      metaSwap = (await deployContractWithLibraries(owner, MetaSwapV1Artifact, {
         SwapUtilsV2: swapUtilsV2.address,
         MetaSwapUtilsV1: metaSwapUtilsV1.address,
         AmplificationUtilsV2: amplificationUtilsV2.address,
       })) as MetaSwapV1
       await metaSwap.deployed()
-      console.log("deployed metaswap")
 
       // Set approvals
 
@@ -230,7 +212,7 @@ describe("Meta-SwapV1", async () => {
       )
       console.log("initialized metaswap")
       metaLPToken = (await ethers.getContractAt(
-        LPTokenArtifactV2.abi,
+        LPTokenV2Artifact.abi,
         (
           await metaSwap.swapStorage()
         ).lpToken,
