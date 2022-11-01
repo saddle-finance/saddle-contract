@@ -232,7 +232,7 @@ library SwapUtilsV2 {
 
         uint256 dy = xpReduced[tokenIndex] -
             (getYD(v.preciseA, tokenIndex, xpReduced, v.d1));
-        dy = (dy - 1) / (self.tokenPrecisionMultipliers[tokenIndex]);
+        dy = (dy - 1) / self.tokenPrecisionMultipliers[tokenIndex];
 
         return (dy, v.newY, xp[tokenIndex]);
     }
@@ -330,8 +330,8 @@ library SwapUtilsV2 {
             d =
                 ((((nA * s) / AmplificationUtilsV2.A_PRECISION) +
                     (dP * numTokens)) * d) /
-                (((((nA - AmplificationUtilsV2.A_PRECISION) * d)) /
-                    AmplificationUtilsV2.A_PRECISION) + ((numTokens + 1) * dP));
+                ((((nA - AmplificationUtilsV2.A_PRECISION) * d) /
+                    AmplificationUtilsV2.A_PRECISION) + ((numTokens + 1) * d));
             if (d.within1(prevD)) {
                 return d;
             }
@@ -606,9 +606,9 @@ library SwapUtilsV2 {
         uint256 totalSupply = self.lpToken.totalSupply();
 
         if (deposit) {
-            return ((d1 - d0) * totalSupply) / d0;
+            return (((d1 - d0) * totalSupply) / d0);
         } else {
-            return ((d0 - d1) * totalSupply) / d0;
+            return (((d0 - d1) * totalSupply) / d0);
         }
     }
 
@@ -640,7 +640,7 @@ library SwapUtilsV2 {
         pure
         returns (uint256)
     {
-        return (swapFee * numTokens) / ((numTokens - 1) * 4);
+        return ((swapFee * numTokens) / ((numTokens - 1) * 4));
     }
 
     /*** STATE MODIFYING FUNCTIONS ***/
@@ -687,8 +687,8 @@ library SwapUtilsV2 {
         );
         require(dy >= minDy, "Swap didn't result in min tokens");
 
-        uint256 dyAdminFee = ((dyFee * self.adminFee) / FEE_DENOMINATOR) /
-            self.tokenPrecisionMultipliers[tokenIndexTo];
+        uint256 dyAdminFee = (((dyFee * self.adminFee) / FEE_DENOMINATOR) /
+            self.tokenPrecisionMultipliers[tokenIndexTo]);
 
         self.balances[tokenIndexFrom] = balances[tokenIndexFrom] + dx;
         self.balances[tokenIndexTo] = balances[tokenIndexTo] - dy - dyAdminFee;

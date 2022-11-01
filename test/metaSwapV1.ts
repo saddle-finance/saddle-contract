@@ -1,10 +1,19 @@
 import chai from "chai"
-import { BigNumber, Signer } from "ethers"
+import { BigNumber, ContractFactory, Signer } from "ethers"
 import { deployments } from "hardhat"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
-import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
-import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
-import { GenericERC20, LPToken, MetaSwap, Swap } from "../build/typechain"
+import LPTokenArtifactV2 from "../build/artifacts/contracts/LPTokenV2.sol/LPTokenV2.json"
+import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwapV1.sol/MetaSwapV1.json"
+import SwapV2Artifact from "../build/artifacts/contracts/SwapV2.sol/SwapV2.json"
+import {
+  AmplificationUtilsV2,
+  GenericERC20,
+  LPTokenV2,
+  MetaSwapUtilsV1,
+  MetaSwapV1,
+  SwapUtilsV2,
+  SwapV2,
+} from "../build/typechain"
 import {
   asyncForEach,
   deployContractWithLibraries,
@@ -21,16 +30,24 @@ import {
 
 const { expect } = chai
 
-describe("Meta-Swap", async () => {
+describe("Meta-SwapV1", async () => {
   let signers: Array<Signer>
-  let baseSwap: Swap
-  let metaSwap: MetaSwap
+  let baseSwap: SwapV2
+  let metaSwap: MetaSwapV1
   let susd: GenericERC20
   let dai: GenericERC20
   let usdc: GenericERC20
   let usdt: GenericERC20
   let baseLPToken: GenericERC20
-  let metaLPToken: LPToken
+  let metaLPToken: LPTokenV2
+  let amplificationUtilsV2Factory: ContractFactory
+  let amplificationUtilsV2: AmplificationUtilsV2
+  let swapUtilsV2Factory: ContractFactory
+  let swapUtilsV2: SwapUtilsV2
+  let metaSwapUtilsV1Factory: ContractFactory
+  let metaSwapUtilsV1: MetaSwapUtilsV1
+  let firstToken: LPTokenV2
+  let lpTokenFactory: ContractFactory
   let owner: Signer
   let user1: Signer
   let user2: Signer
@@ -39,8 +56,10 @@ describe("Meta-Swap", async () => {
   let user2Address: string
 
   // Test Values
-  const INITIAL_A_VALUE = 50
-  const SWAP_FEE = 1e7
+  const testTokenDecimals = [18, 6, 6]
+  const INITIAL_A_VALUE = 200
+  const SWAP_FEE = 4e6
+  const ADMIN_FEE = 0
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
   const tokenDecimal6 = BigNumber.from(10).pow(6)
@@ -53,7 +72,7 @@ describe("Meta-Swap", async () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      await deployments.fixture(["Swap", "USDPool", "MetaSwapUtils"])
+      await deployments.fixture(["USDPool"])
 
       signers = await ethers.getSigners()
       owner = signers[0]
@@ -63,24 +82,49 @@ describe("Meta-Swap", async () => {
       user1Address = await user1.getAddress()
       user2Address = await user2.getAddress()
 
-      // Get deployed Swap
-      baseSwap = await ethers.getContract("Swap")
+      // Deploy Swap Libraries
+      amplificationUtilsV2Factory = await ethers.getContractFactory(
+        "AmplificationUtilsV2",
+      )
+      amplificationUtilsV2 =
+        (await amplificationUtilsV2Factory.deploy()) as AmplificationUtilsV2
+      await amplificationUtilsV2.deployed()
+      swapUtilsV2Factory = await ethers.getContractFactory("SwapUtilsV2")
+      swapUtilsV2 = (await swapUtilsV2Factory.deploy()) as SwapUtilsV2
+      await swapUtilsV2.deployed()
 
-      dai = await ethers.getContract("DAI")
+      // Deploy Base Swap
+      baseSwap = (await deployContractWithLibraries(owner, SwapV2Artifact, {
+        SwapUtilsV2: swapUtilsV2.address,
+        AmplificationUtilsV2: amplificationUtilsV2.address,
+      })) as SwapV2
+      await baseSwap.deployed()
+
+      // Deploy instance of LPTokenV2
+      lpTokenFactory = await ethers.getContractFactory("LPTokenV2")
+      firstToken = (await lpTokenFactory.deploy()) as LPTokenV2
+      firstToken.initialize("Test Token", "TEST")
+
+      dai = (await ethers.getContractAt(
+        GenericERC20Artifact.abi,
+        (
+          await baseSwap.swapStorage()
+        ).lpToken,
+      )) as LPTokenV2
+
       usdc = await ethers.getContract("USDC")
       usdt = await ethers.getContract("USDT")
+      dai = await ethers.getContract("DAI")
 
       await baseSwap.initialize(
         [dai.address, usdc.address, usdt.address],
-        [18, 6, 6],
+        testTokenDecimals,
         LP_TOKEN_NAME,
         LP_TOKEN_SYMBOL,
-        200,
-        4e6,
-        0,
-        (
-          await get("LPToken")
-        ).address,
+        INITIAL_A_VALUE,
+        SWAP_FEE,
+        ADMIN_FEE,
+        firstToken.address,
       )
 
       baseLPToken = (await ethers.getContractAt(
@@ -88,7 +132,7 @@ describe("Meta-Swap", async () => {
         (
           await baseSwap.swapStorage()
         ).lpToken,
-      )) as GenericERC20
+      )) as LPTokenV2
 
       // Deploy dummy tokens
       susd = (await (
@@ -106,13 +150,28 @@ describe("Meta-Swap", async () => {
         },
       )
 
-      // Deploy Swap with SwapUtils library
+      // Deploy MetaSwapV1 and MetaSwapUtilsV1 library
+      metaSwapUtilsV1 = (await (
+        await ethers.getContractFactory("MetaSwapUtilsV1", owner)
+      ).deploy()) as MetaSwapUtilsV1
+
+      // metaSwapUtilsV1Factory = await ethers.getContractFactory(
+      //   "MetaSwapUtilsV1",
+      // )
+      // metaSwapUtilsV1 =
+      //   (await metaSwapUtilsV1Factory.deploy()) as MetaSwapUtilsV1
+      // await metaSwapUtilsV1.deployed()
+      console.log("Deploying MetaSwapV1")
+      console.log(swapUtilsV2.address)
+      console.log(amplificationUtilsV2.address)
+      console.log(metaSwapUtilsV1.address)
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {
-        SwapUtils: (await get("SwapUtils")).address,
-        MetaSwapUtils: (await get("MetaSwapUtils")).address,
-        AmplificationUtils: (await get("AmplificationUtils")).address,
-      })) as MetaSwap
+        SwapUtilsV2: swapUtilsV2.address,
+        MetaSwapUtilsV1: metaSwapUtilsV1.address,
+        AmplificationUtilsV2: amplificationUtilsV2.address,
+      })) as MetaSwapV1
       await metaSwap.deployed()
+      console.log("deployed metaswap")
 
       // Set approvals
 
@@ -139,6 +198,7 @@ describe("Meta-Swap", async () => {
             MAX_UINT256,
           )
       })
+      console.log("set approvals")
 
       await expect(
         metaSwap.initialize(
@@ -148,10 +208,8 @@ describe("Meta-Swap", async () => {
           LP_TOKEN_SYMBOL,
           INITIAL_A_VALUE,
           SWAP_FEE,
-          0,
-          (
-            await get("LPToken")
-          ).address,
+          ADMIN_FEE,
+          firstToken.address,
         ),
       ).to.be.revertedWith("use initializeMetaSwap() instead")
 
@@ -170,12 +228,13 @@ describe("Meta-Swap", async () => {
         ).address,
         baseSwap.address,
       )
+      console.log("initialized metaswap")
       metaLPToken = (await ethers.getContractAt(
-        LPTokenArtifact.abi,
+        LPTokenArtifactV2.abi,
         (
           await metaSwap.swapStorage()
         ).lpToken,
-      )) as LPToken
+      )) as LPTokenV2
 
       // Add liquidity to the meta swap pool
       await metaSwap.addLiquidity(

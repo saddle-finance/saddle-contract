@@ -38,6 +38,7 @@ describe("LPTokenV2", async () => {
   let amplificationUtilsV2: AmplificationUtilsV2
   let swapUtilsV2Factory: ContractFactory
   let swapUtilsV2: SwapUtilsV2
+  let swap: SwapV2
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -45,20 +46,21 @@ describe("LPTokenV2", async () => {
 
       signers = await ethers.getSigners()
       owner = signers[0]
+      // Deploy LP Token
       lpTokenFactory = await ethers.getContractFactory("LPTokenV2")
+      firstToken = (await lpTokenFactory.deploy()) as LPTokenV2
+      firstToken.initialize("Test Token", "TEST")
+      // Deploy Amplification Utils
       amplificationUtilsV2Factory = await ethers.getContractFactory(
         "AmplificationUtilsV2",
       )
       amplificationUtilsV2 =
         (await amplificationUtilsV2Factory.deploy()) as AmplificationUtilsV2
       await amplificationUtilsV2.deployed()
-      console.log("amplificationUtilsV2", amplificationUtilsV2.address)
+      // Deploy Swap Utils
       swapUtilsV2Factory = await ethers.getContractFactory("SwapUtilsV2")
       swapUtilsV2 = (await swapUtilsV2Factory.deploy()) as SwapUtilsV2
       await swapUtilsV2.deployed()
-      // swapFactory = await ethers.getContractFactory("SwapV2")
-      firstToken = (await lpTokenFactory.deploy()) as LPTokenV2
-      firstToken.initialize("Test Token", "TEST")
     },
   )
 

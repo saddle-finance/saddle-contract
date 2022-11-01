@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-4.4.0/proxy/Clones.sol";
 import "./interfaces/ISwapV2.sol";
 import "./interfaces/IMetaSwapV1.sol";
 
-contract SwapDeployer is Ownable {
+contract SwapDeployerV2 is Ownable {
     event NewSwapPool(
         address indexed deployer,
         address swapAddress,
