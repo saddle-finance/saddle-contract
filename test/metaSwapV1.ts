@@ -200,10 +200,8 @@ describe("Meta-SwapV1", async () => {
         LP_TOKEN_SYMBOL,
         INITIAL_A_VALUE,
         SWAP_FEE,
-        0,
-        (
-          await get("LPToken")
-        ).address,
+        ADMIN_FEE,
+        firstToken.address,
         baseSwap.address,
       )
       console.log("initialized metaswap")

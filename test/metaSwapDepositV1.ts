@@ -26,7 +26,7 @@ import {
 
 const { expect } = chai
 
-describe("Meta-Swap Deposit Contract", async () => {
+describe("Meta-SwapV1 Deposit Contract", async () => {
   let signers: Array<Signer>
   let baseSwap: SwapV2
   let metaSwap: MetaSwapV1
@@ -172,10 +172,8 @@ describe("Meta-Swap Deposit Contract", async () => {
         LP_TOKEN_SYMBOL,
         INITIAL_A_VALUE,
         SWAP_FEE,
-        0,
-        (
-          await get("LPToken")
-        ).address,
+        ADMIN_FEE,
+        firstToken.address,
         baseSwap.address,
       )
       metaLPToken = (await ethers.getContractAt(
@@ -192,7 +190,7 @@ describe("Meta-Swap Deposit Contract", async () => {
 
       // Deploy MetaSwapDeposit contract
       metaSwapDeposit = (await (
-        await ethers.getContractFactory("MetaSwapDeposit")
+        await ethers.getContractFactory("MetaSwapDepositV1")
       ).deploy()) as MetaSwapDepositV1
 
       // Initialize MetaSwapDeposit
