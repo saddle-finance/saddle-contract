@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-4.4.0/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
 import "./AmplificationUtilsV2.sol";
 import "./LPTokenV2.sol";

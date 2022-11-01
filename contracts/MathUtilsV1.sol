@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-4.4.0/utils/math/SafeMath.sol";
-
 /**
  * @title MathUtils library
  * @notice A library to be used in conjunction with SafeMath. Contains functions for calculating

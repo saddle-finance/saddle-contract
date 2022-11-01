@@ -136,15 +136,13 @@ describe("Meta-SwapV1", async () => {
         },
       )
 
-      // Deploy Swap with SwapUtils library
-      console.log("buh")
+      // Deploy MetaSwap with SwapUtils library
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapV1Artifact, {
         SwapUtilsV2: swapUtilsV2.address,
         MetaSwapUtilsV1: metaSwapUtilsV1.address,
         AmplificationUtilsV2: amplificationUtilsV2.address,
       })) as MetaSwapV1
       await metaSwap.deployed()
-      console.log("buh2")
       // Set approvals
       await asyncForEach([owner, user1, user2], async (signer) => {
         await dummyUSD.connect(signer).approve(metaSwap.address, MAX_UINT256)
@@ -175,10 +173,8 @@ describe("Meta-SwapV1", async () => {
         LP_TOKEN_SYMBOL,
         INITIAL_A_VALUE,
         SWAP_FEE,
-        0,
-        (
-          await get("LPToken")
-        ).address,
+        ADMIN_FEE,
+        firstToken.address,
         baseSwap.address,
       )
       metaLPToken = (await ethers.getContractAt(

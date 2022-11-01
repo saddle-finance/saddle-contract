@@ -113,9 +113,6 @@ describe("LPTokenV2", async () => {
       )
       await token.approve(swapV2.address, MAX_UINT256)
     })
-    console.log((await usdc.balanceOf(ownerAddress)).toString())
-    console.log((await usdt.balanceOf(ownerAddress)).toString())
-    console.log((await dai.balanceOf(ownerAddress)).toString())
 
     await swapV2.addLiquidity(
       [String(10e18), String(10e6), String(10e6)],
