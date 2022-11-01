@@ -1,5 +1,5 @@
 import chai from "chai"
-import { BigNumber, ContractFactory, Signer } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import LPTokenV2Artifact from "../build/artifacts/contracts/LPTokenV2.sol/LPTokenV2.json"
@@ -40,14 +40,10 @@ describe("Meta-SwapV1", async () => {
   let usdt: GenericERC20
   let baseLPToken: GenericERC20
   let metaLPToken: LPTokenV2
-  let amplificationUtilsV2Factory: ContractFactory
   let amplificationUtilsV2: AmplificationUtilsV2
-  let swapUtilsV2Factory: ContractFactory
   let swapUtilsV2: SwapUtilsV2
-  let metaSwapUtilsV1Factory: ContractFactory
   let metaSwapUtilsV1: MetaSwapUtilsV1
   let firstToken: LPTokenV2
-  let lpTokenFactory: ContractFactory
   let owner: Signer
   let user1: Signer
   let user2: Signer
@@ -83,14 +79,13 @@ describe("Meta-SwapV1", async () => {
       user2Address = await user2.getAddress()
 
       // Deploy Swap Libraries
-      amplificationUtilsV2Factory = await ethers.getContractFactory(
-        "AmplificationUtilsV2",
-      )
-      amplificationUtilsV2 =
-        (await amplificationUtilsV2Factory.deploy()) as AmplificationUtilsV2
+      amplificationUtilsV2 = (await (
+        await ethers.getContractFactory("AmplificationUtilsV2")
+      ).deploy()) as AmplificationUtilsV2
       await amplificationUtilsV2.deployed()
-      swapUtilsV2Factory = await ethers.getContractFactory("SwapUtilsV2")
-      swapUtilsV2 = (await swapUtilsV2Factory.deploy()) as SwapUtilsV2
+      swapUtilsV2 = (await (
+        await ethers.getContractFactory("SwapUtilsV2")
+      ).deploy()) as SwapUtilsV2
       await swapUtilsV2.deployed()
 
       // Deploy Base Swap
@@ -101,8 +96,9 @@ describe("Meta-SwapV1", async () => {
       await baseSwap.deployed()
 
       // Deploy instance of LPTokenV2
-      lpTokenFactory = await ethers.getContractFactory("LPTokenV2")
-      firstToken = (await lpTokenFactory.deploy()) as LPTokenV2
+      firstToken = (await (
+        await ethers.getContractFactory("LPTokenV2")
+      ).deploy()) as LPTokenV2
       firstToken.initialize("Test Token", "TEST")
 
       usdc = await ethers.getContract("USDC")
