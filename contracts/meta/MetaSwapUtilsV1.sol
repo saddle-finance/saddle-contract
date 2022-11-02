@@ -784,8 +784,7 @@ library MetaSwapUtilsV1 {
             if (tokenIndexFrom < baseLPTokenIndex) {
                 // Swapping from a MetaSwap token
                 v.x =
-                    xp[tokenIndexFrom] +
-                    dx *
+                    (xp[tokenIndexFrom] + dx) *
                     v.tokenPrecisionMultipliers[tokenIndexFrom];
             } else {
                 // Swapping from one of the tokens hosted in the base Swap
@@ -981,7 +980,8 @@ library MetaSwapUtilsV1 {
             for (uint256 i = 0; i < pooledTokens.length; i++) {
                 uint256 idealBalance = (v.d1 * self.balances[i]) / v.d0;
                 fees[i] =
-                    (feePerToken * idealBalance.difference(v.newBalances[i])) /
+                    (feePerToken *
+                        (idealBalance.difference(v.newBalances[i]))) /
                     FEE_DENOMINATOR;
                 self.balances[i] =
                     v.newBalances[i] -
@@ -1174,7 +1174,7 @@ library MetaSwapUtilsV1 {
             amounts,
             fees,
             v.d1,
-            v.totalSupply / tokenAmount
+            v.totalSupply - tokenAmount
         );
 
         return tokenAmount;

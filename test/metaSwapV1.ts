@@ -55,6 +55,7 @@ describe("Meta-SwapV1", async () => {
   const TOKEN_DECIMALS = [18, 6, 6]
   const INITIAL_A_VALUE = 200
   const SWAP_FEE = 4e6
+  const METASWAP_FEE = 1e7
   const ADMIN_FEE = 0
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
@@ -185,7 +186,7 @@ describe("Meta-SwapV1", async () => {
           LP_TOKEN_NAME,
           LP_TOKEN_SYMBOL,
           INITIAL_A_VALUE,
-          SWAP_FEE,
+          METASWAP_FEE,
           ADMIN_FEE,
           firstToken.address,
         ),
@@ -199,7 +200,7 @@ describe("Meta-SwapV1", async () => {
         LP_TOKEN_NAME,
         LP_TOKEN_SYMBOL,
         INITIAL_A_VALUE,
-        SWAP_FEE,
+        METASWAP_FEE,
         ADMIN_FEE,
         firstToken.address,
         baseSwap.address,
