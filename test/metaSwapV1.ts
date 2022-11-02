@@ -54,6 +54,7 @@ describe("Meta-SwapV1", async () => {
   // Test Values
   const TOKEN_DECIMALS = [18, 6, 6]
   const INITIAL_A_VALUE = 200
+  const META_INITIAL_A_VALUE = 50
   const SWAP_FEE = 4e6
   const METASWAP_FEE = 1e7
   const ADMIN_FEE = 0
@@ -177,7 +178,6 @@ describe("Meta-SwapV1", async () => {
             MAX_UINT256,
           )
       })
-      console.log("set approvals")
 
       await expect(
         metaSwap.initialize(
@@ -185,7 +185,7 @@ describe("Meta-SwapV1", async () => {
           [18, 18],
           LP_TOKEN_NAME,
           LP_TOKEN_SYMBOL,
-          INITIAL_A_VALUE,
+          META_INITIAL_A_VALUE,
           METASWAP_FEE,
           ADMIN_FEE,
           firstToken.address,
@@ -199,7 +199,7 @@ describe("Meta-SwapV1", async () => {
         [18, 18],
         LP_TOKEN_NAME,
         LP_TOKEN_SYMBOL,
-        INITIAL_A_VALUE,
+        META_INITIAL_A_VALUE,
         METASWAP_FEE,
         ADMIN_FEE,
         firstToken.address,

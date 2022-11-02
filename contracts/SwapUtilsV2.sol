@@ -330,7 +330,7 @@ library SwapUtilsV2 {
                 ((((nA * s) / AmplificationUtilsV2.A_PRECISION) +
                     (dP * numTokens)) * d) /
                 ((((nA - AmplificationUtilsV2.A_PRECISION) * d) /
-                    AmplificationUtilsV2.A_PRECISION) + ((numTokens + 1) * d));
+                    AmplificationUtilsV2.A_PRECISION) + ((numTokens + 1) * dP));
             if (d.within1(prevD)) {
                 return d;
             }
