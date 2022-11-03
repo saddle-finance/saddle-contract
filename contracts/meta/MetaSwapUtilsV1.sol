@@ -785,8 +785,8 @@ library MetaSwapUtilsV1 {
             if (tokenIndexFrom < baseLPTokenIndex) {
                 // Swapping from a MetaSwap token
                 v.x =
-                    (xp[tokenIndexFrom] + dx) *
-                    v.tokenPrecisionMultipliers[tokenIndexFrom];
+                    xp[tokenIndexFrom] +
+                    (dx * v.tokenPrecisionMultipliers[tokenIndexFrom]);
             } else {
                 // Swapping from one of the tokens hosted in the base Swap
                 // This case requires adding the underlying token to the base Swap, then
@@ -801,8 +801,8 @@ library MetaSwapUtilsV1 {
 
                 // Calculate the value of total amount of baseLPToken we end up with
                 v.x =
-                    (v.dx * v.baseVirtualPrice) /
-                    BASE_VIRTUAL_PRICE_PRECISION +
+                    ((v.dx * v.baseVirtualPrice) /
+                        BASE_VIRTUAL_PRICE_PRECISION) +
                     xp[baseLPTokenIndex];
             }
 

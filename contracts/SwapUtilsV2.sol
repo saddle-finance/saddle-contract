@@ -796,6 +796,7 @@ library SwapUtilsV2 {
             // the initial depositor doesn't pay fees
             self.balances = newBalances;
         }
+
         uint256 toMint;
         if (v.totalSupply == 0) {
             toMint = v.d1;

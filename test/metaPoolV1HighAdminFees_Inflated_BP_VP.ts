@@ -56,7 +56,8 @@ describe("Meta-SwapV1 with inflated baseVirtualPrice and 99% admin fees", async 
   const LP_TOKEN_SYMBOL = "TESTLP"
 
   const AMOUNT = 1e17
-  const INFLATED_VP = "1013335719282759415"
+  // const INFLATED_VP = "1013335719282759415"
+  const INFLATED_VP = "1000133651221519313"
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
