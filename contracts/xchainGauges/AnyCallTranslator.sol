@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts-4.4.0/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts-4.4.0/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts-4.4.0/utils/math/Math.sol";
+import "@openzeppelin/contracts-4.7.3/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts-4.7.3/proxy/transparent/ProxyAdmin.sol";
+import "@openzeppelin/contracts-4.7.3/utils/math/Math.sol";
+import "@openzeppelin/contracts-4.7.3/token/ERC20/utils/SafeERC20.sol";
 
-import "@openzeppelin/contracts-upgradeable-4.4.0/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable-4.4.0/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable-4.7.3/access/OwnableUpgradeable.sol";
 
 interface ICallProxy {
     function anyCall(
@@ -34,7 +34,7 @@ interface IAnyCallExecutor {
         );
 }
 
-// Empty contract to ensure import of TransparentUpgradeableProxy contract
+// Empty contract to ensure hardhat import of TransparentUpgradeableProxy contract
 contract EmptyProxy is TransparentUpgradeableProxy {
     constructor(
         address _logic,
@@ -43,42 +43,57 @@ contract EmptyProxy is TransparentUpgradeableProxy {
     ) payable TransparentUpgradeableProxy(_logic, admin_, _data) {}
 }
 
-// Empty contract to ensure import of ProxyAdmin contract
+// Empty contract to ensure hardhat import of ProxyAdmin contract
 contract EmptyProxyAdmin is ProxyAdmin {
 
 }
 
-// Logic contract that will be used by the proxy
+/// @title AnyCallTranslator also know as the AnyCallProxy
+/// @notice AnyCallTranslator is responsible for translating messages for AnyCallV6
 contract AnyCallTranslator is OwnableUpgradeable {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
-    // consts
+    using SafeERC20 for IERC20;
+    // address of anyCallV6 contract
     address public anyCallContract;
+    // address of the AnyCallExecutor contract
     address public anyCallExecutor;
+    // mapping of address to whether or not they are allowed to call anyCall
     mapping(address => bool) public isKnownCaller;
 
+    /// @notice AnyCallTranslator constructor
+    /// @dev Doesn't do anything except to set isInitialized = true via initializer
     constructor() initializer {
-        // logic contract
+        // Do not do anything on logic contract deployment
+        // intializer modifier will prevent any future `initialize()` calls
     }
 
     receive() external payable {
         // fallback payable function
     }
 
-    function initialize(address _owner, address _anycallContract)
+    /// @notice Initialize the AnyCallTranslator contract for proxies
+    /// @dev This needs to be called on proxies of this contract
+    /// @param _owner address that will be the owner of this contract
+    /// @param _anyCallContract address of the anyCallV6 contract
+    function initialize(address _owner, address _anyCallContract)
         public
         initializer
     {
         _transferOwnership(_owner);
-        anyCallContract = _anycallContract;
-        anyCallExecutor = ICallProxy(_anycallContract).executor();
+        anyCallContract = _anyCallContract;
+        anyCallExecutor = ICallProxy(_anyCallContract).executor();
     }
 
+    /// @notice Adds addresses to known caller array
+    /// @dev Only callable by owner
+    /// @param _callers array of addresses that should be added to known callers
     function addKnownCallers(address[] calldata _callers) external onlyOwner {
         for (uint256 i = 0; i < _callers.length; i++) {
             isKnownCaller[_callers[i]] = true;
         }
     }
 
+    /// @notice Removes addresses from known caller array
+    /// @dev Only callable by owner
     function removeKnownCallers(address[] calldata _callers)
         external
         onlyOwner
@@ -88,17 +103,28 @@ contract AnyCallTranslator is OwnableUpgradeable {
         }
     }
 
+    /// @notice Set the AnyCall contract address
+    /// @dev Only callable by owner
+    /// @param _anyCallContract address of the AnyCallV6 contract
     function setAnyCall(address _anyCallContract) external onlyOwner {
         anyCallContract = _anyCallContract;
         anyCallExecutor = ICallProxy(_anyCallContract).executor();
     }
 
+    /// @notice withdraw any ETH that was sent to AnyCall contract
+    /// @dev Only callable by owner
+    /// @param _amount amount of ETH to withdraw
     function withdraw(uint256 _amount) external onlyOwner {
         ICallProxy(anyCallContract).withdraw(_amount);
     }
 
+    /// @notice Rescue any ERC20 tokens that are stuck in this contract
+    /// @dev Only callable by owner
+    /// @param token address of the ERC20 token to rescue. Use zero address for ETH
+    /// @param to address to send the tokens to
+    /// @param balance amount of tokens to rescue
     function rescue(
-        IERC20Upgradeable token,
+        IERC20 token,
         address to,
         uint256 balance
     ) external onlyOwner {
@@ -123,6 +149,15 @@ contract AnyCallTranslator is OwnableUpgradeable {
         }
     }
 
+    /// @notice Send a cross chain call via anyCallV6
+    /// @dev Only callable by known callers. Fee flags should be set to 2 in most
+    /// if not all use cases involing this contract.
+    /// @param _to address to call
+    /// @param _data calldata with function signature to use
+    /// @param _fallback address of the fallback contract to use if the call fails
+    /// @param _toChainId chainId to send the call to
+    /// @param _flags flags for determining on which network should caller pay the fee
+    /// (0 = desitnation chain, 2 = origin chain)
     function anyCall(
         address _to,
         bytes calldata _data,
@@ -141,6 +176,11 @@ contract AnyCallTranslator is OwnableUpgradeable {
         );
     }
 
+    /// @notice Receive a cross chain call via anyCallV6 and execute a call on this network
+    /// @dev Only callable anyCallExecutor, the executor contract of anyCallV6
+    /// @param toAndData abi encoded target address and function calldata to execute
+    /// @return boolean indicating success of the call
+    /// @return bytes any data returned from the call
     function anyExecute(bytes calldata toAndData)
         external
         returns (bool, bytes memory)
