@@ -156,7 +156,7 @@ describe("RootOracle", () => {
     it(`Reverts when the account has no ve balance`, async () => {
       await expect(
         rootOracle.connect(signers[10])["push(uint256)"](TEST_SIDE_CHAIN_ID),
-      ).to.be.revertedWith("no ve balance")
+      ).to.be.revertedWith("No ve balance")
     })
   })
 
@@ -189,7 +189,7 @@ describe("RootOracle", () => {
     it(`Reverts when the account has no ve balance`, async () => {
       await expect(
         rootOracle["push(uint256,address)"](TEST_SIDE_CHAIN_ID, users[10]),
-      ).to.be.revertedWith("no ve balance")
+      ).to.be.revertedWith("No ve balance")
     })
   })
 
