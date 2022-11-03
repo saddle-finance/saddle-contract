@@ -598,7 +598,13 @@ library SwapUtilsV2 {
             if (deposit) {
                 balances[i] = balances[i] + amounts[i];
             } else {
-                balances[i] = balances[i] - amounts[i]; // TODO: remove? "Cannot withdraw more than available";
+                if (amounts[i] > balances[i]) {
+                    revert("Cannot withdraw more than available");
+                } else {
+                    unchecked {
+                        balances[i] = balances[i] - amounts[i];
+                    }
+                }
             }
         }
         uint256 d1 = getD(_xp(balances, multipliers), a);
@@ -951,7 +957,13 @@ library SwapUtilsV2 {
             uint256[] memory balances1 = new uint256[](pooledTokens.length);
             v.d0 = getD(_xp(v.balances, v.multipliers), v.preciseA);
             for (uint256 i = 0; i < pooledTokens.length; i++) {
-                balances1[i] = v.balances[i] - amounts[i]; //TODO: remove? "Cannot withdraw more than available";
+                if (amounts[i] > v.balances[i]) {
+                    revert("Cannot withdraw more than available");
+                } else {
+                    unchecked {
+                        balances1[i] = v.balances[i] - amounts[i];
+                    }
+                }
             }
             v.d1 = getD(_xp(balances1, v.multipliers), v.preciseA);
 

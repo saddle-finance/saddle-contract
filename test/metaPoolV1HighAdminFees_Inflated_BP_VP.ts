@@ -61,7 +61,7 @@ describe("Meta-SwapV1 with inflated baseVirtualPrice and 99% admin fees", async 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      await deployments.fixture(["Swap", "USDPool", "MetaSwapUtils"])
+      await deployments.fixture(["USDPool"])
 
       signers = await ethers.getSigners()
       owner = signers[0]

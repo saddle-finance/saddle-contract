@@ -595,12 +595,13 @@ library MetaSwapUtilsV1 {
                 if (deposit) {
                     balances1[i] = balances1[i] + amounts[i];
                 } else {
-                    balances1[i] =
-                        balances1[i] -
-                        (
-                            amounts[i]
-                            // TODO: remove? "Cannot withdraw more than available"
-                        );
+                    if (amounts[i] > balances1[i]) {
+                        revert("Cannot withdraw more than available");
+                    } else {
+                        unchecked {
+                            balances1[i] = balances1[i] - amounts[i];
+                        }
+                    }
                 }
             }
             d1 = SwapUtilsV2.getD(
@@ -1130,8 +1131,13 @@ library MetaSwapUtilsV1 {
                 v.preciseA
             );
             for (uint256 i = 0; i < v.newBalances.length; i++) {
-                balances1[i] = v.newBalances[i] - amounts[i];
-                // TODO: remove? "Cannot withdraw more than available"
+                if (amounts[i] > v.newBalances[i]) {
+                    revert("Cannot withdraw more than available");
+                } else {
+                    unchecked {
+                        balances1[i] = v.newBalances[i] - amounts[i];
+                    }
+                }
             }
             v.d1 = SwapUtilsV2.getD(
                 _xp(balances1, v.tokenPrecisionMultipliers, v.baseVirtualPrice),

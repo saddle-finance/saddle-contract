@@ -102,8 +102,8 @@ describe("Meta-SwapV1 Deposit Contract", async () => {
         TOKEN_DECIMALS,
         LP_TOKEN_NAME,
         LP_TOKEN_SYMBOL,
-        INITIAL_A_VALUE,
-        SWAP_FEE,
+        200,
+        4e6,
         ADMIN_FEE,
         firstToken.address,
       )

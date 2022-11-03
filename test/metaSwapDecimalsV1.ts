@@ -52,9 +52,9 @@ describe("Meta-SwapV1", async () => {
   let user2Address: string
 
   // Test Values
-  const testTokenDecimals = [18, 6, 6]
-  const INITIAL_A_VALUE = 200
-  const SWAP_FEE = 4e6
+  const TOKEN_DECIMALS = [18, 6, 6]
+  const INITIAL_A_VALUE = 50
+  const SWAP_FEE = 1e7
   const ADMIN_FEE = 0
   const LP_TOKEN_NAME = "Test LP Token Name"
   const LP_TOKEN_SYMBOL = "TESTLP"
@@ -104,12 +104,12 @@ describe("Meta-SwapV1", async () => {
 
       await baseSwap.initialize(
         [dai.address, usdc.address, usdt.address],
-        testTokenDecimals,
+        [18, 6, 6],
         LP_TOKEN_NAME,
         LP_TOKEN_SYMBOL,
-        INITIAL_A_VALUE,
-        SWAP_FEE,
-        ADMIN_FEE,
+        200,
+        4e6,
+        0,
         firstToken.address,
       )
 
