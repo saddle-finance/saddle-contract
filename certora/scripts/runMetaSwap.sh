@@ -5,6 +5,7 @@ then
 fi
 certoraRun \
     certora/harness/MetaSwapHarness.sol \
+    certora/harness/SwapHarness.sol \
     certora/munged/LPToken.sol \
     --verify MetaSwapHarness:certora/spec/MetaSwap.spec \
     --structLink MetaSwapHarness:lpToken=LPToken \
