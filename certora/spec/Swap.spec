@@ -24,7 +24,8 @@ methods {
     //https://vaas-stg.certora.com/output/93493/36b8abd73b5fba32a927/?anonymousKey=2f52ea8a6289c42eb2bbcee468b4b5202d06b76c
 
     // math functions summarized
-	getD(uint256[], uint256) returns (uint256) => NONDET
+	//getD(uint256[], uint256) returns (uint256) => NONDET
+    getDApprox(uint256 xp1, uint256 xp2) returns(uint256) => newGetD(xp1,xp2);
 
     // normal functions
     
@@ -62,6 +63,65 @@ methods {
     mint(address,uint256) => DISPATCHER(true)
     initialize(string,string) => DISPATCHER(true)
 }
+
+
+////////////////////////////////////////////////////////////////////////////
+//                                Helpers                                 //
+////////////////////////////////////////////////////////////////////////////
+
+
+function newGetD(uint256 balance1, uint256 balance2) returns uint256 {
+    uint256 invar;
+    require invar >= balance1 + balance2;
+    require invar <= balance1 * balance2;
+    require invar == determinedInvariant[balance1][balance2];
+    return invar;
+}
+
+function getAllGettersRandomInput() returns uint256 {
+    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
+    uint256 return1 = getA();
+    uint256 return2 = getAPrecise();
+    uint256 return3 = getToken(i1);
+    uint256 return4 = getTokenIndex(i2);
+    uint256 return5 = getTokenBalance(i3);
+    uint256 return6 = getVirtualPrice();
+    uint256 return7 = calculateSwap(i4,j4,k4);
+    uint256 return8 = calculateTokenAmount(i5,j5);
+    uint256 return9 = getAdminBalance(i6);
+    uint256 return10 = owner();
+    uint256 return11 = getTotalSupply();
+    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
+}
+
+function getAllGettersDefinedInput(uint8 i1, address i2, uint8 i3, uint8 i4, uint8 j4, uint256 k4, uint256[] i5, bool j5, uint256 i6) returns uint256 {
+    uint256 return1 = getA();
+    uint256 return2 = getAPrecise();
+    uint256 return3 = getToken(i1);
+    uint256 return4 = getTokenIndex(i2);
+    uint256 return5 = getTokenBalance(i3);
+    uint256 return6 = getVirtualPrice();
+    uint256 return7 = calculateSwap(i4,j4,k4);
+    uint256 return8 = calculateTokenAmount(i5,j5);
+    uint256 return9 = getAdminBalance(i6);
+    uint256 return10 = owner();
+    uint256 return11 = getTotalSupply();
+    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
+} 
+
+function setup() {
+    require !initializing;
+    require initialized;
+}
+
+/*function callGetter(method f, env e, uint i1, uint i2, uint i3) returns(uint) {
+    if (f.selector == getter1(uint).selector)
+        return getter1(e, i1);
+    else if
+        ///...
+    else return 0;
+}*/
+
 
 
 
@@ -187,33 +247,12 @@ invariant swapFeeNeverGreaterThanMAX()
 
 invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
     getTotalSupply() == 0 <=> getTokenBalance(i) == 0
-    /*{
+    {
         preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
             requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i1);
             requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i2);
         }
-    }*/
-
-rule ifLPTotalSupplyZeroThenIndividualUnderlyingsZeroRule (uint8 i) {
-    //uint256 tokenAmount;
-    //uint8 tokenIndex;
-    //uint256 minAmount;
-    //uint256 deadline;
-
-    uint256[] amounts;
-    uint256 maxBurnAmount;
-    uint256 deadline;
-    
-    require getTotalSupply() == 0 <=> getTokenBalance(i) == 0;
-
-    env e;
-
-    //removeLiquidityOneToken@withrevert(e, tokenAmount, tokenIndex , minAmount, deadline);
-    removeLiquidityImbalance@withrevert(e,amounts,maxBurnAmount ,deadline);
-
-    assert lastReverted;
-}
-
+    }
 
 
 /*invariant getterReturnsZeroInUninitState(method f, env e, uint i1, uint i2, ...)
@@ -235,8 +274,7 @@ rule ifLPTotalSupplyZeroThenIndividualUnderlyingsZeroRule (uint8 i) {
 rule cantReinit(method f) filtered {
     f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
 } {
-    require initialized;
-    require !initializing;
+    setup();
  
     env e; calldataarg args;
     f@withrevert(e,args);
@@ -447,6 +485,8 @@ rule onlyAdminCanWithdrawFees() {
 rule pausedImpliesNoSingleTokenWithdrawal (method f) {
     uint8 tokenAIndex; uint8 tokenBIndex;
     
+    setup();
+    requireInvariant zeroTokenAZeroTokenB(tokenAIndex, tokenBIndex); 
     require paused();
     uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
     uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
@@ -493,7 +533,9 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
     uint256 minToMint;
     uint256 deadline;
     
-    require initialized && !initializing;
+    setup();
+    require tokens.length == 2;
+    // require tokens[0] > 0 && tokens[1] > 0;
 
     env e;
     addLiquidity(e,tokens,minToMint,deadline);
@@ -533,12 +575,38 @@ rule swappingCheckMinAmount() {
     assert balance_ >= _balance + minDy; 
 }
 
-/*
+/* P
+    LPToken totalSupply must be zero if `addLiquidity` has not been called
+*/
+invariant LPtotalSupplyZeroWhenUninitialized()
+    getTotalSupply() == 0
+    { preserved addLiquidity(uint256[] amounts,uint256 minToMint,uint256 deadline) with (env e1) {
+        require false;
+    }
+    preserved {
+        setup();
+    }
+
+/* P
+    LPToken totalSupply must be zero if `addLiquidity` has not been called
+*/
+rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector} {
+    require getTotalSupply() == 0;
+    require setup();
+
+    env e; calldataarg args;
+    f(e,args);
+
+    assert getTotalSupply() == 0;
+}
+
+/* P
     Providing liquidity will always output at least minToMint amount of LP 
     tokens
 */
 rule addLiquidityCheckMinToMint() {
-    require initialized;
+    setup();
+    require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
     env e;
     address sender = e.msg.sender;
     uint256[] amounts;
@@ -568,7 +636,7 @@ rule swapAlwaysBeforeDeadline() {
 
     swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
 
-    assert e.block.timestamp >= deadline;
+    assert e.block.timestamp <= deadline;
 }
 
 /* 
@@ -584,7 +652,7 @@ rule addLiquidityAlwaysBeforeDeadline() {
 
     addLiquidity(e, amounts, minToMint, deadline);
 
-    assert e.block.timestamp >= deadline;
+    assert e.block.timestamp <= deadline;
 }
 
 /*
@@ -600,7 +668,7 @@ rule removeLiquidityAlwaysBeforeDeadline() {
 
     removeLiquidity(e, amount, minAmounts, deadline);
 
-    assert e.block.timestamp >= deadline;
+    assert e.block.timestamp <= deadline;
 }
 
 /*
@@ -627,56 +695,4 @@ rule sdfs() {
 
 // Mathematical rules (monotonicity, commutativity etc.)
 
-
-////////////////////////////////////////////////////////////////////////////
-//                                Helpers                                 //
-////////////////////////////////////////////////////////////////////////////
-
-
-function newGetD(uint256 balance1, uint256 balance2) returns uint256 {
-    uint256 invar;
-    require invar >= balance1 + balance2;
-    require invar <= balance1 * balance2;
-    require invar == determinedInvariant[balance1][balance2];
-    return invar;
-}
-
-function getAllGettersRandomInput() returns uint256 {
-    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
-    uint256 return1 = getA();
-    uint256 return2 = getAPrecise();
-    uint256 return3 = getToken(i1);
-    uint256 return4 = getTokenIndex(i2);
-    uint256 return5 = getTokenBalance(i3);
-    uint256 return6 = getVirtualPrice();
-    uint256 return7 = calculateSwap(i4,j4,k4);
-    uint256 return8 = calculateTokenAmount(i5,j5);
-    uint256 return9 = getAdminBalance(i6);
-    uint256 return10 = owner();
-    uint256 return11 = getTotalSupply();
-    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
-}
-
-function getAllGettersDefinedInput(uint8 i1, address i2, uint8 i3, uint8 i4, uint8 j4, uint256 k4, uint256[] i5, bool j5, uint256 i6) returns uint256 {
-    uint256 return1 = getA();
-    uint256 return2 = getAPrecise();
-    uint256 return3 = getToken(i1);
-    uint256 return4 = getTokenIndex(i2);
-    uint256 return5 = getTokenBalance(i3);
-    uint256 return6 = getVirtualPrice();
-    uint256 return7 = calculateSwap(i4,j4,k4);
-    uint256 return8 = calculateTokenAmount(i5,j5);
-    uint256 return9 = getAdminBalance(i6);
-    uint256 return10 = owner();
-    uint256 return11 = getTotalSupply();
-    return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
-} 
-
-/*function callGetter(method f, env e, uint i1, uint i2, uint i3) returns(uint) {
-    if (f.selector == getter1(uint).selector)
-        return getter1(e, i1);
-    else if
-        ///...
-    else return 0;
-}*/
 

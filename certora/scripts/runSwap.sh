@@ -9,7 +9,7 @@ certoraRun \
     --verify SwapHarness:certora/spec/Swap.spec \
     --structLink SwapHarness:lpToken=LPToken \
     --cache saddle \
-    --loop_iter 4 \
+    --loop_iter 3 \
     --settings -copyLoopUnroll=10 \
     $RULE \
     --send_only \
