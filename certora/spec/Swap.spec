@@ -162,9 +162,10 @@ invariant zeroTokenAZeroTokenB(uint8 tokenAIndex, uint8 tokenBIndex)
     If balance of one underlying token is non-zero, the balance of all other
     underlying tokens must also be non-zero
     @dev complimentary to the invariant above 
-*/
+
 invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
     getTokenBalance(tokenA) > 0 => getTokenBalance(tokenX) > 0
+*/
 
 /* 
     If contract is in uninitialized state, all underlying balances must be zero
@@ -601,6 +602,17 @@ rule removeLiquidityAlwaysBeforeDeadline() {
 
     assert e.block.timestamp >= deadline;
 }
+
+/*
+    Swapping token A for token B doesn't change underlying balance of token C
+*/
+rule sdfs() {
+    assert false;
+}
+
+/*
+    Only addLiquidity should be able to increase LP total supply from zero to non-zero
+*/
 
 /// Variable change rules (under which conditions is a variable allowed to change, and how)
 
