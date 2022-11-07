@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts-upgradeable-4.4.0/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable-4.4.0/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-4.7.3/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable-4.7.3/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable-4.7.3/security/ReentrancyGuardUpgradeable.sol";
 import "../LPTokenV2.sol";
 import "../interfaces/ISwapV2.sol";
 import "../interfaces/IMetaSwapV1.sol";

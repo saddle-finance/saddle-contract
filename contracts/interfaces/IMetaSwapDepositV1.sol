@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-4.4.0/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts-4.7.3/token/ERC20/ERC20.sol";
 import "./ISwapV2.sol";
 import "./IMetaSwapV1.sol";
 

@@ -3,7 +3,7 @@
 pragma solidity 0.8.17;
 
 import "../SwapV2.sol";
-import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-4.7.3/token/ERC20/utils/SafeERC20.sol";
 import "./MetaSwapUtilsV1.sol";
 
 /**
@@ -225,7 +225,7 @@ contract MetaSwapV1 is SwapV2 {
         address lpTokenTargetAddress,
         ISwapV2 baseSwap
     ) public payable virtual initializer {
-        SwapV2.initialize(
+        __SwapV2_init(
             _pooledTokens,
             decimals,
             lpTokenName,

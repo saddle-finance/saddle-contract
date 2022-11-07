@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts-4.4.0/proxy/Clones.sol";
-import "@openzeppelin/contracts-upgradeable-4.4.0/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-4.7.3/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-4.7.3/proxy/Clones.sol";
+import "@openzeppelin/contracts-upgradeable-4.7.3/security/ReentrancyGuardUpgradeable.sol";
 import "./OwnerPausableUpgradeableV1.sol";
 import "./SwapUtilsV2.sol";
 import "./AmplificationUtilsV2.sol";
@@ -114,6 +114,45 @@ contract SwapV2 is OwnerPausableUpgradeableV1, ReentrancyGuardUpgradeable {
         uint256 _adminFee,
         address lpTokenTargetAddress
     ) public payable virtual initializer {
+        __SwapV2_init(
+            _pooledTokens,
+            decimals,
+            lpTokenName,
+            lpTokenSymbol,
+            _a,
+            _fee,
+            _adminFee,
+            lpTokenTargetAddress
+        );
+    }
+
+    /**
+     * @notice Initializes this Swap contract with the given parameters.
+     * This will also clone a LPToken contract that represents users'
+     * LP positions. The owner of LPToken will be this contract - which means
+     * only this contract is allowed to mint/burn tokens.
+     *
+     * @param _pooledTokens an array of ERC20s this pool will accept
+     * @param decimals the decimals to use for each pooled token,
+     * eg 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
+     * @param lpTokenName the long-form name of the token to be deployed
+     * @param lpTokenSymbol the short symbol for the token to be deployed
+     * @param _a the amplification coefficient * n * (n - 1). See the
+     * StableSwap paper for details
+     * @param _fee default swap fee to be initialized with
+     * @param _adminFee default adminFee to be initialized with
+     * @param lpTokenTargetAddress the address of an existing LPToken contract to use as a target
+     */
+    function __SwapV2_init(
+        IERC20[] memory _pooledTokens,
+        uint8[] memory decimals,
+        string memory lpTokenName,
+        string memory lpTokenSymbol,
+        uint256 _a,
+        uint256 _fee,
+        uint256 _adminFee,
+        address lpTokenTargetAddress
+    ) internal virtual onlyInitializing {
         __OwnerPausable_init();
         __ReentrancyGuard_init();
         // Check _pooledTokens and precisions parameter

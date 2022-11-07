@@ -2,8 +2,8 @@
 
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-4.4.0/access/Ownable.sol";
-import "@openzeppelin/contracts-4.4.0/proxy/Clones.sol";
+import "@openzeppelin/contracts-4.7.3/access/Ownable.sol";
+import "@openzeppelin/contracts-4.7.3/proxy/Clones.sol";
 import "./interfaces/ISwapV2.sol";
 import "./interfaces/IMetaSwapV1.sol";
 

@@ -2,8 +2,8 @@
 
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-upgradeable-4.4.0/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable-4.4.0/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable-4.7.3/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable-4.7.3/security/PausableUpgradeable.sol";
 
 /**
  * @title OwnerPausable
@@ -15,7 +15,7 @@ abstract contract OwnerPausableUpgradeableV1 is
     OwnableUpgradeable,
     PausableUpgradeable
 {
-    function __OwnerPausable_init() internal initializer {
+    function __OwnerPausable_init() internal onlyInitializing {
         __Context_init_unchained();
         __Ownable_init_unchained();
         __Pausable_init_unchained();
