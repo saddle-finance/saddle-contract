@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts-4.4.0/access/Ownable.sol";
-import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-4.7.3/access/Ownable.sol";
+import "@openzeppelin/contracts-4.7.3/token/ERC20/utils/SafeERC20.sol";
 import "./Bridger.sol";
 
+/// @notice Interface for the official Optimism Bridge contract
 interface IOptimismStandardBridge {
     function depositERC20To(
         address _l1token,
@@ -17,6 +18,10 @@ interface IOptimismStandardBridge {
     ) external payable;
 }
 
+/// @title Optimism bridger contract
+/// @notice This contract is used to bridge tokens to Optimism network
+/// @dev Since Optimism bridge reequires manually providing the L2 token address,
+/// the contract owner must set the L2 token address before bridging.
 contract OptimismBridger is Bridger {
     using SafeERC20 for IERC20;
 
@@ -36,6 +41,12 @@ contract OptimismBridger is Bridger {
         address newL2Token
     );
 
+    /// @notice This contract is used to bridge tokens to Arbitrum
+    /// @dev Arbitrum bridge requires base fee for the fee calculation therefore
+    /// the function may revert on evm implementations that do not support base fee
+    /// @param _gasLimit Gas limit for the L2 transaction
+    /// @param _SDL SDL token address on this chain
+    /// @param _OP_SDL SDL token address on Optimism chain
     constructor(
         uint32 _gasLimit,
         address _SDL,
@@ -53,6 +64,11 @@ contract OptimismBridger is Bridger {
         );
     }
 
+    /// @notice Bridge given token to Optimism network
+    /// @dev The function will revert if the L2 token address is not set
+    /// @param _token token address on this chain
+    /// @param _to destination address on Optimism chain
+    /// @param _amount amount of tokens to bridge
     function bridge(
         address _token,
         address _to,
@@ -76,19 +92,32 @@ contract OptimismBridger is Bridger {
         );
     }
 
+    /// @notice Get the network cost for bridging tokens to Optimism
+    /// @dev The gas cost for bridging is 0 on Ethereum mainnet
+    /// @return The cost of bridging tokens
     function cost() external pure override returns (uint256) {
         return 0;
     }
 
+    /// @notice Check if this bridge can be used
+    /// @return True if the bridger is active
     function check(address) external pure override returns (bool) {
         return true;
     }
 
+    /// @notice Set gas limit to use for bridging
+    /// @dev The function can only be called by the contract owner
+    /// @param _gasLimit New gas limit
     function setGasLimit(uint32 _gasLimit) external onlyOwner {
         emit UpdateGasLimit(gasLimit, _gasLimit);
         gasLimit = _gasLimit;
     }
 
+    /// @notice Set L2 token address for the given L1 token and approve
+    /// the bridge to transfer the L1 token
+    /// @dev The function can only be called by the contract owner
+    /// @param _l1Token L1 token address
+    /// @param _l2Token L2 token address on Optimism
     function setL2TokenPair(address _l1Token, address _l2Token)
         external
         onlyOwner
