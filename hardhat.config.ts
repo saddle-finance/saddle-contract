@@ -59,6 +59,17 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    aurora_mainnet: {
+      url: "https://mainnet.aurora.dev",
+      chainId: parseInt(CHAIN_ID.AURORA_MAINNET),
+      deploy: ["./deploy/aurora/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.aurorascan.dev/api",
+          apiKey: process.env.AURORA_API_KEY ?? "NO_KEY",
+        },
+      },
+    },
     optimism_testnet: {
       url: "https://kovan.optimism.io",
       chainId: parseInt(CHAIN_ID.OPTIMISM_TESTNET),
