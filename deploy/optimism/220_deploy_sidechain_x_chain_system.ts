@@ -6,4 +6,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await deployCrossChainSystemOnSideChain(hre)
 }
 export default func
-func.skip = async () => false
+func.skip = async () => true
