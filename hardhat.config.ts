@@ -12,6 +12,11 @@ import { ALCHEMY_BASE_URL, CHAIN_ID } from "./utils/network"
 
 dotenv.config()
 
+// Use the private key from the .env file if available
+const crossChainDeployerAccount = process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY
+  ? "privatekey://" + process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY
+  : "0x979B44CFc7a9B54BED8a3C4FD674B09c194219fD"
+
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
@@ -229,6 +234,9 @@ const config: HardhatUserConfig = {
       2221: 0, // use the same address on kava testnet
       2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
+    },
+    crossChainDeployer: {
+      default: crossChainDeployerAccount,
     },
     libraryDeployer: {
       default: 1, // use a different account for deploying libraries on the hardhat network

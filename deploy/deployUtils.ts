@@ -13,7 +13,7 @@ import {
   setEtherBalance,
   ZERO_ADDRESS,
 } from "../test/testUtils"
-import { MULTISIG_ADDRESSES } from "../utils/accounts"
+import { ANYCALL_ADDRESS, MULTISIG_ADDRESSES } from "../utils/accounts"
 import { PoolType } from "../utils/constants"
 import { isTestNetwork } from "../utils/network"
 
@@ -769,6 +769,118 @@ export async function stealFundsFromWhales(
       }),
     )
   }
+}
+
+export async function deployCrossChainSystemOnSideChain(
+  hre: HardhatRuntimeEnvironment,
+) {
+  const { deployments, getNamedAccounts, ethers } = hre
+  const { get, execute, deploy, save } = deployments
+  const { deployer, crossChainDeployer } = await getNamedAccounts()
+
+  // set owner as deployer until all contracts are deployed
+  const owner = deployer
+
+  const xChainFactoryDeployOptions = {
+    log: true,
+    from: crossChainDeployer,
+  }
+
+  const executeOptions = {
+    log: true,
+    from: deployer,
+  }
+
+  // Set eth balance on forked network
+  if (process.env.HARDHAT_DEPLOY_FORK) {
+    setEtherBalance(crossChainDeployer, ethers.utils.parseEther("10000"))
+  }
+
+  // 0: Deploy ChildGaugeFactory
+  const cgf = await deploy("ChildGaugeFactory", {
+    ...xChainFactoryDeployOptions,
+    args: [
+      ZERO_ADDRESS, // AnyCallTranslator placeholder
+      (
+        await get("SDL")
+      ).address, // SDL
+      owner, // owner
+    ],
+  })
+
+  // 1: Deploy Child Gauge
+  const cg = await deploy("ChildGauge", {
+    ...xChainFactoryDeployOptions,
+    args: [(await get("SDL")).address, cgf.address],
+  })
+
+  // 2: Deploy ProxyAdmin to be used as admin of AnyCallTranslator
+  const proxyAdmin = await deploy("ProxyAdmin", xChainFactoryDeployOptions)
+
+  // 3: Deploy AnyCallTranslator as a logic contract
+  const anyCallTranslatorLogic = await deploy("AnyCallTranslatorLogic", {
+    ...xChainFactoryDeployOptions,
+    contract: "AnyCallTranslator",
+  })
+
+  // Function data for AnyCallTranslator.initialize(multisigAddress, anyCallAddress)
+  // This will be passed as 3rd parameter when intiaizing the proxy
+  // and gets used as calldata for calling self.delegatecall(initializeCallData)
+  const initData = await ethers
+    .getContractFactory("AnyCallTranslator")
+    .then((c) =>
+      c.interface.encodeFunctionData("initialize", [owner, ANYCALL_ADDRESS]),
+    )
+
+  // 4: Deploy Proxy to be used as AnyCallTranslator
+  const anyCallTranslatorProxy = await deploy("AnyCallTranslatorProxy", {
+    ...xChainFactoryDeployOptions,
+    contract: "TransparentUpgradeableProxy",
+    args: [anyCallTranslatorLogic.address, proxyAdmin.address, initData],
+  })
+  await save("AnyCallTranslator", {
+    abi: anyCallTranslatorLogic.abi,
+    address: anyCallTranslatorProxy.address,
+  })
+
+  // 5: Deploy child oracle
+  const co = await deploy("ChildOracle", {
+    ...xChainFactoryDeployOptions,
+    args: [anyCallTranslatorProxy.address],
+  })
+
+  // Set up storage variables in child gauge factory from deployer account
+  await execute(
+    "ChildGaugeFactory",
+    executeOptions,
+    "set_implementation",
+    cg.address,
+  )
+  await execute(
+    "ChildGaugeFactory",
+    executeOptions,
+    "set_voting_escrow",
+    co.address,
+  )
+  await execute(
+    "ChildGaugeFactory",
+    executeOptions,
+    "set_call_proxy",
+    anyCallTranslatorProxy.address,
+  )
+
+  // Add to ChildGaugeFactory to master registry
+  await execute(
+    "MasterRegistry",
+    executeOptions,
+    "addRegistry",
+    ethers.utils.formatBytes32String("ChildGaugeFactory"),
+    cgf.address,
+  )
+
+  await execute("AnyCallTranslator", executeOptions, "addKnownCallers", [
+    cgf.address,
+  ])
 }
 
 export async function deployPermissionlessPoolComponents(
