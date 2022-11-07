@@ -2,7 +2,12 @@ import { BigNumber } from "ethers"
 import { getChainId } from "hardhat"
 import { Address } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { GenericERC20, IPoolRegistry, PoolRegistry } from "../build/typechain"
+import {
+  GenericERC20,
+  IPoolRegistry,
+  MasterRegistry,
+  PoolRegistry,
+} from "../build/typechain"
 import {
   impersonateAccount,
   setEtherBalance,
@@ -764,4 +769,172 @@ export async function stealFundsFromWhales(
       }),
     )
   }
+}
+
+export async function deployPermissionlessPoolComponents(
+  hre: HardhatRuntimeEnvironment,
+) {
+  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deploy, get, getOrNull, execute } = deployments
+  const { deployer } = await getNamedAccounts()
+
+  const permissionlessSwap = await getOrNull("PermissionlessSwap")
+  const permissionlessMetaSwap = await getOrNull("PermissionlessMetaSwap")
+  const permissionlessDeployer = await getOrNull("PermissionlessDeployer")
+  const masterRegistry: MasterRegistry = await ethers.getContract(
+    "MasterRegistry",
+    deployer,
+  )
+  const masterRegistryAddress = masterRegistry.address
+  const swapUtilsAddress = (await get("SwapUtils")).address
+  const amplificationUtilsAddress = (await get("AmplificationUtils")).address
+  const metaswapDeposit = await getOrNull("MetaPoolDeposit")
+  let metaswapDepositAddress = metaswapDeposit?.address
+  // see if master registry has a fee collector set
+  const feeCollectorName = ethers.utils.formatBytes32String("FeeCollector")
+
+  // skip following txs if permissionless deployer is deployed
+  if (permissionlessDeployer) {
+    return
+  }
+
+  // get multisig address for network, if there is none default to deployer
+  let multisig = MULTISIG_ADDRESSES[await getChainId()]
+  if (multisig === undefined) {
+    console.log("No multisig address found for network, defaulting to deployer")
+    multisig = deployer
+  }
+
+  try {
+    await masterRegistry.resolveNameToLatestAddress(feeCollectorName)
+  } catch (error) {
+    console.log("No fee collector set, setting now")
+    // setting as the deployer for now as no multisig is available on this network
+    await execute(
+      "MasterRegistry",
+      {
+        from: deployer,
+        log: true,
+      },
+      "addRegistry",
+      feeCollectorName,
+      multisig,
+    )
+  }
+
+  // deploy an instance of metaswap deposit if not found (currently only for kava network)
+  if (metaswapDeposit == undefined) {
+    console.log("Deploying MetaSwapDeposit")
+    const metaSwapDepositDeployment = await deploy("MetaSwapDeposit", {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+    })
+    metaswapDepositAddress = metaSwapDepositDeployment.address
+  }
+
+  // deploy PermissionlessSwap if needed
+  if (permissionlessSwap == null) {
+    console.log("PermissionlessSwap not found, deploying")
+    await deploy("PermissionlessSwap", {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+      args: [masterRegistryAddress],
+      libraries: {
+        SwapUtils: swapUtilsAddress,
+        AmplificationUtils: amplificationUtilsAddress,
+      },
+    })
+  }
+  const permissionlessSwapAddress = (await get("PermissionlessSwap")).address
+
+  // deploy PermissionlessMetaSwap if needed
+  if (permissionlessMetaSwap == null) {
+    console.log("PermissionlessMetaSwap not found, deploying")
+    await deploy("PermissionlessMetaSwap", {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+      args: [masterRegistryAddress],
+      libraries: {
+        SwapUtils: swapUtilsAddress,
+        MetaSwapUtils: (await get("MetaSwapUtils")).address,
+        AmplificationUtils: amplificationUtilsAddress,
+      },
+    })
+  }
+  const permissionlessMetaSwapAddress = (await get("PermissionlessMetaSwap"))
+    .address
+
+  // deploy PermissionlessDeployer
+  if (permissionlessDeployer == null) {
+    console.log("PermissionlessDeployer not found, deploying")
+
+    const PermissionlessDeployerDeployment = await deploy(
+      "PermissionlessDeployer",
+      {
+        from: deployer,
+        log: true,
+        skipIfAlreadyDeployed: true,
+        args: [
+          multisig, // admin
+          masterRegistryAddress, // masterRegistry
+          (
+            await get("LPToken")
+          ).address, // targetLPToken
+          permissionlessSwapAddress, // targetSwap
+          permissionlessMetaSwapAddress, // targetMetaSwap
+          // Below needs to be a non-clone instance of the MetaswapDeposit Contract
+          metaswapDepositAddress, // targetMetaSwapDeposit
+        ],
+      },
+    )
+
+    // PermissionlessDeployer to the master registry
+    console.log("Adding PermissionlessDeployer to MasterRegistry")
+    await execute(
+      "MasterRegistry",
+      {
+        from: deployer,
+        log: true,
+      },
+      "addRegistry",
+      ethers.utils.formatBytes32String("PermissionlessDeployer"),
+      PermissionlessDeployerDeployment.address,
+    )
+
+    const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
+
+    // 1. Grant COMMUNITY_MANAGER_ROLE to PermissionlessDeployer
+    // 2. Grant COMMUNITY_MANAGER_ROLE to deployer account
+    // 3. Grant DEFAULT_ADMIN_ROLE to Multisig on this chain
+    const batchCall = [
+      await poolRegistry.populateTransaction.grantRole(
+        await poolRegistry.COMMUNITY_MANAGER_ROLE(),
+        PermissionlessDeployerDeployment.address,
+      ),
+      await poolRegistry.populateTransaction.grantRole(
+        await poolRegistry.COMMUNITY_MANAGER_ROLE(),
+        deployer,
+      ),
+      await poolRegistry.populateTransaction.grantRole(
+        await poolRegistry.DEFAULT_ADMIN_ROLE(),
+        multisig,
+      ),
+    ]
+
+    const batchCallData = batchCall
+      .map((x) => x.data)
+      .filter((x): x is string => !!x)
+
+    await execute(
+      "PoolRegistry",
+      { from: deployer, log: true },
+      "batch",
+      batchCallData,
+      true,
+    )
+  }
+  console.log("All permissionless contracts deployed :)")
 }
