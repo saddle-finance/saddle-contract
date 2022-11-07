@@ -27,6 +27,7 @@ contract RewardForwarder {
 
     /// @notice Deposit the reward token in this contract to the gauge
     /// @dev Upon calling this function, the reward token will be
+    /// transferred from this contract to the gauge.
     /// @param _rewardToken address of the reward token to deposit
     function depositRewardToken(address _rewardToken) external {
         IGauge(GAUGE).deposit_reward_token(

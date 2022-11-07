@@ -190,9 +190,9 @@ contract AnyCallTranslator is OwnableUpgradeable {
             msg.sender == anyCallExecutor,
             "Caller is not anyCall executor"
         );
-        // Get address of anycallExecutor
+        // Get the address of the caller from the source chain
         (address _from, , ) = IAnyCallExecutor(msg.sender).context();
-        // Check that caller is verified
+        // Check that caller is AnyCallTranslator
         require(_from == address(this), "Wrong context");
 
         // Decode to and data

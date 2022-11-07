@@ -113,7 +113,8 @@ contract OptimismBridger is Bridger {
         gasLimit = _gasLimit;
     }
 
-    /// @notice Set L2 token address for the given L1 token
+    /// @notice Set L2 token address for the given L1 token and approve
+    /// the bridge to transfer the L1 token
     /// @dev The function can only be called by the contract owner
     /// @param _l1Token L1 token address
     /// @param _l2Token L2 token address on Optimism

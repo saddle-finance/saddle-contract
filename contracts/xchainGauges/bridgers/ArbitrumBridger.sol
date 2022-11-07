@@ -150,7 +150,7 @@ contract ArbitrumBridger is Bridger {
         }
     }
 
-    /// @notice Check if this bridged can be used=
+    /// @notice Check if this bridger can be used
     /// @return true if this bridger can be used
     function check(address) external pure override returns (bool) {
         return true;
