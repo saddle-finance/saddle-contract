@@ -71,7 +71,9 @@ jobs:
     - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
     - run: npm ci --legacy-peer-deps
     - run: npm run build --if-present
-    - run: npm run coverage
+    - env:
+        NODE_OPTIONS: "--max_old_space_size=4096"
+      run: npm run coverage
     - uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
