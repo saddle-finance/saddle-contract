@@ -29,7 +29,6 @@ describe("SwapCalculator (D4 pool on forked mainnet) [ @skip-on-coverage ]", asy
                 ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] +
                 process.env.ALCHEMY_API_KEY,
               blockNumber: 14391465,
-              ignoreUnknownTxType: true,
             },
           },
         ],
