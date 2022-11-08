@@ -35,7 +35,6 @@ describe("ArbitrumBridger", () => {
                 ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] +
                 process.env.ALCHEMY_API_KEY,
               blockNumber: 15542718,
-              ignoreUnknownTxType: true,
             },
           },
         ],
