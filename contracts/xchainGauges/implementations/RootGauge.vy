@@ -27,7 +27,7 @@ interface Minter:
     def mint(_gauge: address): nonpayable
     def rate() -> uint256: view
     def committed_rate() -> uint256: view
-    def future_epoch_time_write() -> uint256: view
+    def future_epoch_time_write() -> uint256: nonpayable
 
 
 struct InflationParams:

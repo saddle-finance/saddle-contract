@@ -1,3 +1,4 @@
+import { expect } from "chai"
 import { BigNumber } from "ethers"
 import { getChainId } from "hardhat"
 import { Address } from "hardhat-deploy/types"
@@ -9,6 +10,7 @@ import {
   PoolRegistry,
 } from "../build/typechain"
 import {
+  convertGaugeNameToSalt,
   impersonateAccount,
   setEtherBalance,
   ZERO_ADDRESS,
@@ -771,11 +773,16 @@ export async function stealFundsFromWhales(
   }
 }
 
+/**
+ * @notice Deploy child chain contracts for cross chain functionalities.
+ * Requires nonce 0 ~ 7 on cross chain deployer account to be empty.
+ * @param hre HardhatRuntimeEnvironment variable
+ */
 export async function deployCrossChainSystemOnSideChain(
   hre: HardhatRuntimeEnvironment,
 ) {
   const { deployments, getNamedAccounts, ethers } = hre
-  const { get, execute, deploy, save } = deployments
+  const { get, execute, deploy, save, rawTx, log, read } = deployments
   const { deployer, crossChainDeployer } = await getNamedAccounts()
 
   // set owner as deployer until all contracts are deployed
@@ -808,11 +815,16 @@ export async function deployCrossChainSystemOnSideChain(
     ],
   })
 
-  // 1: Deploy Child Gauge
-  const cg = await deploy("ChildGauge", {
+  // 1: Placeholder
+  const tx = await rawTx({
     ...xChainFactoryDeployOptions,
-    args: [(await get("SDL")).address, cgf.address],
+    to: crossChainDeployer,
+    value: "0",
   })
+  log(
+    `Spending nonce 1 from cross chain deployer: ${tx.transactionHash}: performed with ${tx.gasUsed} gas`,
+  )
+  expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(2)
 
   // 2: Deploy ProxyAdmin to be used as admin of AnyCallTranslator
   const proxyAdmin = await deploy("ProxyAdmin", xChainFactoryDeployOptions)
@@ -848,6 +860,30 @@ export async function deployCrossChainSystemOnSideChain(
     ...xChainFactoryDeployOptions,
     args: [anyCallTranslatorProxy.address],
   })
+
+  // 6: Place holder
+  const currentNonce = await ethers.provider.getTransactionCount(
+    crossChainDeployer,
+  )
+  // If the current nonce is at 6, send an empty tx to bump it to 7
+  if (currentNonce == 6) {
+    const tx = await rawTx({
+      ...xChainFactoryDeployOptions,
+      to: crossChainDeployer,
+      value: "0",
+    })
+    log(
+      `Spending nonce 6 from cross chain deployer: ${tx.transactionHash}: performed with ${tx.gasUsed} gas`,
+    )
+  }
+  expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(7)
+
+  // 7: Deploy ChildGauge
+  const cg = await deploy("ChildGauge", {
+    ...xChainFactoryDeployOptions,
+    args: [(await get("SDL")).address, cgf.address],
+  })
+  expect(await read("ChildGauge", "factory")).not.eq(ZERO_ADDRESS)
 
   // Set up storage variables in child gauge factory from deployer account
   await execute(
@@ -1049,4 +1085,61 @@ export async function deployPermissionlessPoolComponents(
     )
   }
   console.log("All permissionless contracts deployed :)")
+}
+
+/**
+ * @notice Deploy child gauges for given record of lp token name to registry name
+ * @param {HardhatRuntimeEnvironment} hre HardhatRuntimeEnvironment
+ * @param {Record<string, string>} lpTokenNameToRegistryName Record of lp token name to registry name
+ * @param {boolean} isMirrored if true, makes additional call per gauge to set mirrored to true
+ */
+export async function deployChildGauges(
+  hre: HardhatRuntimeEnvironment,
+  lpTokenNameToRegistryName: Record<string, string>,
+  isMirrored: boolean,
+) {
+  const { deployments, getNamedAccounts, ethers } = hre
+  const { get, execute, deploy, log, save } = deployments
+  const { deployer } = await getNamedAccounts()
+
+  const executeOptions = {
+    log: true,
+    from: deployer,
+  }
+
+  for (const lpTokenName in lpTokenNameToRegistryName) {
+    const lpTokenRegistryName = lpTokenNameToRegistryName[lpTokenName]
+    const lpToken = await get(lpTokenName)
+
+    // Broadcast the transaction
+    const tx = await execute(
+      "ChildGaugeFactory",
+      executeOptions,
+      "deploy_gauge(address,bytes32,string)",
+      lpToken.address,
+      convertGaugeNameToSalt(lpTokenRegistryName),
+      lpTokenRegistryName,
+    )
+
+    // Find the deployed gauge address from the event logs
+    const gaugeAddress: string = tx.events?.find(
+      (e) => e.event === "DeployedGauge",
+    )?.args?._gauge
+
+    // Save the info to the deployment json folder
+    await save(`ChildGauge_${lpTokenName}`, {
+      abi: (await get("ChildGauge")).abi,
+      address: gaugeAddress,
+    })
+
+    // Set the child gauge as mirrored if needed
+    if (isMirrored)
+      await execute(
+        "ChildGaugeFactory",
+        executeOptions,
+        "set_mirrored",
+        gaugeAddress,
+        true,
+      )
+  }
 }

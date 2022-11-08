@@ -52,11 +52,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
 
   const childGauge: ChildGauge = await ethers.getContract(
-    "ChildGauge-SaddleFRAXBPPoolLPToken",
+    "ChildGauge_SaddleFRAXBPPoolLPToken",
   )
 
   await execute(
-    "ChildGauge-SaddleFRAXBPPoolLPToken",
+    "ChildGauge_SaddleFRAXBPPoolLPToken",
     executeOptions,
     "add_reward",
     dummyRewardToken.address,
@@ -75,7 +75,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
 
   await execute(
-    "ChildGauge-SaddleFRAXBPPoolLPToken",
+    "ChildGauge_SaddleFRAXBPPoolLPToken",
     {
       log: true,
       from: signers[0].address,

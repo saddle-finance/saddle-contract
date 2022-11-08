@@ -49,7 +49,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // Mint 10000 SDL to the deployed child gauge
   const childGauge: ChildGauge = await ethers.getContract(
-    "ChildGauge-SaddleFRAXBPPoolLPToken",
+    "ChildGauge_SaddleFRAXBPPoolLPToken",
   )
   const cgf = await ethers.getContract("ChildGaugeFactory")
   const sdl = await ethers.getContract("SDL")
@@ -62,7 +62,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // it has 100,000 SDL. Then it will send 100,000 SDL to the CGF contract for distribution
   // for people who stake in this week epoch.
   await execute(
-    "ChildGauge-SaddleFRAXBPPoolLPToken",
+    "ChildGauge_SaddleFRAXBPPoolLPToken",
     executeOptions,
     "user_checkpoint",
     deployer,
@@ -80,7 +80,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
   expect(currentInflationRate).to.gt(0)
   log(
-    `ChildGauge-SaddleFRAXBPPoolLPToken's weekly SDL emission rate set to ${currentInflationRate}`,
+    `ChildGauge_SaddleFRAXBPPoolLPToken's weekly SDL emission rate set to ${currentInflationRate}`,
   )
 }
 export default func
