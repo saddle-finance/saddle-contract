@@ -19,6 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   // Deploy the child gauges using above mapping
-  await deployChildGauges(hre, lpTokenNameToRegistryName)
+  await deployChildGauges(hre, lpTokenNameToRegistryName, true)
 }
 export default func
+func.skip = async () => true
