@@ -1,6 +1,6 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { convertGaugeNameToSalt, getWithName } from "../../test/testUtils"
+import { convertGaugeNameToSalt } from "../../test/testUtils"
 import { CHAIN_ID } from "../../utils/network"
 
 /*
@@ -17,13 +17,14 @@ import { CHAIN_ID } from "../../utils/network"
  */
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
-  const { get, execute, deploy, log } = deployments
+  const { get, execute, deploy, log, save } = deployments
   const { deployer } = await getNamedAccounts()
 
   const executeOptions = {
     log: true,
     from: deployer,
   }
+  const targetChainId = CHAIN_ID.OPTIMISM_MAINNET
 
   const lpTokenNameToRegistryName: Record<string, string> = {
     SaddleFRAXBPPoolLPToken: "FRAX-USDC-BP",
@@ -36,17 +37,31 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // For each LP token, call deploy_child_gauge
   for (const lpTokenName in lpTokenNameToRegistryName) {
-    const lpToken = await getWithName(lpTokenName, "optimism_mainnet")
     const lpTokenRegistryName = lpTokenNameToRegistryName[lpTokenName]
-    await execute(
+
+    // Broadcast the transaction
+    const tx = await execute(
       "RootGaugeFactory",
-      executeOptions,
-      "deploy_child_gauge(uint256,address,bytes32,string)",
-      CHAIN_ID.OPTIMISM_MAINNET, // chainId
-      lpToken.address, // lpToken address on Optimism
+      {
+        ...executeOptions,
+        gasLimit: 2000000,
+      },
+      "deploy_gauge",
+      targetChainId, // chainId
       convertGaugeNameToSalt(lpTokenRegistryName), // salt
       lpTokenRegistryName, // name that will be included in the gauge name
     )
+
+    // Find the deployed gauge address from the event logs
+    const gaugeAddress: string = tx.events?.find(
+      (e) => e.event === "DeployedGauge",
+    )?.args?._gauge
+
+    // Save the info to the deployment json folder
+    await save(`RootGauge_${targetChainId}_${lpTokenName}`, {
+      abi: (await get("RootGauge")).abi,
+      address: gaugeAddress,
+    })
   }
 }
 export default func
