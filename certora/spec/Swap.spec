@@ -248,13 +248,25 @@ invariant swapFeeNeverGreaterThanMAX()
     getSwapFee() <= getMaxSwapFee()
 
 invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
-    getTotalSupply() == 0 <=> getTokenBalance(i) == 0
+    getTotalSupply() == 0 => getTokenBalance(i) == 0
     {
         preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
             requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i1);
             requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i2);
         }
+        preserved {
+            setup();
+        }
     }
+
+invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
+    sum_all_underlying_balances == 0 => getTotalSupply() == 0
+    /*{
+        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
+            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i1);
+            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i2);
+        }
+    }*/
 
 /* P
     LPToken totalSupply must be zero if `addLiquidity` has not been called
@@ -613,7 +625,7 @@ rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiq
 */
 rule addLiquidityCheckMinToMint() {
     setup();
-    //require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
+    require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
     env e;
     address sender = e.msg.sender;
     uint256[] amounts;
@@ -677,6 +689,19 @@ rule removeLiquidityAlwaysBeforeDeadline() {
 
     assert e.block.timestamp <= deadline;
 }
+
+/*
+    No function except removeLiquidityImbalance decreases the virtual price
+*/
+rule onlyRemoveLiquidityImbalanceDecreasesVirtualPrice() {
+    setup();
+    
+    env e; calldataarg args;
+    f(e,args);
+    
+    assert false;
+}
+
 
 /*
     Swapping token A for token B doesn't change underlying balance of token C
