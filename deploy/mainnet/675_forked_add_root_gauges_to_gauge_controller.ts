@@ -56,12 +56,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const currentBlockTimestamp = await getCurrentBlockTimestamp()
   const startOfNextWeek = Math.floor(currentBlockTimestamp / WEEK) * WEEK + WEEK
   const numOfGauges = await read("GaugeController", "n_gauges")
-  
-  for(let i = 0; i < numOfGauges; i++) {
+
+  for (let i = 0; i < numOfGauges; i++) {
     const gaugeAddress = await read("GaugeController", "gauges", i)
-    const relativeWeight = await read("GaugeController", "gauge_relative_weight_write(address,uint256)", gaugeAddress, startOfNextWeek)
-    console.log(`Gauge ${gaugeAddress} has relative weight of ${relativeWeight}`)
+    const relativeWeight = await read(
+      "GaugeController",
+      "gauge_relative_weight_write(address,uint256)",
+      gaugeAddress,
+      startOfNextWeek,
+    )
+    console.log(
+      `Gauge ${gaugeAddress} has relative weight of ${relativeWeight}`,
+    )
   }
-  
 }
 export default func
