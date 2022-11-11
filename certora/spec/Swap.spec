@@ -197,7 +197,7 @@ invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
     tokenAIndex != tokenBIndex => getToken(tokenAIndex) != getToken(tokenBIndex)
     {
         preserved{
-            require initialized;
+            setup();
         }
     }
 
@@ -613,7 +613,7 @@ rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiq
 */
 rule addLiquidityCheckMinToMint() {
     setup();
-    require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
+    //require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
     env e;
     address sender = e.msg.sender;
     uint256[] amounts;
@@ -681,9 +681,6 @@ rule removeLiquidityAlwaysBeforeDeadline() {
 /*
     Swapping token A for token B doesn't change underlying balance of token C
 */
-rule sdfs() {
-    assert false;
-}
 
 /*
     Only addLiquidity should be able to increase LP total supply from zero to non-zero
