@@ -42,7 +42,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // For each root gauge address, add it to the GaugeController from multisig
   // with weight of 100 for testing purposes
   for (const rootGauge of rootGaugeAddresses) {
-    const tx = await execute(
+    await execute(
       "GaugeController",
       executeOptions,
       "add_gauge(address,int128,uint256)",
