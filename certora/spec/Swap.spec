@@ -58,7 +58,7 @@ methods {
     balanceOfLPOfUser(address) returns(uint256) envfree
     getSumOfUnderlyings() returns(uint256) envfree
     getLPTokenAddress() returns(address) envfree
-    getPooledTokenAddress(uint8 index) returns(address) envfree
+    getPooledTokenAddress(uint8) returns(address) envfree
 
     // burnableERC20
     burnFrom(address,uint256) => DISPATCHER(true)

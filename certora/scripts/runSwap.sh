@@ -19,4 +19,18 @@ certoraRun \
     --rule_sanity
     # --staging yoav/array_of_structs_fix \
     # --settings -enableEqualitySaturation=false \
-    # 
+
+#--rules cantReinitonlyAdminCanSetSwapFeesonlyAdminCanSetAdminFeespausedMeansLPMonotonicallyDecreasesunderlyingTokensDifferentInitialized
+
+#--rules uninitializedImpliesZeroValueuninitializedImpliesRevertonlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesidedremoveLiquidityDoesntReduceAdminFeesLPSupplyZeroMeansBalancesZero
+
+#--rules monotonicallyIncreasingFeesonlyAdminCanWithdrawFeespausedImpliesNoSingleTokenWithdrawalpausedImpliesTokenRatioConstantvirtualPriceNeverZeroOnceLiquidityProvided
+
+#--rules swappingCheckMinAmount onlyAddLiquidityCanInitialize addLiquidityCheckMinToMint swapAlwaysBeforeDeadline addLiquidityAlwaysBeforeDeadline
+
+#--rules removeLiquidityAlwaysBeforeDeadline onlyRemoveLiquidityImbalanceDecreasesVirtualPrice LPtotalSupplyZeroWhenUninitialized
+
+#--rules uninitializedImpliesZeroValueInv underlyingTokensDifferent LPsolvency underlyingsSolvency zeroTokenAZeroTokenB
+
+#--rules uninitializedMeansUnderlyingsZeroadminFeeNeverGreaterThanMAXswapFeeNeverGreaterThanMAXifLPTotalSupplyZeroThenIndividualUnderlyingsZeroifSumUnderlyingsZeroLPTotalSupplyZero
+
