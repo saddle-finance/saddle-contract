@@ -54,4 +54,11 @@ contract SwapHarness is Swap {
         return sum;
     }
 
+    function getLPTokenAddress() public view returns(address) {
+        return address(swapStorage.lpToken);
+    }
+
+    function getPooledTokenAddress(uint8 index) public view returns(address) {
+        return address(getToken(index));
+    }
 }

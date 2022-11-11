@@ -57,6 +57,8 @@ methods {
     balanceOfUnderlyingOfUser(address,uint8) returns(uint256) envfree
     balanceOfLPOfUser(address) returns(uint256) envfree
     getSumOfUnderlyings() returns(uint256) envfree
+    getLPTokenAddress() returns(address) envfree
+    getPooledTokenAddress(uint8 index) returns(address) envfree
 
     // burnableERC20
     burnFrom(address,uint256) => DISPATCHER(true)
@@ -254,6 +256,21 @@ invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
         }
     }
 
+/* P
+    LPToken totalSupply must be zero if `addLiquidity` has not been called
+*/
+invariant LPtotalSupplyZeroWhenUninitialized()
+    getTotalSupply() == 0
+    { 
+        preserved addLiquidity(uint256[] amounts,uint256 minToMint,uint256 deadline) with (env e1) {
+            require false;
+        }
+        preserved {
+            setup();
+        }
+    }
+   
+
 
 /*invariant getterReturnsZeroInUninitState(method f, env e, uint i1, uint i2, ...)
     uninitialized() => callGetter(f, e, i1, i2, ...) == 0*/
@@ -394,7 +411,7 @@ rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
     mathint _sumBalances = sum_all_underlying_balances;
 
     //requireInvariant underlyingsSolvency();
-    require initialized;
+    setup();
     require _sumBalances >= 0;
 
     calldataarg args;
@@ -557,7 +574,7 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
     Swapping A for B will always output at least minAmount of tokens B
 */
 rule swappingCheckMinAmount() {
-    require initialized;
+    setup();
     env e;
     address sender = e.msg.sender;
     uint8 tokenIndexFrom;
@@ -575,24 +592,14 @@ rule swappingCheckMinAmount() {
     assert balance_ >= _balance + minDy; 
 }
 
-/* P
-    LPToken totalSupply must be zero if `addLiquidity` has not been called
-*/
-invariant LPtotalSupplyZeroWhenUninitialized()
-    getTotalSupply() == 0
-    { preserved addLiquidity(uint256[] amounts,uint256 minToMint,uint256 deadline) with (env e1) {
-        require false;
-    }
-    preserved {
-        setup();
-    }
+
 
 /* P
     LPToken totalSupply must be zero if `addLiquidity` has not been called
 */
 rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector} {
+    setup();
     require getTotalSupply() == 0;
-    require setup();
 
     env e; calldataarg args;
     f(e,args);
@@ -625,7 +632,7 @@ rule addLiquidityCheckMinToMint() {
     Swap can never happen after deadline
 */
 rule swapAlwaysBeforeDeadline() {
-    require initialized;
+    setup();
     env e;
     address sender = e.msg.sender;
     uint8 tokenIndexFrom;
@@ -643,7 +650,7 @@ rule swapAlwaysBeforeDeadline() {
     Add LP can never happen after deadline
 */
 rule addLiquidityAlwaysBeforeDeadline() {
-    require initialized;
+    setup();
     env e;
     address sender = e.msg.sender;
     uint256[] amounts;
@@ -659,7 +666,7 @@ rule addLiquidityAlwaysBeforeDeadline() {
     Remove LP can never happen after deadline
 */
 rule removeLiquidityAlwaysBeforeDeadline() {
-    require initialized;
+    setup();
     env e;
     address sender = e.msg.sender;
     uint256 amount;
