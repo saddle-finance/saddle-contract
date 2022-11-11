@@ -261,12 +261,12 @@ invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
 
 invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
     sum_all_underlying_balances == 0 => getTotalSupply() == 0
-    /*{
-        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
-            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i1);
-            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i2);
+    {
+        preserved {
+            setup();
+            requireInvariant underlyingsSolvency();
         }
-    }*/
+    }
 
 /* P
     LPToken totalSupply must be zero if `addLiquidity` has not been called
@@ -693,14 +693,15 @@ rule removeLiquidityAlwaysBeforeDeadline() {
 /*
     No function except removeLiquidityImbalance decreases the virtual price
 */
-rule onlyRemoveLiquidityImbalanceDecreasesVirtualPrice() {
+/*rule onlyRemoveLiquidityImbalanceDecreasesVirtualPrice(method f) {
     setup();
+    
     
     env e; calldataarg args;
     f(e,args);
-    
+
     assert false;
-}
+}*/
 
 
 /*

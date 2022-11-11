@@ -13,10 +13,6 @@ contract SwapHarness is Swap {
                 swapStorage.initialA != swapStorage.futureA);
     }
 
-    function getPooledTokenAddress(uint256 index) public view returns (address) {
-        return address(getToken(uint8(index)));
-    }
-
     function getSwapFee() public view returns(uint256) {
         return swapStorage.swapFee;
     }
@@ -48,7 +44,7 @@ contract SwapHarness is Swap {
     function getSumOfUnderlyings() public view returns(uint256) {
         uint256 sum = 0;
         // loop iterations limited to 3, instead of `swapStorage.pooledTokens.length`
-        for (uint8 i = 0; i < 3; i++) {
+        for (uint8 i = 0; i < swapStorage.pooledTokens.length; i++) {
             sum = sum.add(swapStorage.balances[i]);
         }
         return sum;
