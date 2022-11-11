@@ -1,19 +1,19 @@
 diff -ruN .gitignore .gitignore
 --- .gitignore	1969-12-31 16:00:00.000000000 -0800
-+++ .gitignore	2022-08-17 08:18:26.000000000 -0700
++++ .gitignore	2022-11-11 08:21:48.000000000 -0800
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
 diff -ruN SwapUtils.sol SwapUtils.sol
---- SwapUtils.sol	2022-08-17 22:05:50.000000000 -0700
-+++ SwapUtils.sol	2022-09-07 09:00:48.000000000 -0700
+--- SwapUtils.sol	2022-11-04 12:02:31.000000000 -0700
++++ SwapUtils.sol	2022-11-11 09:24:59.000000000 -0800
 @@ -295,6 +295,10 @@
          }
          revert("Approximation did not converge");
      }
 +    
 +    function getDApprox(uint256 xp1, uint256 xp2) public pure returns(uint256) {
-+        return 0;
++        return xp1;
 +    }
  
      /**
@@ -229,8 +229,8 @@ diff -ruN SwapUtils.sol SwapUtils.sol
       * @notice withdraw all admin fees to a given address
       * @param self Swap struct to withdraw fees from
 diff -ruN registries/PoolRegistry.sol registries/PoolRegistry.sol
---- registries/PoolRegistry.sol	2022-08-05 08:23:59.000000000 -0700
-+++ registries/PoolRegistry.sol	2022-08-17 08:18:26.000000000 -0700
+--- registries/PoolRegistry.sol	2022-11-04 12:02:31.000000000 -0700
++++ registries/PoolRegistry.sol	2022-11-11 08:21:48.000000000 -0800
 @@ -42,8 +42,8 @@
      /// @inheritdoc IPoolRegistry
      mapping(bytes32 => uint256) public override poolsIndexOfNamePlusOne;
@@ -251,12 +251,14 @@ diff -ruN registries/PoolRegistry.sol registries/PoolRegistry.sol
              try ISwap(inputData.poolAddress).getToken(i) returns (
                  IERC20 token
              ) {
-@@ -561,4 +561,8 @@
-                 .div(baseLPTokenTotalSupply);
+@@ -528,6 +528,10 @@
          }
      }
-+
+ 
 +    function getConstantLength() public view returns (uint256) {
 +        return 8; 
 +    }
- }
++
+     /// @inheritdoc IPoolRegistry
+     function getUnderlyingTokenBalances(address poolAddress)
+         external
