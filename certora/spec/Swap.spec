@@ -247,6 +247,9 @@ invariant adminFeeNeverGreaterThanMAX()
 invariant swapFeeNeverGreaterThanMAX()
     getSwapFee() <= getMaxSwapFee()
 
+/*
+    If total supply of LP token is zero then every underlying token balance is also zero
+*/
 invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
     getTotalSupply() == 0 => getTokenBalance(i) == 0
     {

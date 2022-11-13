@@ -10,7 +10,7 @@ certoraRun \
     --structLink SwapHarness:lpToken=LPToken \
     --cache saddle \
     --loop_iter 2 \
-    --settings -copyLoopUnroll=10 \
+    --settings -copyLoopUnroll=10,-t=2000,-mediumTimeout=200,-depth=100 \
     $RULE \
     --send_only \
     --msg "Swap $1 $2" \
