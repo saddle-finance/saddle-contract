@@ -305,7 +305,6 @@ describe("OptimismBridger", () => {
       const calldata = rgf.interface.encodeFunctionData("transmit_emissions", [
         rootGauge.address,
       ])
-      console.log(calldata)
 
       // Expect the call to be successful
       await expect(
