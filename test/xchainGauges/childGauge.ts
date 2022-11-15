@@ -406,7 +406,7 @@ describe("ChildGauge", () => {
         await increaseTimestamp(DAY)
 
         // This is the first time a user is attempting to call mint.
-        // In production, this will trigger transmit_emission()
+        // In production, this will trigger transmit_emissions()
         // on RootGaugeFactory on Eth mainnet
         const tx = await childGaugeFactory
           .connect(signers[0])
@@ -420,7 +420,7 @@ describe("ChildGauge", () => {
         )
         const logDescription = mockAnyCall.interface.parseLog(anyCallEvent!)
 
-        // Check transmit_emission() is correctly formatted via AnyCall
+        // Check transmit_emissions() is correctly formatted via AnyCall
         const calldata = rootGaugeFactory.interface.encodeFunctionData(
           "transmit_emissions",
           [childGauge.address],
@@ -492,7 +492,7 @@ describe("ChildGauge", () => {
         await increaseTimestamp(DAY)
 
         // This is the first time a user is attempting to call mint.
-        // In production, this will trigger transmit_emission()
+        // In production, this will trigger transmit_emissions()
         // on RootGaugeFactory on Eth mainnet
         await expect(
           childGaugeFactory.connect(signers[0]).mint(childGauge.address),

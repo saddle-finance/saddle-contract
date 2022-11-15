@@ -272,7 +272,7 @@ describe("OptimismBridger", () => {
       )
     })
 
-    it("AnyCall can trigger RGF.transmit_emission()", async () => {
+    it("AnyCall can trigger RGF.transmit_emissions()", async () => {
       const anyCall: MockAnyCall = await ethers.getContractAt(
         "MockAnyCall",
         ANYCALL_ADDRESS,

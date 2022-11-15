@@ -303,7 +303,7 @@ describe("ArbitrumBridger", () => {
       )
     })
 
-    it("AnyCall executor calls transmit_emission()", async () => {
+    it("AnyCall executor calls transmit_emissions()", async () => {
       const anyCall: MockAnyCall = await ethers.getContractAt(
         "MockAnyCall",
         ANYCALL_ADDRESS,
