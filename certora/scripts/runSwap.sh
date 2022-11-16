@@ -1,8 +1,10 @@
-
-if [[ "$1" ]]
+if [ $# -ne 1 -a $# -ne 2 ] 
 then
-    RULE="--rule $1"
+    RULE="--rules $2 $3 $4 $5 $6"
+else
+    RULE="--rule $2"
 fi
+
 certoraRun \
     certora/harness/SwapHarness.sol \
     certora/munged/LPToken.sol \
@@ -13,24 +15,24 @@ certoraRun \
     --settings -copyLoopUnroll=10,-t=2000,-mediumTimeout=200,-depth=100 \
     $RULE \
     --send_only \
-    --msg "Swap $1 $2" \
     --staging release/19Sep2022 \
     --optimistic_loop \
-    --rule_sanity
+    --rule_sanity \
+    --msg "Swap $1 $2 $3 $4 $5 $6"
     # --staging yoav/array_of_structs_fix \
     # --settings -enableEqualitySaturation=false \
 
-#--rules cantReinitonlyAdminCanSetSwapFeesonlyAdminCanSetAdminFeespausedMeansLPMonotonicallyDecreasesunderlyingTokensDifferentInitialized
+#--rules cantReinit onlyAdminCanSetSwapFees onlyAdminCanSetAdminFees pausedMeansLPMonotonicallyDecreases underlyingTokensDifferentInitialized
 
-#--rules uninitializedImpliesZeroValueuninitializedImpliesRevertonlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesidedremoveLiquidityDoesntReduceAdminFeesLPSupplyZeroMeansBalancesZero
+#--rules uninitializedImpliesZeroValue uninitializedImpliesRevert onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided removeLiquidityDoesntReduceAdminFees LPSupplyZeroMeansBalancesZero
 
-#--rules monotonicallyIncreasingFeesonlyAdminCanWithdrawFeespausedImpliesNoSingleTokenWithdrawalpausedImpliesTokenRatioConstantvirtualPriceNeverZeroOnceLiquidityProvided
+#--rules monotonicallyIncreasingFees onlyAdminCanWithdrawFees pausedImpliesNoSingleTokenWithdrawal pausedImpliesTokenRatioConstant virtualPriceNeverZeroOnceLiquidityProvided
 
 #--rules swappingCheckMinAmount onlyAddLiquidityCanInitialize addLiquidityCheckMinToMint swapAlwaysBeforeDeadline addLiquidityAlwaysBeforeDeadline
 
-#--rules removeLiquidityAlwaysBeforeDeadline onlyRemoveLiquidityImbalanceDecreasesVirtualPrice LPtotalSupplyZeroWhenUninitialized
-
 #--rules uninitializedImpliesZeroValueInv underlyingTokensDifferent LPsolvency underlyingsSolvency zeroTokenAZeroTokenB
 
-#--rules uninitializedMeansUnderlyingsZeroadminFeeNeverGreaterThanMAXswapFeeNeverGreaterThanMAXifLPTotalSupplyZeroThenIndividualUnderlyingsZeroifSumUnderlyingsZeroLPTotalSupplyZero
+#--rules uninitializedMeansUnderlyingsZero adminFeeNeverGreaterThanMAX swapFeeNeverGreaterThanMAX ifLPTotalSupplyZeroThenIndividualUnderlyingsZero ifSumUnderlyingsZeroLPTotalSupplyZero
+
+#--rules removeLiquidityAlwaysBeforeDeadline onlyRemoveLiquidityImbalanceDecreasesVirtualPrice LPtotalSupplyZeroWhenUninitialized
 
