@@ -8,6 +8,7 @@ const { expect } = chai
 
 describe("Master Registry", async () => {
   let signers: Array<Signer>
+  let users: string[]
   let owner: Signer
   let ownerAddress: string
   let masterRegistry: MasterRegistry
@@ -19,7 +20,10 @@ describe("Master Registry", async () => {
       await deployments.fixture([]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
-      owner = signers[0]
+      users = await Promise.all(
+        signers.map(async (signer) => signer.getAddress()),
+      )
+      owner = signers[10]
       ownerAddress = await owner.getAddress()
       masterRegistryFactory = await ethers.getContractFactory("MasterRegistry")
       masterRegistry = (await masterRegistryFactory.deploy(
@@ -204,6 +208,101 @@ describe("Master Registry", async () => {
           await signers[2].getAddress(),
         ),
       ).to.eql([formatBytes32String("TEST2"), BigNumber.from(0), true])
+    })
+  })
+
+  describe("grantRole", () => {
+    it("Reverts when not called by an account without admin role", async () => {
+      // Find the manager role
+      const managerRole = await masterRegistry.SADDLE_MANAGER_ROLE()
+
+      // Expect the admin role of the manager role to be zero (0x0000...0000)
+      expect(await masterRegistry.getRoleAdmin(managerRole)).to.eq(
+        ethers.constants.HashZero,
+      )
+
+      // Try granting manager role from an account without admin role
+      await expect(
+        masterRegistry.grantRole(managerRole, users[1]),
+      ).to.be.revertedWith("AccessControl: sender must be an admin to grant")
+    })
+
+    it("Successfully grants manager role", async () => {
+      // Check the user does not have the manager role
+      const managerRole = await masterRegistry.SADDLE_MANAGER_ROLE()
+      expect(await masterRegistry.hasRole(managerRole, users[1])).to.be.false
+
+      // Grant the manager role to the user from the owner
+      await masterRegistry.connect(owner).grantRole(managerRole, users[1])
+
+      // Check the user now has the manager role
+      expect(await masterRegistry.hasRole(managerRole, users[1])).to.be.true
+    })
+
+    it("Successfully grants admin role", async () => {
+      // Check the user does not have the admin role
+      const adminRole = await masterRegistry.DEFAULT_ADMIN_ROLE()
+      expect(await masterRegistry.hasRole(adminRole, users[1])).to.be.false
+
+      // Grant the admin role to the user from the owner
+      await masterRegistry.connect(owner).grantRole(adminRole, users[1])
+
+      // Check the user now has the admin role
+      expect(await masterRegistry.hasRole(adminRole, users[1])).to.be.true
+
+      // Verify the user can grant the manager role
+      const managerRole = await masterRegistry.SADDLE_MANAGER_ROLE()
+      await masterRegistry.connect(signers[1]).grantRole(managerRole, users[2])
+    })
+  })
+
+  describe("revokeRole", () => {
+    it("Reverts when not called by an account with admin role", async () => {
+      // Find the manager role
+      const managerRole = await masterRegistry.SADDLE_MANAGER_ROLE()
+
+      // Try revoking manager role from an account without admin role
+      await expect(
+        masterRegistry.revokeRole(managerRole, users[0]),
+      ).to.be.revertedWith("AccessControl: sender must be an admin to revoke")
+    })
+
+    it("Successfully revokes manager role", async () => {
+      // Check the user has the manager role
+      const managerRole = await masterRegistry.SADDLE_MANAGER_ROLE()
+      expect(await masterRegistry.hasRole(managerRole, users[0])).to.be.true
+
+      // Revoke the manager role from the user from the owner
+      await masterRegistry.connect(owner).revokeRole(managerRole, users[0])
+
+      // Check the user no longer has the manager role
+      expect(await masterRegistry.hasRole(managerRole, users[0])).to.be.false
+    })
+  })
+
+  describe("renounceRole", () => {
+    it("Successfully renounces it's own manager role", async () => {
+      // Check the user has the manager role
+      const managerRole = await masterRegistry.SADDLE_MANAGER_ROLE()
+      expect(await masterRegistry.hasRole(managerRole, users[0])).to.be.true
+
+      // Renounce the manager role from the user
+      await masterRegistry.renounceRole(managerRole, users[0])
+
+      // Check the user no longer has the manager role
+      expect(await masterRegistry.hasRole(managerRole, users[0])).to.be.false
+    })
+
+    it("Successfully renounces it's own admin role", async () => {
+      // Check the user has the admin role
+      const adminRole = await masterRegistry.DEFAULT_ADMIN_ROLE()
+      expect(await masterRegistry.hasRole(adminRole, ownerAddress)).to.be.true
+
+      // Renounce the admin role from the user
+      await masterRegistry.connect(owner).renounceRole(adminRole, ownerAddress)
+
+      // Check the user no longer has the admin role
+      expect(await masterRegistry.hasRole(adminRole, ownerAddress)).to.be.false
     })
   })
 })
