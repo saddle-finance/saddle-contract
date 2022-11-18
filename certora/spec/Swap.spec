@@ -318,6 +318,7 @@ rule cantReinit(method f) filtered {
     Only admin can set swap and admin fees
 */
 rule onlyAdminCanSetSwapFees(method f) {
+    setup();
     uint256 swapFeeBefore = getSwapFee();
 
     env e; calldataarg args;
@@ -332,6 +333,7 @@ rule onlyAdminCanSetSwapFees(method f) {
     Only admin can set swap and admin fees
 */
 rule onlyAdminCanSetAdminFees(method f) {
+    setup();
     uint256 swapFeeBefore = getAdminFee();
 
     env e; calldataarg args;
@@ -377,11 +379,12 @@ rule underlyingTokensDifferentInitialized(method f) {
     Uninitialized contract state implies all variables are 0
     proves preservation (n+1 case)
     @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
+    @dev fails due to Java exception. Not sure why
 */
 rule uninitializedImpliesZeroValue(method f) { 
     uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
 
-    require !initialized; // do we need this?
+    require !initialized;
     uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
     require valBefore == 0;
 
