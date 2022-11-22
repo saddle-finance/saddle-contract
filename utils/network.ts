@@ -1,4 +1,3 @@
-import { ensureEnvVar } from "./utils"
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -19,6 +18,7 @@ export const CHAIN_ID: Record<string, string> = {
   EVMOS_MAINNET: "9001",
   KAVA_TESTNET: "2221",
   KAVA_MAINNET: "2222",
+  AURORA_MAINNET: "1313161554",
 }
 
 // Reverse lookup of chainId to chain name
@@ -38,7 +38,8 @@ export function isMainnet(networkId: string): boolean {
     networkId == CHAIN_ID.OPTIMISM_MAINNET ||
     networkId == CHAIN_ID.FANTOM_MAINNET ||
     networkId == CHAIN_ID.EVMOS_MAINNET ||
-    networkId == CHAIN_ID.KAVA_MAINNET
+    networkId == CHAIN_ID.KAVA_MAINNET ||
+    networkId == CHAIN_ID.AURORA_MAINNET
   )
 }
 
