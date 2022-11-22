@@ -1,8 +1,9 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import path from "path"
-import { setEtherBalance } from "../../test/testUtils"
+import { getCurrentBlockTimestamp, setEtherBalance } from "../../test/testUtils"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
+import { WEEK } from "../../utils/time"
 
 /*
  * Script for Forked Mainnet
@@ -10,7 +11,7 @@ import { MULTISIG_ADDRESSES } from "../../utils/accounts"
  */
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
-  const { get, execute, deploy, log, save, all } = deployments
+  const { get, execute, deploy, log, save, all, read } = deployments
 
   // Skip this script if not running on forked mode
   if (process.env.HARDHAT_DEPLOY_FORK == null) {
@@ -47,7 +48,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "add_gauge(address,int128,uint256)",
       rootGauge,
       0,
-      100,
+      ethers.utils.parseEther("1"),
+    )
+  }
+
+  // Sanity check weights for next week by only reading from GaugeController
+  const currentBlockTimestamp = await getCurrentBlockTimestamp()
+  const startOfNextWeek = Math.floor(currentBlockTimestamp / WEEK) * WEEK + WEEK
+  const numOfGauges = await read("GaugeController", "n_gauges")
+
+  for (let i = 0; i < numOfGauges; i++) {
+    const gaugeAddress = await read("GaugeController", "gauges", i)
+    const relativeWeight = await read(
+      "GaugeController",
+      "gauge_relative_weight_write(address,uint256)",
+      gaugeAddress,
+      startOfNextWeek,
+    )
+    console.log(
+      `Gauge ${gaugeAddress} has relative weight of ${relativeWeight}`,
     )
   }
 }
