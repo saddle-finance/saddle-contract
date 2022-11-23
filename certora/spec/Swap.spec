@@ -24,8 +24,10 @@ methods {
     //https://vaas-stg.certora.com/output/93493/36b8abd73b5fba32a927/?anonymousKey=2f52ea8a6289c42eb2bbcee468b4b5202d06b76c
 
     // math functions summarized
-	//getD(uint256[], uint256) returns (uint256) => NONDET
-    getDApprox(uint256 xp1, uint256 xp2) returns(uint256) => newGetD(xp1,xp2);
+	getD(uint256[], uint256) returns (uint256) => NONDET
+    getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
+    getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
+    //getDApprox(uint256 xp1, uint256 xp2) returns(uint256) => newGetD(xp1,xp2);
 
     // normal functions
     
@@ -299,6 +301,44 @@ invariant LPtotalSupplyZeroWhenUninitialized()
 ////////////////////////////////////////////////////////////////////////////
 //                                 Rules                                  //
 ////////////////////////////////////////////////////////////////////////////
+
+rule sanity(method f) {
+    env e; calldataarg args;
+    f(e,args);
+    assert false;
+}
+
+/* 
+    Adding liquidity to one should decrease that tokens price
+*/
+
+/*
+    Token addresses can't change
+*/
+
+/* 
+    Slippage less than constant product pool
+*/
+
+/* 
+    Slippage proportional to change in balances
+*/
+
+/*
+    Swaping token A for token B followed by B for A should not result in a decrease in balances of the pool 
+*/
+
+/*
+    Swaping token A for token B followed by B for A should not result in a decrease in the product of balances  
+*/
+
+/*
+    Swaping token A for token B followed by B for A should not result in a decrease in the virtual price
+*/
+
+/*
+    All functionality of removeLiquidityImbalance can be performed using 2 removeLiquidityOneToken calls for a pool with 2 tokens
+*/
 
 /* P
     cant reinit (fails due to havoc)

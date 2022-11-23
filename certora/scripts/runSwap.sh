@@ -12,7 +12,11 @@ certoraRun \
     --structLink SwapHarness:lpToken=LPToken \
     --cache saddle \
     --loop_iter 2 \
+<<<<<<< Updated upstream
     --settings -copyLoopUnroll=10,-t=2000,-mediumTimeout=200,-depth=100 \
+=======
+    --settings -copyLoopUnroll=10,-t=1000,-mediumTimeout=40,-depth=50\
+>>>>>>> Stashed changes
     $RULE \
     --send_only \
     --staging release/19Sep2022 \
