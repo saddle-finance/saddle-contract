@@ -1039,50 +1039,24 @@ export async function deployPermissionlessPoolComponents(
       },
     )
 
-    // PermissionlessDeployer to the master registry
-    console.log("Adding PermissionlessDeployer to MasterRegistry")
-    await execute(
-      "MasterRegistry",
-      {
-        from: deployer,
-        log: true,
-      },
-      "addRegistry",
-      ethers.utils.formatBytes32String("PermissionlessDeployer"),
-      PermissionlessDeployerDeployment.address,
-    )
-
-    const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
-
-    // 1. Grant COMMUNITY_MANAGER_ROLE to PermissionlessDeployer
-    // 2. Grant COMMUNITY_MANAGER_ROLE to deployer account
-    // 3. Grant DEFAULT_ADMIN_ROLE to Multisig on this chain
-    const batchCall = [
-      await poolRegistry.populateTransaction.grantRole(
-        await poolRegistry.COMMUNITY_MANAGER_ROLE(),
+    // PermissionlessDeployer to the master registry if the deployer can
+    if (multisig === undefined) {
+      console.log("Adding PermissionlessDeployer to MasterRegistry")
+      await execute(
+        "MasterRegistry",
+        {
+          from: deployer,
+          log: true,
+        },
+        "addRegistry",
+        ethers.utils.formatBytes32String("PermissionlessDeployer"),
         PermissionlessDeployerDeployment.address,
-      ),
-      await poolRegistry.populateTransaction.grantRole(
-        await poolRegistry.COMMUNITY_MANAGER_ROLE(),
-        deployer,
-      ),
-      await poolRegistry.populateTransaction.grantRole(
-        await poolRegistry.DEFAULT_ADMIN_ROLE(),
-        multisig,
-      ),
-    ]
-
-    const batchCallData = batchCall
-      .map((x) => x.data)
-      .filter((x): x is string => !!x)
-
-    await execute(
-      "PoolRegistry",
-      { from: deployer, log: true },
-      "batch",
-      batchCallData,
-      true,
-    )
+      )
+    } else {
+      console.log(
+        "PermissionlessDeployer not added to MasterRegistry, multisig tx required",
+      )
+    }
   }
   console.log("All permissionless contracts deployed :)")
 }

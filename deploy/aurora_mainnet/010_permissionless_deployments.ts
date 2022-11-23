@@ -21,5 +21,5 @@ func.dependencies = [
   "MetaSwapUtils",
   "LPToken",
 ]
-func.skip = async (env) => true
+
 // func.skip = async (env) => (await env.getChainId()) == CHAIN_ID.MAINNET
