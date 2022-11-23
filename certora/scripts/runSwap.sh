@@ -34,5 +34,5 @@ certoraRun \
 
 #--rules uninitializedMeansUnderlyingsZero adminFeeNeverGreaterThanMAX swapFeeNeverGreaterThanMAX ifLPTotalSupplyZeroThenIndividualUnderlyingsZero ifSumUnderlyingsZeroLPTotalSupplyZero
 
-#--rules removeLiquidityAlwaysBeforeDeadline onlyRemoveLiquidityImbalanceDecreasesVirtualPrice LPtotalSupplyZeroWhenUninitialized
+#--rules removeLiquidityAlwaysBeforeDeadline LPtotalSupplyZeroWhenUninitialized
 
