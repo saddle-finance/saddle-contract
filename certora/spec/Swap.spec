@@ -477,19 +477,20 @@ rule LPSupplyZeroMeansBalancesZero (method f) {
 rule monotonicallyIncreasingFees(method f) filtered {
     f -> f.selector != withdrawAdminFees().selector && f.selector == removeLiquidity(uint256,uint256[],uint256).selector
 } {
-    uint256 index;
+    uint8 indexA;
+    uint8 indexB;
 
     env e;
     require e.msg.sender != currentContract;
-    //requireInvariant underlyingTokensDifferent;
+    requireInvariant underlyingTokensDifferent(indexA, indexB);
     requireInvariant LPsolvency;
 
-    uint256 balanceBefore = getAdminBalance(index);
+    uint256 balanceBefore = getAdminBalance(indexA);
 
     calldataarg args;
     f(e, args);
 
-    uint256 balanceAfter = getAdminBalance(index);
+    uint256 balanceAfter = getAdminBalance(indexA);
 
     assert balanceAfter >= balanceBefore , "fees must not decrease, except for withdraw by admin";
 
