@@ -406,11 +406,32 @@ describe("ChildGauge", () => {
         await increaseTimestamp(DAY)
 
         // This is the first time a user is attempting to call mint.
-        // In production, this will trigger transmit_emission()
+        // In production, this will trigger transmit_emissions()
         // on RootGaugeFactory on Eth mainnet
-        await expect(
-          childGaugeFactory.connect(signers[0]).mint(childGauge.address),
-        ).to.emit(mockAnyCall, "AnyCallMessage")
+        const tx = await childGaugeFactory
+          .connect(signers[0])
+          .mint(childGauge.address)
+          .then((tx) => tx.wait())
+
+        const anyCallEvent = tx.events?.find(
+          (e) =>
+            e.topics[0] ===
+            mockAnyCall.interface.getEventTopic("AnyCallMessage"),
+        )
+        const logDescription = mockAnyCall.interface.parseLog(anyCallEvent!)
+
+        // Check transmit_emissions() is correctly formatted via AnyCall
+        const calldata = rootGaugeFactory.interface.encodeFunctionData(
+          "transmit_emissions",
+          [childGauge.address],
+        )
+        expect(logDescription.args.data).to.equal(
+          ethers.utils.defaultAbiCoder.encode(
+            ["address", "bytes"],
+            [childGaugeFactory.address, calldata],
+          ),
+        )
+        expect(logDescription.args.to).to.equal(anyCallTranslator.address)
 
         // Assume RootGaugeFactory.transmit_emissions() was called
         // and the SDL was transferred to the ChildGauge
@@ -471,7 +492,7 @@ describe("ChildGauge", () => {
         await increaseTimestamp(DAY)
 
         // This is the first time a user is attempting to call mint.
-        // In production, this will trigger transmit_emission()
+        // In production, this will trigger transmit_emissions()
         // on RootGaugeFactory on Eth mainnet
         await expect(
           childGaugeFactory.connect(signers[0]).mint(childGauge.address),
