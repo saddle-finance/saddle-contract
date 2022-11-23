@@ -149,6 +149,17 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    aurora_mainnet: {
+      url: "https://mainnet.aurora.dev",
+      chainId: parseInt(CHAIN_ID.AURORA_MAINNET),
+      deploy: ["./deploy/aurora_mainnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.aurorascan.dev/api",
+          apiKey: process.env.ETHERSCAN_AURORA_API ?? "NO_KEY",
+        },
+      },
+    },
   },
   paths: {
     sources: "./contracts",
@@ -234,6 +245,7 @@ const config: HardhatUserConfig = {
       2221: 0, // use the same address on kava testnet
       2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
+      1313161554: 0, // use the same address on aurora mainnet
     },
     crossChainDeployer: {
       default: crossChainDeployerAccount,
@@ -249,6 +261,7 @@ const config: HardhatUserConfig = {
       2221: 0, // use the same address on kava testnet
       2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
+      1313161554: 0, // use the same address on aurora mainnet
     },
     multisig: {
       default: 0,
@@ -289,6 +302,10 @@ if (process.env.ACCOUNT_PRIVATE_KEYS) {
     },
     kava_mainnet: {
       ...config.networks?.kava_mainnet,
+      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
+    },
+    aurora_mainnet: {
+      ...config.networks?.aurora_mainnet,
       accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
     },
   }
