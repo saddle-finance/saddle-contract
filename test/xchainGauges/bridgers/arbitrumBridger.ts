@@ -1,28 +1,53 @@
 import { setNextBlockBaseFeePerGas } from "@nomicfoundation/hardhat-network-helpers"
 import chai from "chai"
-import { Signer } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import { deployments, ethers, network } from "hardhat"
-import { ArbitrumBridger, SDL } from "../../../build/typechain"
-import { MULTISIG_ADDRESSES } from "../../../utils/accounts"
+import {
+  AnyCallExecutor,
+  ArbitrumBridger,
+  GaugeController,
+  MockAnyCall,
+  RootGauge,
+  RootGaugeFactory,
+  SDL,
+} from "../../../build/typechain"
+import { ANYCALL_ADDRESS, MULTISIG_ADDRESSES } from "../../../utils/accounts"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../../utils/network"
+import { WEEK } from "../../../utils/time"
 import {
   BIG_NUMBER_1E18,
+  convertGaugeNameToSalt,
+  getCurrentBlockTimestamp,
   getWithName,
   impersonateAccount,
   MAX_UINT256,
   setEtherBalance,
+  setTimestamp,
 } from "../../testUtils"
 
 const { expect } = chai
 
+/**
+ * Test the ArbitrumBridger contract
+ *
+ * Forks mainnet for testing if bridging is successful on eth mainnet side
+ * Note that tx on destination can still fail due to low fee submission
+ * Also tests for bridging interaction by the anycall executor
+ */
 describe("ArbitrumBridger", () => {
   let signers: Array<Signer>
   let users: string[]
   let arbitrumBridger: ArbitrumBridger
+  let gaugeController: GaugeController
+  let rgf: RootGaugeFactory
+  let rgfOwner: Signer
   let sdl: SDL
+  let rootGauge: RootGauge
 
   const GAS_LIMIT = 1000000
   const GAS_PRICE = 990000000
+
+  const TEST_GAUGE_NAME = "testGauge"
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
@@ -34,7 +59,7 @@ describe("ArbitrumBridger", () => {
               jsonRpcUrl:
                 ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] +
                 process.env.ALCHEMY_API_KEY,
-              blockNumber: 15542718,
+              blockNumber: 15972819,
             },
           },
         ],
@@ -58,6 +83,42 @@ describe("ArbitrumBridger", () => {
         GAS_PRICE,
         sdl.address,
       )) as ArbitrumBridger
+
+      gaugeController = await ethers.getContractAt(
+        "GaugeController",
+        (
+          await getWithName("GaugeController", "mainnet")
+        ).address,
+      )
+
+      rgf = await ethers.getContractAt(
+        "RootGaugeFactory",
+        (
+          await getWithName("RootGaugeFactory", "mainnet")
+        ).address,
+      )
+
+      // Set as the bridger for destination network
+      rgfOwner = await impersonateAccount(await rgf.owner())
+      await setEtherBalance(await rgf.owner(), ethers.utils.parseEther("100"))
+      await rgf
+        .connect(rgfOwner)
+        .set_bridger(CHAIN_ID.ARBITRUM_MAINNET, arbitrumBridger.address)
+
+      // Deploy a root gauge for destination network
+      const receipt = await rgf
+        .deploy_gauge(
+          CHAIN_ID.ARBITRUM_MAINNET,
+          convertGaugeNameToSalt(TEST_GAUGE_NAME),
+          TEST_GAUGE_NAME,
+        )
+        .then((tx) => tx.wait())
+
+      // Find root gauge address from event logs
+      const gaugeAddress: string = receipt.events?.find(
+        (e) => e.event === "DeployedGauge",
+      )?.args?._gauge
+      rootGauge = await ethers.getContractAt("RootGauge", gaugeAddress)
     },
   )
 
@@ -217,6 +278,89 @@ describe("ArbitrumBridger", () => {
         .to.changeTokenBalance(sdl, users[0], BIG_NUMBER_1E18.mul(-10000))
         .and.changeEtherBalance(users[0], "-990000000073760")
       // expect the balance only changed by 0.00099 ETH
+    })
+  })
+
+  describe("Works as a bridger for a RootGauge", () => {
+    beforeEach(async () => {
+      const gaugeControllerOwner = await gaugeController.admin()
+      await setEtherBalance(gaugeControllerOwner, BIG_NUMBER_1E18.mul(100))
+      const gaugeControllerOwnerSigner = await impersonateAccount(
+        gaugeControllerOwner,
+      )
+      await gaugeController
+        .connect(gaugeControllerOwnerSigner)
+        ["add_gauge(address,int128,uint256)"](
+          rootGauge.address,
+          0,
+          BIG_NUMBER_1E18.mul(1_000_000),
+        )
+      // Skip time to next wednesday + 1 week
+      // A full week of rewards must accumulate before bridging can occur
+      await setTimestamp(
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK +
+          WEEK,
+      )
+    })
+
+    it("AnyCall executor calls transmit_emissions()", async () => {
+      const anyCall: MockAnyCall = await ethers.getContractAt(
+        "MockAnyCall",
+        ANYCALL_ADDRESS,
+      )
+
+      // Find AnyCall executor contract
+      const anyCallExecutorAddress = await anyCall.executor()
+      const anyCallExecutor: AnyCallExecutor = await ethers.getContractAt(
+        "AnyCallExecutor",
+        anyCallExecutorAddress,
+      )
+
+      // Find AnyCallExecutor creator address and fund it
+      const anyCallExecutorCreator = await anyCallExecutor.creator()
+      await setEtherBalance(
+        anyCallExecutorCreator,
+        ethers.utils.parseEther("1"),
+      )
+      const anyCallExecutorCreatorSigner = await impersonateAccount(
+        anyCallExecutorCreator,
+      )
+
+      // Find AnyCallTranslator deployment
+      const anyCallTranslator = await getWithName(
+        "AnyCallTranslator",
+        "mainnet",
+      )
+
+      // Format calldata in same format as from ChildGaugeFactory
+      const calldata = rgf.interface.encodeFunctionData("transmit_emissions", [
+        rootGauge.address,
+      ])
+
+      // Fund root gauge to have some eth for bridging
+      await setEtherBalance(rootGauge.address, ethers.utils.parseEther("1"))
+
+      // Expect the call to be successful
+      await expect(
+        anyCallExecutor
+          .connect(anyCallExecutorCreatorSigner)
+          .execute(
+            anyCallTranslator.address,
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "bytes"],
+              [rgf.address, calldata],
+            ),
+            anyCallTranslator.address,
+            CHAIN_ID.ARBITRUM_MAINNET,
+            200,
+          ),
+      ).to.changeTokenBalance(
+        sdl,
+        (
+          await getWithName("Minter", "mainnet")
+        ).address,
+        BigNumber.from("-374560041094590653579319"),
+      )
     })
   })
 })
