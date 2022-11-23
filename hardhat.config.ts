@@ -150,12 +150,13 @@ const config: HardhatUserConfig = {
       },
     },
     aurora_mainnet: {
+      live: true,
       url: "https://mainnet.aurora.dev",
       chainId: parseInt(CHAIN_ID.AURORA_MAINNET),
       deploy: ["./deploy/aurora_mainnet/"],
       verify: {
         etherscan: {
-          apiUrl: "https://api.aurorascan.dev/api",
+          apiUrl: "https://api.aurorascan.dev",
           apiKey: process.env.ETHERSCAN_AURORA_API ?? "NO_KEY",
         },
       },
