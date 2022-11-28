@@ -9,6 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { get } = deployments
   const { deployer } = await getNamedAccounts()
 
+  // await setEtherBalance(deployer, hre.ethers.constants.WeiPerEther.mul(1000))
   await deployPermissionlessPoolComponents(hre)
 }
 export default func

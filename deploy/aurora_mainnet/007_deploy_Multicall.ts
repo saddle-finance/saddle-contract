@@ -27,4 +27,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 export default func
 func.tags = ["Multicall"]
-func.skip = async (env) => true
+// func.skip = async (env) => true

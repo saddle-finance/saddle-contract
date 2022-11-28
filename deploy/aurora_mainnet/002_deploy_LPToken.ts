@@ -4,7 +4,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
   const { deploy, execute, getOrNull, log } = deployments
-  const { libraryDeployer } = await getNamedAccounts()
+  const { libraryDeployer, deployer } = await getNamedAccounts()
 
   const lpToken = await getOrNull("LPToken")
   if (lpToken) {

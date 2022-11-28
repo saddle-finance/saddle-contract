@@ -947,27 +947,40 @@ export async function deployPermissionlessPoolComponents(
   }
 
   // get multisig address for network, if there is none default to deployer
+  let rolesAssignedTo = "multisig"
   let multisig = MULTISIG_ADDRESSES[await getChainId()]
   if (multisig === undefined) {
     console.log("No multisig address found for network, defaulting to deployer")
     multisig = deployer
+    rolesAssignedTo = "deployer"
   }
 
+  // Check if deployer has the default admin role
+  const deployerHasRole = await masterRegistry.hasRole(
+    await masterRegistry.DEFAULT_ADMIN_ROLE(),
+    deployer,
+  )
   try {
     await masterRegistry.resolveNameToLatestAddress(feeCollectorName)
   } catch (error) {
-    console.log("No fee collector set, setting now")
-    // setting as the deployer for now as no multisig is available on this network
-    await execute(
-      "MasterRegistry",
-      {
-        from: deployer,
-        log: true,
-      },
-      "addRegistry",
-      feeCollectorName,
-      multisig,
-    )
+    console.log(`No fee collector set, attempting to set to ${rolesAssignedTo}`)
+
+    if (deployerHasRole) {
+      await execute(
+        "MasterRegistry",
+        {
+          from: deployer,
+          log: true,
+        },
+        "addRegistry",
+        feeCollectorName,
+        multisig,
+      )
+    } else {
+      console.log(
+        `Deployer does not have default admin role, ${rolesAssignedTo} was NOT set as fee collector`,
+      )
+    }
   }
 
   // deploy an instance of metaswap deposit if not found (currently only for kava network)
@@ -1038,9 +1051,14 @@ export async function deployPermissionlessPoolComponents(
         ],
       },
     )
+    console.log(
+      "PermissionlessDeployer deployed at",
+      PermissionlessDeployerDeployment.address,
+    )
 
     // PermissionlessDeployer to the master registry if the deployer can
-    if (multisig === undefined) {
+
+    if (deployerHasRole) {
       console.log("Adding PermissionlessDeployer to MasterRegistry")
       await execute(
         "MasterRegistry",
