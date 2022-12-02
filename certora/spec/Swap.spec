@@ -183,7 +183,9 @@ hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 o
 //                               Invariants                               //
 ////////////////////////////////////////////////////////////////////////////
 
-
+/* 1 2
+    Underlying tokens remain different
+*/
 invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
     tokenAIndex != tokenBIndex => getToken(tokenAIndex) != getToken(tokenBIndex)
     {
@@ -193,40 +195,21 @@ invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
     }
 
 
-    If balance of one underlying token is zero, the balance of all other 
-    underlying tokens must also be zero
-*/
-invariant zeroTokenAZeroTokenB(uint8 tokenAIndex, uint8 tokenBIndex)
-    getTokenBalance(tokenAIndex) == 0 => getTokenBalance(tokenBIndex) == 0
 
-/*
-    If balance of one underlying token is non-zero, the balance of all other
-    underlying tokens must also be non-zero
-    @dev complimentary to the invariant above 
 
-invariant nonzeroTokenAZeroTokenX(uint8 tokenA, uint8 tokenX)
-    getTokenBalance(tokenA) > 0 => getTokenBalance(tokenX) > 0
-*/
-
-/* 
-    If contract is in uninitialized state, all underlying balances must be zero
-*/
-invariant uninitializedMeansUnderlyingsZero(uint8 index)
-    !initialized => getTokenBalance(index) == 0
-
-/*
+/* 1 1
     adminFee can never be greater MAX_ADMIN_FEE
 */
 invariant adminFeeNeverGreaterThanMAX() 
     getAdminFee() <= getMaxAdminFee()
 
-/*
+/* 1 1
     swapFee can never be greater MAX_SWAP_FEE
 */
 invariant swapFeeNeverGreaterThanMAX()
     getSwapFee() <= getMaxSwapFee()
 
-/*
+/* 1 2
     If total supply of LP token is zero then every underlying token balance is also zero
 */
 invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
@@ -241,6 +224,9 @@ invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
         }
     }
 
+/* 1 2
+    Other direction to above invariant 
+*/
 invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
     sum_all_underlying_balances == 0 => getTotalSupply() == 0
     {
@@ -249,10 +235,6 @@ invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
             requireInvariant underlyingsSolvency();
         }
     }
-
-
-    A parameter can never be zero, once initialized
-*/
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -301,12 +283,7 @@ rule sanity(method f) {
 
 
 
-
-
-
-
-
-/*
+/* 1 2
     There must not be a transaction that decreases only one 
     underlying balance, except for removeLiquidityOneToken 
 */
@@ -331,38 +308,12 @@ rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
     assert (sumBalances_ < _sumBalances) => _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;     
 }
 
-/*
-    Remove liquidity doesn't remove admin fees
-*/
-rule removeLiquidityDoesntReduceAdminFees() {
-    uint256 index;
-    assert false;
-}
 
-/* 
-    If totalSupply of LP token is zero, the balance of all underlying tokens must also be zero
-    @dev ideally can prove as bi-implication, otherwise use two invariants (other one below)
-*/
-rule LPSupplyZeroMeansBalancesZero (method f) {
-    //uint8 index;
-    require forall uint8 index. (getTotalSupply() == 0 <=> getTokenBalance(index) == 0);
-    
-    //bool lh = getTokenBalance(index) == 0;
-    //bool rh = getTotalSupply() == 0;
-    //require forall uint8 index. lh => rh;
-    
-    env e; calldataarg args;
-    f(e, args);
-
-    assert forall uint8 index2. (getTotalSupply() == 0 <=> getTokenBalance(index2) == 0);
-    //assert forall uint8 index. lh => rh;
-}
-
-/*
+/* 1 2
     Admin fees can only increase
 */
 rule monotonicallyIncreasingFees(method f) filtered {
-    f -> f.selector != withdrawAdminFees().selector && f.selector == removeLiquidity(uint256,uint256[],uint256).selector
+    f -> f.selector != withdrawAdminFees().selector //&& f.selector == removeLiquidity(uint256,uint256[],uint256).selector
 } {
     uint8 indexA;
     uint8 indexB;
@@ -383,7 +334,7 @@ rule monotonicallyIncreasingFees(method f) filtered {
 
 }
 
-/*
+/* 1 1
     Only admin can withdraw adminFees
 */
 rule onlyAdminCanWithdrawFees() {
@@ -402,7 +353,7 @@ rule onlyAdminCanWithdrawFees() {
     assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
 }
 
-/*
+/* 1.5 2 (might be replacable by 2 1 monotonicity rule)
     When paused, all underlying token balances must decrease on LP withdrawal
 */ 
 rule pausedImpliesNoSingleTokenWithdrawal (method f) {
@@ -425,58 +376,9 @@ rule pausedImpliesNoSingleTokenWithdrawal (method f) {
     assert tokenABalanceAfter < tokenABalanceBefore <=> tokenBBalanceAfter < tokenBBalanceBefore, "one token must not decrease alone";
 }
 
-/*
-    When paused, ratio between underlying tokens must stay constant
-*/
-rule pausedImpliesTokenRatioConstant(method f) {
-    uint8 tokenAIndex; uint8 tokenBIndex;
-    
-    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
-    
-
-    mathint ratioBefore = tokenABalanceBefore / tokenBBalanceBefore;
-
-    env e; calldataarg args;
-    f(e, args);
-
-    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
-
-    mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
-
-    assert paused() && (tokenABalanceAfter != 0 && tokenBBalanceAfter != 0)  => ratioAfter == ratioBefore, "total supply of the lp token must not increase when paused";
-}
-
-/*
-    Virtual price can never be zero, once liquidity has been deposited
-*/
-rule virtualPriceNeverZeroOnceLiquidityProvided() {
-    uint256[] tokens;
-    uint256 minToMint;
-    uint256 deadline;
-    
-    setup();
-    require tokens.length == 2;
-    // require tokens[0] > 0 && tokens[1] > 0;
-
-    env e;
-    addLiquidity(e,tokens,minToMint,deadline);
-
-    assert getVirtualPrice() > 0;
-}
-
-/*
-    When trading token A for B, the sum A+B after the trade must always 
-    be greater than adding liquidity in A and removing liquidity in B
-    @dev Might be difficult to reason about with math functionsummarizations, 
-    currently no plans to implement this rule
-*/
-
-
 /// Generalized unit tests 
 
-/*
+/* 1 1
     Swapping A for B will always output at least minAmount of tokens B
 */
 rule swappingCheckMinAmount() {
@@ -500,85 +402,11 @@ rule swappingCheckMinAmount() {
 
 
 
-
-
-/*
-    Swap can never happen after deadline
-*/
-rule swapAlwaysBeforeDeadline() {
-    setup();
-    env e;
-    address sender = e.msg.sender;
-    uint8 tokenIndexFrom;
-    uint8 tokenIndexTo;
-    uint256 dx;
-    uint256 minDy;
-    uint256 deadline;
-
-    swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
-
-    assert e.block.timestamp <= deadline;
-}
-
-/* 
-    Add LP can never happen after deadline
-*/
-rule addLiquidityAlwaysBeforeDeadline() {
-    setup();
-    env e;
-    address sender = e.msg.sender;
-    uint256[] amounts;
-    uint256 minToMint;
-    uint256 deadline;
-
-    addLiquidity(e, amounts, minToMint, deadline);
-
-    assert e.block.timestamp <= deadline;
-}
-
-/*
-    Remove LP can never happen after deadline
-*/
-rule removeLiquidityAlwaysBeforeDeadline() {
-    setup();
-    env e;
-    address sender = e.msg.sender;
-    uint256 amount;
-    uint256[] minAmounts;
-    uint256 deadline;
-
-    removeLiquidity(e, amount, minAmounts, deadline);
-
-    assert e.block.timestamp <= deadline;
-}
-
-/*
-    No function except removeLiquidityImbalance decreases the virtual price
-*/
-/*rule onlyRemoveLiquidityImbalanceDecreasesVirtualPrice(method f) {
-    setup();
-    
-    
-    env e; calldataarg args;
-    f(e,args);
-
-    assert false;
-}*/
-
-
-/*
+/* 1 2
     Swapping token A for token B doesn't change underlying balance of token C
 */
 
-/*
-    Only addLiquidity should be able to increase LP total supply from zero to non-zero
-*/
-
-/// Variable change rules (under which conditions is a variable allowed to change, and how)
-
-/// Rules for state transitions (uninitialized, initialized, paused, inARamp, notInARamp)
-
-/// Risk assessment rules (from stakeholder's perspectives)
+/// Passing invariants
 
 /* P*
     proves on constructor that all getters are zero
@@ -673,9 +501,8 @@ rule pausedMeansLPMonotonicallyDecreases(method f) {
     assert paused() => totalSupplyAfter <= totalSupplyBefore, "total supply of the lp token must not increase when paused";
 }
 
-/* P*
+/* P
     Two underlying tokens can never have the same address (initialized)
-    @dev only failing on havocing functions due to failed dispatcher
 */
 rule underlyingTokensDifferentInitialized(method f) {
     uint8 tokenAIndex;
@@ -735,6 +562,24 @@ rule uninitializedImpliesRevert(method f) filtered {
 }
 
 /* P
+    Swap can never happen after deadline
+*/
+rule swapAlwaysBeforeDeadline() {
+    setup();
+    env e;
+    address sender = e.msg.sender;
+    uint8 tokenIndexFrom;
+    uint8 tokenIndexTo;
+    uint256 dx;
+    uint256 minDy;
+    uint256 deadline;
+
+    swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
+
+    assert e.block.timestamp <= deadline;
+}
+
+/* P
     LPToken totalSupply must be zero if `addLiquidity` has not been called
 */
 rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector} {
@@ -768,5 +613,118 @@ rule addLiquidityCheckMinToMint() {
     assert balance_ >= _balance + minToMint;
 }
 
+/* P
+    Add LP can never happen after deadline
+*/
+rule addLiquidityAlwaysBeforeDeadline() {
+    setup();
+    env e;
+    address sender = e.msg.sender;
+    uint256[] amounts;
+    uint256 minToMint;
+    uint256 deadline;
 
+    addLiquidity(e, amounts, minToMint, deadline);
+
+    assert e.block.timestamp <= deadline;
+}
+
+/* P
+    Remove LP can never happen after deadline
+*/
+rule removeLiquidityAlwaysBeforeDeadline() {
+    setup();
+    env e;
+    address sender = e.msg.sender;
+    uint256 amount;
+    uint256[] minAmounts;
+    uint256 deadline;
+
+    removeLiquidity(e, amount, minAmounts, deadline);
+
+    assert e.block.timestamp <= deadline;
+}
+
+
+/// Good bye
+
+/* 2 2
+    If balance of one underlying token is zero, the balance of all other 
+    underlying tokens must also be zero
+*/
+invariant zeroTokenAZeroTokenB(uint8 tokenAIndex, uint8 tokenBIndex)
+    getTokenBalance(tokenAIndex) == 0 => getTokenBalance(tokenBIndex) == 0
+
+
+/* 2 2
+    If contract is in uninitialized state, all underlying balances must be zero
+*/
+invariant uninitializedMeansUnderlyingsZero(uint8 index)
+    !initialized => getTokenBalance(index) == 0
+
+
+/* 1 3
+    When paused, ratio between underlying tokens must stay constant
+*/
+rule pausedImpliesTokenRatioConstant(method f) {
+    uint8 tokenAIndex; uint8 tokenBIndex;
+    
+    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+    
+
+    mathint ratioBefore = tokenABalanceBefore / tokenBBalanceBefore;
+
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
+
+    mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
+
+    assert paused() && (tokenABalanceAfter != 0 && tokenBBalanceAfter != 0)  => ratioAfter == ratioBefore, "total supply of the lp token must not increase when paused";
+}
+
+
+/* 2 3
+    Virtual price can never be zero, once liquidity has been deposited
+*/
+rule virtualPriceNeverZeroOnceLiquidityProvided() {
+    uint256[] tokens;
+    uint256 minToMint;
+    uint256 deadline;
+    
+    setup();
+    require tokens.length == 2;
+    // require tokens[0] > 0 && tokens[1] > 0;
+
+    env e;
+    addLiquidity(e,tokens,minToMint,deadline);
+
+    assert getVirtualPrice() > 0;
+}
+
+
+
+/* 2 3
+    When trading token A for B, the sum A+B after the trade must always 
+    be greater than adding liquidity in A and removing liquidity in B
+    @dev Might be difficult to reason about with math functionsummarizations, 
+    currently no plans to implement this rule
+*/
+
+
+/* 2.5 3
+    No function except removeLiquidityImbalance decreases the virtual price
+*/
+/*rule onlyRemoveLiquidityImbalanceDecreasesVirtualPrice(method f) {
+    setup();
+    
+    
+    env e; calldataarg args;
+    f(e,args);
+
+    assert false;
+}*/
 
