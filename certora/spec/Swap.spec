@@ -183,18 +183,7 @@ hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 o
 //                               Invariants                               //
 ////////////////////////////////////////////////////////////////////////////
 
-/* P*
-    proves on constructor that all getters are zero
-    @dev * explained below
-*/
-invariant uninitializedImpliesZeroValueInv()
-    getAllGettersRandomInput() == 0
 
-/* (P) 
-    Two underlying tokens can never have the same address
-    @dev instate part of invariant is not relevant, need to prove on `initialize` 
-    @dev using invariant to requireInvariant, doesn't pass
-*/
 invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
     tokenAIndex != tokenBIndex => getToken(tokenAIndex) != getToken(tokenBIndex)
     {
@@ -203,19 +192,7 @@ invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
         }
     }
 
-/* P
-    Sum of all users' LP balance must be equal to LP's `totalSupply`
-    @dev havoc on addLiq causes failures. Increasing loop_iter > 2 causes havoc on removeLiq. removeLiqOneToken also 
-    has havoc but is passing, might be a similar case with loop_iter being too small
-    @dev waiting on dev to fix this dispatcher bug
-*/
-invariant LPsolvency()
-    getTotalSupply() == sum_all_users_LP
 
-invariant underlyingsSolvency()
-    getSumOfUnderlyings() == sum_all_underlying_balances
-
-/* 
     If balance of one underlying token is zero, the balance of all other 
     underlying tokens must also be zero
 */
@@ -273,27 +250,7 @@ invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
         }
     }
 
-/* P
-    LPToken totalSupply must be zero if `addLiquidity` has not been called
-*/
-invariant LPtotalSupplyZeroWhenUninitialized()
-    getTotalSupply() == 0
-    { 
-        preserved addLiquidity(uint256[] amounts,uint256 minToMint,uint256 deadline) with (env e1) {
-            require false;
-        }
-        preserved {
-            setup();
-        }
-    }
-   
 
-
-/*invariant getterReturnsZeroInUninitState(method f, env e, uint i1, uint i2, ...)
-    uninitialized() => callGetter(f, e, i1, i2, ...) == 0*/
-
-
-/*
     A parameter can never be zero, once initialized
 */
 
@@ -340,124 +297,14 @@ rule sanity(method f) {
     All functionality of removeLiquidityImbalance can be performed using 2 removeLiquidityOneToken calls for a pool with 2 tokens
 */
 
-/* P
-    cant reinit (fails due to havoc)
-*/
-rule cantReinit(method f) filtered {
-    f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
-} {
-    setup();
- 
-    env e; calldataarg args;
-    f@withrevert(e,args);
- 
-    assert lastReverted;
-}
 
-/* P
-    Only admin can set swap and admin fees
-*/
-rule onlyAdminCanSetSwapFees(method f) {
-    setup();
-    uint256 swapFeeBefore = getSwapFee();
 
-    env e; calldataarg args;
-    f(e, args);
 
-    uint256 swapFeeAfter = getSwapFee();
 
-    assert swapFeeAfter != swapFeeBefore => f.selector == setSwapFee(uint256).selector && e.msg.sender == owner(), "fees must only be changes by admin";
-}
 
-/* P
-    Only admin can set swap and admin fees
-*/
-rule onlyAdminCanSetAdminFees(method f) {
-    setup();
-    uint256 swapFeeBefore = getAdminFee();
 
-    env e; calldataarg args;
-    f(e, args);
 
-    uint256 swapFeeAfter = getAdminFee();
 
-    assert swapFeeAfter != swapFeeBefore => f.selector == setAdminFee(uint256).selector && e.msg.sender == owner(), "fees must only be changes by admin";
-}
-
-/* P
-    When paused, total LP amount can only decrease
-*/
-rule pausedMeansLPMonotonicallyDecreases(method f) {
-    uint256 totalSupplyBefore = getTotalSupply();
-
-    env e; calldataarg args;
-    f(e, args);
-
-    uint256 totalSupplyAfter = getTotalSupply();
-
-    assert paused() => totalSupplyAfter <= totalSupplyBefore, "total supply of the lp token must not increase when paused";
-}
-
-/* P*
-    Two underlying tokens can never have the same address (initialized)
-    @dev only failing on havocing functions due to failed dispatcher
-*/
-rule underlyingTokensDifferentInitialized(method f) {
-    uint8 tokenAIndex;
-    uint8 tokenBIndex;
-
-    require (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
-
-    calldataarg args;
-    env e;
-    f(e,args);
-
-    assert (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
-}
-
-/* P*
-    Uninitialized contract state implies all variables are 0
-    proves preservation (n+1 case)
-    @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
-    @dev fails due to Java exception. Not sure why
-*/
-rule uninitializedImpliesZeroValue(method f) { 
-    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
-
-    require !initialized;
-    uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
-    require valBefore == 0;
-
-    env e; calldataarg args;
-    f(e,args);
-
-    require !initialized;
-    uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
-
-    assert valAfter == 0;
-}
-
-/* (P)
-    Uninitialized contract state implies all state changing function calls revert
-    @dev state-changing functions with 0s as input (LPing 0, swapping 0 for 0) don't revert - and shouldn't.
-         All counter examples are the cases where the functions don't change state
-    @dev might be unnecessary given the above rules and the fact that prover can take 0 address to be a contract which 
-         we safely assume is not
-    Tentatively assumed proven
-    @dev 
-*/
-rule uninitializedImpliesRevert(method f) filtered {
-    f -> f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
-    && !f.isView
-}  {
-    require !initialized;
-    env e; 
-    calldataarg args;
-    
-    f@withrevert(e,args);
-
-    assert lastReverted;
-}
 
 /*
     There must not be a transaction that decreases only one 
@@ -653,39 +500,7 @@ rule swappingCheckMinAmount() {
 
 
 
-/* P
-    LPToken totalSupply must be zero if `addLiquidity` has not been called
-*/
-rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector} {
-    setup();
-    require getTotalSupply() == 0;
 
-    env e; calldataarg args;
-    f(e,args);
-
-    assert getTotalSupply() == 0;
-}
-
-/* P
-    Providing liquidity will always output at least minToMint amount of LP 
-    tokens
-*/
-rule addLiquidityCheckMinToMint() {
-    setup();
-    require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
-    env e;
-    address sender = e.msg.sender;
-    uint256[] amounts;
-    uint256 minToMint;
-    uint256 deadline;
-
-    uint256 _balance = balanceOfLPOfUser(sender);
-
-    addLiquidity(e, amounts, minToMint, deadline);
-
-    uint256 balance_ = balanceOfLPOfUser(sender);
-    assert balance_ >= _balance + minToMint;
-}
 
 /*
     Swap can never happen after deadline
@@ -765,11 +580,193 @@ rule removeLiquidityAlwaysBeforeDeadline() {
 
 /// Risk assessment rules (from stakeholder's perspectives)
 
-/*
-    TODO: Rules for A changes over time, from perspective of LPs and traders
+/* P*
+    proves on constructor that all getters are zero
+    @dev * explained below
 */
+invariant uninitializedImpliesZeroValueInv()
+    getAllGettersRandomInput() == 0
 
+/* P
+    Sum of all users' LP balance must be equal to LP's `totalSupply`
+    @dev havoc on addLiq causes failures. Increasing loop_iter > 2 causes havoc on removeLiq. removeLiqOneToken also 
+    has havoc but is passing, might be a similar case with loop_iter being too small
+    @dev waiting on dev to fix this dispatcher bug
+*/
+invariant LPsolvency()
+    getTotalSupply() == sum_all_users_LP
 
-// Mathematical rules (monotonicity, commutativity etc.)
+/* P
+    Sum of all underlying balances must equal the contract's sum.
+*/
+invariant underlyingsSolvency()
+    getSumOfUnderlyings() == sum_all_underlying_balances
+
+/* P
+    LPToken totalSupply must be zero if `addLiquidity` has not been called
+*/
+invariant LPtotalSupplyZeroWhenUninitialized()
+    getTotalSupply() == 0
+    { 
+        preserved addLiquidity(uint256[] amounts,uint256 minToMint,uint256 deadline) with (env e1) {
+            require false;
+        }
+        preserved {
+            setup();
+        }
+    }
+
+/* P
+    cant reinit (fails due to havoc)
+*/
+rule cantReinit(method f) filtered {
+    f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
+} {
+    setup();
+ 
+    env e; calldataarg args;
+    f@withrevert(e,args);
+ 
+    assert lastReverted;
+}
+
+/* P
+    Only admin can set swap and admin fees
+*/
+rule onlyAdminCanSetSwapFees(method f) {
+    setup();
+    uint256 swapFeeBefore = getSwapFee();
+
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 swapFeeAfter = getSwapFee();
+
+    assert swapFeeAfter != swapFeeBefore => f.selector == setSwapFee(uint256).selector && e.msg.sender == owner(), "fees must only be changes by admin";
+}
+
+/* P
+    Only admin can set swap and admin fees
+*/
+rule onlyAdminCanSetAdminFees(method f) {
+    uint256 swapFeeBefore = getAdminFee();
+
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 swapFeeAfter = getAdminFee();
+
+    assert swapFeeAfter != swapFeeBefore => f.selector == setAdminFee(uint256).selector && e.msg.sender == owner(), "fees must only be changes by admin";
+}
+
+/* P
+    When paused, total LP amount can only decrease
+*/
+rule pausedMeansLPMonotonicallyDecreases(method f) {
+    uint256 totalSupplyBefore = getTotalSupply();
+
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 totalSupplyAfter = getTotalSupply();
+
+    assert paused() => totalSupplyAfter <= totalSupplyBefore, "total supply of the lp token must not increase when paused";
+}
+
+/* P*
+    Two underlying tokens can never have the same address (initialized)
+    @dev only failing on havocing functions due to failed dispatcher
+*/
+rule underlyingTokensDifferentInitialized(method f) {
+    uint8 tokenAIndex;
+    uint8 tokenBIndex;
+
+    require (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
+
+    calldataarg args;
+    env e;
+    f(e,args);
+
+    assert (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
+}
+
+/* P*
+    Uninitialized contract state implies all variables are 0
+    proves preservation (n+1 case)
+    @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
+    @dev fails due to Java exception. Not sure why
+*/
+rule uninitializedImpliesZeroValue(method f) { 
+    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
+
+    require !initialized;
+    uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
+    require valBefore == 0;
+
+    env e; calldataarg args;
+    f(e,args);
+
+    require !initialized;
+    uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
+
+    assert valAfter == 0;
+}
+
+/* P*
+    Uninitialized contract state implies all state changing function calls revert
+    @dev state-changing functions with 0s as input (LPing 0, swapping 0 for 0) don't revert - and shouldn't.
+         All counter examples are the cases where the functions don't change state
+    @dev might be unnecessary given the above rules and the fact that prover can take 0 address to be a contract which 
+         we safely assume is not
+    Tentatively assumed proven
+    @dev 
+*/
+rule uninitializedImpliesRevert(method f) filtered {
+    f -> f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
+    && !f.isView
+}  {
+    require !initialized;
+    env e; 
+    calldataarg args;
+    
+    f@withrevert(e,args);
+
+    assert lastReverted;
+}
+
+/* P
+    LPToken totalSupply must be zero if `addLiquidity` has not been called
+*/
+rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector} {
+    setup();
+    require getTotalSupply() == 0;
+
+    env e; calldataarg args;
+    f(e,args);
+
+    assert getTotalSupply() == 0;
+}
+
+/* P
+    Providing liquidity will always output at least minToMint amount of LP 
+    tokens
+*/
+rule addLiquidityCheckMinToMint() {
+    setup();
+    require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
+    env e;
+    address sender = e.msg.sender;
+    uint256[] amounts;
+    uint256 minToMint;
+    uint256 deadline;
+
+    uint256 _balance = balanceOfLPOfUser(sender);
+
+    addLiquidity(e, amounts, minToMint, deadline);
+
+    uint256 balance_ = balanceOfLPOfUser(sender);
+    assert balance_ >= _balance + minToMint;
+}
+
 
 
