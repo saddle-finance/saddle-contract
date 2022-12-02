@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 
 import "../SwapV2.sol";
 import "@openzeppelin/contracts-4.7.3/token/ERC20/utils/SafeERC20.sol";
-import "./MetaSwapUtilsV1.sol";
+import "./MetaSwapUtilsGaugeSupportV1.sol";
 
 /**
  * @title MetaSwap - A StableSwap implementation in solidity.
@@ -30,10 +30,10 @@ import "./MetaSwapUtilsV1.sol";
  * deployment size.
  */
 contract MetaSwapGaugeSupportV1 is SwapV2 {
-    using MetaSwapUtilsV1 for SwapUtilsV2.Swap;
+    using MetaSwapUtilsGaugeSupportV1 for SwapUtilsV2.Swap;
     using SafeERC20 for IERC20;
 
-    MetaSwapUtilsV1.MetaSwap public metaSwapStorage;
+    MetaSwapUtilsGaugeSupportV1.MetaSwap public metaSwapStorage;
 
     uint256 constant MAX_UINT256 = 2**256 - 1;
 
@@ -60,7 +60,11 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         override
         returns (uint256)
     {
-        return MetaSwapUtilsV1.getVirtualPrice(swapStorage, metaSwapStorage);
+        return
+            MetaSwapUtilsGaugeSupportV1.getVirtualPrice(
+                swapStorage,
+                metaSwapStorage
+            );
     }
 
     /**
@@ -77,7 +81,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         uint256 dx
     ) external view virtual override returns (uint256) {
         return
-            MetaSwapUtilsV1.calculateSwap(
+            MetaSwapUtilsGaugeSupportV1.calculateSwap(
                 swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
@@ -101,7 +105,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         uint256 dx
     ) external view virtual returns (uint256) {
         return
-            MetaSwapUtilsV1.calculateSwapUnderlying(
+            MetaSwapUtilsGaugeSupportV1.calculateSwapUnderlying(
                 swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
@@ -133,7 +137,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         returns (uint256)
     {
         return
-            MetaSwapUtilsV1.calculateTokenAmount(
+            MetaSwapUtilsGaugeSupportV1.calculateTokenAmount(
                 swapStorage,
                 metaSwapStorage,
                 amounts,
@@ -154,7 +158,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         uint8 tokenIndex
     ) external view virtual override returns (uint256) {
         return
-            MetaSwapUtilsV1.calculateWithdrawOneToken(
+            MetaSwapUtilsGaugeSupportV1.calculateWithdrawOneToken(
                 swapStorage,
                 metaSwapStorage,
                 tokenAmount,
@@ -256,14 +260,20 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         }
 
         // Check the last element of _pooledTokens is owned by baseSwap
-        IERC20 baseLPToken = _pooledTokens[_pooledTokens.length - 1];
+        IERC20 guageToken = _pooledTokens[_pooledTokens.length - 1];
+        LPTokenV2 baseLPToken = LPTokenV2(
+            address(IGauge(address(guageToken)).lp_token())
+        );
         require(
-            LPTokenV2(address(baseLPToken)).owner() == address(baseSwap),
+            baseLPToken.owner() == address(baseSwap),
             "baseLPToken is not owned by baseSwap"
         );
 
         // Pre-approve the baseLPToken to be used by baseSwap
-        baseLPToken.safeApprove(address(baseSwap), MAX_UINT256);
+        IERC20(address(baseLPToken)).safeApprove(
+            address(baseSwap),
+            MAX_UINT256
+        );
     }
 
     /**
@@ -291,7 +301,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         returns (uint256)
     {
         return
-            MetaSwapUtilsV1.swap(
+            MetaSwapUtilsGaugeSupportV1.swap(
                 swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
@@ -324,7 +334,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         returns (uint256)
     {
         return
-            MetaSwapUtilsV1.swapUnderlying(
+            MetaSwapUtilsGaugeSupportV1.swapUnderlying(
                 swapStorage,
                 metaSwapStorage,
                 tokenIndexFrom,
@@ -357,7 +367,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         returns (uint256)
     {
         return
-            MetaSwapUtilsV1.addLiquidity(
+            MetaSwapUtilsGaugeSupportV1.addLiquidity(
                 swapStorage,
                 metaSwapStorage,
                 amounts,
@@ -390,7 +400,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         returns (uint256)
     {
         return
-            MetaSwapUtilsV1.removeLiquidityOneToken(
+            MetaSwapUtilsGaugeSupportV1.removeLiquidityOneToken(
                 swapStorage,
                 metaSwapStorage,
                 tokenAmount,
@@ -424,7 +434,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         returns (uint256)
     {
         return
-            MetaSwapUtilsV1.removeLiquidityImbalance(
+            MetaSwapUtilsGaugeSupportV1.removeLiquidityImbalance(
                 swapStorage,
                 metaSwapStorage,
                 amounts,
