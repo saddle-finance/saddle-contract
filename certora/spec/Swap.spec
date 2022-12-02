@@ -184,6 +184,14 @@ hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 o
 ////////////////////////////////////////////////////////////////////////////
 
 /* 1 2
+    If balance of one underlying token is zero, the balance of all other 
+    underlying tokens must also be zero
+*/
+invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
+    getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
+
+
+/* 1 2
     Underlying tokens remain different
 */
 invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
@@ -193,21 +201,6 @@ invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
             setup();
         }
     }
-
-
-
-
-/* 1 1
-    adminFee can never be greater MAX_ADMIN_FEE
-*/
-invariant adminFeeNeverGreaterThanMAX() 
-    getAdminFee() <= getMaxAdminFee()
-
-/* 1 1
-    swapFee can never be greater MAX_SWAP_FEE
-*/
-invariant swapFeeNeverGreaterThanMAX()
-    getSwapFee() <= getMaxSwapFee()
 
 /* 1 2
     If total supply of LP token is zero then every underlying token balance is also zero
@@ -353,7 +346,7 @@ rule onlyAdminCanWithdrawFees() {
     assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
 }
 
-/* 1.5 2 (might be replacable by 2 1 monotonicity rule)
+/* 1.5 2 (might be replacable by 2 1 monotonicity rule)- replaceable by no free minting and no unpaid burning + LP total supply only decreases when paused monotonicity rule 
     When paused, all underlying token balances must decrease on LP withdrawal
 */ 
 rule pausedImpliesNoSingleTokenWithdrawal (method f) {
@@ -374,6 +367,28 @@ rule pausedImpliesNoSingleTokenWithdrawal (method f) {
     assert tokenABalanceAfter <= tokenABalanceBefore, "token balances must not increase when paused";
     assert tokenBBalanceAfter <= tokenBBalanceBefore, "token balances must not increase when paused";
     assert tokenABalanceAfter < tokenABalanceBefore <=> tokenBBalanceAfter < tokenBBalanceBefore, "one token must not decrease alone";
+}
+
+/* 1 2
+    Uninitialized contract state implies all variables are 0
+    proves preservation (n+1 case)
+    @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
+    @dev fails due to Java exception. Not sure why
+*/
+rule uninitializedImpliesZeroValue(method f) { 
+    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
+
+    require !initialized;
+    uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
+    require valBefore == 0;
+
+    env e; calldataarg args;
+    f(e,args);
+
+    require !initialized;
+    uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
+
+    assert valAfter == 0;
 }
 
 /// Generalized unit tests 
@@ -408,6 +423,19 @@ rule swappingCheckMinAmount() {
 
 /// Passing invariants
 
+/* P 1 1
+    swapFee can never be greater MAX_SWAP_FEE
+*/
+invariant swapFeeNeverGreaterThanMAX()
+    getSwapFee() <= getMaxSwapFee()
+
+
+/* P 1 1
+    adminFee can never be greater MAX_ADMIN_FEE
+*/
+invariant adminFeeNeverGreaterThanMAX() 
+    getAdminFee() <= getMaxAdminFee()
+
 /* P*
     proves on constructor that all getters are zero
     @dev * explained below
@@ -423,12 +451,23 @@ invariant uninitializedImpliesZeroValueInv()
 */
 invariant LPsolvency()
     getTotalSupply() == sum_all_users_LP
+    {
+        preserved {
+                setup();
+            }
+    }
 
 /* P
     Sum of all underlying balances must equal the contract's sum.
 */
 invariant underlyingsSolvency()
     getSumOfUnderlyings() == sum_all_underlying_balances
+    {
+        preserved {
+                setup();
+            }
+    }
+
 
 /* P
     LPToken totalSupply must be zero if `addLiquidity` has not been called
@@ -517,49 +556,7 @@ rule underlyingTokensDifferentInitialized(method f) {
     assert (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
 }
 
-/* P*
-    Uninitialized contract state implies all variables are 0
-    proves preservation (n+1 case)
-    @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
-    @dev fails due to Java exception. Not sure why
-*/
-rule uninitializedImpliesZeroValue(method f) { 
-    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
 
-    require !initialized;
-    uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
-    require valBefore == 0;
-
-    env e; calldataarg args;
-    f(e,args);
-
-    require !initialized;
-    uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
-
-    assert valAfter == 0;
-}
-
-/* P*
-    Uninitialized contract state implies all state changing function calls revert
-    @dev state-changing functions with 0s as input (LPing 0, swapping 0 for 0) don't revert - and shouldn't.
-         All counter examples are the cases where the functions don't change state
-    @dev might be unnecessary given the above rules and the fact that prover can take 0 address to be a contract which 
-         we safely assume is not
-    Tentatively assumed proven
-    @dev 
-*/
-rule uninitializedImpliesRevert(method f) filtered {
-    f -> f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
-    && !f.isView
-}  {
-    require !initialized;
-    env e; 
-    calldataarg args;
-    
-    f@withrevert(e,args);
-
-    assert lastReverted;
-}
 
 /* P
     Swap can never happen after deadline
@@ -648,12 +645,6 @@ rule removeLiquidityAlwaysBeforeDeadline() {
 
 /// Good bye
 
-/* 2 2
-    If balance of one underlying token is zero, the balance of all other 
-    underlying tokens must also be zero
-*/
-invariant zeroTokenAZeroTokenB(uint8 tokenAIndex, uint8 tokenBIndex)
-    getTokenBalance(tokenAIndex) == 0 => getTokenBalance(tokenBIndex) == 0
 
 
 /* 2 2
