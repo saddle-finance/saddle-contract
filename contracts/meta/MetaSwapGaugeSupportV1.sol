@@ -450,4 +450,14 @@ contract MetaSwapGaugeSupportV1 is SwapV2, GaugeTokenHolder {
                 maxBurnAmount
             );
     }
+
+    /**
+     * @notice Sets the reward receiver for the gauge rewards.
+     * @param _rewardReceiver the address to receive the gauge rewards
+     * @dev Both the SDL gauge reward and the third party rewards will be
+     * forwarded to this address.
+     */
+    function setRewardReceiver(address _rewardReceiver) external onlyOwner {
+        GaugeTokenHolder._setRewardReceiver(_rewardReceiver);
+    }
 }

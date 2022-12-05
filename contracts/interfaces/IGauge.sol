@@ -15,4 +15,6 @@ interface IGauge {
     function SDL() external view returns (address);
 
     function FACTORY() external view returns (address);
+
+    function set_rewards_receiver(address) external;
 }
