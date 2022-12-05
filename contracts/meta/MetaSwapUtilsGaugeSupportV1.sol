@@ -800,6 +800,11 @@ library MetaSwapUtilsGaugeSupportV1 {
                 // Add liquidity to the base Swap contract and receive base LP token
                 v.dx = baseSwap.addLiquidity(baseAmounts, 0, block.timestamp);
 
+                // Deposit the base LP token to the gauge
+                IGauge(address(self.pooledTokens[baseLPTokenIndex])).deposit(
+                    v.dx
+                );
+
                 // Calculate the value of total amount of baseLPToken we end up with
                 v.x =
                     ((v.dx * v.baseVirtualPrice) /
@@ -849,6 +854,13 @@ library MetaSwapUtilsGaugeSupportV1 {
                 // When swapping to a token that belongs to the base Swap, burn the LP token
                 // and withdraw the desired token from the base pool
                 uint256 oldBalance = v.tokenTo.balanceOf(address(this));
+
+                // Withdraw from the gauge to get the base LP token.
+                IGauge(address(self.pooledTokens[baseLPTokenIndex])).withdraw(
+                    v.dx
+                );
+
+                // Burn base LP token receive the desired underlying token
                 baseSwap.removeLiquidityOneToken(
                     v.dy,
                     tokenIndexTo - baseLPTokenIndex,

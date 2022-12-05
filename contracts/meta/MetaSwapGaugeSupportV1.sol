@@ -259,7 +259,8 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
             require(i > 1, "baseSwap must pool at least 2 tokens");
         }
 
-        // Check the last element of _pooledTokens is owned by baseSwap
+        // Check the last element of _pooledTokens is a gauge token
+        // This is a naiive check
         IERC20 guageToken = _pooledTokens[_pooledTokens.length - 1];
         LPTokenV2 baseLPToken = LPTokenV2(
             address(IGauge(address(guageToken)).lp_token())
@@ -272,6 +273,11 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
         // Pre-approve the baseLPToken to be used by baseSwap
         IERC20(address(baseLPToken)).safeApprove(
             address(baseSwap),
+            MAX_UINT256
+        );
+        // Pre-approve the baseLPToken to be used by the gauge contract
+        IERC20(address(baseLPToken)).safeApprove(
+            address(guageToken),
             MAX_UINT256
         );
     }
