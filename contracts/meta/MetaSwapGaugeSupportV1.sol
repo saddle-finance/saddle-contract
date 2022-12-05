@@ -5,6 +5,7 @@ pragma solidity 0.8.17;
 import "../SwapV2.sol";
 import "@openzeppelin/contracts-4.7.3/token/ERC20/utils/SafeERC20.sol";
 import "./MetaSwapUtilsGaugeSupportV1.sol";
+import "../xchainGauges/GaugeTokenHolder.sol";
 
 /**
  * @title MetaSwap - A StableSwap implementation in solidity.
@@ -29,7 +30,7 @@ import "./MetaSwapUtilsGaugeSupportV1.sol";
  * @dev Most of the logic is stored as a library `MetaSwapUtils` for the sake of reducing contract's
  * deployment size.
  */
-contract MetaSwapGaugeSupportV1 is SwapV2 {
+contract MetaSwapGaugeSupportV1 is SwapV2, GaugeTokenHolder {
     using MetaSwapUtilsGaugeSupportV1 for SwapUtilsV2.Swap;
     using SafeERC20 for IERC20;
 
@@ -280,6 +281,8 @@ contract MetaSwapGaugeSupportV1 is SwapV2 {
             address(guageToken),
             MAX_UINT256
         );
+
+        GaugeTokenHolder._initialize(address(guageToken));
     }
 
     /**

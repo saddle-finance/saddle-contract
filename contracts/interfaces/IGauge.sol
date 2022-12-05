@@ -11,4 +11,8 @@ interface IGauge {
     function withdraw(uint256) external;
 
     function lp_token() external view returns (address);
+
+    function SDL() external view returns (address);
+
+    function FACTORY() external view returns (address);
 }
