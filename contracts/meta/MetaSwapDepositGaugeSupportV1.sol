@@ -30,6 +30,7 @@ contract MetaSwapDepositGaugeSupportV1 is
 
     ISwapV2 public baseSwap;
     MetaSwapGaugeSupportV1 public metaSwap;
+    address public baseLPToken;
     IERC20[] public baseTokens;
     IERC20[] public metaTokens;
     IERC20[] public tokens;
@@ -75,12 +76,12 @@ contract MetaSwapDepositGaugeSupportV1 is
         }
 
         // Check and approve meta level tokens to be deposited to the MetaSwap contract
-        IERC20 baseLPToken;
+        IERC20 gaugeToken;
         {
             uint8 i;
             for (; i < 32; i++) {
                 try _metaSwap.getToken(i) returns (IERC20 token) {
-                    baseLPToken = token;
+                    gaugeToken = token;
                     metaTokens.push(token);
                     tokens.push(token);
                     token.safeApprove(address(_metaSwap), MAX_UINT256);
@@ -97,8 +98,12 @@ contract MetaSwapDepositGaugeSupportV1 is
             tokens.push(baseTokens[i]);
         }
 
+        baseLPToken = IGauge(address(gaugeToken)).lp_token();
+
         // Approve base Swap LP token to be burned by the base Swap contract for withdrawing
-        baseLPToken.safeApprove(address(_baseSwap), MAX_UINT256);
+        IERC20(baseLPToken).safeApprove(address(_baseSwap), MAX_UINT256);
+        // Approve base Swap LP token to be burned by the gauge contract for depositing
+        IERC20(baseLPToken).safeApprove(address(gaugeToken), MAX_UINT256);
         // Approve MetaSwap LP token to be burned by the MetaSwap contract for withdrawing
         _metaLPToken.safeApprove(address(_metaSwap), MAX_UINT256);
 
@@ -135,6 +140,67 @@ contract MetaSwapDepositGaugeSupportV1 is
         );
         tokens[tokenIndexTo].safeTransfer(msg.sender, tokenToAmount);
         return tokenToAmount;
+    }
+
+    /**
+     * @notice Swap two tokens at meta level using base lp token instead of the gauge token
+     * @param tokenIndexFrom the token the user wants to swap from
+     * @param tokenIndexTo the token the user wants to swap to
+     * @param dx the amount of tokens the user wants to swap from
+     * @param minDy the min amount the user would like to receive, or revert.
+     * @param deadline latest timestamp to accept this transaction
+     */
+    function swapWithBaseLPToken(
+        uint8 tokenIndexFrom,
+        uint8 tokenIndexTo,
+        uint256 dx,
+        uint256 minDy,
+        uint256 deadline
+    ) external nonReentrant returns (uint256) {
+        address tokenFrom;
+        address tokenTo;
+        uint256 baseLPTokenIndex = metaTokens.length - 1;
+
+        // Get token addresses but replace gauge token address with base lp token address
+        if (tokenIndexFrom == baseLPTokenIndex) {
+            tokenFrom = baseLPToken;
+        } else {
+            tokenFrom = address(metaTokens[tokenIndexFrom]);
+        }
+
+        if (tokenIndexTo == baseLPTokenIndex) {
+            tokenTo = baseLPToken;
+        } else {
+            tokenTo = address(metaTokens[tokenIndexTo]);
+        }
+
+        // Get the token from the user
+        IERC20(tokenFrom).safeTransferFrom(msg.sender, address(this), dx);
+
+        // If user is swapping from gauge token to meta level token,
+        // get gauge tokens by depositing base lp token
+        if (tokenIndexFrom == baseLPTokenIndex) {
+            IGauge(address(metaTokens[baseLPTokenIndex])).deposit(dx);
+        }
+
+        // Swap at meta level
+        uint256 tokenToAmount = metaSwap.swap(
+            tokenIndexFrom,
+            tokenIndexTo,
+            dx,
+            minDy,
+            deadline
+        );
+
+        // If user is swapping to gauge token, withdraw base lp token
+        if (tokenIndexTo == baseLPTokenIndex) {
+            IGauge(address(metaTokens[baseLPTokenIndex])).withdraw(
+                tokenToAmount
+            );
+        }
+
+        // Give either one of meta level tokens to user
+        IERC20(tokenTo).safeTransfer(msg.sender, tokenToAmount);
     }
 
     /**
@@ -225,6 +291,49 @@ contract MetaSwapDepositGaugeSupportV1 is
     }
 
     /**
+     * @notice Add liquidity to the meta pool with the given amounts of tokens.
+     * This function is similar to addLiquidity, but it receives base lp token
+     * from the user. The base lp token is then deposited into the gauge to
+     * get the gauge token necessary for adding liquidity to the meta pool.
+     * @param amounts the amounts of each token to add, in their native precision
+     * @param minToMint the minimum LP tokens adding this amount of liquidity
+     * should mint, otherwise revert. Handy for front-running mitigation
+     * @param deadline latest timestamp to accept this transaction
+     * @return amount of LP token user minted and received
+     */
+    function addLiquidityWrappedWithBaseLPToken(
+        uint256[] calldata amounts,
+        uint256 minToMint,
+        uint256 deadline
+    ) external nonReentrant returns (uint256) {
+        IERC20[] memory memMetaTokens = metaTokens;
+        uint256 baseLPTokenIndex = memMetaTokens.length - 1;
+
+        require(amounts.length == baseLPTokenIndex, "Invalid amounts length");
+
+        // If the base lp token amount is more than 0, transfer base lp token
+        // from the caller and deposit to the gauge.
+        uint256 baseLPTokenAmount = amounts[baseLPTokenIndex];
+        if (baseLPTokenAmount > 0) {
+            IERC20(baseLPToken).safeTransferFrom(
+                msg.sender,
+                address(this),
+                baseLPTokenAmount
+            );
+            IGauge(address(baseLPToken)).deposit(baseLPTokenAmount);
+        }
+
+        uint256 metaLpTokenAmount = metaSwap.addLiquidity(
+            amounts,
+            minToMint,
+            deadline
+        );
+
+        // Transfer the meta lp token to the caller
+        metaLPToken.safeTransfer(msg.sender, metaLpTokenAmount);
+    }
+
+    /**
      * @notice Burn LP tokens to remove liquidity from the pool. Withdraw fee that decays linearly
      * over period of 4 weeks since last deposit will apply.
      * @dev Liquidity can always be removed, even when the pool is paused.
@@ -309,6 +418,51 @@ contract MetaSwapDepositGaugeSupportV1 is
         }
 
         return totalRemovedAmounts;
+    }
+
+    /**
+     * @notice Burn meta LP tokens to remove liquidity from the pool.
+     * Base LP token is returned instead of the gauge token.
+     * @dev Liquidity can always be removed, even when the pool is paused.
+     * @param amount the amount of meta LP tokens to burn
+     * @param minAmounts the minimum amounts of each token in the pool
+     *        acceptable for this burn. Useful as a front-running mitigation
+     * @param deadline latest timestamp to accept this transaction
+     * @return amounts of tokens user received
+     */
+    function removeLiquidityWrappedWithBaseLPToken(
+        uint256 amount,
+        uint256[] calldata minAmounts,
+        uint256 deadline
+    ) external nonReentrant returns (uint256[] memory) {
+        IERC20[] memory memMetaTokens = metaTokens;
+        uint256[] memory totalRemovedAmounts;
+
+        require(minAmounts.length == memMetaTokens.length, "out of range");
+
+        // Transfer meta lp token from the caller to this
+        metaLPToken.safeTransferFrom(msg.sender, address(this), amount);
+        totalRemovedAmounts = metaSwap.removeLiquidity(
+            amount,
+            minAmounts,
+            deadline
+        );
+
+        // Get the base LP token by withdrawing from the gauge
+        uint256 baseLPTokenIndex = memMetaTokens.length - 1;
+        IGauge(address(memMetaTokens[baseLPTokenIndex])).withdraw(
+            totalRemovedAmounts[baseLPTokenIndex]
+        );
+
+        // Send the meta level tokens to the caller
+        // The last token is replaced with base lp token
+        for (uint8 i = 0; i < baseLPTokenIndex; i++) {
+            memMetaTokens[i].safeTransfer(msg.sender, totalRemovedAmounts[i]);
+        }
+        IERC20(baseLPToken).safeTransfer(
+            msg.sender,
+            totalRemovedAmounts[baseLPTokenIndex]
+        );
     }
 
     /**
