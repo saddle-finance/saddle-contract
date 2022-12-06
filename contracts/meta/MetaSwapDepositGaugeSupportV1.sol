@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable-4.7.3/proxy/utils/Initializable.sol"
 import "@openzeppelin/contracts-upgradeable-4.7.3/security/ReentrancyGuardUpgradeable.sol";
 import "../LPTokenV2.sol";
 import "../interfaces/ISwapV2.sol";
-import "../interfaces/IMetaSwapV1.sol";
+import "./MetaSwapGaugeSupportV1.sol";
 
 /**
  * @title MetaSwapDeposit
@@ -29,7 +29,7 @@ contract MetaSwapDepositGaugeSupportV1 is
     using SafeERC20 for IERC20;
 
     ISwapV2 public baseSwap;
-    IMetaSwapV1 public metaSwap;
+    MetaSwapGaugeSupportV1 public metaSwap;
     IERC20[] public baseTokens;
     IERC20[] public metaTokens;
     IERC20[] public tokens;
@@ -39,7 +39,7 @@ contract MetaSwapDepositGaugeSupportV1 is
 
     struct RemoveLiquidityImbalanceInfo {
         ISwapV2 baseSwap;
-        IMetaSwapV1 metaSwap;
+        MetaSwapGaugeSupportV1 metaSwap;
         IERC20 metaLPToken;
         uint8 baseLPTokenIndex;
         bool withdrawFromBase;
@@ -55,7 +55,7 @@ contract MetaSwapDepositGaugeSupportV1 is
      */
     function initialize(
         ISwapV2 _baseSwap,
-        IMetaSwapV1 _metaSwap,
+        MetaSwapGaugeSupportV1 _metaSwap,
         IERC20 _metaLPToken
     ) external initializer {
         __ReentrancyGuard_init();
@@ -183,13 +183,18 @@ contract MetaSwapDepositGaugeSupportV1 is
                     0,
                     deadline
                 );
+
+                // Get the gauge token by depositing base lp token into the gauge
+                IGauge(address(memMetaTokens[baseLPTokenIndex])).deposit(
+                    baseLPTokenAmount
+                );
             }
         }
 
         uint256 metaLPTokenAmount;
         {
             // Transfer remaining meta level tokens from the caller
-            uint256[] memory metaAmounts = new uint256[](metaTokens.length);
+            uint256[] memory metaAmounts = new uint256[](memMetaTokens.length);
             for (uint8 i = 0; i < baseLPTokenIndex; i++) {
                 IERC20 token = memMetaTokens[i];
                 uint256 depositAmount = amounts[i];
@@ -283,6 +288,12 @@ contract MetaSwapDepositGaugeSupportV1 is
                 for (uint8 i = 0; i < baseLPTokenIndex; i++) {
                     baseMinAmounts[i] = minAmounts[baseLPTokenIndex + i];
                 }
+
+                // Get the base LP token by withdrawing from the gauge
+                IGauge(address(memMetaTokens[baseLPTokenIndex])).withdraw(
+                    baseLPTokenAmount
+                );
+
                 removedAmounts = baseSwap.removeLiquidity(
                     baseLPTokenAmount,
                     baseMinAmounts,
@@ -341,6 +352,12 @@ contract MetaSwapDepositGaugeSupportV1 is
                 deadline
             );
 
+            // Get the base LP token by withdrawing from the gauge
+            IGauge(address(metaTokens[baseLPTokenIndex])).withdraw(
+                removedBaseLPTokenAmount
+            );
+
+            // Get the underlying tokens
             baseSwap.removeLiquidityOneToken(
                 removedBaseLPTokenAmount,
                 tokenIndex - baseLPTokenIndex,
@@ -426,6 +443,12 @@ contract MetaSwapDepositGaugeSupportV1 is
 
         // If underlying tokens are desired, withdraw them from the base Swap pool
         if (v.withdrawFromBase) {
+            // Get the base LP token by withdrawing from the gauge
+            IGauge(address(metaTokens[v.baseLPTokenIndex])).withdraw(
+                metaAmounts[v.baseLPTokenIndex]
+            );
+
+            // Burn the base LP token and get the underlying tokens
             v.baseSwap.removeLiquidityImbalance(
                 baseAmounts,
                 metaAmounts[v.baseLPTokenIndex],
