@@ -3,18 +3,16 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-4.7.3/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable-4.7.3/proxy/utils/Initializable.sol";
+
 import "../interfaces/IGauge.sol";
+import "../interfaces/IMinterLike.sol";
 
 /// @title GaugeTokenHolder contract
 /// @notice GaugeTokenHolder contract allows the itself to claims tokens
 /// from the associated Minter contract. Optionally allows forwarding the
 /// reward token to another contract.
-
-interface IMinterLike {
-    function mint(address gauge) external;
-}
-
-abstract contract GaugeTokenHolder {
+abstract contract GaugeTokenHolder is Initializable {
     using SafeERC20 for IERC20;
     address public rewardReceiver;
     address public gaugeToken;
@@ -38,7 +36,10 @@ abstract contract GaugeTokenHolder {
         address newRewardReceiver
     );
 
-    function _initialize(address gauge) internal {
+    /// @notice Initialize the GaugeTokenHolder contract. Assumes the gauge
+    // has SDL() and FACTORY() methods.
+    /// @param gauge Gauge token address
+    function __GaugeTokenHolder_init(address gauge) internal onlyInitializing {
         require(gauge != address(0), "gauge address cannot be 0");
         require(gaugeToken == address(0), "already initialized");
         gaugeToken = gauge;
@@ -76,6 +77,9 @@ abstract contract GaugeTokenHolder {
         _claim();
     }
 
+    /// @notice Set the reward receiver address. Also set the reward receiver
+    /// for the gauge's third party rewards.
+    /// @param _rewardReceiver Address of the reward receiver
     function _setRewardReceiver(address _rewardReceiver) internal {
         address oldRewardReceiver = rewardReceiver;
         rewardReceiver = _rewardReceiver;

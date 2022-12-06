@@ -170,28 +170,18 @@ contract MetaSwapGaugeSupportV1 is SwapV2, GaugeTokenHolder {
     /*** STATE MODIFYING FUNCTIONS ***/
 
     /**
-     * @notice This overrides Swap's initialize function to prevent initializing
-     * without the address of the base Swap contract.
-     *
-     * @param _pooledTokens an array of ERC20s this pool will accept
-     * @param decimals the decimals to use for each pooled token,
-     * eg 8 for WBTC. Cannot be larger than POOL_PRECISION_DECIMALS
-     * @param lpTokenName the long-form name of the token to be deployed
-     * @param lpTokenSymbol the short symbol for the token to be deployed
-     * @param _a the amplification coefficient * n * (n - 1). See the
-     * StableSwap paper for details
-     * @param _fee default swap fee to be initialized with
-     * @param _adminFee default adminFee to be initialized with
+     * @notice This function is overriden to prevent the use of the original
+     * Swap's initialize function. Use initializeMetaSwap() instead.
      */
     function initialize(
-        IERC20[] memory _pooledTokens,
-        uint8[] memory decimals,
-        string memory lpTokenName,
-        string memory lpTokenSymbol,
-        uint256 _a,
-        uint256 _fee,
-        uint256 _adminFee,
-        address lpTokenTargetAddress
+        IERC20[] memory,
+        uint8[] memory,
+        string memory,
+        string memory,
+        uint256,
+        uint256,
+        uint256,
+        address
     ) public payable virtual override initializer {
         revert("use initializeMetaSwap() instead");
     }
@@ -282,7 +272,7 @@ contract MetaSwapGaugeSupportV1 is SwapV2, GaugeTokenHolder {
             MAX_UINT256
         );
 
-        GaugeTokenHolder._initialize(address(guageToken));
+        __GaugeTokenHolder_init(address(guageToken));
     }
 
     /**
