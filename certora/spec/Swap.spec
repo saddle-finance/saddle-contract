@@ -113,7 +113,7 @@ function getAllGettersDefinedInput(uint8 i1, address i2, uint8 i3, uint8 i4, uin
     return to_uint256(return1 + return2 + return3 + return4 + return5 + return6 + return7 + return8 + return9 + return10 + return11);
 } 
 
-function setup() {
+function requireInitialized() {
     require !initializing;
     require initialized;
 }
@@ -190,18 +190,6 @@ hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 o
 invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
     getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
 
-
-/* 1 2
-    Underlying tokens remain different
-*/
-invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
-    tokenAIndex != tokenBIndex => getToken(tokenAIndex) != getToken(tokenBIndex)
-    {
-        preserved{
-            setup();
-        }
-    }
-
 /* 1 2
     If total supply of LP token is zero then every underlying token balance is also zero
 */
@@ -212,8 +200,11 @@ invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
             requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i1);
             requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i2);
         }
-        preserved {
-            setup();
+        preserved with (env e) {
+            requireInitialized();
+            requireInvariant LPsolvency();
+            require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
+            requireInvariant underlyingsSolvency();
         }
     }
 
@@ -223,12 +214,20 @@ invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
 invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
     sum_all_underlying_balances == 0 => getTotalSupply() == 0
     {
-        preserved {
-            setup();
+        preserved with (env e){
+            requireInitialized();
+            requireInvariant LPsolvency();
+            require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
             requireInvariant underlyingsSolvency();
         }
     }
 
+/* 1 2
+    proves on constructor that all getters are zero
+    @dev * explained below
+*/
+invariant uninitializedImpliesZeroValueInv()
+    getAllGettersRandomInput() == 0
 
 ////////////////////////////////////////////////////////////////////////////
 //                                 Rules                                  //
@@ -286,7 +285,7 @@ rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
     mathint _sumBalances = sum_all_underlying_balances;
 
     //requireInvariant underlyingsSolvency();
-    setup();
+    requireInitialized();
     require _sumBalances >= 0;
 
     calldataarg args;
@@ -314,7 +313,7 @@ rule monotonicallyIncreasingFees(method f) filtered {
     env e;
     require e.msg.sender != currentContract;
     requireInvariant underlyingTokensDifferent(indexA, indexB);
-    requireInvariant LPsolvency;
+    requireInvariant LPsolvency();
 
     uint256 balanceBefore = getAdminBalance(indexA);
 
@@ -349,11 +348,11 @@ rule onlyAdminCanWithdrawFees() {
 /* 1.5 2 (might be replacable by 2 1 monotonicity rule)- replaceable by no free minting and no unpaid burning + LP total supply only decreases when paused monotonicity rule 
     When paused, all underlying token balances must decrease on LP withdrawal
 */ 
-rule pausedImpliesNoSingleTokenWithdrawal (method f) {
+rule pausedImpliesNoSingleTokenWithdrawal(method f) {
     uint8 tokenAIndex; uint8 tokenBIndex;
     
-    setup();
-    requireInvariant zeroTokenAZeroTokenB(tokenAIndex, tokenBIndex); 
+    requireInitialized();
+    require getTokenBalance(tokenAIndex) == 0 <=> getTokenBalance(tokenBIndex) == 0;
     require paused();
     uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
     uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
@@ -397,7 +396,7 @@ rule uninitializedImpliesZeroValue(method f) {
     Swapping A for B will always output at least minAmount of tokens B
 */
 rule swappingCheckMinAmount() {
-    setup();
+    requireInitialized();
     env e;
     address sender = e.msg.sender;
     uint8 tokenIndexFrom;
@@ -415,33 +414,24 @@ rule swappingCheckMinAmount() {
     assert balance_ >= _balance + minDy; 
 }
 
-
-
 /* 1 2
     Swapping token A for token B doesn't change underlying balance of token C
 */
 
 /// Passing invariants
 
-/* P 1 1
+/* P
     swapFee can never be greater MAX_SWAP_FEE
 */
 invariant swapFeeNeverGreaterThanMAX()
     getSwapFee() <= getMaxSwapFee()
 
 
-/* P 1 1
+/* P
     adminFee can never be greater MAX_ADMIN_FEE
 */
 invariant adminFeeNeverGreaterThanMAX() 
     getAdminFee() <= getMaxAdminFee()
-
-/* P*
-    proves on constructor that all getters are zero
-    @dev * explained below
-*/
-invariant uninitializedImpliesZeroValueInv()
-    getAllGettersRandomInput() == 0
 
 /* P
     Sum of all users' LP balance must be equal to LP's `totalSupply`
@@ -453,7 +443,7 @@ invariant LPsolvency()
     getTotalSupply() == sum_all_users_LP
     {
         preserved {
-                setup();
+                requireInitialized();
             }
     }
 
@@ -464,10 +454,9 @@ invariant underlyingsSolvency()
     getSumOfUnderlyings() == sum_all_underlying_balances
     {
         preserved {
-                setup();
+                requireInitialized();
             }
     }
-
 
 /* P
     LPToken totalSupply must be zero if `addLiquidity` has not been called
@@ -479,9 +468,22 @@ invariant LPtotalSupplyZeroWhenUninitialized()
             require false;
         }
         preserved {
-            setup();
+            requireInitialized();
         }
     }
+
+/* P
+    Underlying tokens remain different
+*/
+invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
+    tokenAIndex != tokenBIndex => getToken(tokenAIndex) != getToken(tokenBIndex)
+    {
+        preserved{
+            requireInitialized();
+        }
+    }
+
+/// Passing rules
 
 /* P
     cant reinit (fails due to havoc)
@@ -489,7 +491,7 @@ invariant LPtotalSupplyZeroWhenUninitialized()
 rule cantReinit(method f) filtered {
     f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
 } {
-    setup();
+    requireInitialized();
  
     env e; calldataarg args;
     f@withrevert(e,args);
@@ -497,11 +499,13 @@ rule cantReinit(method f) filtered {
     assert lastReverted;
 }
 
+/// Passing rules
+
 /* P
     Only admin can set swap and admin fees
 */
 rule onlyAdminCanSetSwapFees(method f) {
-    setup();
+    requireInitialized();
     uint256 swapFeeBefore = getSwapFee();
 
     env e; calldataarg args;
@@ -562,7 +566,7 @@ rule underlyingTokensDifferentInitialized(method f) {
     Swap can never happen after deadline
 */
 rule swapAlwaysBeforeDeadline() {
-    setup();
+    requireInitialized();
     env e;
     address sender = e.msg.sender;
     uint8 tokenIndexFrom;
@@ -580,7 +584,7 @@ rule swapAlwaysBeforeDeadline() {
     LPToken totalSupply must be zero if `addLiquidity` has not been called
 */
 rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector} {
-    setup();
+    requireInitialized();
     require getTotalSupply() == 0;
 
     env e; calldataarg args;
@@ -594,7 +598,7 @@ rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiq
     tokens
 */
 rule addLiquidityCheckMinToMint() {
-    setup();
+    requireInitialized();
     require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
     env e;
     address sender = e.msg.sender;
@@ -614,7 +618,7 @@ rule addLiquidityCheckMinToMint() {
     Add LP can never happen after deadline
 */
 rule addLiquidityAlwaysBeforeDeadline() {
-    setup();
+    requireInitialized();
     env e;
     address sender = e.msg.sender;
     uint256[] amounts;
@@ -630,7 +634,7 @@ rule addLiquidityAlwaysBeforeDeadline() {
     Remove LP can never happen after deadline
 */
 rule removeLiquidityAlwaysBeforeDeadline() {
-    setup();
+    requireInitialized();
     env e;
     address sender = e.msg.sender;
     uint256 amount;
@@ -686,7 +690,7 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
     uint256 minToMint;
     uint256 deadline;
     
-    setup();
+    requireInitialized();
     require tokens.length == 2;
     // require tokens[0] > 0 && tokens[1] > 0;
 
@@ -710,7 +714,7 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
     No function except removeLiquidityImbalance decreases the virtual price
 */
 /*rule onlyRemoveLiquidityImbalanceDecreasesVirtualPrice(method f) {
-    setup();
+    requireInitialized();
     
     
     env e; calldataarg args;

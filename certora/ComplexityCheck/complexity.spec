@@ -3,14 +3,15 @@ import "erc20.spec"
 methods {
 	getD(uint256[], uint256) returns (uint256) => NONDET
 	getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
-	calculateWithdrawOneTokenDY((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint256,uint256) returns (uint256, uint256, uint256) => NONDET 
-	calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8)  returns (uint256) => NONDET 
-	_calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8,uint256) returns (uint256, uint256) => NONDET 
-	xp(uint256[],uint256[]) returns (uint256[] ) => NONDET 
-	getVirtualPrice((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[])) returns (uint256) => CONSTANT 
 	getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
-	_calculateSwap((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint8,uint256,uint256[] ) returns (uint256, uint256) => NONDET
-	_feePerToken(uint256, uint256) returns (uint256) => NONDET
+	// calculateWithdrawOneTokenDY((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint256,uint256) returns (uint256, uint256, uint256) => NONDET 
+	// calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8)  returns (uint256) => NONDET 
+	// _calculateWithdrawOneToken((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint256,uint8,uint256) returns (uint256, uint256) => NONDET 
+	// xp(uint256[],uint256[]) returns (uint256[] ) => NONDET 
+	// getVirtualPrice((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[])) returns (uint256) => CONSTANT 
+	// getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
+	// _calculateSwap((uint256, uint256, uint256, uint256, uint256, uint256, address, address[], uint256[], uint256[]),uint8,uint8,uint256,uint256[] ) returns (uint256, uint256) => NONDET
+	// _feePerToken(uint256, uint256) returns (uint256) => NONDET
 
     // refactored functions
     /*
@@ -112,13 +113,4 @@ description "$f can be called by more than one user without reverting"
 	bool secondSucceeded = !lastReverted;
 
 	assert  !(firstSucceeded && secondSucceeded), "${f.selector} can be called by both ${e1.msg.sender} and ${e2.msg.sender}, so it is not privileged";
-}
-
-rule whoChangedBalanceOf(method f, address u) {
-    env eB;
-    env eF;
-    calldataarg args;
-    uint256 before = balanceOf(eB, u);
-    f(eF,args);
-    assert balanceOf(eB, u) == before, "balanceOf changed";
 }
