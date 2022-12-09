@@ -189,16 +189,10 @@ hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 o
 */
 invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
     getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
-
-/* 1 2
-    If total supply of LP token is zero then every underlying token balance is also zero
-*/
-invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
-    getTotalSupply() == 0 => getTokenBalance(i) == 0
     {
         preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
-            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i1);
-            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i2);
+            requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(i1);
+            requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(i2);
         }
         preserved with (env e) {
             requireInitialized();
@@ -368,6 +362,30 @@ rule pausedImpliesNoSingleTokenWithdrawal(method f) {
     assert tokenABalanceAfter < tokenABalanceBefore <=> tokenBBalanceAfter < tokenBBalanceBefore, "one token must not decrease alone";
 }
 
+/* 1 3
+    When paused, ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
+*/
+rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
+    uint8 tokenAIndex; uint8 tokenBIndex;
+    require paused();
+    require tokenAIndex != tokenBIndex;
+    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+    
+
+    mathint ratioBefore = tokenABalanceBefore / tokenBBalanceBefore;
+
+    env e; calldataarg args;
+    f(e, args);
+
+    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
+
+    mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
+
+    assert ratioBefore >= 1 <=> ratioAfter >= 1, "ratio of tokens must not go below 1 when paused";
+}
+
 /* 1 2
     Uninitialized contract state implies all variables are 0
     proves preservation (n+1 case)
@@ -419,6 +437,24 @@ rule swappingCheckMinAmount() {
 */
 
 /// Passing invariants
+
+/* P
+    If total supply of LP token is zero then every underlying token balance is also zero
+*/
+invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
+    getTotalSupply() == 0 => getTokenBalance(i) == 0
+    {
+        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
+            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i1);
+            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i2);
+        }
+        preserved with (env e) {
+            requireInitialized();
+            requireInvariant LPsolvency();
+            require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
+            requireInvariant underlyingsSolvency();
+        }
+    }
 
 /* P
     swapFee can never be greater MAX_SWAP_FEE
@@ -656,31 +692,6 @@ rule removeLiquidityAlwaysBeforeDeadline() {
 */
 invariant uninitializedMeansUnderlyingsZero(uint8 index)
     !initialized => getTokenBalance(index) == 0
-
-
-/* 1 3
-    When paused, ratio between underlying tokens must stay constant
-*/
-rule pausedImpliesTokenRatioConstant(method f) {
-    uint8 tokenAIndex; uint8 tokenBIndex;
-    
-    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
-    
-
-    mathint ratioBefore = tokenABalanceBefore / tokenBBalanceBefore;
-
-    env e; calldataarg args;
-    f(e, args);
-
-    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
-
-    mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
-
-    assert paused() && (tokenABalanceAfter != 0 && tokenBBalanceAfter != 0)  => ratioAfter == ratioBefore, "total supply of the lp token must not increase when paused";
-}
-
 
 /* 2 3
     Virtual price can never be zero, once liquidity has been deposited

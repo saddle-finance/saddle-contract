@@ -24,9 +24,8 @@ certoraRun \
     --staging release/19Sep2022 \
     --optimistic_loop \
     --rule_sanity \
-    $RULE
+    $RULE \
     --msg "Swap $1" \
-# tokenize taxes
 # certoraRun \
 #     certora/harness/SwapHarness.sol \
 #     certora/munged/LPToken.sol \
