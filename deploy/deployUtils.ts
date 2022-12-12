@@ -709,7 +709,6 @@ export async function registerPools(
       ),
     )
     const batchCallData = batchCall.map((x) => x.data).filter(Boolean)
-    console.log(deployer)
     await execute(
       "PoolRegistry",
       { from: deployer, log: true },
