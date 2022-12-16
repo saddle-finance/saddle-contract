@@ -12,11 +12,18 @@ else
     RULE="--rules oneUnderlyingZeroMeansAllUnderlyingsZero ifLPTotalSupplyZeroThenIndividualUnderlyingsZero ifSumUnderlyingsZeroLPTotalSupplyZero uninitializedImpliesZeroValueInv"
 fi
 
-
 certoraRun \
     certora/harness/SwapHarness.sol \
+    certora/ComplexityCheck/DummyERC20A.sol \
+    certora/ComplexityCheck/DummyERC20B.sol \
     certora/munged/LPToken.sol \
     --verify SwapHarness:certora/spec/Swap.spec \
+    --address SwapHarness:0xce4604a0000000000000000000000062 \
+    LPToken:0xce4604a0000000000000000000000050 \
+    DummyERC20A:0xce4604a000000000000000000000005c \
+    DummyERC20B:0xce4604a0000000000000000000000060 \
+    --link SwapHarness:token0=DummyERC20A \
+    --link SwapHarness:token1=DummyERC20B \
     --structLink SwapHarness:lpToken=LPToken \
     --cache saddle \
     --loop_iter 2 \

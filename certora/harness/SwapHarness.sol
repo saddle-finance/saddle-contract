@@ -6,7 +6,11 @@ import "../munged/Swap.sol";
 // methods for the spec to access internal state, or may override some of the
 // more complex methods in the original contract.
 contract SwapHarness is Swap {
-    //LPToken public lpToken = swapStorage.lpToken;
+
+
+    LPToken public lpToken = swapStorage.lpToken;
+    IERC20 public token0 = swapStorage.pooledTokens[0];
+    IERC20 public token1 = swapStorage.pooledTokens[1];
     function inRampA() public view returns (bool) {
         return (block.timestamp >= swapStorage.initialATime &&
                 block.timestamp < swapStorage.futureATime &&
@@ -52,9 +56,5 @@ contract SwapHarness is Swap {
 
     function getLPTokenAddress() public view returns(address) {
         return address(swapStorage.lpToken);
-    }
-
-    function getPooledTokenAddress(uint8 index) public view returns(address) {
-        return address(getToken(index));
     }
 }

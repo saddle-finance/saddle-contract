@@ -199,6 +199,7 @@ invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
             requireInvariant LPsolvency();
             require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
             requireInvariant underlyingsSolvency();
+            require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
         }
     }
 
@@ -346,6 +347,7 @@ rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
     uint8 tokenAIndex; uint8 tokenBIndex;
     require paused();
     require tokenAIndex != tokenBIndex;
+    
     uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
     uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
     
@@ -353,6 +355,8 @@ rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
     mathint ratioBefore = tokenABalanceBefore / tokenBBalanceBefore;
 
     env e; calldataarg args;
+    require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
+    require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
     f(e, args);
 
     uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
@@ -450,9 +454,6 @@ invariant adminFeeNeverGreaterThanMAX()
 
 /* P
     Sum of all users' LP balance must be equal to LP's `totalSupply`
-    @dev havoc on addLiq causes failures. Increasing loop_iter > 2 causes havoc on removeLiq. removeLiqOneToken also 
-    has havoc but is passing, might be a similar case with loop_iter being too small
-    @dev waiting on dev to fix this dispatcher bug
 */
 invariant LPsolvency()
     getTotalSupply() == sum_all_users_LP
@@ -501,7 +502,7 @@ invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
 /// Passing rules
 
 /* P
-    cant reinit (fails due to havoc)
+    cant reinit 
 */
 rule cantReinit(method f) filtered {
     f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
@@ -614,7 +615,7 @@ rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiq
 */
 rule addLiquidityCheckMinToMint() {
     requireInitialized();
-    require getLPTokenAddress() != getPooledTokenAddress(0) && getLPTokenAddress() != getPooledTokenAddress(1);
+    require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
     env e;
     address sender = e.msg.sender;
     uint256[] amounts;
