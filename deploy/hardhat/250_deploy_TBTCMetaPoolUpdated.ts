@@ -1,10 +1,10 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
   const { execute, deploy, get, getOrNull, log, read, save } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   // Manually check if the pool is already deployed
   const saddleTBTCMetaPool = await getOrNull("SaddleTBTCMetaPoolUpdated")

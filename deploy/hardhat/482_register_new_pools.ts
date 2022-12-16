@@ -1,14 +1,13 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { PoolRegistry } from "../../build/typechain"
-import { PoolType } from "../../utils/constants"
-import { IPoolRegistry } from "../../build/typechain"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { IPoolRegistry, PoolRegistry } from "../../build/typechain"
 import { ZERO_ADDRESS } from "../../test/testUtils"
+import { PoolType } from "../../utils/constants"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, ethers } = hre
+  const { deployments, getUnnamedAccounts, ethers } = hre
   const { get, execute, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
 

@@ -4,7 +4,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
   const { execute, deploy, get, getOrNull, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   // Manually check if the pool is already deployed
   const saddleWCUSDMetaPool = await getOrNull("SaddleWCUSDMetaPoolDeposit")

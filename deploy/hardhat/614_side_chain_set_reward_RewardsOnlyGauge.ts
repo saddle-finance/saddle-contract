@@ -1,12 +1,12 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { ZERO_ADDRESS } from "../../test/testUtils"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { ChildChainStreamer } from "../../build/typechain"
+import { ZERO_ADDRESS } from "../../test/testUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   const REWARDS_ONLY_GAUGE_NAME = "RewardsOnlyGauge"
   const CHILD_CHAIN_STREAMER_NAME = "ChildChainStreamer"

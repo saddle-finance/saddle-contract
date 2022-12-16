@@ -1,14 +1,14 @@
 import { BIG_NUMBER_1E18 } from "../../test/testUtils"
 
+import { ethers } from "hardhat"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { MiniChefV2 } from "../../build/typechain"
-import { ethers } from "hardhat"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { deploy, get, execute, getOrNull } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   if ((await getOrNull("MiniChefV2")) == null) {
     // Deploy retroactive vesting contract for airdrops

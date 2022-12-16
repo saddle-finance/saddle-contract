@@ -1,7 +1,7 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { DeployFunction } from "hardhat-deploy/types"
-import { isTestNetwork } from "../../utils/network"
 import { BigNumber } from "ethers"
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { isTestNetwork } from "../../utils/network"
 
 const USD_TOKENS_ARGS: { [token: string]: any[] } = {
   USDC: ["USD Coin", "USDC", "6"],
@@ -10,9 +10,9 @@ const USD_TOKENS_ARGS: { [token: string]: any[] } = {
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { deploy, execute, getOrNull, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   for (const token in USD_TOKENS_ARGS) {
     const token_contracts = await getOrNull(token)
