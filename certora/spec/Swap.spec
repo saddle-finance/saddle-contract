@@ -339,29 +339,6 @@ rule onlyAdminCanWithdrawFees() {
     assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
 }
 
-/* 1.5 2 (might be replacable by 2 1 monotonicity rule)- replaceable by no free minting and no unpaid burning + LP total supply only decreases when paused monotonicity rule 
-    When paused, all underlying token balances must decrease on LP withdrawal
-*/ 
-rule pausedImpliesNoSingleTokenWithdrawal(method f) {
-    uint8 tokenAIndex; uint8 tokenBIndex;
-    
-    requireInitialized();
-    require getTokenBalance(tokenAIndex) == 0 <=> getTokenBalance(tokenBIndex) == 0;
-    require paused();
-    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
-
-    env e; calldataarg args;
-    f(e,args);
-
-    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
-    
-    assert tokenABalanceAfter <= tokenABalanceBefore, "token balances must not increase when paused";
-    assert tokenBBalanceAfter <= tokenBBalanceBefore, "token balances must not increase when paused";
-    assert tokenABalanceAfter < tokenABalanceBefore <=> tokenBBalanceAfter < tokenBBalanceBefore, "one token must not decrease alone";
-}
-
 /* 1 3
     When paused, ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
 */
@@ -425,6 +402,8 @@ rule swappingCheckMinAmount() {
 
     uint256 _balance = balanceOfUnderlyingOfUser(sender, tokenIndexTo);
     require e.msg.sender != currentContract;
+    require tokenIndexTo != tokenIndexFrom;
+    requireInvariant underlyingTokensDifferent(tokenIndexFrom, tokenIndexTo);
 
     swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
 
@@ -733,4 +712,27 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
 
     assert false;
 }*/
+
+/* 1.5 2 (might be replacable by 2 1 monotonicity rule)- replaceable by no free minting and no unpaid burning + LP total supply only decreases when paused monotonicity rule 
+    When paused, all underlying token balances must decrease on LP withdrawal
+*/ 
+rule pausedImpliesNoSingleTokenWithdrawal(method f) {
+    uint8 tokenAIndex; uint8 tokenBIndex;
+    
+    requireInitialized();
+    require getTokenBalance(tokenAIndex) == 0 <=> getTokenBalance(tokenBIndex) == 0;
+    require paused();
+    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+
+    env e; calldataarg args;
+    f(e,args);
+
+    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
+    
+    assert tokenABalanceAfter <= tokenABalanceBefore, "token balances must not increase when paused";
+    assert tokenBBalanceAfter <= tokenBBalanceBefore, "token balances must not increase when paused";
+    assert tokenABalanceAfter < tokenABalanceBefore <=> tokenBBalanceAfter < tokenBBalanceBefore, "one token must not decrease alone";
+}
 
