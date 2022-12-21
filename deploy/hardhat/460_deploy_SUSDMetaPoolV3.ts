@@ -1,5 +1,5 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 // Deployment names
@@ -17,9 +17,9 @@ const SWAP_FEE = 4e6 // 4bps
 const ADMIN_FEE = 50e8
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { execute, deploy, get, getOrNull, log, read, save } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   // Manually check if the pool is already deployed
   const metaPool = await getOrNull(META_POOL_NAME)
