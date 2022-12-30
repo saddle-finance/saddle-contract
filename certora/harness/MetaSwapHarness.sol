@@ -7,6 +7,10 @@ import "../munged/meta/MetaSwap.sol";
 // more complex methods in the original contract.
 contract MetaSwapHarness is MetaSwap {
 
+    LPToken public lpToken = swapStorage.lpToken;
+    IERC20 public token0 = swapStorage.pooledTokens[0];
+    IERC20 public token1 = swapStorage.pooledTokens[1];
+
     function getSwapFee() public view returns(uint256) {
         return swapStorage.swapFee;
     }
@@ -25,6 +29,10 @@ contract MetaSwapHarness is MetaSwap {
 
     function getMaxSwapFee() public view returns(uint256) {
         return SwapUtils.MAX_SWAP_FEE;
+    }
+
+    function getBaseSwapPaused() public view returns(bool) {
+        return ISwap(metaSwapStorage.baseSwap).paused();
     }
 
 }

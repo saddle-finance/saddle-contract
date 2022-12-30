@@ -12,6 +12,7 @@ methods {
     getTotalSupply() returns(uint256) envfree
     getMaxAdminFee() returns(uint256) envfree
     getMaxSwapFee() returns(uint256) envfree
+    getBaseSwapPaused() returns(bool) envfree
 
 }
 
@@ -75,6 +76,25 @@ invariant LPsolvency()
         - All properties that are proven for swap are also proven for metaswap
         - Would generalized unit tests for added functions suffice?
 */
+rule MetaSwapLiveness() {
+    require initialized == true;
+    require initializing == false;
+    require getTotalSupply() > 0;
+    require getSwapFee() <= getMaxSwapFee();
+    require getAdminFee() <= getMaxAdminFee();
+    requireInvariant LPsolvency();
+
+    
+    require getBaseSwapPaused();
+
+    env e;
+    uint256 amount;
+    uint256[] minAmounts;
+    uint256 deadline;
+    removeLiquidity@withrevert(e, amount, minAmounts, deadline);
+
+    assert !lastReverted, "Users must be able to remove liquidity even when base swap contract is paused";
+}
 
 
 ////////////////////////////////////////////////////////////////////////////

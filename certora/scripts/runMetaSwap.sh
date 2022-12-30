@@ -5,19 +5,15 @@ then
 fi
 certoraRun \
     certora/harness/MetaSwapHarness.sol \
-    certora/harness/SwapHarness.sol \
+    certora/ComplexityCheck/DummyERC20A.sol \
+    certora/ComplexityCheck/DummyERC20B.sol \
     certora/munged/LPToken.sol \
-    --verify MetaSwapHarness:certora/spec/MetaSwap.spec \
-    --structLink MetaSwapHarness:lpToken=LPToken \
+    --verify MetaSwapHarness:certora/spec/Swap.spec \
     --cache saddle \
-    --loop_iter 4 \
-    --settings -copyLoopUnroll=10 \
-    $RULE \
+    --loop_iter 2 \
     --send_only \
-    --msg "Swap $1 $2" \
     --staging release/19Sep2022 \
     --optimistic_loop \
-    --rule_sanity
-    # --staging yoav/array_of_structs_fix \
-    # --settings -enableEqualitySaturation=false \
-    # 
+    --rule_sanity \
+    $RULE \
+    --msg "Swap $1" \

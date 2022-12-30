@@ -9,8 +9,10 @@ if [[ "$1" ]]
 then
     RULE="--rule $1"
 else
-    RULE="--rules oneUnderlyingZeroMeansAllUnderlyingsZero ifLPTotalSupplyZeroThenIndividualUnderlyingsZero ifSumUnderlyingsZeroLPTotalSupplyZero uninitializedImpliesZeroValueInv"
+    RULE="--rules oneUnderlyingZeroMeansAllUnderlyingsZero ifSumUnderlyingsZeroLPTotalSupplyZero"
 fi
+
+solc-select use 0.6.12
 
 certoraRun \
     certora/harness/SwapHarness.sol \
@@ -22,10 +24,11 @@ certoraRun \
     LPToken:0xce4604a0000000000000000000000050 \
     DummyERC20A:0xce4604a000000000000000000000005c \
     DummyERC20B:0xce4604a0000000000000000000000060 \
+    --link SwapHarness:lpToken=LPToken \
     --link SwapHarness:token0=DummyERC20A \
     --link SwapHarness:token1=DummyERC20B \
-    --structLink SwapHarness:lpToken=LPToken \
     --cache saddle \
+    --settings -t=1000 \
     --loop_iter 2 \
     --send_only \
     --staging release/19Sep2022 \
@@ -33,6 +36,7 @@ certoraRun \
     --rule_sanity \
     $RULE \
     --msg "Swap $1" \
+
 # certoraRun \
 #     certora/harness/SwapHarness.sol \
 #     certora/munged/LPToken.sol \
