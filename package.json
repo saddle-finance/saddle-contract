@@ -19,7 +19,7 @@
     "@openzeppelin/contracts-upgradeable-4.2.0": "npm:@openzeppelin/contracts-upgradeable@4.2.0",
     "@openzeppelin/contracts-upgradeable-4.7.3": "npm:@openzeppelin/contracts-upgradeable@4.7.3",
     "dotenv": "^10.0.0",
-    "hardhat-tracer": "^1.1.0-rc.8",
+    "hardhat-tracer": "^1.2.1",
     "patch-package": "^6.4.7",
     "synthetix": "2.56.1"
   },
