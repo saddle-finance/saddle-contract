@@ -1,16 +1,16 @@
+import { BigNumber } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { isTestNetwork } from "../../utils/network"
-import { BigNumber } from "ethers"
 
 const USD_TOKENS_ARGS: { [token: string]: any[] } = {
   SUSD: ["Synth sUSD", "sUSD", "18"],
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { deploy, execute } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   for (const token in USD_TOKENS_ARGS) {
     await deploy(token, {

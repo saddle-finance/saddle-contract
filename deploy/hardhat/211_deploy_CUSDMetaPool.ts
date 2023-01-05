@@ -3,9 +3,9 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { execute, deploy, get, getOrNull, log, read, save } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   // Manually check if the pool is already deployed
   const saddleWCUSDMetaPool = await getOrNull("SaddleWCUSDMetaPool")

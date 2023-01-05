@@ -13,9 +13,9 @@ const NEW_SIMPLE_REWARDER_CONTRACT_NAME = `${SIMPLE_REWARDER_CONTRACT_NAME}_${RE
 const T_TEAM_MULTISIG_ADDRESS = "0xb78c0cf4c9e9bf4ba24b17065fa8c0ac71957653"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { deploy, execute, get, getOrNull, save, read, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   if ((await getChainId()) === CHAIN_ID.HARDHAT) {
     log(

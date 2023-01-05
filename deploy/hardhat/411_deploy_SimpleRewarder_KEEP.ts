@@ -6,9 +6,9 @@ import { ZERO_ADDRESS } from "../../test/testUtils"
 import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { deploy, execute, get, getOrNull, save, read } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   if ((await getOrNull("SimpleRewarder")) == null) {
     const result = await deploy("SimpleRewarder", {

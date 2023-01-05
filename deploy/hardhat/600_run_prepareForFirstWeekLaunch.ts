@@ -23,11 +23,11 @@ import {
 } from "../../test/testUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
-  const signers = await ethers.getSigners()
+  const signers = await hre.ethers.getSigners()
 
   const gaugeController = (await ethers.getContract(
     "GaugeController",

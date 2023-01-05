@@ -1,12 +1,12 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { MULTISIG_ADDRESSES } from "../../utils/accounts"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { MasterRegistry } from "../../build/typechain"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   const masterRegistry = await getOrNull("MasterRegistry")
 
