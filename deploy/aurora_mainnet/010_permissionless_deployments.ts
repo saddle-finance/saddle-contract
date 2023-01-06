@@ -1,6 +1,7 @@
 import dotenv from "dotenv"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { CHAIN_ID } from "../../utils/network"
 import { deployPermissionlessPoolComponents } from "../deployUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -23,4 +24,4 @@ func.dependencies = [
   "LPToken",
 ]
 
-// func.skip = async (env) => (await env.getChainId()) == CHAIN_ID.MAINNET
+func.skip = async (env) => (await env.getChainId()) == CHAIN_ID.AURORA_MAINNET

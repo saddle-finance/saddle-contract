@@ -17,7 +17,7 @@ import {
 } from "../test/testUtils"
 import { ANYCALL_ADDRESS, MULTISIG_ADDRESSES } from "../utils/accounts"
 import { PoolType } from "../utils/constants"
-import { isTestNetwork } from "../utils/network"
+import { CHAIN_ID, isTestNetwork } from "../utils/network"
 
 export interface PoolData {
   poolName: string // Name of the pool
@@ -380,9 +380,13 @@ export async function deploySwapFlashLoan(
     const TOKEN_ADDRESSES = await Promise.all(
       tokenNames.map(async (name) => (await get(name)).address),
     )
-    const tokenDecimals = await Promise.all(
-      tokenNames.map(async (name) => await read(name, "decimals")),
-    )
+    // TODO: Does not function correctly on new networks
+    let tokenDecimalArray = tokenDecimals
+    if ((await getChainId()) != CHAIN_ID.AURORA_MAINNET) {
+      tokenDecimalArray = await Promise.all(
+        tokenNames.map(async (name) => await read(name, "decimals")),
+      )
+    }
 
     await deploy(poolName, {
       from: deployer,
@@ -402,7 +406,7 @@ export async function deploySwapFlashLoan(
       },
       "initialize",
       TOKEN_ADDRESSES,
-      tokenDecimals,
+      tokenDecimalArray,
       lptokenName,
       lpTokenSymbol,
       initialA,
