@@ -11,4 +11,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await checkTokens(hre, USD_TOKENS_ARGS)
 }
 export default func
-func.tags = ["USXPoolTokens"]
+func.tags = ["USDTPoolTokens"]

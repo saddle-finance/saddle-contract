@@ -33,5 +33,5 @@ func.dependencies = [
   "SwapUtils",
   "SwapFlashLoan",
   "SwapDeployer",
-  "USXPoolTokens",
+  "USDTPoolTokens",
 ]
