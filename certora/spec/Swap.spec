@@ -184,6 +184,8 @@ invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
             requireInvariant underlyingsSolvency();
             require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1);
             requireInvariant adminFeeNeverGreaterThanMAX();
+            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
+            require i1 != i2;
         }
         preserved with (env e) {
             requireInitialized();
@@ -215,18 +217,11 @@ invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
             require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1);
             require e.msg.sender != currentContract;
             require lengthsMatch();
-        }
-    }
-
-
-/* 1 2
-    proves on constructor that all getters are zero
-*/
-invariant uninitializedImpliesZeroValueInv()
-    getAllGettersRandomInput() == 0
-    {
-        preserved with (env e) {
-            require false;
+            requireInitialized(); 
+            requireInvariant LPsolvency();
+            require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
+            requireInvariant underlyingsSolvency();
+            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
         }
     }
 
@@ -332,9 +327,11 @@ rule monotonicallyIncreasingFees(method f) filtered {
 */
 rule onlyAdminCanWithdrawFees() {
     method f;
-    uint256 index;
+    uint8 index;
 
     requireInvariant LPsolvency;
+    requireInvariant underlyingTokensDifferent(0, 1);
+    require getLPTokenAddress() != getToken(index);
 
     uint256 balanceBefore = getAdminBalance(index);
 
@@ -373,27 +370,7 @@ rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
     assert ratioBefore >= 1 <=> ratioAfter >= 1, "ratio of tokens must not go below 1 when paused";
 }
 
-/* 1 2
-    Uninitialized contract state implies all variables are 0
-    proves preservation (n+1 case)
-    @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
-    @dev fails due to Java exception. Not sure why
-*/
-rule uninitializedImpliesZeroValue(method f) { 
-    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
 
-    require !initialized;
-    uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
-    require valBefore == 0;
-
-    env e; calldataarg args;
-    f(e,args);
-
-    require !initialized;
-    uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
-
-    assert valAfter == 0;
-}
 
 /// Generalized unit tests 
 
@@ -743,3 +720,24 @@ rule pausedImpliesNoSingleTokenWithdrawal(method f) {
     assert tokenABalanceAfter < tokenABalanceBefore <=> tokenBBalanceAfter < tokenBBalanceBefore, "one token must not decrease alone";
 }
 
+/* 1 2
+    Uninitialized contract state implies all variables are 0
+    proves preservation (n+1 case)
+    @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
+    @dev fails due to Java exception. Not sure why
+*/
+rule uninitializedImpliesZeroValue(method f) { 
+    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
+
+    require !initialized;
+    uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
+    require valBefore == 0;
+
+    env e; calldataarg args;
+    f(e,args);
+
+    require !initialized;
+    uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
+
+    assert valAfter == 0;
+}
