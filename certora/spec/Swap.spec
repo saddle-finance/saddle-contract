@@ -8,7 +8,7 @@ using LPToken as lpToken
 methods {
 
     // math functions summarized
-	//getD(uint256[], uint256) returns (uint256) => NONDET
+	getD(uint256[], uint256) returns (uint256) => NONDET
     getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
     getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
     // newly declared function to help with summarization
@@ -211,6 +211,13 @@ invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
             basicAssumptions(e);
         }
     }
+    
+/*
+    underlying tokens are different from the LP token 
+*/
+invariant tokensDifferent()
+    getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1)
+
 
 ////////////////////////////////////////////////////////////////////////////
 //                                 Rules                                  //
@@ -277,9 +284,7 @@ rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
 
     uint256 underlyingBalance_ = getTokenBalance(index);
     mathint sumBalances_ = sum_all_underlying_balances;
-    //if (sumBalances_ > _sumBalances) {
-    //    assert underlyingBalance_ - _underlyingBalance != sumBalances_ - _sumBalances;
-    //} else if (sumBalances_ < _sumBalances) {
+
     assert (sumBalances_ < _sumBalances) => _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;     
 }
 
@@ -359,38 +364,6 @@ rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
 
     assert ratioBefore >= 1 <=> ratioAfter >= 1, "ratio of tokens must not go below 1 when paused";
 }
-
-
-
-/// Generalized unit tests 
-
-/* 1 1 P
-    Swapping A for B will always output at least minAmount of tokens B
-*/
-rule swappingCheckMinAmount() {
-    requireInitialized();
-    env e;
-    address sender = e.msg.sender;
-    uint8 tokenIndexFrom;
-    uint8 tokenIndexTo;
-    uint256 dx;
-    uint256 minDy;
-    uint256 deadline;
-
-    uint256 _balance = balanceOfUnderlyingOfUser(sender, tokenIndexTo);
-    basicAssumptions(e);
-    require tokenIndexTo != tokenIndexFrom;
-    requireInvariant underlyingTokensDifferent(tokenIndexFrom, tokenIndexTo);
-
-    swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
-
-    uint256 balance_ = balanceOfUnderlyingOfUser(sender, tokenIndexTo);
-    assert balance_ >= _balance + minDy; 
-}
-
-/* 1 2
-    Swapping token A for token B doesn't change underlying balance of token C
-*/
 
 /// Passing invariants
 
@@ -488,8 +461,6 @@ rule cantReinit(method f) filtered {
     assert lastReverted;
 }
 
-/// Passing rules
-
 /* P
     Only admin can set swap and admin fees
 */
@@ -548,8 +519,6 @@ rule underlyingTokensDifferentInitialized(method f) {
 
     assert (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
 }
-
-
 
 /* P
     Swap can never happen after deadline
@@ -633,6 +602,59 @@ rule removeLiquidityAlwaysBeforeDeadline() {
     removeLiquidity(e, amount, minAmounts, deadline);
 
     assert e.block.timestamp <= deadline;
+}
+
+/* P
+    Swapping A for B will always output at least minAmount of tokens B
+*/
+rule swappingCheckMinAmount() {
+    requireInitialized();
+    env e;
+    address sender = e.msg.sender;
+    uint8 tokenIndexFrom;
+    uint8 tokenIndexTo;
+    uint256 dx;
+    uint256 minDy;
+    uint256 deadline;
+
+    uint256 _balance = balanceOfUnderlyingOfUser(sender, tokenIndexTo);
+    basicAssumptions(e);
+    require tokenIndexTo != tokenIndexFrom;
+    requireInvariant underlyingTokensDifferent(tokenIndexFrom, tokenIndexTo);
+
+    swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
+
+    uint256 balance_ = balanceOfUnderlyingOfUser(sender, tokenIndexTo);
+    assert balance_ >= _balance + minDy; 
+}
+
+/* P
+    Swapping token A for token B doesn't change underlying balance of token C
+*/
+rule swappingIndependence() {
+    requireInitialized();
+    env e;
+    address sender = e.msg.sender;
+    uint8 tokenIndexFrom;
+    uint8 tokenIndexTo;
+    uint8 tokenIndex3;
+    uint256 dx;
+    uint256 minDy;
+    uint256 deadline;
+
+    uint256 _balance = balanceOfUnderlyingOfUser(sender, tokenIndex3);
+    require e.msg.sender != currentContract;
+    require tokenIndexTo != tokenIndexFrom;
+    require tokenIndexTo != tokenIndex3;
+    require tokenIndexFrom != tokenIndex3;
+    requireInvariant underlyingTokensDifferent(tokenIndexFrom, tokenIndexTo);
+    requireInvariant underlyingTokensDifferent(tokenIndexFrom, tokenIndex3);
+    requireInvariant underlyingTokensDifferent(tokenIndex3, tokenIndexTo);
+
+    swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
+
+    uint256 balance_ = balanceOfUnderlyingOfUser(sender, tokenIndex3);
+    assert balance_ == _balance; 
 }
 
 
