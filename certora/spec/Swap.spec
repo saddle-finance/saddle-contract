@@ -102,6 +102,20 @@ function requireInitialized() {
     require initialized;
 }
 
+function basicAssumptions(env e) {
+    requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(0);
+    requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(1);
+    requireInitialized();
+    requireInvariant LPsolvency();
+    require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
+    requireInvariant underlyingsSolvency();
+    require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
+    requireInvariant underlyingTokensDifferent(0,1);
+    require e.msg.sender != currentContract;
+    require lengthsMatch(); 
+    requireInvariant adminFeeNeverGreaterThanMAX();
+}
+
 /*function callGetter(method f, env e, uint i1, uint i2, uint i3) returns(uint) {
     if (f.selector == getter1(uint).selector)
         return getter1(e, i1);
@@ -175,25 +189,11 @@ invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
     getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
     {
         preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
-            requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(0);
-            requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(1);
-            require i1 != i2;
-            requireInitialized();
-            requireInvariant LPsolvency();
-            require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
-            requireInvariant underlyingsSolvency();
-            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1);
-            requireInvariant adminFeeNeverGreaterThanMAX();
-            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
+            basicAssumptions(e);
             require i1 != i2;
         }
         preserved with (env e) {
-            requireInitialized();
-            requireInvariant LPsolvency();
-            require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
-            requireInvariant underlyingsSolvency();
-            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1);
-            requireInvariant adminFeeNeverGreaterThanMAX();
+            basicAssumptions(e);
         }
     }
 
@@ -208,20 +208,7 @@ invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
     }
     {
         preserved with (env e){
-            requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(0);
-            requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(1);
-            requireInitialized();
-            requireInvariant LPsolvency();
-            require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
-            requireInvariant underlyingsSolvency();
-            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1);
-            require e.msg.sender != currentContract;
-            require lengthsMatch();
-            requireInitialized(); 
-            requireInvariant LPsolvency();
-            require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
-            requireInvariant underlyingsSolvency();
-            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
+            basicAssumptions(e);
         }
     }
 
@@ -280,12 +267,12 @@ rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
     uint256 _underlyingBalance = getTokenBalance(index);
     mathint _sumBalances = sum_all_underlying_balances;
 
-    //requireInvariant underlyingsSolvency();
-    requireInitialized();
+    env e;
+    basicAssumptions(e);
     require _sumBalances >= 0;
 
     calldataarg args;
-    env e;
+
     f(e,args);
 
     uint256 underlyingBalance_ = getTokenBalance(index);
@@ -309,6 +296,7 @@ rule monotonicallyIncreasingFees(method f) filtered {
     env e;
     require e.msg.sender != currentContract;
     requireInvariant underlyingTokensDifferent(indexA, indexB);
+    basicAssumptions(e);
     requireInvariant LPsolvency();
 
     uint256 balanceBefore = getAdminBalance(indexA);
@@ -329,13 +317,13 @@ rule onlyAdminCanWithdrawFees() {
     method f;
     uint8 index;
 
-    requireInvariant LPsolvency;
-    requireInvariant underlyingTokensDifferent(0, 1);
+    env e;
+    basicAssumptions(e);
     require getLPTokenAddress() != getToken(index);
 
     uint256 balanceBefore = getAdminBalance(index);
 
-    env e; calldataarg args;
+    calldataarg args;
     f(e, args);
 
     uint256 balanceAfter = getAdminBalance(index);
@@ -349,6 +337,8 @@ rule onlyAdminCanWithdrawFees() {
 rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
     uint8 tokenAIndex; uint8 tokenBIndex;
     require paused();
+    env e; 
+    basicAssumptions(e);
     require tokenAIndex != tokenBIndex;
     
     uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
@@ -357,7 +347,7 @@ rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
 
     mathint ratioBefore = tokenABalanceBefore / tokenBBalanceBefore;
 
-    env e; calldataarg args;
+    calldataarg args;
     require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
     require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
     f(e, args);
@@ -374,7 +364,7 @@ rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
 
 /// Generalized unit tests 
 
-/* 1 1
+/* 1 1 P
     Swapping A for B will always output at least minAmount of tokens B
 */
 rule swappingCheckMinAmount() {
@@ -388,7 +378,7 @@ rule swappingCheckMinAmount() {
     uint256 deadline;
 
     uint256 _balance = balanceOfUnderlyingOfUser(sender, tokenIndexTo);
-    require e.msg.sender != currentContract;
+    basicAssumptions(e);
     require tokenIndexTo != tokenIndexFrom;
     requireInvariant underlyingTokensDifferent(tokenIndexFrom, tokenIndexTo);
 

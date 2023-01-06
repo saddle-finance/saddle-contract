@@ -33,9 +33,9 @@ certoraRun \
     --send_only \
     --staging release/19Sep2022 \
     --optimistic_loop \
-    --rule_sanity advanced \
     $RULE \
     --msg "Swap $1 $2" \
+    --rule_sanity \
 
 # certoraRun \
 #     certora/harness/SwapHarness.sol \
