@@ -5,9 +5,9 @@
 #     RULE="--rule $2"
 # fi
 
-if [[ "$1" ]]
+if [[ "$2" ]]
 then
-    RULE="--rule $1"
+    RULE="--rule $2"
 else
     RULE="--rules oneUnderlyingZeroMeansAllUnderlyingsZero ifSumUnderlyingsZeroLPTotalSupplyZero"
 fi
@@ -28,14 +28,14 @@ certoraRun \
     --link SwapHarness:token0=DummyERC20A \
     --link SwapHarness:token1=DummyERC20B \
     --cache saddle \
-    --settings -t=1000 \
+    --settings -mediumTimeout=250 \
     --loop_iter 2 \
     --send_only \
     --staging release/19Sep2022 \
     --optimistic_loop \
-    --rule_sanity \
+    --rule_sanity advanced \
     $RULE \
-    --msg "Swap $1" \
+    --msg "Swap $1 $2" \
 
 # certoraRun \
 #     certora/harness/SwapHarness.sol \

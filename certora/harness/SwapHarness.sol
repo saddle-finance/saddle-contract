@@ -53,6 +53,10 @@ contract SwapHarness is Swap {
         return sum;
     }
 
+    function lengthsMatch() public view returns(bool) {
+        return swapStorage.pooledTokens.length == swapStorage.balances.length;
+    }
+
     function getLPTokenAddress() public view returns(address) {
         return address(swapStorage.lpToken);
     }

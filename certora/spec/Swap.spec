@@ -35,6 +35,7 @@ methods {
     removeLiquidityImbalance(uint256[],uint256,uint256)
 
     // harness functions
+    lengthsMatch() returns(bool) envfree
     getSwapFee() returns(uint256) envfree
     getAdminFee() returns(uint256) envfree
     getTotalSupply() returns(uint256) envfree
@@ -176,23 +177,27 @@ invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
         preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
             requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(0);
             requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(1);
+            require i1 != i2;
             requireInitialized();
             requireInvariant LPsolvency();
-            require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
+            require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
             requireInvariant underlyingsSolvency();
-            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
+            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1);
+            requireInvariant adminFeeNeverGreaterThanMAX();
         }
         preserved with (env e) {
             requireInitialized();
             requireInvariant LPsolvency();
-            require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
+            require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
             requireInvariant underlyingsSolvency();
-            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
+            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1);
+            requireInvariant adminFeeNeverGreaterThanMAX();
         }
     }
 
-/* 1 2
-    Other direction to above invariant 
+/* P*
+    The LP Token's totalSupply must be 0 if the sum of all underlying tokens is 0
+    * testing with advanced sanity to get rid of redundant requires
 */
 invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
     sum_all_underlying_balances == 0 => getTotalSupply() == 0
@@ -201,12 +206,15 @@ invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
     }
     {
         preserved with (env e){
-            // requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(0);
-            // requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(1);
-            // requireInitialized();
-            // requireInvariant LPsolvency();
-            // require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
-            // requireInvariant underlyingsSolvency();
+            requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(0);
+            requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(1);
+            requireInitialized();
+            requireInvariant LPsolvency();
+            require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
+            requireInvariant underlyingsSolvency();
+            require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1);
+            require e.msg.sender != currentContract;
+            require lengthsMatch();
         }
     }
 
