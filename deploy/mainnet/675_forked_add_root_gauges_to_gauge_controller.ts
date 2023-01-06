@@ -48,7 +48,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "add_gauge(address,int128,uint256)",
       rootGauge,
       0,
-      ethers.utils.parseEther("1"),
+      ethers.utils.parseEther("1000000"),
     )
   }
 

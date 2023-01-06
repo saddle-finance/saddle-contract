@@ -4,20 +4,20 @@ import {
   setEtherBalance,
 } from "../../test/testUtils"
 
-import { DeployFunction } from "hardhat-deploy/types"
-import { GenericERC20 } from "../../build/typechain"
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import dotenv from "dotenv"
 import { ethers } from "hardhat"
-import { isMainnet } from "../../utils/network"
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import path from "path"
+import { GenericERC20 } from "../../build/typechain"
+import { isMainnet } from "../../utils/network"
 
 dotenv.config()
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { execute, log, read, all, get } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   // These addresses are for large holders of the given token (used in forked mainnet testing)
   // You can find whales' addresses on etherscan's holders page.

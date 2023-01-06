@@ -146,18 +146,20 @@ export async function deployMetaswap(
 }
 
 /**
- * @notice deploys a metaswap pool for each given PoolData element that has not yet been deployed.
+ * @notice Deploys a metaswap pool for each given PoolData element that has not yet been deployed.
  * Deploys associated metaswapDeposit and metaswap LP tokens and saves these deployments.
  * Attempts to verify all contracts, adds any non-registered pools to pool registry.
  * When run on local hardhat environment checks for token deployments and mints test tokens.
- * @param PoolData array of metaswap pool deployment argument objects
+ * @param pools array of metaswap pool deployment argument objects
+ * @param registerNewPools if true, will add any new pools to the pool registry
  */
 export async function deployMetaswapPools(
   hre: HardhatRuntimeEnvironment,
   pools: PoolData[],
+  registerNewPools = true,
 ) {
   const { deployments, getNamedAccounts } = hre
-  const { execute, deploy, get, getOrNull, log, read, save } = deployments
+  const { execute, deploy, get, log, read, save } = deployments
   const { deployer } = await getNamedAccounts()
   // check tokens
   pools.map(async (pool) => await checkTokens(hre, pool.tokenArgs))
@@ -167,6 +169,17 @@ export async function deployMetaswapPools(
     const pool = newDeploypools[i]
     const metaPoolName = pool.poolName
     const basePoolName = pool.basePoolName
+
+    // If meta pool name is null or empty string, throw error
+    if (!metaPoolName || metaPoolName === "") {
+      throw new Error("Meta pool name is null or empty string")
+    }
+
+    // If base pool name is null or empty string, throw error
+    if (!basePoolName || basePoolName === "") {
+      throw new Error("Base pool name is null or empty string")
+    }
+
     const tokenNames: string[] = []
     for (const token in pool.tokenArgs) {
       tokenNames.push(token)
@@ -222,7 +235,7 @@ export async function deployMetaswapPools(
         await get("LPToken")
       ).address,
       (
-        await get(basePoolName!)
+        await get(basePoolName)
       ).address,
     )
 
@@ -250,7 +263,7 @@ export async function deployMetaswapPools(
     const metaswapDepositDeployment = await deployMetaswapDeposit(
       hre,
       `${metaPoolName}Deposit`,
-      basePoolName!,
+      basePoolName,
       metaPoolName,
     )
     //
@@ -265,7 +278,7 @@ export async function deployMetaswapPools(
     await verifyContract(hre, metaPoolName)
   }
   // register new pools
-  if (newDeploypools.length > 0) {
+  if (registerNewPools && newDeploypools.length > 0) {
     await registerPools(hre, newDeploypools)
   }
 }
@@ -418,18 +431,20 @@ export async function deploySwapFlashLoan(
 }
 
 /**
- * @notice deploys a swapFlashLoan pool for each given PoolData element that has not yet been deployed.
+ * @notice Deploys a swapFlashLoan pool for each given PoolData element that has not yet been deployed.
  * Deploys and saves deployment for the associated LP token.
  * Attempts to verify all contracts, adds any non-registered pools to pool registry.
  * When run on local hardhat environment checks for token deployments and mints test tokens.
- * @param PoolData array of pool deployment argument objects, basepool should always be empty
+ * @param pools array of pool deployment argument objects, basepool should always be empty
+ * @param registerNewPools if true, will add any new pools to the pool registry
  */
 export async function deploySwapFlashLoanPools(
   hre: HardhatRuntimeEnvironment,
   pools: PoolData[],
+  registerNewPools = true,
 ) {
   const { deployments, getNamedAccounts } = hre
-  const { execute, deploy, get, getOrNull, log, read, save } = deployments
+  const { execute, deploy, get, log, read, save } = deployments
   const { deployer } = await getNamedAccounts()
   // check tokens
   pools.map(async (pool) => await checkTokens(hre, pool.tokenArgs))
@@ -517,7 +532,7 @@ export async function deploySwapFlashLoanPools(
   }
 
   // register new pools
-  if (newDeploypools.length > 0) {
+  if (registerNewPools && newDeploypools.length > 0) {
     await registerPools(hre, newDeploypools)
   }
 }
@@ -539,7 +554,7 @@ export async function deployLiquidityGauge(
   const gaugeName = `LiquidityGaugeV5_${lpToken}`
 
   console.log(`Attempting to deploy gauge with name: ${gaugeName}`)
-  const gaugeDeployResult = await deploy(gaugeName, {
+  await deploy(gaugeName, {
     from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -694,7 +709,6 @@ export async function registerPools(
       ),
     )
     const batchCallData = batchCall.map((x) => x.data).filter(Boolean)
-
     await execute(
       "PoolRegistry",
       { from: deployer, log: true },
@@ -1090,8 +1104,8 @@ export async function deployChildGauges(
   lpTokenNameToRegistryName: Record<string, string>,
   isMirrored: boolean,
 ) {
-  const { deployments, getNamedAccounts, ethers } = hre
-  const { get, execute, deploy, log, save } = deployments
+  const { deployments, getNamedAccounts } = hre
+  const { get, execute, save } = deployments
   const { deployer } = await getNamedAccounts()
 
   const executeOptions = {

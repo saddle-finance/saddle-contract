@@ -7,15 +7,31 @@ import "hardhat-tracer"
 import dotenv from "dotenv"
 import { HardhatUserConfig } from "hardhat/config"
 import "./tasks"
-import { MULTISIG_ADDRESSES } from "./utils/accounts"
+import {
+  MULTISIG_ADDRESSES,
+  PROD_CROSS_CHAIN_DEPLOYER_ADDRESS,
+  PROD_DEPLOYER_ADDRESS,
+} from "./utils/accounts"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "./utils/network"
 
 dotenv.config()
 
+// Array of private keys to be used as signers
+// When running with mainnet networks, the first account will be used as the deployer by default
+const accountsToUse = []
+
 // Use the private key from the .env file if available
-const crossChainDeployerAccount = process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY
-  ? "privatekey://" + process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY
-  : "0x979B44CFc7a9B54BED8a3C4FD674B09c194219fD"
+let deployerAccount = PROD_DEPLOYER_ADDRESS
+if (process.env.DEPLOYER_PRIVATE_KEY) {
+  accountsToUse.push(process.env.DEPLOYER_PRIVATE_KEY)
+  deployerAccount = `privatekey://${process.env.DEPLOYER_PRIVATE_KEY}`
+}
+
+let crossChainDeployerAccount = PROD_CROSS_CHAIN_DEPLOYER_ADDRESS
+if (process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY) {
+  accountsToUse.push(process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY)
+  crossChainDeployerAccount = `privatekey://${process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY}`
+}
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
@@ -236,17 +252,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: {
-      default: 0, // here this will by default take the first account as deployer
-      1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
-      42161: 0, // use the same address on arbitrum mainnet
-      10: 0, // use the same address on optimism mainnet
-      250: 0, // use the same address on fantom mainnet
-      9000: 0, // use the same address on evmos testnet
-      9001: 0, // use the same address on evmos mainnnet
-      2221: 0, // use the same address on kava testnet
-      2222: 0, // use the same address on kava testnet
-      3: 0, // use the same address on ropsten
-      1313161554: 0, // use the same address on aurora mainnet
+      default: deployerAccount,
     },
     crossChainDeployer: {
       default: crossChainDeployerAccount,
@@ -270,6 +276,8 @@ const config: HardhatUserConfig = {
       42161: MULTISIG_ADDRESSES[42161],
       10: MULTISIG_ADDRESSES[10],
       250: MULTISIG_ADDRESSES[250],
+      1313161554: MULTISIG_ADDRESSES[1313161554],
+      9001: MULTISIG_ADDRESSES[9001],
     },
   },
   spdxLicenseIdentifier: {
@@ -278,37 +286,14 @@ const config: HardhatUserConfig = {
   },
 }
 
-if (process.env.ACCOUNT_PRIVATE_KEYS) {
-  config.networks = {
-    ...config.networks,
-    mainnet: {
-      ...config.networks?.mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    arbitrum_mainnet: {
-      ...config.networks?.arbitrum_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    optimism_mainnet: {
-      ...config.networks?.optimism_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    fantom_mainnet: {
-      ...config.networks?.fantom_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    evmos_mainnet: {
-      ...config.networks?.evmos_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    kava_mainnet: {
-      ...config.networks?.kava_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    aurora_mainnet: {
-      ...config.networks?.aurora_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
+// If we have any private keys, use them for mainnet networks as default signers
+if (accountsToUse.length > 0 && config.networks) {
+  for (const network of Object.keys(config.networks)) {
+    // if network name includes "mainnet", change the accounts
+    if (network.includes("mainnet")) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      config.networks[network]!.accounts = accountsToUse
+    }
   }
 }
 

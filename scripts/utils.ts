@@ -65,3 +65,12 @@ export function getHardhatTestSigners(): Signer[] {
   }
   return signers
 }
+
+export function getHardhatTestSigner(index = 0): Signer {
+  const HDNode = ethers.utils.HDNode.fromMnemonic(
+    "test test test test test test test test test test test junk",
+  )
+
+  const derivedNode = HDNode.derivePath(`m/44'/60'/0'/0/${index}`)
+  return new ethers.Wallet(derivedNode.privateKey)
+}
