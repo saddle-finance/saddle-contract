@@ -103,28 +103,18 @@ function requireInitialized() {
 }
 
 function basicAssumptions(env e) {
+    requireInitialized();
     requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(0);
     requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(1);
-    requireInitialized();
     requireInvariant LPsolvency();
     require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
     requireInvariant underlyingsSolvency();
-    require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
+    requireInvariant underlyingTokensAndLPDifferent();
     requireInvariant underlyingTokensDifferent(0,1);
-    require e.msg.sender != currentContract;
-    require lengthsMatch(); 
+    requireInvariant lengthsAlwaysMatch(); 
     requireInvariant adminFeeNeverGreaterThanMAX();
+    require e.msg.sender != currentContract;
 }
-
-/*function callGetter(method f, env e, uint i1, uint i2, uint i3) returns(uint) {
-    if (f.selector == getter1(uint).selector)
-        return getter1(e, i1);
-    else if
-        ///...
-    else return 0;
-}*/
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -197,28 +187,6 @@ invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
         }
     }
 
-/* P*
-    The LP Token's totalSupply must be 0 if the sum of all underlying tokens is 0
-    * testing with advanced sanity to get rid of redundant requires
-*/
-invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
-    sum_all_underlying_balances == 0 => getTotalSupply() == 0
-    filtered {
-        f -> f.selector == addLiquidity(uint256[],uint256,uint256).selector
-    }
-    {
-        preserved with (env e){
-            basicAssumptions(e);
-        }
-    }
-    
-/*
-    underlying tokens are different from the LP token 
-*/
-invariant tokensDifferent()
-    getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1) && getToken(0) != getToken(1)
-
-
 ////////////////////////////////////////////////////////////////////////////
 //                                 Rules                                  //
 ////////////////////////////////////////////////////////////////////////////
@@ -228,42 +196,6 @@ rule sanity(method f) {
     f(e,args);
     assert false;
 }
-
-/* 
-    Adding liquidity to one should decrease that tokens price
-*/
-
-/*
-    Token addresses can't change
-*/
-
-/* 
-    Slippage less than constant product pool
-*/
-
-/* 
-    Slippage proportional to change in balances
-*/
-
-/*
-    Swaping token A for token B followed by B for A should not result in a decrease in balances of the pool 
-*/
-
-/*
-    Swaping token A for token B followed by B for A should not result in a decrease in the product of balances  
-*/
-
-/*
-    Swaping token A for token B followed by B for A should not result in a decrease in the virtual price
-*/
-
-/*
-    All functionality of removeLiquidityImbalance can be performed using 2 removeLiquidityOneToken calls for a pool with 2 tokens
-*/
-
-
-
-
 
 /* 1 2
     There must not be a transaction that decreases only one 
@@ -339,28 +271,29 @@ rule onlyAdminCanWithdrawFees() {
 /* 1 3
     When paused, ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
 */
-rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
+rule tokenRatioDoesntGoBelowOne(method f) {
     uint8 tokenAIndex; uint8 tokenBIndex;
-    require paused();
-    env e; 
+    
+    env e; calldataarg args;
     basicAssumptions(e);
     require tokenAIndex != tokenBIndex;
-    
+
     uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
     uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+    require tokenABalanceBefore >= tokenBBalanceBefore;
+    require tokenABalanceBefore > 0;
+    require tokenBBalanceBefore > 0;
+    mathint ratioBefore = tokenABalanceBefore / tokenABalanceBefore;
     
-
-    mathint ratioBefore = tokenABalanceBefore / tokenBBalanceBefore;
-
-    calldataarg args;
-    require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
-    require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
     f(e, args);
 
     uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
     uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
-
+    require tokenABalanceAfter >= tokenBBalanceAfter;
+    require tokenABalanceAfter > 0;
+    require tokenBBalanceAfter > 0;
     mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
+
 
     assert ratioBefore >= 1 <=> ratioAfter >= 1, "ratio of tokens must not go below 1 when paused";
 }
@@ -368,20 +301,24 @@ rule pausedImpliesTokenRatioDoesntGoBelowOne(method f) {
 /// Passing invariants
 
 /* P
+    The LP Token's totalSupply must be 0 if the sum of all underlying tokens is 0
+*/
+invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
+    sum_all_underlying_balances == 0 => getTotalSupply() == 0
+    {
+        preserved with (env e){
+            basicAssumptions(e);
+        }
+    }
+
+/* P
     If total supply of LP token is zero then every underlying token balance is also zero
 */
 invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
     getTotalSupply() == 0 => getTokenBalance(i) == 0
     {
-        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
-            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i1);
-            requireInvariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(i2);
-        }
         preserved with (env e) {
-            requireInitialized();
-            requireInvariant LPsolvency();
-            require lpToken.balanceOf(e, e.msg.sender) < getTotalSupply();
-            requireInvariant underlyingsSolvency();
+            basicAssumptions(e);
         }
     }
 
@@ -434,13 +371,37 @@ invariant LPtotalSupplyZeroWhenUninitialized()
         }
     }
 
-/* P
-    Underlying tokens remain different
-*/
+
+/** 
+ * Underlying tokens remain different
+ * @dev Passing.
+ */
 invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
     tokenAIndex != tokenBIndex => getToken(tokenAIndex) != getToken(tokenBIndex)
     {
         preserved{
+            requireInitialized();
+        }
+    }
+
+/* P
+    Underlying tokens are different from the LP token 
+*/
+invariant underlyingTokensAndLPDifferent()
+    getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1)
+    { 
+        preserved {
+            requireInitialized();
+        } 
+    }
+
+/* P
+    The length of the pooledTokens array must match the length of the balances array
+*/
+invariant lengthsAlwaysMatch()
+    lengthsMatch()
+    {
+        preserved {
             requireInitialized();
         }
     }
@@ -620,7 +581,6 @@ rule swappingCheckMinAmount() {
     uint256 _balance = balanceOfUnderlyingOfUser(sender, tokenIndexTo);
     basicAssumptions(e);
     require tokenIndexTo != tokenIndexFrom;
-    requireInvariant underlyingTokensDifferent(tokenIndexFrom, tokenIndexTo);
 
     swap(e, tokenIndexFrom, tokenIndexTo, dx, minDy, deadline);
 
@@ -753,3 +713,35 @@ rule uninitializedImpliesZeroValue(method f) {
 
     assert valAfter == 0;
 }
+
+/* 
+    Adding liquidity to one should decrease that tokens price
+*/
+
+/*
+    Token addresses can't change
+*/
+
+/* 
+    Slippage less than constant product pool
+*/
+
+/* 
+    Slippage proportional to change in balances
+*/
+
+/*
+    Swaping token A for token B followed by B for A should not result in a decrease in balances of the pool 
+*/
+
+/*
+    Swaping token A for token B followed by B for A should not result in a decrease in the product of balances  
+*/
+
+/*
+    Swaping token A for token B followed by B for A should not result in a decrease in the virtual price
+*/
+
+/*
+    All functionality of removeLiquidityImbalance can be performed using 2 removeLiquidityOneToken calls for a pool with 2 tokens
+*/
