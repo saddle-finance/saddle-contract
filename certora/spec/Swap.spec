@@ -113,6 +113,7 @@ function basicAssumptions(env e) {
     requireInvariant underlyingTokensDifferent(0,1);
     requireInvariant lengthsAlwaysMatch(); 
     requireInvariant adminFeeNeverGreaterThanMAX();
+    requireInvariant swapFeeNeverGreaterThanMAX();
     require e.msg.sender != currentContract;
 }
 
@@ -182,6 +183,10 @@ invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
             basicAssumptions(e);
             require i1 != i2;
         }
+        preserved removeLiquidityOneToken(uint256 i1, uint8 i2, uint256 i3, uint256 i4) with (env e) {
+            basicAssumptions(e);
+            require getAdminFee() < getMaxAdminFee();
+        }
         preserved with (env e) {
             basicAssumptions(e);
         }
@@ -207,10 +212,7 @@ rule monotonicallyIncreasingFees(method f) filtered {
     uint8 indexB;
 
     env e;
-    require e.msg.sender != currentContract;
-    requireInvariant underlyingTokensDifferent(indexA, indexB);
     basicAssumptions(e);
-    requireInvariant LPsolvency();
 
     uint256 balanceBefore = getAdminBalance(indexA);
 
@@ -220,7 +222,6 @@ rule monotonicallyIncreasingFees(method f) filtered {
     uint256 balanceAfter = getAdminBalance(indexA);
 
     assert balanceAfter >= balanceBefore , "fees must not decrease, except for withdraw by admin";
-
 }
 
 /* 1 1
@@ -232,7 +233,6 @@ rule onlyAdminCanWithdrawFees() {
 
     env e;
     basicAssumptions(e);
-    require getLPTokenAddress() != getToken(index);
 
     uint256 balanceBefore = getAdminBalance(index);
 
@@ -246,9 +246,9 @@ rule onlyAdminCanWithdrawFees() {
 
 /// Passing invariants
 
-/* P
-    The LP Token's totalSupply must be 0 if the sum of all underlying tokens is 0
-*/
+/**
+ * The LP Token's totalSupply must be 0 if the sum of all underlying tokens is 0
+ */
 invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
     sum_all_underlying_balances == 0 => getTotalSupply() == 0
     {
@@ -257,9 +257,9 @@ invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
         }
     }
 
-/* P
-    If total supply of LP token is zero then every underlying token balance is also zero
-*/
+/**
+ * If total supply of LP token is zero then every underlying token balance is also zero
+ */
 invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
     getTotalSupply() == 0 => getTokenBalance(i) == 0
     {
@@ -268,22 +268,22 @@ invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
         }
     }
 
-/* P
-    swapFee can never be greater MAX_SWAP_FEE
-*/
+/**
+ * swapFee can never be greater MAX_SWAP_FEE
+ */
 invariant swapFeeNeverGreaterThanMAX()
     getSwapFee() <= getMaxSwapFee()
 
 
-/* P
-    adminFee can never be greater MAX_ADMIN_FEE
-*/
+/**
+ * adminFee can never be greater MAX_ADMIN_FEE
+ */
 invariant adminFeeNeverGreaterThanMAX() 
     getAdminFee() <= getMaxAdminFee()
 
-/* P
-    Sum of all users' LP balance must be equal to LP's `totalSupply`
-*/
+/**
+ * Sum of all users' LP balance must be equal to LP's `totalSupply`
+ */
 invariant LPsolvency()
     getTotalSupply() == sum_all_users_LP
     {
@@ -292,9 +292,9 @@ invariant LPsolvency()
             }
     }
 
-/* P
-    Sum of all underlying balances must equal the contract's sum.
-*/
+/**
+ * Sum of all underlying balances must equal the contract's sum.
+ */
 invariant underlyingsSolvency()
     getSumOfUnderlyings() == sum_all_underlying_balances
     {
@@ -303,9 +303,9 @@ invariant underlyingsSolvency()
             }
     }
 
-/* P
-    LPToken totalSupply must be zero if `addLiquidity` has not been called
-*/
+/**
+ * LPToken totalSupply must be zero if `addLiquidity` has not been called
+ */
 invariant LPtotalSupplyZeroWhenUninitialized()
     getTotalSupply() == 0
     { 
@@ -320,7 +320,6 @@ invariant LPtotalSupplyZeroWhenUninitialized()
 
 /** 
  * Underlying tokens remain different
- * @dev Passing.
  */
 invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
     tokenAIndex != tokenBIndex => getToken(tokenAIndex) != getToken(tokenBIndex)
@@ -330,9 +329,9 @@ invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
         }
     }
 
-/* P
-    Underlying tokens are different from the LP token 
-*/
+/**
+ * Underlying tokens are different from the LP token 
+ */
 invariant underlyingTokensAndLPDifferent()
     getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1)
     { 
@@ -341,9 +340,9 @@ invariant underlyingTokensAndLPDifferent()
         } 
     }
 
-/* P
-    The length of the pooledTokens array must match the length of the balances array
-*/
+/**
+ * The length of the pooledTokens array must match the length of the balances array
+ */
 invariant lengthsAlwaysMatch()
     lengthsMatch()
     {
@@ -354,9 +353,9 @@ invariant lengthsAlwaysMatch()
 
 /// Passing rules
 
-/* P
-    cant reinit 
-*/
+/**
+ * Contract can't be initialized again if it has already been initialized.
+ */
 rule cantReinit(method f) filtered {
     f -> f.selector == initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector
 } {
@@ -368,9 +367,9 @@ rule cantReinit(method f) filtered {
     assert lastReverted;
 }
 
-/* P
-    Only admin can set swap and admin fees
-*/
+/**
+ * Only admin can set swap fees.
+ */
 rule onlyAdminCanSetSwapFees(method f) {
     requireInitialized();
     uint256 swapFeeBefore = getSwapFee();
@@ -383,9 +382,9 @@ rule onlyAdminCanSetSwapFees(method f) {
     assert swapFeeAfter != swapFeeBefore => f.selector == setSwapFee(uint256).selector && e.msg.sender == owner(), "fees must only be changes by admin";
 }
 
-/* P
-    Only admin can set swap and admin fees
-*/
+/**
+ * Only admin can set admin fees.
+ */
 rule onlyAdminCanSetAdminFees(method f) {
     uint256 swapFeeBefore = getAdminFee();
 
@@ -397,9 +396,9 @@ rule onlyAdminCanSetAdminFees(method f) {
     assert swapFeeAfter != swapFeeBefore => f.selector == setAdminFee(uint256).selector && e.msg.sender == owner(), "fees must only be changes by admin";
 }
 
-/* P
-    When paused, total LP amount can only decrease
-*/
+/**
+ * When paused, total LP amount can only decrease.
+ */
 rule pausedMeansLPMonotonicallyDecreases(method f) {
     uint256 totalSupplyBefore = getTotalSupply();
 
@@ -411,25 +410,9 @@ rule pausedMeansLPMonotonicallyDecreases(method f) {
     assert paused() => totalSupplyAfter <= totalSupplyBefore, "total supply of the lp token must not increase when paused";
 }
 
-/* P
-    Two underlying tokens can never have the same address (initialized)
-*/
-rule underlyingTokensDifferentInitialized(method f) {
-    uint8 tokenAIndex;
-    uint8 tokenBIndex;
-
-    require (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
-
-    calldataarg args;
-    env e;
-    f(e,args);
-
-    assert (tokenAIndex != tokenBIndex) => (getToken(tokenAIndex) != getToken(tokenBIndex));
-}
-
-/* P
-    Swap can never happen after deadline
-*/
+/**
+ * Swap can never happen after deadline.
+ */
 rule swapAlwaysBeforeDeadline() {
     requireInitialized();
     env e;
@@ -445,9 +428,9 @@ rule swapAlwaysBeforeDeadline() {
     assert e.block.timestamp <= deadline;
 }
 
-/* P
-    LPToken totalSupply must be zero if `addLiquidity` has not been called
-*/
+/**
+ * LPToken totalSupply must be zero if `addLiquidity` has not been called.
+ */
 rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector} {
     requireInitialized();
     require getTotalSupply() == 0;
@@ -458,10 +441,9 @@ rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiq
     assert getTotalSupply() == 0;
 }
 
-/* P
-    Providing liquidity will always output at least minToMint amount of LP 
-    tokens
-*/
+/**
+ * Providing liquidity will always output at least `minToMint` amount of LP tokens.
+ */
 rule addLiquidityCheckMinToMint() {
     requireInitialized();
     require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
@@ -479,9 +461,9 @@ rule addLiquidityCheckMinToMint() {
     assert balance_ >= _balance + minToMint;
 }
 
-/* P
-    Add LP can never happen after deadline
-*/
+/**
+ * Add LP can never happen after deadline.
+ */
 rule addLiquidityAlwaysBeforeDeadline() {
     requireInitialized();
     env e;
@@ -495,9 +477,9 @@ rule addLiquidityAlwaysBeforeDeadline() {
     assert e.block.timestamp <= deadline;
 }
 
-/* P
-    Remove LP can never happen after deadline
-*/
+/**
+ * Remove LP can never happen after deadline.
+ */
 rule removeLiquidityAlwaysBeforeDeadline() {
     requireInitialized();
     env e;
@@ -511,9 +493,9 @@ rule removeLiquidityAlwaysBeforeDeadline() {
     assert e.block.timestamp <= deadline;
 }
 
-/* P
-    Swapping A for B will always output at least minAmount of tokens B
-*/
+/**
+ * Swapping A for B will always output at least minAmount of tokens B.
+ */
 rule swappingCheckMinAmount() {
     requireInitialized();
     env e;
@@ -534,9 +516,9 @@ rule swappingCheckMinAmount() {
     assert balance_ >= _balance + minDy; 
 }
 
-/* P
-    Swapping token A for token B doesn't change underlying balance of token C
-*/
+/**
+ * Swapping token A for token B doesn't change underlying balance of token C.
+ */
 rule swappingIndependence() {
     requireInitialized();
     env e;
@@ -563,9 +545,9 @@ rule swappingIndependence() {
     assert balance_ == _balance; 
 }
 
-/* P
-    When paused, ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
-*/
+/**
+ * When paused, ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
+ */
 rule tokenRatioDoesntGoBelowOne(method f) {
     uint8 tokenAIndex; uint8 tokenBIndex;
     
