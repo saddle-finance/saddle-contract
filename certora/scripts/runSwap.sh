@@ -28,7 +28,7 @@ certoraRun \
     --link SwapHarness:token0=DummyERC20A \
     --link SwapHarness:token1=DummyERC20B \
     --cache saddle \
-    --settings -mediumTimeout=250 \
+    --settings -mediumTimeout=500,-t=1000,-depth=50,-enableEqualitySaturation=false,-simplificationDepth=10 \
     --loop_iter 2 \
     --send_only \
     --staging release/19Sep2022 \
@@ -36,7 +36,6 @@ certoraRun \
     --rule_sanity \
     $RULE \
     --msg "Swap $1 $2" \
-    --rule_sanity \
 
 # certoraRun \
 #     certora/harness/SwapHarness.sol \
