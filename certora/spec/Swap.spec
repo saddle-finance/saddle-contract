@@ -198,30 +198,6 @@ rule sanity(method f) {
 }
 
 /* 1 2
-    There must not be a transaction that decreases only one 
-    underlying balance, except for removeLiquidityOneToken 
-*/
-rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
-    uint8 index;
-    uint256 _underlyingBalance = getTokenBalance(index);
-    mathint _sumBalances = sum_all_underlying_balances;
-
-    env e;
-    basicAssumptions(e);
-    require _sumBalances >= 0;
-
-    calldataarg args;
-
-    f(e,args);
-
-    uint256 underlyingBalance_ = getTokenBalance(index);
-    mathint sumBalances_ = sum_all_underlying_balances;
-
-    assert (sumBalances_ < _sumBalances) => _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;     
-}
-
-
-/* 1 2
     Admin fees can only increase
 */
 rule monotonicallyIncreasingFees(method f) filtered {
@@ -266,36 +242,6 @@ rule onlyAdminCanWithdrawFees() {
     uint256 balanceAfter = getAdminBalance(index);
 
     assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
-}
-
-/* 1 3
-    When paused, ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
-*/
-rule tokenRatioDoesntGoBelowOne(method f) {
-    uint8 tokenAIndex; uint8 tokenBIndex;
-    
-    env e; calldataarg args;
-    basicAssumptions(e);
-    require tokenAIndex != tokenBIndex;
-
-    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
-    require tokenABalanceBefore >= tokenBBalanceBefore;
-    require tokenABalanceBefore > 0;
-    require tokenBBalanceBefore > 0;
-    mathint ratioBefore = tokenABalanceBefore / tokenABalanceBefore;
-    
-    f(e, args);
-
-    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
-    require tokenABalanceAfter >= tokenBBalanceAfter;
-    require tokenABalanceAfter > 0;
-    require tokenBBalanceAfter > 0;
-    mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
-
-
-    assert ratioBefore >= 1 <=> ratioAfter >= 1, "ratio of tokens must not go below 1 when paused";
 }
 
 /// Passing invariants
@@ -617,6 +563,36 @@ rule swappingIndependence() {
     assert balance_ == _balance; 
 }
 
+/* P
+    When paused, ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
+*/
+rule tokenRatioDoesntGoBelowOne(method f) {
+    uint8 tokenAIndex; uint8 tokenBIndex;
+    
+    env e; calldataarg args;
+    basicAssumptions(e);
+    require tokenAIndex != tokenBIndex;
+
+    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+    require tokenABalanceBefore >= tokenBBalanceBefore;
+    require tokenABalanceBefore > 0;
+    require tokenBBalanceBefore > 0;
+    mathint ratioBefore = tokenABalanceBefore / tokenABalanceBefore;
+    
+    f(e, args);
+
+    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
+    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
+    require tokenABalanceAfter >= tokenBBalanceAfter;
+    require tokenABalanceAfter > 0;
+    require tokenBBalanceAfter > 0;
+    mathint ratioAfter = tokenABalanceAfter / tokenBBalanceAfter;
+
+
+    assert ratioBefore >= 1 <=> ratioAfter >= 1, "ratio of tokens must not go below 1 when paused";
+}
+
 
 /// Good bye
 
@@ -712,6 +688,29 @@ rule uninitializedImpliesZeroValue(method f) {
     uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
 
     assert valAfter == 0;
+}
+
+/* 1 2
+    There must not be a transaction that decreases only one 
+    underlying balance, except for removeLiquidityOneToken 
+*/
+rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
+    uint8 index;
+    uint256 _underlyingBalance = getTokenBalance(index);
+    mathint _sumBalances = sum_all_underlying_balances;
+
+    env e;
+    basicAssumptions(e);
+    require _sumBalances >= 0;
+
+    calldataarg args;
+
+    f(e,args);
+
+    uint256 underlyingBalance_ = getTokenBalance(index);
+    mathint sumBalances_ = sum_all_underlying_balances;
+
+    assert (sumBalances_ < _sumBalances) => _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;     
 }
 
 /* 
