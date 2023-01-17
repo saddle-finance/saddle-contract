@@ -1,0 +1,268 @@
+{
+  "address": "0x941F40C2955EE09ba638409F67ef27C531fc055C",
+  "abi": [
+    {
+      "name": "__init__",
+      "outputs": [],
+      "inputs": [],
+      "constant": false,
+      "payable": true,
+      "type": "constructor"
+    },
+    {
+      "name": "multiSendEther",
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "out"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "address[100]",
+          "name": "addresses"
+        },
+        {
+          "type": "uint256[100]",
+          "name": "amounts"
+        }
+      ],
+      "constant": false,
+      "payable": true,
+      "type": "function"
+    },
+    {
+      "name": "multiSendToken",
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "out"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "address",
+          "name": "tokenAddress"
+        },
+        {
+          "type": "address[100]",
+          "name": "addresses"
+        },
+        {
+          "type": "uint256[100]",
+          "name": "amounts"
+        }
+      ],
+      "constant": false,
+      "payable": true,
+      "type": "function"
+    },
+    {
+      "name": "getBalance",
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "out"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_address"
+        }
+      ],
+      "constant": true,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "calc_total",
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "out"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "uint256[100]",
+          "name": "numbs"
+        }
+      ],
+      "constant": true,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "find",
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "out"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "uint256[100]",
+          "name": "numbs"
+        },
+        {
+          "type": "int128",
+          "name": "n"
+        }
+      ],
+      "constant": true,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "deposit",
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "out"
+        }
+      ],
+      "inputs": [],
+      "constant": false,
+      "payable": true,
+      "type": "function"
+    },
+    {
+      "name": "withdrawEther",
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "out"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_to"
+        },
+        {
+          "type": "uint256",
+          "name": "_value"
+        }
+      ],
+      "constant": false,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "withdrawToken",
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "out"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "address",
+          "name": "tokenAddress"
+        },
+        {
+          "type": "address",
+          "name": "_to"
+        },
+        {
+          "type": "uint256",
+          "name": "_value"
+        }
+      ],
+      "constant": false,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "setSendTokenFee",
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "out"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_sendTokenFee"
+        }
+      ],
+      "constant": false,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "setSendEthFee",
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "out"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_sendEthFee"
+        }
+      ],
+      "constant": false,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "destroy",
+      "outputs": [],
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_to"
+        }
+      ],
+      "constant": false,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "owner",
+      "outputs": [
+        {
+          "type": "address",
+          "name": "out"
+        }
+      ],
+      "inputs": [],
+      "constant": true,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "sendTokenFee",
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "out"
+        }
+      ],
+      "inputs": [],
+      "constant": true,
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "name": "sendEthFee",
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "out"
+        }
+      ],
+      "inputs": [],
+      "constant": true,
+      "payable": false,
+      "type": "function"
+    }
+  ]
+}
