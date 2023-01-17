@@ -9,7 +9,7 @@ if [[ "$2" ]]
 then
     RULE="--rule $2"
 else
-    RULE="--rules oneUnderlyingZeroMeansAllUnderlyingsZero ifSumUnderlyingsZeroLPTotalSupplyZero"
+    RULE="--rules oneUnderlyingZeroMeansAllUnderlyingsZeroSwap oneUnderlyingZeroMeansAllUnderlyingsZeroSwapExp"
 fi
 
 solc-select use 0.6.12
@@ -28,15 +28,15 @@ certoraRun \
     --link SwapHarness:token0=DummyERC20A \
     --link SwapHarness:token1=DummyERC20B \
     --cache saddle \
-    --settings -mediumTimeout=500,-t=1000,-depth=50,-enableEqualitySaturation=false,-simplificationDepth=10 \
+    --settings -mediumTimeout=100,-depth=20,-t=3000 \
     --loop_iter 2 \
     --send_only \
-    --staging release/19Sep2022 \
+    --staging master \
     --optimistic_loop \
     --rule_sanity \
     $RULE \
     --msg "Swap $1 $2" \
-
+# ,-enableEqualitySaturation=false,-simplificationDepth=10 \
 # certoraRun \
 #     certora/harness/SwapHarness.sol \
 #     certora/munged/LPToken.sol \

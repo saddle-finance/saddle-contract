@@ -8,7 +8,7 @@ using LPToken as lpToken
 methods {
 
     // math functions summarized
-	getD(uint256[], uint256) returns (uint256) => NONDET
+	// getD(uint256[], uint256) returns (uint256) => NONDET
     getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
     getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
     // newly declared function to help with summarization
@@ -178,11 +178,10 @@ hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 o
 */
 invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
     getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
+    filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector 
+        && f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != swap(uint8,uint8,uint256,uint256,uint256).selector }
     {
-        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
-            basicAssumptions(e);
-            require i1 != i2;
-        }
         preserved removeLiquidityOneToken(uint256 i1, uint8 i2, uint256 i3, uint256 i4) with (env e) {
             basicAssumptions(e);
             require getAdminFee() < getMaxAdminFee();
@@ -191,6 +190,31 @@ invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
             basicAssumptions(e);
         }
     }
+
+/* 1 2
+    If balance of one underlying token is zero, the balance of all other 
+    underlying tokens must also be zero
+*/
+
+invariant oneUnderlyingZeroMeansAllUnderlyingsZeroAdd(uint8 tokenAIndex)
+    getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
+    filtered {f -> f.selector == addLiquidity(uint256[],uint256,uint256).selector }
+    {
+        preserved with (env e) {
+            basicAssumptions(e);
+        }
+    }
+
+invariant oneUnderlyingZeroMeansAllUnderlyingsZeroSwap(uint8 tokenAIndex)
+    getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
+    filtered {f -> f.selector == swap(uint8,uint8,uint256,uint256,uint256).selector }
+    {
+        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
+            basicAssumptions(e);
+            require i1 != i2;
+        }
+    }    
+    
 
 ////////////////////////////////////////////////////////////////////////////
 //                                 Rules                                  //
@@ -244,7 +268,7 @@ rule onlyAdminCanWithdrawFees() {
     assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
 }
 
-/// Passing invariants
+// Passing invariants
 
 /**
  * The LP Token's totalSupply must be 0 if the sum of all underlying tokens is 0
