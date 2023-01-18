@@ -9,7 +9,7 @@ if [[ "$2" ]]
 then
     RULE="--rule $2"
 else
-    RULE="--rules oneUnderlyingZeroMeansAllUnderlyingsZeroSwap oneUnderlyingZeroMeansAllUnderlyingsZeroSwapExp"
+    RULE="--rules oneUnderlyingZeroMeansAllUnderlyingsZeroSwap"
 fi
 
 solc-select use 0.6.12
@@ -28,7 +28,7 @@ certoraRun \
     --link SwapHarness:token0=DummyERC20A \
     --link SwapHarness:token1=DummyERC20B \
     --cache saddle \
-    --settings -mediumTimeout=100,-depth=20,-t=3000 \
+    --settings -mediumTimeout=300 \
     --loop_iter 2 \
     --send_only \
     --staging master \

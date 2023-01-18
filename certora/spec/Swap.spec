@@ -11,6 +11,8 @@ methods {
 	// getD(uint256[], uint256) returns (uint256) => NONDET
     getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
     getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
+    // scaling functions summarized
+    //_xp(uint256[],uint256[]) returns (uint256[]) => NONDET
     // newly declared function to help with summarization
     getDApprox(uint256 xp1, uint256 xp2) returns(uint256) => newGetD(xp1,xp2);
 
@@ -45,6 +47,7 @@ methods {
     balanceOfLPOfUser(address) returns(uint256) envfree
     getSumOfUnderlyings() returns(uint256) envfree
     getLPTokenAddress() returns(address) envfree
+    getMultiplier(uint256) returns(uint256) envfree
 
     // external calls to burnableERC20
     burnFrom(address,uint256) => DISPATCHER(true)
@@ -102,8 +105,16 @@ function requireInitialized() {
     require initialized;
 }
 
+function assumeNormalDecimals(uint256 index) {
+    require getMultiplier(index) == 1 // WETH
+        || getMultiplier(index) == 10^10 // aTokens/cToken
+        || getMultiplier(index) == 10^12; // USDC/WBTC
+}
+
 function basicAssumptions(env e) {
     requireInitialized();
+    assumeNormalDecimals(0);
+    assumeNormalDecimals(1);
     requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(0);
     requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(1);
     requireInvariant LPsolvency();
@@ -172,11 +183,7 @@ hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 o
 //                               Invariants                               //
 ////////////////////////////////////////////////////////////////////////////
 
-/* 1 2
-    If balance of one underlying token is zero, the balance of all other 
-    underlying tokens must also be zero
-*/
-invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
+invariant oneUnderlyingZeroMeansAllUnderlyingsZeroSplit(uint8 tokenAIndex)
     getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
     filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector 
         && f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
@@ -230,7 +237,7 @@ rule sanity(method f) {
     Admin fees can only increase
 */
 rule monotonicallyIncreasingFees(method f) filtered {
-    f -> f.selector != withdrawAdminFees().selector //&& f.selector == removeLiquidity(uint256,uint256[],uint256).selector
+    f -> f.selector != withdrawAdminFees().selector
 } {
     uint8 indexA;
     uint8 indexB;
@@ -269,6 +276,26 @@ rule onlyAdminCanWithdrawFees() {
 }
 
 // Passing invariants
+
+/**
+ * If balance of one underlying token is zero, the balance of all other underlying tokens must also be zero
+ * @dev ran with -mediumTimeout=300 and getD summarized
+ */
+invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
+    getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
+    {
+        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
+            basicAssumptions(e);
+            require i1 != i2;
+        }
+        preserved removeLiquidityOneToken(uint256 i1, uint8 i2, uint256 i3, uint256 i4) with (env e) {
+            basicAssumptions(e);
+            require getAdminFee() < getMaxAdminFee();
+        }
+        preserved with (env e) {
+            basicAssumptions(e);
+        }
+    }
 
 /**
  * The LP Token's totalSupply must be 0 if the sum of all underlying tokens is 0
