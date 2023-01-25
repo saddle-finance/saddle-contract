@@ -183,100 +183,6 @@ hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 o
 //                               Invariants                               //
 ////////////////////////////////////////////////////////////////////////////
 
-invariant oneUnderlyingZeroMeansAllUnderlyingsZeroSplit(uint8 tokenAIndex)
-    getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
-    filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector 
-        && f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
-        && f.selector != swap(uint8,uint8,uint256,uint256,uint256).selector }
-    {
-        preserved removeLiquidityOneToken(uint256 i1, uint8 i2, uint256 i3, uint256 i4) with (env e) {
-            basicAssumptions(e);
-            require getAdminFee() < getMaxAdminFee();
-        }
-        preserved with (env e) {
-            basicAssumptions(e);
-        }
-    }
-
-/* 1 2
-    If balance of one underlying token is zero, the balance of all other 
-    underlying tokens must also be zero
-*/
-
-invariant oneUnderlyingZeroMeansAllUnderlyingsZeroAdd(uint8 tokenAIndex)
-    getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
-    filtered {f -> f.selector == addLiquidity(uint256[],uint256,uint256).selector }
-    {
-        preserved with (env e) {
-            basicAssumptions(e);
-        }
-    }
-
-invariant oneUnderlyingZeroMeansAllUnderlyingsZeroSwap(uint8 tokenAIndex)
-    getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
-    filtered {f -> f.selector == swap(uint8,uint8,uint256,uint256,uint256).selector }
-    {
-        preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
-            basicAssumptions(e);
-            require i1 != i2;
-        }
-    }    
-    
-
-////////////////////////////////////////////////////////////////////////////
-//                                 Rules                                  //
-////////////////////////////////////////////////////////////////////////////
-
-rule sanity(method f) {
-    env e; calldataarg args;
-    f(e,args);
-    assert false;
-}
-
-/* 1 2
-    Admin fees can only increase
-*/
-rule monotonicallyIncreasingFees(method f) filtered {
-    f -> f.selector != withdrawAdminFees().selector
-} {
-    uint8 indexA;
-    uint8 indexB;
-
-    env e;
-    basicAssumptions(e);
-
-    uint256 balanceBefore = getAdminBalance(indexA);
-
-    calldataarg args;
-    f(e, args);
-
-    uint256 balanceAfter = getAdminBalance(indexA);
-
-    assert balanceAfter >= balanceBefore , "fees must not decrease, except for withdraw by admin";
-}
-
-/* 1 1
-    Only admin can withdraw adminFees
-*/
-rule onlyAdminCanWithdrawFees() {
-    method f;
-    uint8 index;
-
-    env e;
-    basicAssumptions(e);
-
-    uint256 balanceBefore = getAdminBalance(index);
-
-    calldataarg args;
-    f(e, args);
-
-    uint256 balanceAfter = getAdminBalance(index);
-
-    assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
-}
-
-// Passing invariants
-
 /**
  * If balance of one underlying token is zero, the balance of all other underlying tokens must also be zero
  * @dev ran with -mediumTimeout=300 and getD summarized
@@ -402,7 +308,9 @@ invariant lengthsAlwaysMatch()
         }
     }
 
-/// Passing rules
+////////////////////////////////////////////////////////////////////////////
+//                                 Rules                                  //
+////////////////////////////////////////////////////////////////////////////
 
 /**
  * Contract can't be initialized again if it has already been initialized.
@@ -744,6 +652,48 @@ rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
     mathint sumBalances_ = sum_all_underlying_balances;
 
     assert (sumBalances_ < _sumBalances) => _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;     
+}
+
+/* 1 2
+    Admin fees can only increase
+*/
+rule monotonicallyIncreasingFees(method f) filtered {
+    f -> f.selector != withdrawAdminFees().selector
+} {
+    uint8 indexA;
+    uint8 indexB;
+
+    env e;
+    basicAssumptions(e);
+
+    uint256 balanceBefore = getAdminBalance(indexA);
+
+    calldataarg args;
+    f(e, args);
+
+    uint256 balanceAfter = getAdminBalance(indexA);
+
+    assert balanceAfter >= balanceBefore , "fees must not decrease, except for withdraw by admin";
+}
+
+/* 1 1
+    Only admin can withdraw adminFees
+*/
+rule onlyAdminCanWithdrawFees() {
+    method f;
+    uint8 index;
+
+    env e;
+    basicAssumptions(e);
+
+    uint256 balanceBefore = getAdminBalance(index);
+
+    calldataarg args;
+    f(e, args);
+
+    uint256 balanceAfter = getAdminBalance(index);
+
+    assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
 }
 
 /* 
