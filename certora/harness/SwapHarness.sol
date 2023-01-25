@@ -62,6 +62,7 @@ contract SwapHarness is Swap {
     }
 
     function getMultiplier(uint256 index) public view returns(uint256) {
+        require(swapStorage.tokenPrecisionMultipliers.length > index, "Token index out of range");
         return swapStorage.tokenPrecisionMultipliers[index];
     }
 }
