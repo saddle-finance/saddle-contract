@@ -60,4 +60,9 @@ contract SwapHarness is Swap {
     function getLPTokenAddress() public view returns(address) {
         return address(swapStorage.lpToken);
     }
+
+    function getMultiplier(uint256 index) public view returns(uint256) {
+        require(swapStorage.tokenPrecisionMultipliers.length > index);
+        return swapStorage.tokenPrecisionMultipliers[index];
+    }
 }
