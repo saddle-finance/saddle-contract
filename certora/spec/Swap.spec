@@ -106,9 +106,9 @@ function requireInitialized() {
 }
 
 function assumeNormalDecimals(uint256 index) {
-    require getMultiplier(index) == 1 // WETH
-        || getMultiplier(index) == 10^10 // aTokens/cToken
-        || getMultiplier(index) == 10^12; // USDC/WBTC
+    require getMultiplier(index) == 1 // WETH, decimals == 18
+        || getMultiplier(index) == 10^10 // aTokens/cToken, decimals == 8
+        || getMultiplier(index) == 10^12; // USDC/WBTC, decimals == 6
 }
 
 function basicAssumptions(env e) {
@@ -230,7 +230,6 @@ invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
  */
 invariant swapFeeNeverGreaterThanMAX()
     getSwapFee() <= getMaxSwapFee()
-
 
 /**
  * adminFee can never be greater MAX_ADMIN_FEE

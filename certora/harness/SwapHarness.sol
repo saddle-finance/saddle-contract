@@ -62,7 +62,6 @@ contract SwapHarness is Swap {
     }
 
     function getMultiplier(uint256 index) public view returns(uint256) {
-        require(swapStorage.tokenPrecisionMultipliers.length > index);
         return swapStorage.tokenPrecisionMultipliers[index];
     }
 }
