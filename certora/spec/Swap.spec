@@ -105,10 +105,10 @@ function requireInitialized() {
     require initialized;
 }
 
-function assumeNormalDecimals(uint256 index) {
-    require getMultiplier(index) == 1 // WETH, decimals == 18
-        || getMultiplier(index) == 10^10 // aTokens/cToken, decimals == 8
-        || getMultiplier(index) == 10^12; // USDC/WBTC, decimals == 6
+function assumeNormalDecimals(uint256 i) {
+    require getMultiplier(i) == 1 // WETH, decimals == 18
+        || getMultiplier(i) == 10^10 // aTokens/cToken/wBTC, decimals == 8
+        || getMultiplier(i) == 10^12; // USDC, decimals == 6
 }
 
 function basicAssumptions(env e) {
@@ -187,8 +187,8 @@ hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 o
  * If balance of one underlying token is zero, the balance of all other underlying tokens must also be zero
  * @dev ran with -mediumTimeout=300 and getD summarized
  */
-invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 tokenAIndex)
-    getTokenBalance(tokenAIndex) == 0 => sum_all_underlying_balances == 0
+invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 i)
+    getTokenBalance(i) == 0 => sum_all_underlying_balances == 0
     {
         preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
             basicAssumptions(e);
@@ -226,6 +226,28 @@ invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
     }
 
 /**
+ * Underlying tokens are different from the LP token 
+ */
+invariant underlyingTokensAndLPDifferent()
+    getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1)
+    { 
+        preserved {
+            requireInitialized();
+        } 
+    }
+
+/** 
+ * Underlying tokens remain different
+ */
+invariant underlyingTokensDifferent(uint8 i, uint8 j)
+    i != j => getToken(i) != getToken(j)
+    {
+        preserved{
+            requireInitialized();
+        }
+    }
+
+/**
  * swapFee can never be greater MAX_SWAP_FEE
  */
 invariant swapFeeNeverGreaterThanMAX()
@@ -240,7 +262,7 @@ invariant adminFeeNeverGreaterThanMAX()
 /**
  * Sum of all users' LP balance must be equal to LP's `totalSupply`
  */
-invariant LPsolvency()
+invariant LPSolvency()
     getTotalSupply() == sum_all_users_LP
     {
         preserved {
@@ -262,7 +284,7 @@ invariant underlyingsSolvency()
 /**
  * LPToken totalSupply must be zero if `addLiquidity` has not been called
  */
-invariant LPtotalSupplyZeroWhenUninitialized()
+invariant LPTotalSupplyZeroWhenUninitialized()
     getTotalSupply() == 0
     { 
         preserved addLiquidity(uint256[] amounts,uint256 minToMint,uint256 deadline) with (env e1) {
@@ -273,28 +295,6 @@ invariant LPtotalSupplyZeroWhenUninitialized()
         }
     }
 
-
-/** 
- * Underlying tokens remain different
- */
-invariant underlyingTokensDifferent(uint8 tokenAIndex, uint8 tokenBIndex)
-    tokenAIndex != tokenBIndex => getToken(tokenAIndex) != getToken(tokenBIndex)
-    {
-        preserved{
-            requireInitialized();
-        }
-    }
-
-/**
- * Underlying tokens are different from the LP token 
- */
-invariant underlyingTokensAndLPDifferent()
-    getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1)
-    { 
-        preserved {
-            requireInitialized();
-        } 
-    }
 
 /**
  * The length of the pooledTokens array must match the length of the balances array
@@ -374,7 +374,7 @@ rule pausedMeansLPMonotonicallyDecreases(method f) {
 rule swapAlwaysBeforeDeadline() {
     requireInitialized();
     env e;
-    address sender = e.msg.sender;
+
     uint8 tokenIndexFrom;
     uint8 tokenIndexTo;
     uint256 dx;
@@ -387,36 +387,23 @@ rule swapAlwaysBeforeDeadline() {
 }
 
 /**
- * LPToken totalSupply must be zero if `addLiquidity` has not been called.
- */
-rule onlyAddLiquidityCanInitialize(method f) filtered {f -> f.selector != addLiquidity(uint256[],uint256,uint256).selector} {
-    requireInitialized();
-    require getTotalSupply() == 0;
-
-    env e; calldataarg args;
-    f(e,args);
-
-    assert getTotalSupply() == 0;
-}
-
-/**
  * Providing liquidity will always output at least `minToMint` amount of LP tokens.
  */
 rule addLiquidityCheckMinToMint() {
     requireInitialized();
-    require getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1);
+    requireInvariant underlyingTokensAndLPDifferent();
     env e;
     address sender = e.msg.sender;
     uint256[] amounts;
     uint256 minToMint;
     uint256 deadline;
 
-    uint256 _balance = balanceOfLPOfUser(sender);
+    uint256 balanceBefore = balanceOfLPOfUser(sender);
 
     addLiquidity(e, amounts, minToMint, deadline);
 
-    uint256 balance_ = balanceOfLPOfUser(sender);
-    assert balance_ >= _balance + minToMint;
+    uint256 balanceAfter = balanceOfLPOfUser(sender);
+    assert balanceAfter >= balanceBefore + minToMint;
 }
 
 /**
@@ -504,17 +491,17 @@ rule swappingIndependence() {
 }
 
 /**
- * When paused, ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
+ * Ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
  */
 rule tokenRatioDoesntGoBelowOne(method f) {
-    uint8 tokenAIndex; uint8 tokenBIndex;
+    uint8 i; uint8 j;
     
     env e; calldataarg args;
     basicAssumptions(e);
-    require tokenAIndex != tokenBIndex;
+    require i != j;
 
-    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+    uint256 tokenABalanceBefore = getTokenBalance(i);
+    uint256 tokenBBalanceBefore = getTokenBalance(j);
     require tokenABalanceBefore >= tokenBBalanceBefore;
     require tokenABalanceBefore > 0;
     require tokenBBalanceBefore > 0;
@@ -522,8 +509,8 @@ rule tokenRatioDoesntGoBelowOne(method f) {
     
     f(e, args);
 
-    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
+    uint256 tokenABalanceAfter = getTokenBalance(i);
+    uint256 tokenBBalanceAfter = getTokenBalance(j);
     require tokenABalanceAfter >= tokenBBalanceAfter;
     require tokenABalanceAfter > 0;
     require tokenBBalanceAfter > 0;
@@ -589,19 +576,19 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
     When paused, all underlying token balances must decrease on LP withdrawal
 */ 
 rule pausedImpliesNoSingleTokenWithdrawal(method f) {
-    uint8 tokenAIndex; uint8 tokenBIndex;
+    uint8 i; uint8 j;
     
     requireInitialized();
-    require getTokenBalance(tokenAIndex) == 0 <=> getTokenBalance(tokenBIndex) == 0;
+    require getTokenBalance(i) == 0 <=> getTokenBalance(j) == 0;
     require paused();
-    uint256 tokenABalanceBefore = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceBefore = getTokenBalance(tokenBIndex);
+    uint256 tokenABalanceBefore = getTokenBalance(i);
+    uint256 tokenBBalanceBefore = getTokenBalance(j);
 
     env e; calldataarg args;
     f(e,args);
 
-    uint256 tokenABalanceAfter = getTokenBalance(tokenAIndex);
-    uint256 tokenBBalanceAfter = getTokenBalance(tokenBIndex);
+    uint256 tokenABalanceAfter = getTokenBalance(i);
+    uint256 tokenBBalanceAfter = getTokenBalance(j);
     
     assert tokenABalanceAfter <= tokenABalanceBefore, "token balances must not increase when paused";
     assert tokenBBalanceAfter <= tokenBBalanceBefore, "token balances must not increase when paused";
