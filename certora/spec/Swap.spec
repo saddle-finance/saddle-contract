@@ -117,7 +117,7 @@ function basicAssumptions(env e) {
     assumeNormalDecimals(1);
     requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(0);
     requireInvariant oneUnderlyingZeroMeansAllUnderlyingsZero(1);
-    requireInvariant LPsolvency();
+    requireInvariant LPSolvency();
     require lpToken.balanceOf(e, e.msg.sender) <= getTotalSupply();
     requireInvariant underlyingsSolvency();
     requireInvariant underlyingTokensAndLPDifferent();
@@ -344,6 +344,7 @@ rule onlyAdminCanSetSwapFees(method f) {
  * Only admin can set admin fees.
  */
 rule onlyAdminCanSetAdminFees(method f) {
+    requireInitialized();
     uint256 swapFeeBefore = getAdminFee();
 
     env e; calldataarg args;
