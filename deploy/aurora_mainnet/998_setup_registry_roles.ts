@@ -3,7 +3,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { MasterRegistry, PoolRegistry } from "../../build/typechain"
 import {
   MULTISIG_ADDRESSES,
-  OPS_MULTISIG_ADDRESSES,
+  OPS_MULTISIG_ADDRESSES
 } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -111,3 +111,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
+func.skip = async () => true

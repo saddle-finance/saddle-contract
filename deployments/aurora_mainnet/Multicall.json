@@ -1,0 +1,182 @@
+{
+  "address": "0x59F5a371dF7D2a01863cbb011A5A1ed45326710C",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "target",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "callData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Multicall.Call[]",
+          "name": "calls",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "aggregate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes[]",
+          "name": "returnData",
+          "type": "bytes[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        }
+      ],
+      "name": "getBlockHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCurrentBlockCoinbase",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "coinbase",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCurrentBlockDifficulty",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "difficulty",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCurrentBlockGasLimit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "gaslimit",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCurrentBlockTimestamp",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "addr",
+          "type": "address"
+        }
+      ],
+      "name": "getEthBalance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLastBlockHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xdff4d84ef09fc6609b979e1ac77da34669235d314b065c90bf9c47c95797e3a8",
+  "receipt": {
+    "to": null,
+    "from": "0x5BDb37d0Ddea3A90F233c7B7F6b9394B6b2eef34",
+    "contractAddress": "0x59F5a371dF7D2a01863cbb011A5A1ed45326710C",
+    "transactionIndex": 0,
+    "gasUsed": "434185",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x27a0863182244682eb3a2475e6f9dfc556a25ca02411827de70911d9d2adfc38",
+    "transactionHash": "0xdff4d84ef09fc6609b979e1ac77da34669235d314b065c90bf9c47c95797e3a8",
+    "logs": [],
+    "blockNumber": 84154037,
+    "cumulativeGasUsed": "0",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "60117b97a211aa66114b1af26693e462",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"callData\",\"type\":\"bytes\"}],\"internalType\":\"struct Multicall.Call[]\",\"name\":\"calls\",\"type\":\"tuple[]\"}],\"name\":\"aggregate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"},{\"internalType\":\"bytes[]\",\"name\":\"returnData\",\"type\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"name\":\"getBlockHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCurrentBlockCoinbase\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"coinbase\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCurrentBlockDifficulty\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"difficulty\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCurrentBlockGasLimit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"gaslimit\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCurrentBlockTimestamp\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"getEthBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getLastBlockHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"Michael Elliot <mike@makerdao.com>Joshua Levine <joshua@makerdao.com>Nick Johnson <arachnid@notdot.net>\",\"kind\":\"dev\",\"methods\":{},\"title\":\"Multicall - Aggregate results from multiple read-only function calls\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/helper/Multicall.sol\":\"Multicall\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[]},\"sources\":{\"contracts/helper/Multicall.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.5.0;\\npragma experimental ABIEncoderV2;\\n\\n/// @title Multicall - Aggregate results from multiple read-only function calls\\n/// @author Michael Elliot <mike@makerdao.com>\\n/// @author Joshua Levine <joshua@makerdao.com>\\n/// @author Nick Johnson <arachnid@notdot.net>\\n\\ncontract Multicall {\\n    struct Call {\\n        address target;\\n        bytes callData;\\n    }\\n\\n    function aggregate(Call[] memory calls)\\n        public\\n        returns (uint256 blockNumber, bytes[] memory returnData)\\n    {\\n        blockNumber = block.number;\\n        returnData = new bytes[](calls.length);\\n        for (uint256 i = 0; i < calls.length; i++) {\\n            (bool success, bytes memory ret) = calls[i].target.call(\\n                calls[i].callData\\n            );\\n            require(success);\\n            returnData[i] = ret;\\n        }\\n    }\\n\\n    // Helper functions\\n    function getEthBalance(address addr) public view returns (uint256 balance) {\\n        balance = addr.balance;\\n    }\\n\\n    function getBlockHash(uint256 blockNumber)\\n        public\\n        view\\n        returns (bytes32 blockHash)\\n    {\\n        blockHash = blockhash(blockNumber);\\n    }\\n\\n    function getLastBlockHash() public view returns (bytes32 blockHash) {\\n        blockHash = blockhash(block.number - 1);\\n    }\\n\\n    function getCurrentBlockTimestamp()\\n        public\\n        view\\n        returns (uint256 timestamp)\\n    {\\n        timestamp = block.timestamp;\\n    }\\n\\n    function getCurrentBlockDifficulty()\\n        public\\n        view\\n        returns (uint256 difficulty)\\n    {\\n        difficulty = block.difficulty;\\n    }\\n\\n    function getCurrentBlockGasLimit() public view returns (uint256 gaslimit) {\\n        gaslimit = block.gaslimit;\\n    }\\n\\n    function getCurrentBlockCoinbase() public view returns (address coinbase) {\\n        coinbase = block.coinbase;\\n    }\\n}\\n\",\"keccak256\":\"0x8651673cce30a319ad6dddc1c3797a108d1d97043d2ccf0c9da25aa169c58380\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b506106e9806100206000396000f3fe608060405234801561001057600080fd5b50600436106100885760003560e01c806372425d9d1161005b57806372425d9d146100f357806386d516e8146100f9578063a8b0574e146100ff578063ee82ac5e1461010d57600080fd5b80630f28c97d1461008d578063252dba42146100a257806327e86d6e146100c35780634d2301cc146100cb575b600080fd5b425b6040519081526020015b60405180910390f35b6100b56100b036600461034f565b61011f565b6040516100999291906104ef565b61008f61026c565b61008f6100d93660046105ad565b73ffffffffffffffffffffffffffffffffffffffff163190565b4461008f565b4561008f565b604051418152602001610099565b61008f61011b3660046105cf565b4090565b8051439060609067ffffffffffffffff81111561013e5761013e61027f565b60405190808252806020026020018201604052801561017157816020015b606081526020019060019003908161015c5790505b50905060005b835181101561026657600080858381518110610195576101956105e8565b60200260200101516000015173ffffffffffffffffffffffffffffffffffffffff168684815181106101c9576101c96105e8565b6020026020010151602001516040516101e29190610617565b6000604051808303816000865af19150503d806000811461021f576040519150601f19603f3d011682016040523d82523d6000602084013e610224565b606091505b50915091508161023357600080fd5b80848481518110610246576102466105e8565b60200260200101819052505050808061025e90610662565b915050610177565b50915091565b600061027960014361069a565b40905090565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b6040805190810167ffffffffffffffff811182821017156102d1576102d161027f565b60405290565b604051601f82017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016810167ffffffffffffffff8111828210171561031e5761031e61027f565b604052919050565b803573ffffffffffffffffffffffffffffffffffffffff8116811461034a57600080fd5b919050565b6000602080838503121561036257600080fd5b823567ffffffffffffffff8082111561037a57600080fd5b818501915085601f83011261038e57600080fd5b8135818111156103a0576103a061027f565b8060051b6103af8582016102d7565b91825283810185019185810190898411156103c957600080fd5b86860192505b838310156104be578235858111156103e75760008081fd5b860160407fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0828d03810182131561041e5760008081fd5b6104266102ae565b6104318b8501610326565b815282840135898111156104455760008081fd5b8085019450508d603f85011261045b5760008081fd5b8a8401358981111561046f5761046f61027f565b61047f8c84601f840116016102d7565b92508083528e848287010111156104965760008081fd5b808486018d85013760009083018c0152808b01919091528452505091860191908601906103cf565b9998505050505050505050565b60005b838110156104e65781810151838201526020016104ce565b50506000910152565b600060408201848352602060408185015281855180845260608601915060608160051b870101935082870160005b8281101561059f577fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa08887030184528151805180885261056281888a018985016104cb565b601f017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0169690960185019550928401929084019060010161051d565b509398975050505050505050565b6000602082840312156105bf57600080fd5b6105c882610326565b9392505050565b6000602082840312156105e157600080fd5b5035919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b600082516106298184602087016104cb565b9190910192915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff820361069357610693610633565b5060010190565b818103818111156106ad576106ad610633565b9291505056fea2646970667358221220d54559a524fe9e5b0c61bdfcc1b8b1ef80a30cb6185b70954356cd9f2ef9036a64736f6c63430008110033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100885760003560e01c806372425d9d1161005b57806372425d9d146100f357806386d516e8146100f9578063a8b0574e146100ff578063ee82ac5e1461010d57600080fd5b80630f28c97d1461008d578063252dba42146100a257806327e86d6e146100c35780634d2301cc146100cb575b600080fd5b425b6040519081526020015b60405180910390f35b6100b56100b036600461034f565b61011f565b6040516100999291906104ef565b61008f61026c565b61008f6100d93660046105ad565b73ffffffffffffffffffffffffffffffffffffffff163190565b4461008f565b4561008f565b604051418152602001610099565b61008f61011b3660046105cf565b4090565b8051439060609067ffffffffffffffff81111561013e5761013e61027f565b60405190808252806020026020018201604052801561017157816020015b606081526020019060019003908161015c5790505b50905060005b835181101561026657600080858381518110610195576101956105e8565b60200260200101516000015173ffffffffffffffffffffffffffffffffffffffff168684815181106101c9576101c96105e8565b6020026020010151602001516040516101e29190610617565b6000604051808303816000865af19150503d806000811461021f576040519150601f19603f3d011682016040523d82523d6000602084013e610224565b606091505b50915091508161023357600080fd5b80848481518110610246576102466105e8565b60200260200101819052505050808061025e90610662565b915050610177565b50915091565b600061027960014361069a565b40905090565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b6040805190810167ffffffffffffffff811182821017156102d1576102d161027f565b60405290565b604051601f82017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016810167ffffffffffffffff8111828210171561031e5761031e61027f565b604052919050565b803573ffffffffffffffffffffffffffffffffffffffff8116811461034a57600080fd5b919050565b6000602080838503121561036257600080fd5b823567ffffffffffffffff8082111561037a57600080fd5b818501915085601f83011261038e57600080fd5b8135818111156103a0576103a061027f565b8060051b6103af8582016102d7565b91825283810185019185810190898411156103c957600080fd5b86860192505b838310156104be578235858111156103e75760008081fd5b860160407fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0828d03810182131561041e5760008081fd5b6104266102ae565b6104318b8501610326565b815282840135898111156104455760008081fd5b8085019450508d603f85011261045b5760008081fd5b8a8401358981111561046f5761046f61027f565b61047f8c84601f840116016102d7565b92508083528e848287010111156104965760008081fd5b808486018d85013760009083018c0152808b01919091528452505091860191908601906103cf565b9998505050505050505050565b60005b838110156104e65781810151838201526020016104ce565b50506000910152565b600060408201848352602060408185015281855180845260608601915060608160051b870101935082870160005b8281101561059f577fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa08887030184528151805180885261056281888a018985016104cb565b601f017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0169690960185019550928401929084019060010161051d565b509398975050505050505050565b6000602082840312156105bf57600080fd5b6105c882610326565b9392505050565b6000602082840312156105e157600080fd5b5035919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b600082516106298184602087016104cb565b9190910192915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff820361069357610693610633565b5060010190565b818103818111156106ad576106ad610633565b9291505056fea2646970667358221220d54559a524fe9e5b0c61bdfcc1b8b1ef80a30cb6185b70954356cd9f2ef9036a64736f6c63430008110033",
+  "devdoc": {
+    "author": "Michael Elliot <mike@makerdao.com>Joshua Levine <joshua@makerdao.com>Nick Johnson <arachnid@notdot.net>",
+    "kind": "dev",
+    "methods": {},
+    "title": "Multicall - Aggregate results from multiple read-only function calls",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}
