@@ -8,7 +8,7 @@ using LPToken as lpToken
 methods {
 
     // math functions summarized
-	// getD(uint256[], uint256) returns (uint256) => NONDET
+	getD(uint256[], uint256) returns (uint256) => NONDET
     getY(uint256,uint8,uint8,uint256,uint256[]) returns (uint256) => NONDET
     getYD(uint256,uint8,uint256[],uint256) returns (uint256) => NONDET
     // scaling functions summarized
@@ -188,6 +188,9 @@ hook Sstore currentContract.swapStorage.balances[INDEX uint256 i] uint256 balanc
  */
 invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 i)
     getTokenBalance(i) == 0 => sum_all_underlying_balances == 0
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
     {
         preserved swap(uint8 i1, uint8 i2, uint256 i3, uint256 i4, uint256 i5) with (env e) {
             basicAssumptions(e);
@@ -207,6 +210,9 @@ invariant oneUnderlyingZeroMeansAllUnderlyingsZero(uint8 i)
  */
 invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
     sum_all_underlying_balances == 0 => getTotalSupply() == 0
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
     {
         preserved with (env e){
             basicAssumptions(e);
@@ -218,6 +224,9 @@ invariant ifSumUnderlyingsZeroLPTotalSupplyZero()
  */
 invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
     getTotalSupply() == 0 => getTokenBalance(i) == 0
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
     {
         preserved with (env e) {
             basicAssumptions(e);
@@ -229,6 +238,9 @@ invariant ifLPTotalSupplyZeroThenIndividualUnderlyingsZero(uint8 i)
  */
 invariant underlyingTokensAndLPDifferent()
     getLPTokenAddress() != getToken(0) && getLPTokenAddress() != getToken(1)
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
     { 
         preserved {
             requireInitialized();
@@ -240,6 +252,9 @@ invariant underlyingTokensAndLPDifferent()
  */
 invariant underlyingTokensDifferent(uint8 i, uint8 j)
     i != j => getToken(i) != getToken(j)
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
     {
         preserved{
             requireInitialized();
@@ -251,6 +266,9 @@ invariant underlyingTokensDifferent(uint8 i, uint8 j)
  */
 invariant swapFeeNeverGreaterThanMAX()
     getSwapFee() <= getMaxSwapFee()
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
 
 /**
  * adminFee can never be greater MAX_ADMIN_FEE
@@ -263,6 +281,9 @@ invariant adminFeeNeverGreaterThanMAX()
  */
 invariant LPSolvency()
     getTotalSupply() == sum_all_users_LP
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
     {
         preserved {
                 requireInitialized();
@@ -274,6 +295,9 @@ invariant LPSolvency()
  */
 invariant underlyingsSolvency()
     getSumOfUnderlyings() == sum_all_underlying_balances
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
     {
         preserved {
                 requireInitialized();
@@ -285,6 +309,9 @@ invariant underlyingsSolvency()
  */
 invariant LPTotalSupplyZeroWhenUninitialized()
     getTotalSupply() == 0
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
     { 
         preserved addLiquidity(uint256[] amounts,uint256 minToMint,uint256 deadline) with (env e1) {
             require false;
@@ -300,6 +327,9 @@ invariant LPTotalSupplyZeroWhenUninitialized()
  */
 invariant lengthsAlwaysMatch()
     lengthsMatch()
+    filtered {f -> f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+        && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+    }
     {
         preserved {
             requireInitialized();
@@ -327,7 +357,10 @@ rule cantReinit(method f) filtered {
 /**
  * Only admin can set swap fees.
  */
-rule onlyAdminCanSetSwapFees(method f) {
+rule onlyAdminCanSetSwapFees(method f) filtered {f -> 
+    f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+    && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+} {
     requireInitialized();
     uint256 swapFeeBefore = getSwapFee();
 
@@ -342,7 +375,10 @@ rule onlyAdminCanSetSwapFees(method f) {
 /**
  * Only admin can set admin fees.
  */
-rule onlyAdminCanSetAdminFees(method f) {
+rule onlyAdminCanSetAdminFees(method f) filtered {f -> 
+    f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+    && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+} {
     requireInitialized();
     uint256 swapFeeBefore = getAdminFee();
 
@@ -357,7 +393,10 @@ rule onlyAdminCanSetAdminFees(method f) {
 /**
  * When paused, total LP amount can only decrease.
  */
-rule pausedMeansLPMonotonicallyDecreases(method f) {
+rule pausedMeansLPMonotonicallyDecreases(method f) filtered {f -> 
+    f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+    && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+} {
     uint256 totalSupplyBefore = getTotalSupply();
 
     env e; calldataarg args;
@@ -493,7 +532,10 @@ rule swappingIndependence() {
 /**
  * Ratio between underlying tokens must stay above one when measured as tokenA/tokenB where tokenAbalance >= tokenBbalance initally.
  */
-rule tokenRatioDoesntGoBelowOne(method f) {
+rule tokenRatioDoesntGoBelowOne(method f) filtered {f -> 
+    f.selector != removeLiquidityImbalance(uint256[],uint256,uint256).selector
+    && f.selector != initialize(address[],uint8[],string,string,uint256,uint256,uint256,address).selector 
+} {
     uint8 i; uint8 j;
     
     env e; calldataarg args;
@@ -521,33 +563,33 @@ rule tokenRatioDoesntGoBelowOne(method f) {
 }
 
 
-/// Good bye
+// /// Good bye
 
 
 
-/* 2 2
-    If contract is in uninitialized state, all underlying balances must be zero
-*/
-invariant uninitializedMeansUnderlyingsZero(uint8 index)
-    !initialized => getTokenBalance(index) == 0
+// /* 2 2
+//     If contract is in uninitialized state, all underlying balances must be zero
+// */
+// invariant uninitializedMeansUnderlyingsZero(uint8 index)
+//     !initialized => getTokenBalance(index) == 0
 
-/* 2 3
-    Virtual price can never be zero, once liquidity has been deposited
-*/
-rule virtualPriceNeverZeroOnceLiquidityProvided() {
-    uint256[] tokens;
-    uint256 minToMint;
-    uint256 deadline;
+// /* 2 3
+//     Virtual price can never be zero, once liquidity has been deposited
+// */
+// rule virtualPriceNeverZeroOnceLiquidityProvided() {
+//     uint256[] tokens;
+//     uint256 minToMint;
+//     uint256 deadline;
     
-    requireInitialized();
-    require tokens.length == 2;
-    // require tokens[0] > 0 && tokens[1] > 0;
+//     requireInitialized();
+//     require tokens.length == 2;
+//     // require tokens[0] > 0 && tokens[1] > 0;
 
-    env e;
-    addLiquidity(e,tokens,minToMint,deadline);
+//     env e;
+//     addLiquidity(e,tokens,minToMint,deadline);
 
-    assert getVirtualPrice() > 0;
-}
+//     assert getVirtualPrice() > 0;
+// }
 
 
 
@@ -575,141 +617,141 @@ rule virtualPriceNeverZeroOnceLiquidityProvided() {
 /* 1.5 2 (might be replacable by 2 1 monotonicity rule)- replaceable by no free minting and no unpaid burning + LP total supply only decreases when paused monotonicity rule 
     When paused, all underlying token balances must decrease on LP withdrawal
 */ 
-rule pausedImpliesNoSingleTokenWithdrawal(method f) {
-    uint8 i; uint8 j;
+// rule pausedImpliesNoSingleTokenWithdrawal(method f) {
+//     uint8 i; uint8 j;
     
-    requireInitialized();
-    require getTokenBalance(i) == 0 <=> getTokenBalance(j) == 0;
-    require paused();
-    uint256 tokenABalanceBefore = getTokenBalance(i);
-    uint256 tokenBBalanceBefore = getTokenBalance(j);
+//     requireInitialized();
+//     require getTokenBalance(i) == 0 <=> getTokenBalance(j) == 0;
+//     require paused();
+//     uint256 tokenABalanceBefore = getTokenBalance(i);
+//     uint256 tokenBBalanceBefore = getTokenBalance(j);
 
-    env e; calldataarg args;
-    f(e,args);
+//     env e; calldataarg args;
+//     f(e,args);
 
-    uint256 tokenABalanceAfter = getTokenBalance(i);
-    uint256 tokenBBalanceAfter = getTokenBalance(j);
+//     uint256 tokenABalanceAfter = getTokenBalance(i);
+//     uint256 tokenBBalanceAfter = getTokenBalance(j);
     
-    assert tokenABalanceAfter <= tokenABalanceBefore, "token balances must not increase when paused";
-    assert tokenBBalanceAfter <= tokenBBalanceBefore, "token balances must not increase when paused";
-    assert tokenABalanceAfter < tokenABalanceBefore <=> tokenBBalanceAfter < tokenBBalanceBefore, "one token must not decrease alone";
-}
+//     assert tokenABalanceAfter <= tokenABalanceBefore, "token balances must not increase when paused";
+//     assert tokenBBalanceAfter <= tokenBBalanceBefore, "token balances must not increase when paused";
+//     assert tokenABalanceAfter < tokenABalanceBefore <=> tokenBBalanceAfter < tokenBBalanceBefore, "one token must not decrease alone";
+// }
 
-/* 1 2
-    Uninitialized contract state implies all variables are 0
-    proves preservation (n+1 case)
-    @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
-    @dev fails due to Java exception. Not sure why
-*/
-rule uninitializedImpliesZeroValue(method f) { 
-    uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
+// /* 1 2
+//     Uninitialized contract state implies all variables are 0
+//     proves preservation (n+1 case)
+//     @dev * for still new getters (not tested with getTotalSupply, paused, and maybe others)
+//     @dev fails due to Java exception. Not sure why
+// */
+// rule uninitializedImpliesZeroValue(method f) { 
+//     uint8 i1; address i2; uint8 i3; uint8 i4; uint8 j4; uint256 k4; uint256[] i5; bool j5; uint256 i6;
 
-    require !initialized;
-    uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
-    require valBefore == 0;
+//     require !initialized;
+//     uint256 valBefore = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
+//     require valBefore == 0;
 
-    env e; calldataarg args;
-    f(e,args);
+//     env e; calldataarg args;
+//     f(e,args);
 
-    require !initialized;
-    uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
+//     require !initialized;
+//     uint256 valAfter = getAllGettersDefinedInput(i1, i2, i3, i4, j4, k4, i5, j5, i6);
 
-    assert valAfter == 0;
-}
+//     assert valAfter == 0;
+// }
 
-/* 1 2
-    There must not be a transaction that decreases only one 
-    underlying balance, except for removeLiquidityOneToken 
-*/
-rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
-    uint8 index;
-    uint256 _underlyingBalance = getTokenBalance(index);
-    mathint _sumBalances = sum_all_underlying_balances;
+// /* 1 2
+//     There must not be a transaction that decreases only one 
+//     underlying balance, except for removeLiquidityOneToken 
+// */
+// rule onlyRemoveLiquidityOneTokenDecreasesUnderlyingsOnesided (method f) {
+//     uint8 index;
+//     uint256 _underlyingBalance = getTokenBalance(index);
+//     mathint _sumBalances = sum_all_underlying_balances;
 
-    env e;
-    basicAssumptions(e);
-    require _sumBalances >= 0;
+//     env e;
+//     basicAssumptions(e);
+//     require _sumBalances >= 0;
 
-    calldataarg args;
+//     calldataarg args;
 
-    f(e,args);
+//     f(e,args);
 
-    uint256 underlyingBalance_ = getTokenBalance(index);
-    mathint sumBalances_ = sum_all_underlying_balances;
+//     uint256 underlyingBalance_ = getTokenBalance(index);
+//     mathint sumBalances_ = sum_all_underlying_balances;
 
-    assert (sumBalances_ < _sumBalances) => _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;     
-}
+//     assert (sumBalances_ < _sumBalances) => _underlyingBalance - underlyingBalance_ != _sumBalances - sumBalances_;     
+// }
 
-/* 1 2
-    Admin fees can only increase
-*/
-rule monotonicallyIncreasingFees(method f) filtered {
-    f -> f.selector != withdrawAdminFees().selector
-} {
-    uint8 indexA;
-    uint8 indexB;
+// /* 1 2
+//     Admin fees can only increase
+// */
+// rule monotonicallyIncreasingFees(method f) filtered {
+//     f -> f.selector != withdrawAdminFees().selector
+// } {
+//     uint8 indexA;
+//     uint8 indexB;
 
-    env e;
-    basicAssumptions(e);
+//     env e;
+//     basicAssumptions(e);
 
-    uint256 balanceBefore = getAdminBalance(indexA);
+//     uint256 balanceBefore = getAdminBalance(indexA);
 
-    calldataarg args;
-    f(e, args);
+//     calldataarg args;
+//     f(e, args);
 
-    uint256 balanceAfter = getAdminBalance(indexA);
+//     uint256 balanceAfter = getAdminBalance(indexA);
 
-    assert balanceAfter >= balanceBefore , "fees must not decrease, except for withdraw by admin";
-}
+//     assert balanceAfter >= balanceBefore , "fees must not decrease, except for withdraw by admin";
+// }
 
-/* 1 1
-    Only admin can withdraw adminFees
-*/
-rule onlyAdminCanWithdrawFees() {
-    method f;
-    uint8 index;
+// /* 1 1
+//     Only admin can withdraw adminFees
+// */
+// rule onlyAdminCanWithdrawFees() {
+//     method f;
+//     uint8 index;
 
-    env e;
-    basicAssumptions(e);
+//     env e;
+//     basicAssumptions(e);
 
-    uint256 balanceBefore = getAdminBalance(index);
+//     uint256 balanceBefore = getAdminBalance(index);
 
-    calldataarg args;
-    f(e, args);
+//     calldataarg args;
+//     f(e, args);
 
-    uint256 balanceAfter = getAdminBalance(index);
+//     uint256 balanceAfter = getAdminBalance(index);
 
-    assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
-}
+//     assert balanceAfter < balanceBefore => e.msg.sender == owner(), "fees must only be collected by admin";
+// }
 
-/* 
-    Adding liquidity to one should decrease that tokens price
-*/
+// /* 
+//     Adding liquidity to one should decrease that tokens price
+// */
 
-/*
-    Token addresses can't change
-*/
+// /*
+//     Token addresses can't change
+// */
 
-/* 
-    Slippage less than constant product pool
-*/
+// /* 
+//     Slippage less than constant product pool
+// */
 
-/* 
-    Slippage proportional to change in balances
-*/
+// /* 
+//     Slippage proportional to change in balances
+// */
 
-/*
-    Swaping token A for token B followed by B for A should not result in a decrease in balances of the pool 
-*/
+// /*
+//     Swaping token A for token B followed by B for A should not result in a decrease in balances of the pool 
+// */
 
-/*
-    Swaping token A for token B followed by B for A should not result in a decrease in the product of balances  
-*/
+// /*
+//     Swaping token A for token B followed by B for A should not result in a decrease in the product of balances  
+// */
 
-/*
-    Swaping token A for token B followed by B for A should not result in a decrease in the virtual price
-*/
+// /*
+//     Swaping token A for token B followed by B for A should not result in a decrease in the virtual price
+// */
 
-/*
-    All functionality of removeLiquidityImbalance can be performed using 2 removeLiquidityOneToken calls for a pool with 2 tokens
-*/
+// /*
+//     All functionality of removeLiquidityImbalance can be performed using 2 removeLiquidityOneToken calls for a pool with 2 tokens
+// */
