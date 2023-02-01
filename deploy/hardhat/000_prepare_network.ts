@@ -1,14 +1,10 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { isMainnet } from "../../utils/network"
-import dotenv from "dotenv"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getChainId, ethers } = hre
   const { log } = deployments
-  const { deployer } = await getNamedAccounts()
-
-  dotenv.config()
 
   if (isMainnet(await getChainId()) && process.env.FORK_MAINNET === "true") {
     if (

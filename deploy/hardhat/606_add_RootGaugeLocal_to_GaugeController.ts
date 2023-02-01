@@ -1,16 +1,16 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { DeployFunction } from "hardhat-deploy/types"
-import { BigNumber } from "ethers"
-import { BIG_NUMBER_1E18 } from "../../test/testUtils"
 import { expect } from "chai"
+import { BigNumber } from "ethers"
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { BIG_NUMBER_1E18 } from "../../test/testUtils"
 
 const ROOT_GAUGE_LOCAL_CONTRACT_NAME = "RootGaugeLocal"
 const LOCALHOST_LIQUIDITY_GAUGE_TYPE_NAME = "Liquidity (localhost)"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   const localhostGaugeTypeWeight = BIG_NUMBER_1E18
 

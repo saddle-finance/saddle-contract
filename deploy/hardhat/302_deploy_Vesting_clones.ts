@@ -1,9 +1,9 @@
+import { BigNumber } from "ethers"
 import {
   BIG_NUMBER_1E18,
-  MAX_UINT256,
   getCurrentBlockTimestamp,
+  MAX_UINT256,
 } from "../../test/testUtils"
-import { BigNumber } from "ethers"
 
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
@@ -92,9 +92,9 @@ const THIRD_ROUND_INVESTORS: { [address: string]: number } = {
 const MULTISIG_ADDRESS = "0x3F8E527aF4e0c6e763e8f368AC679c44C45626aE"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { deploy, get, execute } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   interface Recipient {
     to: string

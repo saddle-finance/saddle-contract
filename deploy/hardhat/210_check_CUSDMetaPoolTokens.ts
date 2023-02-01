@@ -8,9 +8,9 @@ const USD_TOKENS_ARGS: { [token: string]: any[] } = {
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { deploy, execute } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   for (const token in USD_TOKENS_ARGS) {
     await deploy(token, {

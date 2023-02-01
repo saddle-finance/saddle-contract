@@ -1,13 +1,14 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { MULTISIG_ADDRESSES } from "../../utils/accounts"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { getCurrentBlockTimestamp } from "../../test/testUtils"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { deploy, get } = deployments
-  const { deployer, libraryDeployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
+  const libraryDeployer = (await hre.ethers.getSigners())[1].address
 
   const chainId = await getChainId()
 

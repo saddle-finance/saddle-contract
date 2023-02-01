@@ -3,9 +3,10 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { increaseTimestamp } from "../../test/testUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
-  const { deployer, libraryDeployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
+  const libraryDeployer = (await hre.ethers.getSigners())[1].address
 
   const deployOptions = {
     from: deployer,

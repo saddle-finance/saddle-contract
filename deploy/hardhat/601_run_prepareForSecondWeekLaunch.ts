@@ -26,13 +26,13 @@ interface GaugeWeight {
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute, read, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   // at index 0 is hardhat deployer address
   // on localhost network, we use this address as admins for most contracts
-  const signers = await ethers.getSigners()
+  const signers = await hre.ethers.getSigners()
 
   const WEEK = 86400 * 7
 

@@ -1,14 +1,14 @@
-import { CHAIN_ID } from "../../utils/network"
+import { utils } from "ethers"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { asyncForEach } from "../../test/testUtils"
 import path from "path"
-import { utils } from "ethers"
+import { asyncForEach } from "../../test/testUtils"
+import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { execute, get, read, log } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   const poolConfigs = [
     {

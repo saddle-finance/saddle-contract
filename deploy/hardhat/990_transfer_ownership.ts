@@ -1,13 +1,13 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
+import path from "path"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { isMainnet } from "../../utils/network"
-import path from "path"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { execute, log, read } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   const contractsToTransferOwnership = [
     "Allowlist",

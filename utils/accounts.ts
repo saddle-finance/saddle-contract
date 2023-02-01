@@ -43,5 +43,8 @@ export const FRAX_MULTISIG_ADDRESSES = {
 export const PROD_DEPLOYER_ADDRESS =
   "0x5BDb37d0Ddea3A90F233c7B7F6b9394B6b2eef34"
 
+export const PROD_CROSS_CHAIN_DEPLOYER_ADDRESS =
+  "0x979B44CFc7a9B54BED8a3C4FD674B09c194219fD"
+
 // https://docs.multichain.org/developer-guide/anycall/anycall-v6/how-to-integrate-anycall-v6
 export const ANYCALL_ADDRESS = "0xC10Ef9F491C9B59f936957026020C321651ac078"
