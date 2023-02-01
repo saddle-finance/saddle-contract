@@ -62,7 +62,7 @@ methods {
 
 
 function newGetD(uint256 balance1, uint256 balance2) returns uint256 {
-    uint256 invar;
+    uint256 invar; havoc invar;
     require invar >= balance1 + balance2;
     require invar <= balance1 * balance2;
     require invar == determinedInvariant[balance1][balance2];
@@ -173,8 +173,7 @@ ghost mathint sum_all_underlying_balances {
 }
 
 // @dev A hook that keeps `sum_all_underlying_balances` up to date with the `swapStorage.balances` array
-// offset of 288 bytes within struct (9 storage slots) points to the `balances` array in swapStorage
-hook Sstore swapStorage.(offset 288)[INDEX uint256 i] uint256 balance (uint256 old_balance) STORAGE {
+hook Sstore currentContract.swapStorage.balances[INDEX uint256 i] uint256 balance (uint256 old_balance) STORAGE {
     sum_all_underlying_balances = sum_all_underlying_balances + balance - old_balance;
 }
 
