@@ -50,7 +50,7 @@
     "hardhat-deploy": "^0.11.22",
     "hardhat-gas-reporter": "^1.0.9",
     "hardhat-spdx-license-identifier": "^2.0.3",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^3.3.0",
     "prettier": "^2.8.1",
     "prettier-plugin-solidity": "^1.0.0-beta.11",
     "shelljs": "^0.8.4",
