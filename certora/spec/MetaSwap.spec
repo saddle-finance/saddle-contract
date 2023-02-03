@@ -1,3 +1,7 @@
+/* 
+    All properties that are proven for Swap are also proven for MetaSwap
+*/
+
 import "../helpers/erc20.spec"
 using LPToken as lpToken
 
@@ -72,9 +76,8 @@ invariant LPsolvency()
 ////////////////////////////////////////////////////////////////////////////
 
 /* Notes:
-    - Which additional properties need to be checked for metaswap? 
-        - All properties that are proven for swap are also proven for metaswap
-        - Would generalized unit tests for added functions suffice?
+    All properties that are proven for Swap are also proven for MetaSwap,
+    therefore minimal need for additional rules
 */
 rule MetaSwapLiveness() {
     require initialized == true;
