@@ -85,16 +85,14 @@
           "name": "",
           "type": "uint256"
         }
-      ],
-      "gas": 9686
+      ]
     },
     {
       "stateMutability": "nonpayable",
       "type": "function",
       "name": "kill_delegation",
       "inputs": [],
-      "outputs": [],
-      "gas": 26863
+      "outputs": []
     },
     {
       "stateMutability": "nonpayable",
@@ -106,8 +104,7 @@
           "type": "address"
         }
       ],
-      "outputs": [],
-      "gas": 41901
+      "outputs": []
     },
     {
       "stateMutability": "nonpayable",
@@ -123,16 +120,14 @@
           "type": "address"
         }
       ],
-      "outputs": [],
-      "gas": 78289
+      "outputs": []
     },
     {
       "stateMutability": "nonpayable",
       "type": "function",
       "name": "apply_set_admins",
       "inputs": [],
-      "outputs": [],
-      "gas": 82241
+      "outputs": []
     },
     {
       "stateMutability": "view",
@@ -144,8 +139,7 @@
           "name": "",
           "type": "address"
         }
-      ],
-      "gas": 2610
+      ]
     },
     {
       "stateMutability": "view",
@@ -157,8 +151,7 @@
           "name": "",
           "type": "address"
         }
-      ],
-      "gas": 2640
+      ]
     },
     {
       "stateMutability": "view",
@@ -170,8 +163,7 @@
           "name": "",
           "type": "address"
         }
-      ],
-      "gas": 2670
+      ]
     },
     {
       "stateMutability": "view",
@@ -183,8 +175,7 @@
           "name": "",
           "type": "address"
         }
-      ],
-      "gas": 2700
+      ]
     },
     {
       "stateMutability": "view",
@@ -196,8 +187,7 @@
           "name": "",
           "type": "address"
         }
-      ],
-      "gas": 2730
+      ]
     },
     {
       "stateMutability": "view",
@@ -209,8 +199,7 @@
           "name": "",
           "type": "address"
         }
-      ],
-      "gas": 2760
+      ]
     }
   ],
   "transactionHash": "0xbb7180a1116ec2797521df38c66a71bfbd02546c69e393da6f3aee02328e16ab",
