@@ -3,9 +3,9 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { execute, deploy, get, getOrNull, log, save } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   if ((await getChainId()) === CHAIN_ID.MAINNET) {
     log("Cannot add to migrator on mainnet. Need to be executed by a multisig.")
@@ -90,4 +90,3 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
 }
 export default func
-func.tags = ["GeneralizedSwapMigrator"]

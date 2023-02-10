@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, BigNumberish, Signer } from "ethers"
 import { deployments } from "hardhat"
 import { SDL, VotingEscrow } from "../../build/typechain/"
@@ -11,7 +10,6 @@ import {
   setTimestamp,
 } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 const REVERT_MSG_ONLY_LOCK_FUTURE = "Can only lock until time in the future"
@@ -48,7 +46,7 @@ describe("VotingEscrow", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["veSDL"]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       users = await Promise.all(
@@ -380,8 +378,9 @@ describe("VotingEscrow", () => {
 
       // Increase unlock time
       await veSDL.increase_unlock_time(LOCK_START_TIMESTAMP + MAXTIME)
-      expect(await veSDL["balanceOf(address)"](deployerAddress)).to.eq(
-        "14999999682902080113010136",
+      expect(await veSDL["balanceOf(address)"](deployerAddress)).to.closeTo(
+        BIG_NUMBER_1E18.mul(15_000_000),
+        BIG_NUMBER_1E18,
       )
 
       const locked = await veSDL.locked(deployerAddress)

@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
@@ -21,7 +20,6 @@ import {
   TIME,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Swap Deployer", () => {
@@ -62,7 +60,7 @@ describe("Swap Deployer", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get, deploy } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["Swap", "USDPool", "SwapDeployer"]) // ensure you start from a fresh deployments
 
       TOKENS.length = 0
       signers = await ethers.getSigners()

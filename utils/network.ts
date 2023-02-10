@@ -1,3 +1,8 @@
+import dotenv from "dotenv"
+
+dotenv.config()
+
+// Record of chain name to chain id
 export const CHAIN_ID: Record<string, string> = {
   MAINNET: "1",
   ROPSTEN: "3",
@@ -12,15 +17,29 @@ export const CHAIN_ID: Record<string, string> = {
   EVMOS_TESTNET: "9000",
   EVMOS_MAINNET: "9001",
   KAVA_TESTNET: "2221",
+  KAVA_MAINNET: "2222",
+  AURORA_MAINNET: "1313161554",
+}
+
+// Reverse lookup of chainId to chain name
+export function getNetworkNameFromChainId(chainId: string): string {
+  for (const [name, id] of Object.entries(CHAIN_ID)) {
+    if (id === chainId) {
+      return name.toLowerCase()
+    }
+  }
+  throw new Error(`Unknown chain id: ${chainId}`)
 }
 
 export function isMainnet(networkId: string): boolean {
   return (
-    networkId === CHAIN_ID.MAINNET ||
-    networkId === CHAIN_ID.ARBITRUM_MAINNET ||
-    networkId === CHAIN_ID.OPTIMISM_MAINNET ||
-    networkId === CHAIN_ID.FANTOM_MAINNET ||
-    networkId === CHAIN_ID.EVMOS_MAINNET
+    networkId == CHAIN_ID.MAINNET ||
+    networkId == CHAIN_ID.ARBITRUM_MAINNET ||
+    networkId == CHAIN_ID.OPTIMISM_MAINNET ||
+    networkId == CHAIN_ID.FANTOM_MAINNET ||
+    networkId == CHAIN_ID.EVMOS_MAINNET ||
+    networkId == CHAIN_ID.KAVA_MAINNET ||
+    networkId == CHAIN_ID.AURORA_MAINNET
   )
 }
 
@@ -44,6 +63,7 @@ export function isHardhatNetwork(networkId: string): boolean {
 export const ALCHEMY_BASE_URL = {
   [CHAIN_ID.MAINNET]: "https://eth-mainnet.alchemyapi.io/v2/",
   [CHAIN_ID.ROPSTEN]: "https://eth-ropsten.alchemyapi.io/v2/",
+  [CHAIN_ID.OPTIMISM_MAINNET]: "https://opt-mainnet.g.alchemy.com/v2/",
   [CHAIN_ID.ARBITRUM_MAINNET]: "https://arb-mainnet.g.alchemy.com/v2/",
   [CHAIN_ID.ARBITRUM_TESTNET]: "https://arb-rinkeby.g.alchemy.com/v2/",
 }

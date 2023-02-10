@@ -1,8 +1,12 @@
 import { BytesLike } from "@ethersproject/bytes"
 import { Contract } from "@ethersproject/contracts"
+import * as helpers from "@nomicfoundation/hardhat-network-helpers"
+import chalk from "chalk"
 import { BigNumber, Bytes, ContractFactory, providers, Signer } from "ethers"
-import { ethers, network } from "hardhat"
+import { readFile } from "fs/promises"
+import { ethers } from "hardhat"
 import { DeploymentsExtension } from "hardhat-deploy/dist/types"
+import { Deployment } from "hardhat-deploy/types"
 import { Artifact } from "hardhat/types"
 import { IERC20, Swap } from "../build/typechain/"
 import merkleTreeDataTest from "../test/exampleMerkleTree.json"
@@ -67,16 +71,16 @@ export async function deployContractWithLibraries(
   libraries: Record<string, string>,
   args?: Array<unknown>,
 ): Promise<Contract> {
-  const swapFactory = (await ethers.getContractFactory(
+  const contractFactory = (await ethers.getContractFactory(
     artifact.abi,
     linkBytecode(artifact, libraries),
     signer,
   )) as ContractFactory
 
   if (args) {
-    return swapFactory.deploy(...args)
+    return contractFactory.deploy(...args)
   } else {
-    return swapFactory.deploy()
+    return contractFactory.deploy()
   }
 }
 
@@ -121,7 +125,7 @@ export async function getPoolBalances(
 
 export async function getUserTokenBalances(
   address: string | Signer,
-  tokens: Contract[],
+  tokens: Contract[] | string[],
 ): Promise<BigNumber[]> {
   const balanceArray = []
 
@@ -129,7 +133,11 @@ export async function getUserTokenBalances(
     address = await address.getAddress()
   }
 
-  for (const token of tokens) {
+  for (let token of tokens) {
+    if (typeof token == "string") {
+      token = await ethers.getContractAt("GenericERC20", token)
+    }
+
     balanceArray.push(await (token as IERC20).balanceOf(address))
   }
 
@@ -147,31 +155,20 @@ export async function getUserTokenBalance(
 }
 
 // EVM methods
-
-export async function forceAdvanceOneBlock(timestamp?: number): Promise<any> {
-  const params = timestamp ? [timestamp] : []
-  return ethers.provider.send("evm_mine", params)
+export async function forceAdvanceOneBlock(): Promise<any> {
+  return helpers.mine()
 }
 
 export async function setTimestamp(timestamp: number): Promise<any> {
-  return forceAdvanceOneBlock(timestamp)
+  return helpers.time.increaseTo(timestamp)
 }
 
 export async function increaseTimestamp(timestampDelta: number): Promise<any> {
-  await ethers.provider.send("evm_increaseTime", [timestampDelta])
-  return forceAdvanceOneBlock()
+  return helpers.time.increase(timestampDelta)
 }
 
 export async function setNextTimestamp(timestamp: number): Promise<any> {
-  const chainId = (await ethers.provider.getNetwork()).chainId
-
-  switch (chainId) {
-    case 31337: // buidler evm
-      return ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
-    case 1337: // ganache
-    default:
-      return setTimestamp(timestamp)
-  }
+  return helpers.time.setNextBlockTimestamp(timestamp)
 }
 
 export async function getCurrentBlockTimestamp(): Promise<number> {
@@ -182,22 +179,15 @@ export async function getCurrentBlockTimestamp(): Promise<number> {
 export async function impersonateAccount(
   address: string,
 ): Promise<providers.JsonRpcSigner> {
-  await network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [address],
-  })
-
+  await helpers.impersonateAccount(address)
   return ethers.provider.getSigner(address)
 }
 
 export async function setEtherBalance(
   address: string,
-  amount: number,
+  amount: BigNumber,
 ): Promise<any> {
-  return ethers.provider.send("hardhat_setBalance", [
-    address,
-    `0x${amount.toString(16)}`,
-  ])
+  await helpers.setBalance(address, amount)
 }
 
 export async function asyncForEach<T>(
@@ -207,4 +197,47 @@ export async function asyncForEach<T>(
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index)
   }
+}
+
+export function convertGaugeNameToSalt(name: string): string {
+  return ethers.utils.keccak256(ethers.utils.formatBytes32String(name))
+}
+
+/**
+ * Try to find the deployment json with the given deployment name and return the
+ * deployment json object. Returns null on error.
+ * @param deploymentName Name of the deployment to look up
+ * @param networkName Name of the network the deployment belongs to
+ * @example
+ * getWithNameOrNull("SDL", "mainnet")
+ */
+export async function getWithNameOrNull(
+  deploymentName: string,
+  networkName: string,
+): Promise<Deployment | null> {
+  try {
+    return getWithName(deploymentName, networkName)
+  } catch (e) {
+    console.log(chalk.yellow(e))
+    return null
+  }
+}
+
+/**
+ * Try to find the deployment json with the given deployment name and return the
+ * deployment json object. Throws on error.
+ * @param deploymentName Name of the deployment to look up
+ * @param networkName Name of the network the deployment belongs to
+ * @example
+ * getWithName("SDL", "mainnet")
+ */
+export async function getWithName(
+  deploymentName: string,
+  networkName: string,
+): Promise<Deployment> {
+  const file = await readFile(
+    `deployments/${networkName}/${deploymentName}.json`,
+    "utf8",
+  )
+  return JSON.parse(file)
 }

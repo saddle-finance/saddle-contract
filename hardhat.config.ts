@@ -1,28 +1,39 @@
+import "@nomicfoundation/hardhat-toolbox"
 import "@nomiclabs/hardhat-vyper"
-import "@nomiclabs/hardhat-ethers"
-import "@nomiclabs/hardhat-waffle"
-import "@nomiclabs/hardhat-web3"
-import "@nomiclabs/hardhat-etherscan"
-import "@typechain/hardhat"
-import "hardhat-gas-reporter"
-import "solidity-coverage"
 import "hardhat-deploy"
 import "hardhat-spdx-license-identifier"
+import "hardhat-tracer"
 
-import { HardhatUserConfig, task } from "hardhat/config"
 import dotenv from "dotenv"
+import { HardhatUserConfig } from "hardhat/config"
+import "./tasks"
+import {
+  MULTISIG_ADDRESSES,
+  PROD_CROSS_CHAIN_DEPLOYER_ADDRESS,
+  PROD_DEPLOYER_ADDRESS,
+} from "./utils/accounts"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "./utils/network"
-import { MULTISIG_ADDRESSES, PROD_DEPLOYER_ADDRESS } from "./utils/accounts"
-import { Deployment } from "hardhat-deploy/dist/types"
-import { HttpNetworkUserConfig } from "hardhat/types"
 
 dotenv.config()
 
-if (process.env.HARDHAT_FORK) {
-  process.env["HARDHAT_DEPLOY_FORK"] = process.env.HARDHAT_FORK
+// Array of private keys to be used as signers
+// When running with mainnet networks, the first account will be used as the deployer by default
+const accountsToUse = []
+
+// Use the private key from the .env file if available
+let deployerAccount = PROD_DEPLOYER_ADDRESS
+if (process.env.DEPLOYER_PRIVATE_KEY) {
+  accountsToUse.push(process.env.DEPLOYER_PRIVATE_KEY)
+  deployerAccount = `privatekey://${process.env.DEPLOYER_PRIVATE_KEY}`
 }
 
-let config: HardhatUserConfig = {
+let crossChainDeployerAccount = PROD_CROSS_CHAIN_DEPLOYER_ADDRESS
+if (process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY) {
+  accountsToUse.push(process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY)
+  crossChainDeployerAccount = `privatekey://${process.env.CROSS_CHAIN_DEPLOYER_PRIVATE_KEY}`
+}
+
+const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
@@ -31,6 +42,7 @@ let config: HardhatUserConfig = {
     },
     mainnet: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
+      chainId: parseInt(CHAIN_ID.MAINNET),
       deploy: ["./deploy/mainnet/"],
       verify: {
         etherscan: {
@@ -41,6 +53,7 @@ let config: HardhatUserConfig = {
     },
     ropsten: {
       url: ALCHEMY_BASE_URL[CHAIN_ID.ROPSTEN] + process.env.ALCHEMY_API_KEY,
+      chainId: parseInt(CHAIN_ID.ROPSTEN),
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
@@ -50,7 +63,7 @@ let config: HardhatUserConfig = {
       url:
         ALCHEMY_BASE_URL[CHAIN_ID.ARBITRUM_TESTNET] +
         process.env.ALCHEMY_API_KEY,
-      chainId: 421611,
+      chainId: parseInt(CHAIN_ID.ARBITRUM_TESTNET),
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
@@ -58,37 +71,39 @@ let config: HardhatUserConfig = {
     },
     arbitrum_mainnet: {
       url: "https://arb1.arbitrum.io/rpc",
-      chainId: 42161,
+      chainId: parseInt(CHAIN_ID.ARBITRUM_MAINNET),
       deploy: ["./deploy/arbitrum/"],
       verify: {
         etherscan: {
           apiUrl: "https://api.arbiscan.io",
-          apiKey: "6IJ9VIDV55VNTPAA8TRKQREVWQJDA98FEK",
+          apiKey: process.env.ETHERSCAN_ARB_API ?? "NO_KEY",
         },
       },
     },
     optimism_testnet: {
       url: "https://kovan.optimism.io",
-      chainId: 69,
+      chainId: parseInt(CHAIN_ID.OPTIMISM_TESTNET),
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
       deploy: ["./deploy/optimism/"],
     },
     optimism_mainnet: {
-      url: "https://mainnet.optimism.io",
-      chainId: 10,
+      url:
+        ALCHEMY_BASE_URL[CHAIN_ID.OPTIMISM_MAINNET] +
+        process.env.ALCHEMY_API_KEY,
+      chainId: parseInt(CHAIN_ID.OPTIMISM_MAINNET),
       deploy: ["./deploy/optimism/"],
       verify: {
         etherscan: {
           apiUrl: "https://api-optimistic.etherscan.io",
-          apiKey: "8A88XPGCP6IQXRJGM5NKMBMMGT7NNRBIMF",
+          apiKey: process.env.ETHERSCAN_OPT_API ?? "NO_KEY",
         },
       },
     },
     fantom_testnet: {
       url: "https://rpc.testnet.fantom.network/",
-      chainId: 4002,
+      chainId: parseInt(CHAIN_ID.FANTOM_TESTNET),
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
@@ -96,18 +111,18 @@ let config: HardhatUserConfig = {
     },
     fantom_mainnet: {
       url: "https://rpc.ftm.tools/",
-      chainId: 250,
+      chainId: parseInt(CHAIN_ID.FANTOM_MAINNET),
       deploy: ["./deploy/fantom/"],
       verify: {
         etherscan: {
           apiUrl: "https://api.ftmscan.com",
-          apiKey: "YKFDUZYGB28APW5KQQI4MH1CKRZN8IRYMP",
+          apiKey: process.env.ETHERSCAN_FTM_API ?? "NO_KEY",
         },
       },
     },
     evmos_testnet: {
       url: "https://eth.bd.evmos.dev:8545",
-      chainId: 9000,
+      chainId: parseInt(CHAIN_ID.EVMOS_TESTNET),
       deploy: ["./deploy/evmos_testnet/"],
       accounts: {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
@@ -116,17 +131,18 @@ let config: HardhatUserConfig = {
     evmos_mainnet: {
       live: true,
       url: "https://eth.bd.evmos.org:8545",
-      chainId: 9001,
+      chainId: parseInt(CHAIN_ID.EVMOS_MAINNET),
       deploy: ["./deploy/evmos/"],
       verify: {
         etherscan: {
           apiUrl: "https://evm.evmos.org",
+          apiKey: "NO_KEY",
         },
       },
     },
     kava_testnet: {
       url: "https://evm.evm-alpha.kava.io",
-      chainId: 2221,
+      chainId: parseInt(CHAIN_ID.KAVA_TESTNET),
       deploy: ["./deploy/kava_testnet/"],
       verify: {
         etherscan: {
@@ -137,6 +153,30 @@ let config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC_TEST_ACCOUNT,
       },
     },
+    kava_mainnet: {
+      live: true,
+      url: "https://evm2.kava.io",
+      chainId: parseInt(CHAIN_ID.KAVA_MAINNET),
+      deploy: ["./deploy/kava_mainnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://explorer.kava.io",
+          apiKey: "NO_KEY",
+        },
+      },
+    },
+    aurora_mainnet: {
+      live: true,
+      url: "https://mainnet.aurora.dev",
+      chainId: parseInt(CHAIN_ID.AURORA_MAINNET),
+      deploy: ["./deploy/aurora_mainnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.aurorascan.dev",
+          apiKey: process.env.ETHERSCAN_AURORA_API ?? "NO_KEY",
+        },
+      },
+    },
   },
   paths: {
     sources: "./contracts",
@@ -145,6 +185,15 @@ let config: HardhatUserConfig = {
   },
   solidity: {
     compilers: [
+      {
+        version: "0.8.17",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10000,
+          },
+        },
+      },
       {
         version: "0.8.6",
         settings: {
@@ -196,21 +245,17 @@ let config: HardhatUserConfig = {
   gasReporter: {
     currency: "USD",
     gasPrice: 21,
+    enabled: process.env.REPORT_GAS ? true : false,
   },
   mocha: {
     timeout: 200000,
   },
   namedAccounts: {
     deployer: {
-      default: 0, // here this will by default take the first account as deployer
-      1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
-      42161: 0, // use the same address on arbitrum mainnet
-      10: 0, // use the same address on optimism mainnet
-      250: 0, // use the same address on fantom mainnet
-      9000: 0, // use the same address on evmos testnet
-      9001: 0, // use the same address on evmos mainnnet
-      2221: 0, // use the same address on kava testnet
-      3: 0, // use the same address on ropsten
+      default: deployerAccount,
+    },
+    crossChainDeployer: {
+      default: crossChainDeployerAccount,
     },
     libraryDeployer: {
       default: 1, // use a different account for deploying libraries on the hardhat network
@@ -221,6 +266,7 @@ let config: HardhatUserConfig = {
       9000: 0, // use the same address on evmos testnet
       9001: 0, // use the same address on evmos mainnnet
       2221: 0, // use the same address on kava testnet
+      2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
     },
     multisig: {
@@ -229,6 +275,8 @@ let config: HardhatUserConfig = {
       42161: MULTISIG_ADDRESSES[42161],
       10: MULTISIG_ADDRESSES[10],
       250: MULTISIG_ADDRESSES[250],
+      1313161554: MULTISIG_ADDRESSES[1313161554],
+      9001: MULTISIG_ADDRESSES[9001],
     },
   },
   spdxLicenseIdentifier: {
@@ -237,149 +285,15 @@ let config: HardhatUserConfig = {
   },
 }
 
-if (process.env.ACCOUNT_PRIVATE_KEYS) {
-  config.networks = {
-    ...config.networks,
-    mainnet: {
-      ...config.networks?.mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    arbitrum_mainnet: {
-      ...config.networks?.arbitrum_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    optimism_mainnet: {
-      ...config.networks?.optimism_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    fantom_mainnet: {
-      ...config.networks?.fantom_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-    evmos_mainnet: {
-      ...config.networks?.evmos_mainnet,
-      accounts: JSON.parse(process.env.ACCOUNT_PRIVATE_KEYS),
-    },
-  }
-}
-
-if (process.env.FORK_NETWORK && config.networks) {
-  const forkNetworkName = process.env.FORK_NETWORK as string
-  const blockNumber = process.env.FORK_BLOCK_NUMBER
-    ? parseInt(process.env.FORK_BLOCK_NUMBER)
-    : undefined
-  console.log(`FORK_NETWORK is set to ${forkNetworkName}`)
-  console.log(
-    `FORK_BLOCK_NUMBER is set to ${
-      blockNumber ? blockNumber : "undefined (using latest block number)"
-    }`,
-  )
-
-  if (!config.networks[forkNetworkName]) {
-    throw new Error(
-      `FORK_NETWORK is set to ${forkNetworkName}, but no network with that name is defined in the config.`,
-    )
-  }
-  if (!(config.networks[forkNetworkName] as HttpNetworkUserConfig).url) {
-    throw new Error(
-      `FORK_NETWORK is set to ${forkNetworkName}, but no url is defined for that network in the config.`,
-    )
-  }
-  if (!CHAIN_ID[forkNetworkName.toUpperCase()]) {
-    throw new Error(
-      `FORK_NETWORK is set to ${forkNetworkName}, but no chainId is defined for that network in the CHAIN_ID constant.`,
-    )
-  }
-  const forkingURL = (config.networks[forkNetworkName] as HttpNetworkUserConfig)
-    .url as string
-  const forkingChainId = parseInt(CHAIN_ID[forkNetworkName.toUpperCase()])
-  const externalDeploymentsFolder = `deployments/${forkNetworkName.toLowerCase()}`
-  const deployPaths = config.networks[forkNetworkName]?.deploy as string[]
-
-  console.log(
-    `Attempting to fork ${forkNetworkName} from ${forkingURL} with chainID of ${forkingChainId}. External deployments folder is ${externalDeploymentsFolder}`,
-  )
-
-  config = {
-    ...config,
-    networks: {
-      ...config.networks,
-      hardhat: {
-        ...config.networks.hardhat,
-        forking: {
-          url: forkingURL,
-          blockNumber: blockNumber,
-        },
-        chainId: forkingChainId,
-        deploy: deployPaths,
-      },
-    },
-    namedAccounts: {
-      ...config.namedAccounts,
-      deployer: {
-        [String(forkingChainId)]: PROD_DEPLOYER_ADDRESS,
-      },
-      multisig: {
-        [String(forkingChainId)]: MULTISIG_ADDRESSES[forkingChainId.toString()],
-      },
-    },
-    external: {
-      deployments: {
-        localhost: [externalDeploymentsFolder],
-      },
-    },
-  }
-}
-
-// Override the default deploy task
-task("deploy", async (taskArgs, hre, runSuper) => {
-  const { all } = hre.deployments
-  /*
-   * Pre-deployment actions
-   */
-
-  // Load exiting deployments
-  const existingDeployments: { [p: string]: Deployment } = await all()
-  // Create hard copy of existing deployment name to address mapping
-  const existingDeploymentToAddressMap: { [p: string]: string } = Object.keys(
-    existingDeployments,
-  ).reduce((acc: { [p: string]: string }, key) => {
-    acc[key] = existingDeployments[key].address
-    return acc
-  }, {})
-
-  /*
-   * Run super task
-   */
-  await runSuper(taskArgs)
-
-  /*
-   * Post-deployment actions
-   */
-  const updatedDeployments: { [p: string]: Deployment } = await all()
-
-  // Filter out any existing deployments that have not changed
-  const newDeployments: { [p: string]: Deployment } = Object.keys(
-    updatedDeployments,
-  ).reduce((acc: { [p: string]: Deployment }, key) => {
-    if (
-      !existingDeploymentToAddressMap.hasOwnProperty(key) ||
-      existingDeploymentToAddressMap[key] !== updatedDeployments[key].address
-    ) {
-      acc[key] = updatedDeployments[key]
+// If we have any private keys, use them for mainnet networks as default signers
+if (accountsToUse.length > 0 && config.networks) {
+  for (const network of Object.keys(config.networks)) {
+    // if network name includes "mainnet", change the accounts
+    if (network.includes("mainnet")) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      config.networks[network]!.accounts = accountsToUse
     }
-    return acc
-  }, {})
-
-  // Print the new deployments to the console
-  if (Object.keys(newDeployments).length > 0) {
-    console.log("\nNew deployments:")
-    console.table(
-      Object.keys(newDeployments).map((k) => [k, newDeployments[k].address]),
-    )
-  } else {
-    console.warn("\nNo new deployments found")
   }
-})
+}
 
 export default config

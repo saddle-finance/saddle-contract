@@ -10,15 +10,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get, getOrNull, execute } = deployments
   const { deployer } = await getNamedAccounts()
 
-  const permissionlessSwap = await getOrNull("PermissionlessSwapFlashLoan")
-  const permissionlessMetaSwap = await getOrNull(
+  const permissionlessSwap = await getOrNull("PermissionlessSwap")
+  const permissionlessMetaSwap = await getOrNull("PermissionlessMetaSwap")
+
+  const permissionlessFlashLoanSwap = await getOrNull(
+    "PermissionlessSwapFlashLoan",
+  )
+  const permissionlessFlashLoanMetaSwap = await getOrNull(
     "PermissionlessMetaSwapFlashLoan",
   )
   const permissionlessDeployer = await getOrNull("PermissionlessDeployer")
   const masterRegistryAddress = (await get("MasterRegistry")).address
 
   if (permissionlessSwap == null) {
-    await deploy("PermissionlessSwapFlashLoan", {
+    await deploy("PermissionlessSwap", {
       from: deployer,
       log: true,
       skipIfAlreadyDeployed: true,
@@ -31,6 +36,33 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   if (permissionlessMetaSwap == null) {
+    await deploy("PermissionlessMetaSwap", {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+      args: [masterRegistryAddress],
+      libraries: {
+        SwapUtils: (await get("SwapUtils")).address,
+        MetaSwapUtils: (await get("MetaSwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
+      },
+    })
+  }
+
+  if (permissionlessFlashLoanSwap == null) {
+    await deploy("PermissionlessSwapFlashLoan", {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+      args: [masterRegistryAddress],
+      libraries: {
+        SwapUtils: (await get("SwapUtils")).address,
+        AmplificationUtils: (await get("AmplificationUtils")).address,
+      },
+    })
+  }
+
+  if (permissionlessFlashLoanMetaSwap == null) {
     await deploy("PermissionlessMetaSwapFlashLoan", {
       from: deployer,
       log: true,

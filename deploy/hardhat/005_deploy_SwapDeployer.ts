@@ -1,12 +1,13 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { DeployFunction } from "hardhat-deploy/types"
-import { isMainnet, isTestNetwork } from "../../utils/network"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
+import { isMainnet, isTestNetwork } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { deploy, execute, read } = deployments
-  const { deployer, libraryDeployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
+  const libraryDeployer = (await hre.ethers.getSigners())[1].address
 
   if (isTestNetwork(await getChainId())) {
     await deploy("SwapDeployerV1", {

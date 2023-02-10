@@ -1,17 +1,16 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { solidityPack } from "ethers/lib/utils"
 import { deployments } from "hardhat"
 import {
   FlashLoanBorrowerExample,
   GenericERC20,
+  GenericERC20__factory,
   LPToken,
   SwapFlashLoan,
 } from "../build/typechain/"
 import { asyncForEach, getUserTokenBalance, MAX_UINT256 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Swap Flashloan", () => {
@@ -50,7 +49,7 @@ describe("Swap Flashloan", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["SUSDMetaPoolTokens"]) // ensure you start from a fresh deployments
 
       TOKENS.length = 0
       signers = await ethers.getSigners()
@@ -62,13 +61,14 @@ describe("Swap Flashloan", () => {
       user1Address = await user1.getAddress()
       user2Address = await user2.getAddress()
 
-      const erc20Factory = await ethers.getContractFactory("GenericERC20")
+      const erc20Factory: GenericERC20__factory =
+        await ethers.getContractFactory("GenericERC20")
 
       // Deploy dummy tokens
-      DAI = await ethers.getContract("DAI")
-      USDC = await ethers.getContract("USDC")
-      USDT = await ethers.getContract("USDT")
-      SUSD = await ethers.getContract("SUSD")
+      DAI = await erc20Factory.deploy("DAI", "DAI", "18")
+      USDC = await erc20Factory.deploy("USDC", "USDC", "6")
+      USDT = await erc20Factory.deploy("USDT", "USDT", "6")
+      SUSD = await erc20Factory.deploy("SUSD", "SUSD", "18")
 
       TOKENS.push(DAI, USDC, USDT, SUSD)
 

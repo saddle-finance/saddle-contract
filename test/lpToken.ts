@@ -1,11 +1,9 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import { GenericERC20, LPToken, SwapFlashLoan } from "../build/typechain/"
 import { asyncForEach, MAX_UINT256 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
 
@@ -17,7 +15,7 @@ describe("LPToken", async () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["USDPool"]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       owner = signers[0]

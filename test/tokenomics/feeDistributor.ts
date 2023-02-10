@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
 import {
@@ -13,12 +12,10 @@ import {
   asyncForEach,
   BIG_NUMBER_1E18,
   getCurrentBlockTimestamp,
-  increaseTimestamp,
   MAX_UINT256,
   setTimestamp,
 } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 const WEEK = 86400 * 7
@@ -42,7 +39,9 @@ describe("Fee Distributor [ @skip-on-coverage ]", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["USDPoolV2", "veSDL"], {
+        fallbackToGlobal: false,
+      })
 
       signers = await ethers.getSigners()
       users = await Promise.all(
@@ -90,6 +89,11 @@ describe("Fee Distributor [ @skip-on-coverage ]", () => {
         await sdl.enableTransfer()
       }
 
+      // Set timestamp to start of the week
+      await setTimestamp(
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
+      )
+
       // Create max lock from deployer address
       await sdl.approve(veSDL.address, MAX_UINT256)
       await veSDL.create_lock(
@@ -116,9 +120,9 @@ describe("Fee Distributor [ @skip-on-coverage ]", () => {
   describe("claim", () => {
     it(`Successfully claims based on veSDL balance`, async () => {
       // Set timestamp to start of next week to ensure consistent test results
-      await setTimestamp(
-        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
-      )
+      const startTimestamp =
+        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK
+      await setTimestamp(startTimestamp)
 
       // Initialize checkpoint by calling it first when empty
       await feeDistributor.checkpoint_token()
@@ -136,7 +140,7 @@ describe("Fee Distributor [ @skip-on-coverage ]", () => {
       ).to.eq(BIG_NUMBER_1E18)
 
       // Half a week passes. Since the week is not over yet, no rewards are distributed
-      await increaseTimestamp(WEEK / 2)
+      await setTimestamp(startTimestamp + WEEK / 2)
       await feeDistributor.checkpoint_token()
       expect(await feeDistributor["claimable(address)"](deployerAddress)).to.eq(
         0,
@@ -145,19 +149,19 @@ describe("Fee Distributor [ @skip-on-coverage ]", () => {
 
       // Another half week passes. Now that the full week is past, after calling
       // checkpoint_token, last week's rewards become distributable.
-      await increaseTimestamp(WEEK / 2)
+      await setTimestamp(startTimestamp + WEEK)
       await feeDistributor.checkpoint_token()
       expect(await feeDistributor["claimable(address)"](deployerAddress)).to.eq(
-        "800000000000000000",
+        "800773694390715667",
       )
       expect(await feeDistributor["claimable(address)"](users[10])).to.eq(
-        "200000000000000000",
+        "199226305609284332",
       )
 
       // After claiming the rewards, no more rewards are claimable
       await feeDistributor.connect(signers[10])["claim()"]()
       expect(await feeDistributor["claimable(address)"](users[10])).to.eq(0)
-      expect(await lpToken.balanceOf(users[10])).to.eq("200000000000000000")
+      expect(await lpToken.balanceOf(users[10])).to.eq("199226305609284332")
     })
   })
 })

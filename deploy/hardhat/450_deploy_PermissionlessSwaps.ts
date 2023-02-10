@@ -1,14 +1,14 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { DeployFunction } from "hardhat-deploy/types"
-import { MULTISIG_ADDRESSES } from "../../utils/accounts"
-import { PoolRegistry } from "../../build/typechain"
 import dotenv from "dotenv"
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { PoolRegistry } from "../../build/typechain"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   dotenv.config()
-  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deployments, getUnnamedAccounts, getChainId, ethers } = hre
   const { deploy, get, getOrNull, execute } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   const permissionlessSwap = await getOrNull("PermissionlessSwapFlashLoan")
   const permissionlessMetaSwap = await getOrNull(
@@ -109,4 +109,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["PermissionlessSwaps"]
+func.dependencies = [
+  "SUSDMetaPoolDeposit",
+  "LPToken",
+  "SwapUtils",
+  "MetaSwapUtils",
+  "MasterRegistry",
+  "PoolRegistry",
+  "AmplificationUtils",
+]
 // func.skip = async (env) => (await env.getChainId()) == CHAIN_ID.MAINNET

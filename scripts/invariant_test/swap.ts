@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
@@ -13,7 +12,6 @@ import {
   setEtherBalance,
 } from "../../test/testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 const SWAP_ADDRESS = "0xC69DDcd4DFeF25D8a793241834d4cc4b3668EAD6"
@@ -60,12 +58,15 @@ describe("Swap", async () => {
         signers.map(async (signer) => await signer.getAddress()),
       )
 
-      await setEtherBalance(users[1], 1e20)
+      await setEtherBalance(users[1], ethers.constants.WeiPerEther.mul(10_000))
 
       // Try to get the swap contract at the address
       swap = await ethers.getContractAt("Swap", SWAP_ADDRESS)
       owner = await impersonateAccount(await swap.owner())
-      await setEtherBalance(await owner.getAddress(), 1e20)
+      await setEtherBalance(
+        await owner.getAddress(),
+        ethers.constants.WeiPerEther.mul(10_000),
+      )
 
       // If it is paused, unpause it
       if (await swap.paused()) {
@@ -94,7 +95,10 @@ describe("Swap", async () => {
       // Transfer pooled tokens from TOKEN_HOLDERS to users[1] for testing
       await asyncForEach(pooledTokens, async (token, i) => {
         const impersonatedSigner = await impersonateAccount(TOKEN_HOLDERS[i])
-        await setEtherBalance(await impersonatedSigner.getAddress(), 1e20)
+        await setEtherBalance(
+          await impersonatedSigner.getAddress(),
+          ethers.constants.WeiPerEther.mul(10_000),
+        )
         await token
           .connect(impersonatedSigner)
           .transfer(users[1], await token.balanceOf(TOKEN_HOLDERS[i]))

@@ -1,16 +1,13 @@
-import {
-  asyncForEach,
-  impersonateAccount,
-  setEtherBalance,
-} from "../../test/testUtils"
+import { setEtherBalance } from "../../test/testUtils"
 
-import { DeployFunction } from "hardhat-deploy/types"
-import { GenericERC20 } from "../../build/typechain/"
-import { HardhatRuntimeEnvironment } from "hardhat/types"
 import dotenv from "dotenv"
 import { ethers } from "hardhat"
-import { isMainnet } from "../../utils/network"
+import { DeployFunction } from "hardhat-deploy/types"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import path from "path"
+import { getHardhatTestSigners } from "../../scripts/utils"
+import { isMainnet } from "../../utils/network"
+import { stealFundsFromWhales } from "../deployUtils"
 
 dotenv.config()
 
@@ -18,6 +15,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
   const { execute, log, read, all, get } = deployments
   const { deployer } = await getNamedAccounts()
+  const hardhatTestAccount = getHardhatTestSigners()[0]
 
   // These addresses are for large holders of the given token (used in forked mainnet testing)
   // You can find whales' addresses on etherscan's holders page.
@@ -30,6 +28,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     USDC: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
     USDT: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
     SUSD: ["0xa5407eae9ba41422680e2e00537571bcc53efbfd"],
+    USX: ["0x9e8b68e17441413b26c2f18e741eaba69894767c"],
     // BTC
     WBTC: ["0x7fc77b5c7614e1533320ea6ddc2eb61fa00a9714"],
     RENBTC: ["0x7fc77b5c7614e1533320ea6ddc2eb61fa00a9714"],
@@ -48,31 +47,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     TBTCv2: ["0xf9e11762d522ea29dd78178c9baf83b7b093aacc"],
   }
 
+  // Addresses to receive funds from the whales
+  const receivers = [deployer, await hardhatTestAccount.getAddress()]
+
   if (
     isMainnet(await getChainId()) &&
-    process.env.FORK_NETWORK &&
+    process.env.HARDHAT_DEPLOY_FORK &&
     process.env.FUND_FORK_NETWORK
   ) {
-    // Give the deployer tokens from each token holder for testing
-    for (const [tokenName, holders] of Object.entries(tokenToAccountsMap)) {
-      const contract = (await ethers.getContract(tokenName)) as GenericERC20
-
-      await asyncForEach(holders, async (holder) => {
-        const balance = await contract.balanceOf(holder)
-        await setEtherBalance(holder, 1e20)
-        await contract
-          .connect(await impersonateAccount(holder))
-          .transfer(deployer, await contract.balanceOf(holder))
-        log(
-          `Sent ${ethers.utils.formatUnits(
-            balance,
-            await contract.decimals(),
-          )} ${tokenName} from ${holder} to ${deployer}`,
-        )
-      })
-    }
-    // Give the deployer some ether to use for testing
-    await setEtherBalance(deployer, 1e20)
+    // Steal funds from whales to the deployer account and hardhat test account
+    await stealFundsFromWhales(hre, tokenToAccountsMap, receivers)
+    // Give some ether to all receivers
+    await Promise.all(
+      receivers.map(async (receiver) =>
+        setEtherBalance(receiver, ethers.constants.WeiPerEther.mul(1000)),
+      ),
+    )
   } else {
     log(`skipping ${path.basename(__filename)}`)
   }

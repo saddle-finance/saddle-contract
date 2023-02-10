@@ -1,0 +1,38 @@
+[profile.default]
+src = 'contracts'
+out = 'out'
+libs = ["node_modules", "lib"]
+test = 'test/foundry'
+remappings = [
+    '@boringcrypto/=node_modules/@boringcrypto/',
+    '@openzeppelin/=node_modules/@openzeppelin/',
+    'eth-gas-reporter/=node_modules/eth-gas-reporter/',
+    'hardhat-deploy/=node_modules/hardhat-deploy/',
+    'hardhat/=node_modules/hardhat/',
+    'sol-explore/=node_modules/sol-explore/',
+    'synthetix/=node_modules/synthetix/',
+]
+cache_path  = 'forge-cache'
+script = 'forge-script'
+out = 'forge-out'
+fs_permissions = [{ access = "read-write", path = "./"}, { access = "read-write", path = "./output/"}]
+
+[rpc_endpoints]
+mainnet = "https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}"
+arbitrum_mainnet = "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
+optimism_mainnet = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
+fantom_mainnet = "https://rpc.ftm.tools/"
+evmos_mainnet = "https://evmos-mainnet.public.blastapi.io"
+kava_mainnet = "https://evm2.kava.io"
+aurora_mainnet = "https://mainnet.aurora.dev"
+
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API}" }
+arbitrum_mainnet = { key = "${ETHERSCAN_ARB_API}" }
+optimism_mainnet = { key = "${ETHERSCAN_OPT_API}" }
+fantom_mainnet = { key = "${ETHERSCAN_FTM_API}", url = "https://api.ftmscan.com" }
+evmos_mainnet = { key = "NO_KEY", url = "https://evm.evmos.org" }
+kava_mainnet = { key = "NO_KEY", url = "https://explorer.kava.io" }
+aurora_mainnet = { key = "${ETHERSCAN_AURORA_API}", url = "" }
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config

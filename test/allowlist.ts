@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { Signer } from "ethers"
 import { formatBytes32String } from "ethers/lib/utils"
 import { deployments } from "hardhat"
@@ -11,7 +10,6 @@ import {
   ZERO_ADDRESS,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 const POOL_ADDRESS_1 = "0x0000000000000000000000000000000000000001"
@@ -25,7 +23,7 @@ describe("Allowlist", () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture([]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       malActor = signers[10]

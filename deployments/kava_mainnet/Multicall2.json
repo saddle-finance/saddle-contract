@@ -1,0 +1,354 @@
+{
+  "address": "0x29FD31d37AB8D27f11EAB68F96424bf64231fFce",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "target",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "callData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Multicall2.Call[]",
+          "name": "calls",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "aggregate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes[]",
+          "name": "returnData",
+          "type": "bytes[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "target",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "callData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Multicall2.Call[]",
+          "name": "calls",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "blockAndAggregate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "success",
+              "type": "bool"
+            },
+            {
+              "internalType": "bytes",
+              "name": "returnData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Multicall2.Result[]",
+          "name": "returnData",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        }
+      ],
+      "name": "getBlockHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getBlockNumber",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCurrentBlockCoinbase",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "coinbase",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCurrentBlockDifficulty",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "difficulty",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCurrentBlockGasLimit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "gaslimit",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCurrentBlockTimestamp",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "addr",
+          "type": "address"
+        }
+      ],
+      "name": "getEthBalance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLastBlockHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "requireSuccess",
+          "type": "bool"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "target",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "callData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Multicall2.Call[]",
+          "name": "calls",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "tryAggregate",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "success",
+              "type": "bool"
+            },
+            {
+              "internalType": "bytes",
+              "name": "returnData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Multicall2.Result[]",
+          "name": "returnData",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "requireSuccess",
+          "type": "bool"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "target",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "callData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Multicall2.Call[]",
+          "name": "calls",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "tryBlockAndAggregate",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "success",
+              "type": "bool"
+            },
+            {
+              "internalType": "bytes",
+              "name": "returnData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Multicall2.Result[]",
+          "name": "returnData",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x8c0408e775e93a852ab3314c31a7bc52fa485c5260ee2178a8389fcb4cf82898",
+  "receipt": {
+    "to": null,
+    "from": "0x5BDb37d0Ddea3A90F233c7B7F6b9394B6b2eef34",
+    "contractAddress": "0x29FD31d37AB8D27f11EAB68F96424bf64231fFce",
+    "transactionIndex": 0,
+    "gasUsed": "685415",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x06158a2ebbc6ddf54fe2ef2ab09ddf9e8fd22880cb691ed46d1ec14b20f72bc4",
+    "transactionHash": "0x8c0408e775e93a852ab3314c31a7bc52fa485c5260ee2178a8389fcb4cf82898",
+    "logs": [],
+    "blockNumber": 758469,
+    "cumulativeGasUsed": "685415",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "bc43a28ec38b63956ec0969422dadfb1",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.6+commit.11564f7e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"callData\",\"type\":\"bytes\"}],\"internalType\":\"struct Multicall2.Call[]\",\"name\":\"calls\",\"type\":\"tuple[]\"}],\"name\":\"aggregate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"},{\"internalType\":\"bytes[]\",\"name\":\"returnData\",\"type\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"callData\",\"type\":\"bytes\"}],\"internalType\":\"struct Multicall2.Call[]\",\"name\":\"calls\",\"type\":\"tuple[]\"}],\"name\":\"blockAndAggregate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"},{\"internalType\":\"bytes\",\"name\":\"returnData\",\"type\":\"bytes\"}],\"internalType\":\"struct Multicall2.Result[]\",\"name\":\"returnData\",\"type\":\"tuple[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"name\":\"getBlockHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getBlockNumber\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCurrentBlockCoinbase\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"coinbase\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCurrentBlockDifficulty\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"difficulty\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCurrentBlockGasLimit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"gaslimit\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCurrentBlockTimestamp\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"getEthBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getLastBlockHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"requireSuccess\",\"type\":\"bool\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"callData\",\"type\":\"bytes\"}],\"internalType\":\"struct Multicall2.Call[]\",\"name\":\"calls\",\"type\":\"tuple[]\"}],\"name\":\"tryAggregate\",\"outputs\":[{\"components\":[{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"},{\"internalType\":\"bytes\",\"name\":\"returnData\",\"type\":\"bytes\"}],\"internalType\":\"struct Multicall2.Result[]\",\"name\":\"returnData\",\"type\":\"tuple[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"requireSuccess\",\"type\":\"bool\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"callData\",\"type\":\"bytes\"}],\"internalType\":\"struct Multicall2.Call[]\",\"name\":\"calls\",\"type\":\"tuple[]\"}],\"name\":\"tryBlockAndAggregate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"},{\"internalType\":\"bytes\",\"name\":\"returnData\",\"type\":\"bytes\"}],\"internalType\":\"struct Multicall2.Result[]\",\"name\":\"returnData\",\"type\":\"tuple[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"Michael Elliot <mike@makerdao.com>Joshua Levine <joshua@makerdao.com>Nick Johnson <arachnid@notdot.net>\",\"kind\":\"dev\",\"methods\":{},\"title\":\"Multicall2 - Aggregate results from multiple read-only function calls\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/helper/Multicall2.sol\":\"Multicall2\"},\"evmVersion\":\"berlin\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[]},\"sources\":{\"contracts/helper/Multicall2.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.5.0;\\npragma experimental ABIEncoderV2;\\n\\n/// @title Multicall2 - Aggregate results from multiple read-only function calls\\n/// @author Michael Elliot <mike@makerdao.com>\\n/// @author Joshua Levine <joshua@makerdao.com>\\n/// @author Nick Johnson <arachnid@notdot.net>\\n\\ncontract Multicall2 {\\n    struct Call {\\n        address target;\\n        bytes callData;\\n    }\\n    struct Result {\\n        bool success;\\n        bytes returnData;\\n    }\\n\\n    function aggregate(Call[] memory calls)\\n        public\\n        returns (uint256 blockNumber, bytes[] memory returnData)\\n    {\\n        blockNumber = block.number;\\n        returnData = new bytes[](calls.length);\\n        for (uint256 i = 0; i < calls.length; i++) {\\n            (bool success, bytes memory ret) = calls[i].target.call(\\n                calls[i].callData\\n            );\\n            require(success, \\\"Multicall aggregate: call failed\\\");\\n            returnData[i] = ret;\\n        }\\n    }\\n\\n    function blockAndAggregate(Call[] memory calls)\\n        public\\n        returns (\\n            uint256 blockNumber,\\n            bytes32 blockHash,\\n            Result[] memory returnData\\n        )\\n    {\\n        (blockNumber, blockHash, returnData) = tryBlockAndAggregate(\\n            true,\\n            calls\\n        );\\n    }\\n\\n    function getBlockHash(uint256 blockNumber)\\n        public\\n        view\\n        returns (bytes32 blockHash)\\n    {\\n        blockHash = blockhash(blockNumber);\\n    }\\n\\n    function getBlockNumber() public view returns (uint256 blockNumber) {\\n        blockNumber = block.number;\\n    }\\n\\n    function getCurrentBlockCoinbase() public view returns (address coinbase) {\\n        coinbase = block.coinbase;\\n    }\\n\\n    function getCurrentBlockDifficulty()\\n        public\\n        view\\n        returns (uint256 difficulty)\\n    {\\n        difficulty = block.difficulty;\\n    }\\n\\n    function getCurrentBlockGasLimit() public view returns (uint256 gaslimit) {\\n        gaslimit = block.gaslimit;\\n    }\\n\\n    function getCurrentBlockTimestamp()\\n        public\\n        view\\n        returns (uint256 timestamp)\\n    {\\n        timestamp = block.timestamp;\\n    }\\n\\n    function getEthBalance(address addr) public view returns (uint256 balance) {\\n        balance = addr.balance;\\n    }\\n\\n    function getLastBlockHash() public view returns (bytes32 blockHash) {\\n        blockHash = blockhash(block.number - 1);\\n    }\\n\\n    function tryAggregate(bool requireSuccess, Call[] memory calls)\\n        public\\n        returns (Result[] memory returnData)\\n    {\\n        returnData = new Result[](calls.length);\\n        for (uint256 i = 0; i < calls.length; i++) {\\n            (bool success, bytes memory ret) = calls[i].target.call(\\n                calls[i].callData\\n            );\\n\\n            if (requireSuccess) {\\n                require(success, \\\"Multicall2 aggregate: call failed\\\");\\n            }\\n\\n            returnData[i] = Result(success, ret);\\n        }\\n    }\\n\\n    function tryBlockAndAggregate(bool requireSuccess, Call[] memory calls)\\n        public\\n        returns (\\n            uint256 blockNumber,\\n            bytes32 blockHash,\\n            Result[] memory returnData\\n        )\\n    {\\n        blockNumber = block.number;\\n        blockHash = blockhash(block.number);\\n        returnData = tryAggregate(requireSuccess, calls);\\n    }\\n}\\n\",\"keccak256\":\"0xdaa1f62bc5dd539a9d4c17da09cbd6b0abd294e75446403fb69b615728a3f749\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50610b79806100206000396000f3fe608060405234801561001057600080fd5b50600436106100d45760003560e01c806372425d9d11610081578063bce38bd71161005b578063bce38bd714610181578063c3077fa9146101a1578063ee82ac5e146101b457600080fd5b806372425d9d1461016757806386d516e81461016d578063a8b0574e1461017357600080fd5b8063399542e9116100b2578063399542e91461011757806342cbb15c146101395780634d2301cc1461013f57600080fd5b80630f28c97d146100d9578063252dba42146100ee57806327e86d6e1461010f575b600080fd5b425b6040519081526020015b60405180910390f35b6101016100fc36600461075e565b6101c6565b6040516100e592919061090e565b6100db610375565b61012a61012536600461079b565b610388565b6040516100e593929190610996565b436100db565b6100db61014d36600461073c565b73ffffffffffffffffffffffffffffffffffffffff163190565b446100db565b456100db565b6040514181526020016100e5565b61019461018f36600461079b565b6103a0565b6040516100e591906108fb565b61012a6101af36600461075e565b61059d565b6100db6101c23660046107f0565b4090565b8051439060609067ffffffffffffffff8111156101e5576101e5610b14565b60405190808252806020026020018201604052801561021857816020015b60608152602001906001900390816102035790505b50905060005b835181101561036f5760008085838151811061023c5761023c610ae5565b60200260200101516000015173ffffffffffffffffffffffffffffffffffffffff1686848151811061027057610270610ae5565b60200260200101516020015160405161028991906108df565b6000604051808303816000865af19150503d80600081146102c6576040519150601f19603f3d011682016040523d82523d6000602084013e6102cb565b606091505b50915091508161033c576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820181905260248201527f4d756c746963616c6c206167677265676174653a2063616c6c206661696c656460448201526064015b60405180910390fd5b8084848151811061034f5761034f610ae5565b60200260200101819052505050808061036790610a7d565b91505061021e565b50915091565b6000610382600143610a36565b40905090565b438040606061039785856103a0565b90509250925092565b6060815167ffffffffffffffff8111156103bc576103bc610b14565b60405190808252806020026020018201604052801561040257816020015b6040805180820190915260008152606060208201528152602001906001900390816103da5790505b50905060005b82518110156105965760008084838151811061042657610426610ae5565b60200260200101516000015173ffffffffffffffffffffffffffffffffffffffff1685848151811061045a5761045a610ae5565b60200260200101516020015160405161047391906108df565b6000604051808303816000865af19150503d80600081146104b0576040519150601f19603f3d011682016040523d82523d6000602084013e6104b5565b606091505b5091509150851561054d578161054d576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152602160248201527f4d756c746963616c6c32206167677265676174653a2063616c6c206661696c6560448201527f64000000000000000000000000000000000000000000000000000000000000006064820152608401610333565b604051806040016040528083151581526020018281525084848151811061057657610576610ae5565b60200260200101819052505050808061058e90610a7d565b915050610408565b5092915050565b60008060606105ad600185610388565b9196909550909350915050565b803573ffffffffffffffffffffffffffffffffffffffff811681146105de57600080fd5b919050565b600082601f8301126105f457600080fd5b8135602067ffffffffffffffff8083111561061157610611610b14565b8260051b6106208382016109e7565b8481528381019087850183890186018a101561063b57600080fd5b600093505b8684101561072f5780358581111561065757600080fd5b890160407fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0828d03810182131561068d57600080fd5b6106956109be565b6106a08a85016105ba565b815282840135898111156106b357600080fd5b8085019450508d603f8501126106c857600080fd5b89840135898111156106dc576106dc610b14565b6106ec8b84601f840116016109e7565b92508083528e8482870101111561070257600080fd5b808486018c85013760009083018b0152808a01919091528552505060019390930192918501918501610640565b5098975050505050505050565b60006020828403121561074e57600080fd5b610757826105ba565b9392505050565b60006020828403121561077057600080fd5b813567ffffffffffffffff81111561078757600080fd5b610793848285016105e3565b949350505050565b600080604083850312156107ae57600080fd5b823580151581146107be57600080fd5b9150602083013567ffffffffffffffff8111156107da57600080fd5b6107e6858286016105e3565b9150509250929050565b60006020828403121561080257600080fd5b5035919050565b600082825180855260208086019550808260051b84010181860160005b84811015610888578583037fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe00189528151805115158452840151604085850181905261087481860183610895565b9a86019a9450505090830190600101610826565b5090979650505050505050565b600081518084526108ad816020860160208601610a4d565b601f017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0169290920160200192915050565b600082516108f1818460208701610a4d565b9190910192915050565b6020815260006107576020830184610809565b600060408201848352602060408185015281855180845260608601915060608160051b870101935082870160005b82811015610988577fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa0888703018452610976868351610895565b9550928401929084019060010161093c565b509398975050505050505050565b8381528260208201526060604082015260006109b56060830184610809565b95945050505050565b6040805190810167ffffffffffffffff811182821017156109e1576109e1610b14565b60405290565b604051601f82017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016810167ffffffffffffffff81118282101715610a2e57610a2e610b14565b604052919050565b600082821015610a4857610a48610ab6565b500390565b60005b83811015610a68578181015183820152602001610a50565b83811115610a77576000848401525b50505050565b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff821415610aaf57610aaf610ab6565b5060010190565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fdfea26469706673582212200adc0f2f65e5512fc2d1b00f787760cd5530795e7a6c12059478c8d9da40adb264736f6c63430008060033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100d45760003560e01c806372425d9d11610081578063bce38bd71161005b578063bce38bd714610181578063c3077fa9146101a1578063ee82ac5e146101b457600080fd5b806372425d9d1461016757806386d516e81461016d578063a8b0574e1461017357600080fd5b8063399542e9116100b2578063399542e91461011757806342cbb15c146101395780634d2301cc1461013f57600080fd5b80630f28c97d146100d9578063252dba42146100ee57806327e86d6e1461010f575b600080fd5b425b6040519081526020015b60405180910390f35b6101016100fc36600461075e565b6101c6565b6040516100e592919061090e565b6100db610375565b61012a61012536600461079b565b610388565b6040516100e593929190610996565b436100db565b6100db61014d36600461073c565b73ffffffffffffffffffffffffffffffffffffffff163190565b446100db565b456100db565b6040514181526020016100e5565b61019461018f36600461079b565b6103a0565b6040516100e591906108fb565b61012a6101af36600461075e565b61059d565b6100db6101c23660046107f0565b4090565b8051439060609067ffffffffffffffff8111156101e5576101e5610b14565b60405190808252806020026020018201604052801561021857816020015b60608152602001906001900390816102035790505b50905060005b835181101561036f5760008085838151811061023c5761023c610ae5565b60200260200101516000015173ffffffffffffffffffffffffffffffffffffffff1686848151811061027057610270610ae5565b60200260200101516020015160405161028991906108df565b6000604051808303816000865af19150503d80600081146102c6576040519150601f19603f3d011682016040523d82523d6000602084013e6102cb565b606091505b50915091508161033c576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820181905260248201527f4d756c746963616c6c206167677265676174653a2063616c6c206661696c656460448201526064015b60405180910390fd5b8084848151811061034f5761034f610ae5565b60200260200101819052505050808061036790610a7d565b91505061021e565b50915091565b6000610382600143610a36565b40905090565b438040606061039785856103a0565b90509250925092565b6060815167ffffffffffffffff8111156103bc576103bc610b14565b60405190808252806020026020018201604052801561040257816020015b6040805180820190915260008152606060208201528152602001906001900390816103da5790505b50905060005b82518110156105965760008084838151811061042657610426610ae5565b60200260200101516000015173ffffffffffffffffffffffffffffffffffffffff1685848151811061045a5761045a610ae5565b60200260200101516020015160405161047391906108df565b6000604051808303816000865af19150503d80600081146104b0576040519150601f19603f3d011682016040523d82523d6000602084013e6104b5565b606091505b5091509150851561054d578161054d576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152602160248201527f4d756c746963616c6c32206167677265676174653a2063616c6c206661696c6560448201527f64000000000000000000000000000000000000000000000000000000000000006064820152608401610333565b604051806040016040528083151581526020018281525084848151811061057657610576610ae5565b60200260200101819052505050808061058e90610a7d565b915050610408565b5092915050565b60008060606105ad600185610388565b9196909550909350915050565b803573ffffffffffffffffffffffffffffffffffffffff811681146105de57600080fd5b919050565b600082601f8301126105f457600080fd5b8135602067ffffffffffffffff8083111561061157610611610b14565b8260051b6106208382016109e7565b8481528381019087850183890186018a101561063b57600080fd5b600093505b8684101561072f5780358581111561065757600080fd5b890160407fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0828d03810182131561068d57600080fd5b6106956109be565b6106a08a85016105ba565b815282840135898111156106b357600080fd5b8085019450508d603f8501126106c857600080fd5b89840135898111156106dc576106dc610b14565b6106ec8b84601f840116016109e7565b92508083528e8482870101111561070257600080fd5b808486018c85013760009083018b0152808a01919091528552505060019390930192918501918501610640565b5098975050505050505050565b60006020828403121561074e57600080fd5b610757826105ba565b9392505050565b60006020828403121561077057600080fd5b813567ffffffffffffffff81111561078757600080fd5b610793848285016105e3565b949350505050565b600080604083850312156107ae57600080fd5b823580151581146107be57600080fd5b9150602083013567ffffffffffffffff8111156107da57600080fd5b6107e6858286016105e3565b9150509250929050565b60006020828403121561080257600080fd5b5035919050565b600082825180855260208086019550808260051b84010181860160005b84811015610888578583037fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe00189528151805115158452840151604085850181905261087481860183610895565b9a86019a9450505090830190600101610826565b5090979650505050505050565b600081518084526108ad816020860160208601610a4d565b601f017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0169290920160200192915050565b600082516108f1818460208701610a4d565b9190910192915050565b6020815260006107576020830184610809565b600060408201848352602060408185015281855180845260608601915060608160051b870101935082870160005b82811015610988577fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa0888703018452610976868351610895565b9550928401929084019060010161093c565b509398975050505050505050565b8381528260208201526060604082015260006109b56060830184610809565b95945050505050565b6040805190810167ffffffffffffffff811182821017156109e1576109e1610b14565b60405290565b604051601f82017fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe016810167ffffffffffffffff81118282101715610a2e57610a2e610b14565b604052919050565b600082821015610a4857610a48610ab6565b500390565b60005b83811015610a68578181015183820152602001610a50565b83811115610a77576000848401525b50505050565b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff821415610aaf57610aaf610ab6565b5060010190565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fdfea26469706673582212200adc0f2f65e5512fc2d1b00f787760cd5530795e7a6c12059478c8d9da40adb264736f6c63430008060033",
+  "devdoc": {
+    "author": "Michael Elliot <mike@makerdao.com>Joshua Levine <joshua@makerdao.com>Nick Johnson <arachnid@notdot.net>",
+    "kind": "dev",
+    "methods": {},
+    "title": "Multicall2 - Aggregate results from multiple read-only function calls",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

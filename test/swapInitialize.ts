@@ -1,14 +1,12 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { Signer } from "ethers"
 import { deployments } from "hardhat"
 import { GenericERC20, Swap } from "../build/typechain/"
 import { ZERO_ADDRESS } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
-describe("Swap", () => {
+describe("Swap Initialize", () => {
   let signers: Array<Signer>
   let swap: Swap
   let firstToken: GenericERC20
@@ -24,7 +22,7 @@ describe("Swap", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["Swap"]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       owner = signers[0]
@@ -218,7 +216,7 @@ describe("Swap", () => {
           0,
           ZERO_ADDRESS,
         ),
-      ).to.be.revertedWith("function returned an unexpected amount of data")
+      ).to.be.revertedWithoutReason()
     })
   })
 })

@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
@@ -18,7 +17,6 @@ import {
   ZERO_ADDRESS,
 } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
 
@@ -36,10 +34,14 @@ describe("SimpleRewarder with MiniChefv2 but with ", async () => {
   let deployerAddress: string
   let farmerAddress: string
   let lazyFarmerAddress: string
+  const TEST_START_TIMESTAMP = 2362003200
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["USDPoolV2"], {
+        fallbackToGlobal: false,
+      })
+      await setTimestamp(TEST_START_TIMESTAMP)
 
       signers = await ethers.getSigners()
       deployer = signers[0]

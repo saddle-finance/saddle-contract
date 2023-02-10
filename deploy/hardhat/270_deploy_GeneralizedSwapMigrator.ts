@@ -1,14 +1,14 @@
+import { ethers } from "hardhat"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { ethers } from "hardhat"
 import { GeneralizedSwapMigrator } from "../../build/typechain"
 import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { execute, deploy, get, getOrNull, log, save } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   // Manually check if the pool is already deployed
   const genSwapMigrator = await getOrNull("GeneralizedSwapMigrator")
@@ -125,4 +125,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 }
 export default func
 func.tags = ["GeneralizedSwapMigrator"]
-func.dependencies = ["WCUSDMetaPoolTokens", "WCUSDMetaPoolUpdated"]
+func.dependencies = [
+  "SUSDMetaPool",
+  "SUSDMetaPoolUpdated",
+  "TBTCMetaPool",
+  "TBTCMetaPoolUpdated",
+  "WCUSDMetaPool",
+  "WCUSDMetaPoolUpdated",
+]

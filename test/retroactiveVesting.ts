@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
@@ -17,7 +16,6 @@ import {
   ZERO_ADDRESS,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 const WEEK = 604800
@@ -50,7 +48,7 @@ describe("Retroactive Vesting", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { deploy } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture([]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       deployer = signers[0]

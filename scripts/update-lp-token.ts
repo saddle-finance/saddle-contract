@@ -1,28 +1,12 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 /*eslint-disable*/
-import chai from "chai"
 import { ethers } from "hardhat"
-import { solidity } from "ethereum-waffle"
 
-const { expect } = chai
+import { formatBytes32String } from "ethers/lib/utils"
 import {
-  GaugeController,
-  SDL,
-  GaugeHelperContract,
-  PoolRegistry,
-  VotingEscrow,
-  Minter,
+  PoolRegistry
 } from "../build/typechain"
-import {
-  BIG_NUMBER_1E18,
-  getCurrentBlockTimestamp,
-  MAX_UINT256,
-  setTimestamp,
-} from "../test/testUtils"
-import { formatBytes32String, parseBytes32String } from "ethers/lib/utils"
-
-chai.use(solidity)
 
 async function main() {
   // at index 0 is hardhat deployer address

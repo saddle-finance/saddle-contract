@@ -121,8 +121,7 @@
       "outputs": [],
       "inputs": [],
       "stateMutability": "nonpayable",
-      "type": "function",
-      "gas": 820813
+      "type": "function"
     },
     {
       "name": "ve_for_at",
@@ -143,16 +142,14 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 249507
+      "type": "function"
     },
     {
       "name": "checkpoint_total_supply",
       "outputs": [],
       "inputs": [],
       "stateMutability": "nonpayable",
-      "type": "function",
-      "gas": 10592495
+      "type": "function"
     },
     {
       "name": "claimable",
@@ -273,8 +270,7 @@
         }
       ],
       "stateMutability": "nonpayable",
-      "type": "function",
-      "gas": 26339334
+      "type": "function"
     },
     {
       "name": "donate",
@@ -286,8 +282,7 @@
       ],
       "inputs": [],
       "stateMutability": "nonpayable",
-      "type": "function",
-      "gas": 823397
+      "type": "function"
     },
     {
       "name": "commit_admin",
@@ -299,32 +294,28 @@
         }
       ],
       "stateMutability": "nonpayable",
-      "type": "function",
-      "gas": 38018
+      "type": "function"
     },
     {
       "name": "apply_admin",
       "outputs": [],
       "inputs": [],
       "stateMutability": "nonpayable",
-      "type": "function",
-      "gas": 39654
+      "type": "function"
     },
     {
       "name": "toggle_allow_checkpoint_token",
       "outputs": [],
       "inputs": [],
       "stateMutability": "nonpayable",
-      "type": "function",
-      "gas": 38793
+      "type": "function"
     },
     {
       "name": "kill_me",
       "outputs": [],
       "inputs": [],
       "stateMutability": "nonpayable",
-      "type": "function",
-      "gas": 39707
+      "type": "function"
     },
     {
       "name": "recover_balance",
@@ -341,8 +332,7 @@
         }
       ],
       "stateMutability": "nonpayable",
-      "type": "function",
-      "gas": 7898
+      "type": "function"
     },
     {
       "name": "start_time",
@@ -354,8 +344,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1661
+      "type": "function"
     },
     {
       "name": "time_cursor",
@@ -367,8 +356,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1691
+      "type": "function"
     },
     {
       "name": "time_cursor_of",
@@ -385,8 +373,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1936
+      "type": "function"
     },
     {
       "name": "user_epoch_of",
@@ -403,8 +390,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1966
+      "type": "function"
     },
     {
       "name": "last_token_time",
@@ -416,8 +402,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1781
+      "type": "function"
     },
     {
       "name": "tokens_per_week",
@@ -434,8 +419,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1920
+      "type": "function"
     },
     {
       "name": "voting_escrow",
@@ -447,8 +431,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1841
+      "type": "function"
     },
     {
       "name": "vesdl_penalty_rewards",
@@ -460,8 +443,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1871
+      "type": "function"
     },
     {
       "name": "token",
@@ -473,8 +455,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1901
+      "type": "function"
     },
     {
       "name": "total_received",
@@ -486,8 +467,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1931
+      "type": "function"
     },
     {
       "name": "token_last_balance",
@@ -499,8 +479,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 1961
+      "type": "function"
     },
     {
       "name": "ve_supply",
@@ -517,8 +496,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 2100
+      "type": "function"
     },
     {
       "name": "admin",
@@ -530,8 +508,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 2021
+      "type": "function"
     },
     {
       "name": "future_admin",
@@ -543,8 +520,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 2051
+      "type": "function"
     },
     {
       "name": "can_checkpoint_token",
@@ -556,8 +532,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 2081
+      "type": "function"
     },
     {
       "name": "emergency_return",
@@ -569,8 +544,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 2111
+      "type": "function"
     },
     {
       "name": "is_killed",
@@ -582,8 +556,7 @@
       ],
       "inputs": [],
       "stateMutability": "view",
-      "type": "function",
-      "gas": 2141
+      "type": "function"
     }
   ],
   "transactionHash": "0xc782ed79f867091c5b1ad5d6df1c60e9f6a4a7b5f1c86ade78f86e44634e7847",

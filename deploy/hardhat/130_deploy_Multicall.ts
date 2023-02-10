@@ -1,13 +1,13 @@
+import { ethers } from "hardhat"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { CHAIN_ID } from "../../utils/network"
 import { impersonateAccount } from "../../test/testUtils"
-import { ethers } from "hardhat"
+import { CHAIN_ID } from "../../utils/network"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getUnnamedAccounts, getChainId } = hre
   const { deploy, save } = deployments
-  const { deployer } = await getNamedAccounts()
+  const deployer = (await hre.ethers.getSigners())[0].address
 
   await deploy("Multicall", {
     from: deployer,
@@ -29,16 +29,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       `0x${(1e18).toString(16)}`,
     ])
 
-    const Multicall3 = await ethers.getContractFactory(
+    const multicall3Factory = await ethers.getContractFactory(
       "Multicall3",
       impersonatedOwner,
     )
 
-    const multicall3 = await Multicall3.deploy()
+    const multicall3 = await multicall3Factory.deploy()
     await multicall3.deployed()
 
     await save("Multicall3", {
-      abi: multicall3.abi,
+      abi: multicall3Factory.interface.format() as string[],
       address: multicall3.address,
     })
   }

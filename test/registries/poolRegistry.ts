@@ -2,7 +2,6 @@
 /*eslint max-len: ["error", { "code": 150 }]*/
 
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, ContractFactory, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import {
@@ -21,7 +20,6 @@ import {
   ZERO_ADDRESS,
 } from "../testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
 
@@ -49,7 +47,7 @@ const BYTES32_SUSD_META_POOL_NAME =
   ethers.utils.formatBytes32String("sUSD meta v2")
 const BYTES32_BTC_POOL_NAME = ethers.utils.formatBytes32String("BTC_guarded")
 
-describe("Registry", async () => {
+describe("Pool Registry", async () => {
   let signers: Array<Signer>
   let owner: Signer
   let ownerAddress: string
@@ -64,7 +62,16 @@ describe("Registry", async () => {
 
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(
+        [
+          "USDPoolV2",
+          "BTCPool",
+          "SUSDMetaPoolUpdated",
+          "SUSDMetaPoolDeposit",
+          "SUSDMetaPoolUpdatedDeposit",
+        ],
+        { fallbackToGlobal: false },
+      )
 
       signers = await ethers.getSigners()
       owner = signers[0]
@@ -232,7 +239,7 @@ describe("Registry", async () => {
     it("Reverts when adding a meta pool without adding the base pool", async () => {
       await expect(
         poolRegistry.addPool(susdMetaV2InputData),
-      ).to.be.revertedWith("base pool not found")
+      ).to.be.revertedWith("PR: base pool not found")
     })
   })
 
@@ -419,9 +426,13 @@ describe("Registry", async () => {
       await poolRegistry.addPool(usdv2Data)
       expect(await poolRegistry.callStatic.getPaused(usdv2Data.poolAddress)).to
         .be.false
-      ;(
-        (await ethers.getContractAt("Swap", usdv2Data.poolAddress)) as Swap
-      ).pause()
+
+      const swap = (await ethers.getContractAt(
+        "Swap",
+        usdv2Data.poolAddress,
+      )) as Swap
+      await swap.pause()
+
       expect(await poolRegistry.callStatic.getPaused(usdv2Data.poolAddress)).to
         .be.true
     })

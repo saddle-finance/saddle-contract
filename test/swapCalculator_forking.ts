@@ -1,12 +1,10 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { ContractFactory, Signer } from "ethers"
 import { deployments, network } from "hardhat"
 import { GenericERC20, Swap, SwapCalculator } from "../build/typechain"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../utils/network"
 import { BIG_NUMBER_1E18 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 const { get } = deployments
 
@@ -19,26 +17,22 @@ describe("SwapCalculator (D4 pool on forked mainnet) [ @skip-on-coverage ]", asy
   let usdv2: Swap
   let d4: Swap
 
-  before(async () => {
-    await network.provider.request({
-      method: "hardhat_reset",
-      params: [
-        {
-          forking: {
-            jsonRpcUrl:
-              ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] + process.env.ALCHEMY_API_KEY,
-            blockNumber: 14391465,
-          },
-        },
-      ],
-    })
-
-    // await setTimestamp(16473514010)
-  })
-
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
-      await deployments.fixture([], { keepExistingDeployments: true }) // start from empty state
+      // Fork mainnet at block 14391465
+      await network.provider.request({
+        method: "hardhat_reset",
+        params: [
+          {
+            forking: {
+              jsonRpcUrl:
+                ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] +
+                process.env.ALCHEMY_API_KEY,
+              blockNumber: 14391465,
+            },
+          },
+        ],
+      })
 
       signers = await ethers.getSigners()
       owner = signers[0]
@@ -71,6 +65,13 @@ describe("SwapCalculator (D4 pool on forked mainnet) [ @skip-on-coverage ]", asy
   beforeEach(async () => {
     await setupTest()
   })
+
+  after(async () =>
+    network.provider.request({
+      method: "hardhat_reset",
+      params: [],
+    }),
+  )
 
   describe("calculateSwapOutput", () => {
     it("Successfully calculates exact outputs using existing pool address", async () => {

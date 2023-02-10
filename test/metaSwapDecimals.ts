@@ -1,11 +1,9 @@
 import chai from "chai"
-import { deployContract, solidity } from "ethereum-waffle"
-import { BigNumber, Signer, Wallet } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
-import MetaSwapUtilsArtifact from "../build/artifacts/contracts/meta/MetaSwapUtils.sol/MetaSwapUtils.json"
 import {
   GenericERC20,
   LPToken,
@@ -27,7 +25,6 @@ import {
   ZERO_ADDRESS,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Meta-Swap", async () => {
@@ -57,7 +54,7 @@ describe("Meta-Swap", async () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture(["Swap", "USDPool", "MetaSwapUtils"]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       owner = signers[0]
@@ -95,11 +92,9 @@ describe("Meta-Swap", async () => {
       )) as GenericERC20
 
       // Deploy dummy tokens
-      dummyUSD = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-        "Dummy USD",
-        "dummyUSD",
-        "6",
-      ])) as GenericERC20
+      dummyUSD = (await (
+        await ethers.getContractFactory("GenericERC20")
+      ).deploy("Dummy USD", "dummyUSD", "6")) as GenericERC20
 
       // Mint tokens
       await asyncForEach(
@@ -111,13 +106,6 @@ describe("Meta-Swap", async () => {
           await dummyUSD.mint(address, BigNumber.from(10).pow(6).mul(100000))
         },
       )
-
-      // Deploy MetaSwapUtils
-      metaSwapUtils = (await deployContract(
-        owner,
-        MetaSwapUtilsArtifact,
-      )) as MetaSwapUtils
-      await metaSwapUtils.deployed()
 
       // Deploy Swap with SwapUtils library
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {

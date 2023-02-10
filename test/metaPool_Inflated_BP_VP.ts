@@ -1,12 +1,9 @@
 import chai from "chai"
-import { deployContract, solidity } from "ethereum-waffle"
-import { BigNumber, Signer, Wallet } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import { deployments } from "hardhat"
 import GenericERC20Artifact from "../build/artifacts/contracts/helper/GenericERC20.sol/GenericERC20.json"
 import LPTokenArtifact from "../build/artifacts/contracts/LPToken.sol/LPToken.json"
 import MetaSwapArtifact from "../build/artifacts/contracts/meta/MetaSwap.sol/MetaSwap.json"
-import MetaSwapDepositArtifact from "../build/artifacts/contracts/meta/MetaSwapDeposit.sol/MetaSwapDeposit.json"
-import MetaSwapUtilsArtifact from "../build/artifacts/contracts/meta/MetaSwapUtils.sol/MetaSwapUtils.json"
 import {
   GenericERC20,
   LPToken,
@@ -23,7 +20,6 @@ import {
   MAX_UINT256,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Meta-Swap with inflated baseVirtualPrice", async () => {
@@ -58,8 +54,7 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { get } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
-
+      await deployments.fixture(["Swap", "USDPool", "MetaSwapUtils"])
       signers = await ethers.getSigners()
       owner = signers[0]
       user1 = signers[1]
@@ -96,11 +91,9 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
       )) as GenericERC20
 
       // Deploy dummy tokens
-      susd = (await deployContract(owner as Wallet, GenericERC20Artifact, [
-        "Synthetix USD",
-        "sUSD",
-        "18",
-      ])) as GenericERC20
+      susd = (await (
+        await ethers.getContractFactory("GenericERC20", owner)
+      ).deploy("Synthetix USD", "sUSD", "18")) as GenericERC20
 
       // Mint tokens
       await asyncForEach(
@@ -112,13 +105,6 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
           await susd.mint(address, BigNumber.from(10).pow(18).mul(100000))
         },
       )
-
-      // Deploy MetaSwapUtils
-      metaSwapUtils = (await deployContract(
-        owner,
-        MetaSwapUtilsArtifact,
-      )) as MetaSwapUtils
-      await metaSwapUtils.deployed()
 
       // Deploy Swap with SwapUtils library
       metaSwap = (await deployContractWithLibraries(owner, MetaSwapArtifact, {
@@ -189,10 +175,9 @@ describe("Meta-Swap with inflated baseVirtualPrice", async () => {
       })
 
       // Deploy MetaSwapDeposit contract
-      metaSwapDeposit = (await deployContract(
-        owner,
-        MetaSwapDepositArtifact,
-      )) as MetaSwapDeposit
+      metaSwapDeposit = (await (
+        await ethers.getContractFactory("MetaSwapDeposit", owner)
+      ).deploy()) as MetaSwapDeposit
 
       // Initialize MetaSwapDeposit
       await metaSwapDeposit.initialize(

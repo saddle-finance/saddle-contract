@@ -19,3 +19,7 @@ export function timestampToUTCString(timestamp: BigNumberish): string {
   timestamp = BigNumber.from(timestamp).toNumber()
   return new Date(timestamp * 1000).toUTCString()
 }
+
+export const DAY = 86400
+export const WEEK = DAY * 7
+export const MAX_LOCK_TIME = DAY * 365 * 4

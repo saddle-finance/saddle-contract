@@ -1,5 +1,4 @@
 import chai from "chai"
-import { solidity } from "ethereum-waffle"
 import { BigNumber, Signer } from "ethers"
 import { deployments, ethers } from "hardhat"
 import { DeployResult } from "hardhat-deploy/dist/types"
@@ -13,7 +12,6 @@ import {
   ZERO_ADDRESS,
 } from "./testUtils"
 
-chai.use(solidity)
 const { expect } = chai
 
 describe("Token", () => {
@@ -39,7 +37,7 @@ describe("Token", () => {
   const setupTest = deployments.createFixture(
     async ({ deployments, ethers }) => {
       const { deploy, deterministic } = deployments
-      await deployments.fixture() // ensure you start from a fresh deployments
+      await deployments.fixture([]) // ensure you start from a fresh deployments
 
       signers = await ethers.getSigners()
       deployer = signers[0]
@@ -451,6 +449,14 @@ describe("Token", () => {
       )
     })
 
+    it("Successfully rescues specific amount of ETH", async () => {
+      await expect(
+        saddleToken
+          .connect(governance)
+          .rescueTokens(ZERO_ADDRESS, deployerAddress, BIG_NUMBER_1E18),
+      ).to.changeEtherBalance(deployer, BIG_NUMBER_1E18)
+    })
+
     it("Successfully rescues ERC20", async () => {
       await deployments.deploy("DummyToken", {
         from: deployerAddress,
@@ -460,19 +466,34 @@ describe("Token", () => {
       const dummyToken = await ethers.getContract("DummyToken")
       await dummyToken.mint(saddleToken.address, BIG_NUMBER_1E18.mul(10000))
 
-      expect(await dummyToken.balanceOf(saddleToken.address)).to.eq(
-        BIG_NUMBER_1E18.mul(10000),
+      await expect(
+        saddleToken
+          .connect(governance)
+          .rescueTokens(dummyToken.address, deployerAddress, 0),
+      ).to.changeTokenBalances(
+        dummyToken,
+        [await deployer.getAddress(), saddleToken.address],
+        [BIG_NUMBER_1E18.mul(10000), BIG_NUMBER_1E18.mul(-10000)],
       )
-      expect(await dummyToken.balanceOf(deployerAddress)).to.eq(BIG_NUMBER_ZERO)
+    })
 
-      await saddleToken
-        .connect(governance)
-        .rescueTokens(dummyToken.address, deployerAddress, 0)
-      expect(await dummyToken.balanceOf(saddleToken.address)).to.eq(
-        BIG_NUMBER_ZERO,
-      )
-      expect(await dummyToken.balanceOf(deployerAddress)).to.eq(
-        BIG_NUMBER_1E18.mul(10000),
+    it("Successfully rescues specific amounts of ERC20", async () => {
+      await deployments.deploy("DummyToken", {
+        from: deployerAddress,
+        contract: "GenericERC20WithGovernance",
+        args: ["DummyToken", "TOKEN", 18],
+      })
+      const dummyToken = await ethers.getContract("DummyToken")
+      await dummyToken.mint(saddleToken.address, BIG_NUMBER_1E18.mul(10000))
+
+      await expect(
+        saddleToken
+          .connect(governance)
+          .rescueTokens(dummyToken.address, deployerAddress, BIG_NUMBER_1E18),
+      ).to.changeTokenBalances(
+        dummyToken,
+        [await deployer.getAddress(), saddleToken.address],
+        [BIG_NUMBER_1E18, BIG_NUMBER_1E18.mul(-1)],
       )
     })
 
