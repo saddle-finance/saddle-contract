@@ -8,8 +8,6 @@
 if [[ "$2" ]]
 then
     RULE="--rule $2"
-else
-    RULE="--rules oneUnderlyingZeroMeansAllUnderlyingsZeroSwap"
 fi
 
 solc-select use 0.6.12
@@ -36,6 +34,13 @@ certoraRun \
     --rule_sanity \
     $RULE \
     --msg "Swap $1 $2" \
+
+# 4 batches of rules/invariants
+# cantReinit onlyAdminCanSetSwapFees onlyAdminCanSetAdminFees pausedMeansLPMonotonicallyDecreases
+# swapAlwaysBeforeDeadline addLiquidityCheckMinToMint addLiquidityAlwaysBeforeDeadline removeLiquidityAlwaysBeforeDeadline swappingCheckMinAmount swappingIndependence tokenRatioDoesntGoBelowOne
+# oneUnderlyingZeroMeansAllUnderlyingsZero ifSumUnderlyingsZeroLPTotalSupplyZero underlyingTokensAndLPDifferent underlyingTokensDifferent swapFeeNeverGreaterThanMAX adminFeeNeverGreaterThanMAX 
+# LPSolvency underlyingsSolvency LPTotalSupplyZeroWhenUninitialized lengthsAlwaysMatch ifLPTotalSupplyZeroThenIndividualUnderlyingsZero
+
 # ,-enableEqualitySaturation=false,-simplificationDepth=10 \
 # certoraRun \
 #     certora/harness/SwapHarness.sol \
