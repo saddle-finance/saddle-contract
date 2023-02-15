@@ -67,7 +67,7 @@ contract ArbitrumMinichefDebtFixTest is TestWithConstants {
 
     function setUp() public override {
         super.setUp();
-        // Fork arbitrum at block 61248913
+        // Fork arbitrum at block 61248913, (Feb-15-2023 08:26:16 PM +UTC)
         vm.createSelectFork("arbitrum_mainnet", 61248913);
         minichef = IMiniChefV2(getDeploymentAddress("MiniChefV2"));
         minichefOwner = minichef.owner();
@@ -104,11 +104,12 @@ contract ArbitrumMinichefDebtFixTest is TestWithConstants {
     function test_ReadingPendingSaddle() public {
         vm.startPrank(USER_ACCOUNT);
 
-        PoolInfo memory info = printPoolInfo(PID);
-        UserInfo memory userInfo = printUserInfo(PID, USER_ACCOUNT);
+        printPoolInfo(PID);
+        printUserInfo(PID, USER_ACCOUNT);
 
+        // Expect pendingSaddle to revert as is
         vm.expectRevert();
-        uint256 pending = minichef.pendingSaddle(PID, USER_ACCOUNT);
+        minichef.pendingSaddle(PID, USER_ACCOUNT);
     }
 
     // Test that pendingSaddle works after the pool is updated with a new allocPoint
@@ -116,17 +117,19 @@ contract ArbitrumMinichefDebtFixTest is TestWithConstants {
     function test_IncreasingSaddlePerSecondUnblocksPendingSaddle() public {
         vm.startPrank(minichefOwner);
 
-        PoolInfo memory info = printPoolInfo(PID);
+        printPoolInfo(PID);
         printUserInfo(PID, USER_ACCOUNT);
 
+        // Increase SaddlePerSecond and allocPoint
         minichef.setSaddlePerSecond(NEW_SADDLE_PER_SECOND);
         minichef.set(PID, NEW_ALLOC_POINT, address(0), false);
 
+        // Skip time by some duration
         vm.warp(block.timestamp + DURATION);
 
+        // Call updatePool which would modify poolInfo.accSaddleperShare
         minichef.updatePool(PID);
-
-        info = printPoolInfo(PID);
+        printPoolInfo(PID);
         printUserInfo(PID, USER_ACCOUNT);
 
         // Verify unblocks pendingSaddle
@@ -141,9 +144,11 @@ contract ArbitrumMinichefDebtFixTest is TestWithConstants {
         PoolInfo memory infoBefore = printPoolInfo(PID);
         printUserInfo(PID, USER_ACCOUNT);
 
+        // Increase SaddlePerSecond and allocPoint
         minichef.setSaddlePerSecond(NEW_SADDLE_PER_SECOND);
         minichef.set(PID, NEW_ALLOC_POINT, address(0), false);
 
+        // Skip time by some duration
         vm.warp(block.timestamp + DURATION);
 
         // Update pool after some duration to increase poolInfo.accSaddleperShare by 1
@@ -175,9 +180,11 @@ contract ArbitrumMinichefDebtFixTest is TestWithConstants {
         PoolInfo memory infoBefore = printPoolInfo(PID);
         printUserInfo(PID, USER_ACCOUNT);
 
+        // Increase SaddlePerSecond and allocPoint
         minichef.setSaddlePerSecond(NEW_SADDLE_PER_SECOND);
         minichef.set(PID, NEW_ALLOC_POINT, address(0), false);
 
+        // Skip time by some duration
         vm.warp(block.timestamp + DURATION);
 
         // Update pool after some duration to increase poolInfo.accSaddleperShare by 1
