@@ -161,7 +161,7 @@ contract ArbitrumMinichefDebtFixTest is TestWithConstants {
         // Assert that poolInfo.accSaddleperShare has increased by 1
         assertEq(infoBefore.accSaddlePerShare + 1, infoAfter.accSaddlePerShare);
 
-        // Verify this unblocks pendingSaddle
+        // Verify this unblocks harvest
         vm.stopPrank();
         vm.startPrank(USER_ACCOUNT);
         minichef.harvest(PID, USER_ACCOUNT);
@@ -202,7 +202,7 @@ contract ArbitrumMinichefDebtFixTest is TestWithConstants {
         // Assert that poolInfo.accSaddleperShare has increased by 1
         assertEq(infoBefore.accSaddlePerShare + 1, infoAfter.accSaddlePerShare);
 
-        // Verify this unblocks pendingSaddle
+        // Verify this unblocks harvest
         vm.stopPrank();
         vm.startPrank(USER_ACCOUNT);
         minichef.harvest(PID, USER_ACCOUNT);
