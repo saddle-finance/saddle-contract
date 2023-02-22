@@ -37,6 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ],
       maxFeePerGas: parseUnits("20.0", "gwei"),
       maxPriorityFeePerGas: parseUnits("1.5", "gwei"),
+      gasLimit: 2824434,
     })
   }
 }
