@@ -790,6 +790,9 @@ export async function stealFundsFromWhales(
 /**
  * @notice Deploy child chain contracts for cross chain functionalities.
  * Requires nonce 0 ~ 7 on cross chain deployer account to be empty.
+ * Note that the ownership of the contracts are set to deployer EOA.
+ * So after the deployment is done, the ownerships should be transferred to the
+ * appropriate multisig.
  * @param hre HardhatRuntimeEnvironment variable
  */
 export async function deployCrossChainSystemOnSideChain(
@@ -816,6 +819,14 @@ export async function deployCrossChainSystemOnSideChain(
   if (process.env.HARDHAT_DEPLOY_FORK) {
     setEtherBalance(crossChainDeployer, ethers.utils.parseEther("10000"))
   }
+
+  const startNonce = await ethers.provider.getTransactionCount(
+    crossChainDeployer,
+  )
+  expect(startNonce).to.eq(
+    0,
+    `Cross chain deployer nonce is not at 0. Is currently: ${startNonce}`,
+  )
 
   // 0: Deploy ChildGaugeFactory
   const cgf = await deploy("ChildGaugeFactory", {
