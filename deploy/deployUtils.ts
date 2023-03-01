@@ -374,20 +374,37 @@ export async function deploySwapFlashLoan(
     ? (await read(poolName, "swapStorage")).lpToken !== ZERO_ADDRESS
     : false
 
+  const TOKEN_ADDRESSES = await Promise.all(
+    tokenNames.map(async (name) => (await get(name)).address),
+  )
+  let tokenDecimalArray = tokenDecimals
+  if ((await getChainId()) != CHAIN_ID.AURORA_MAINNET) {
+    tokenDecimalArray = await Promise.all(
+      tokenNames.map(async (name) => await read(name, "decimals")),
+    )
+  }
   if (poolContract && isInitialized) {
     log(`reusing ${poolName} at ${poolContract.address}`)
-  } else {
-    const TOKEN_ADDRESSES = await Promise.all(
-      tokenNames.map(async (name) => (await get(name)).address),
+  } else if (poolContract && !isInitialized) {
+    await execute(
+      poolName,
+      {
+        from: deployer,
+        log: true,
+      },
+      "initialize",
+      TOKEN_ADDRESSES,
+      tokenDecimalArray,
+      lptokenName,
+      lpTokenSymbol,
+      initialA,
+      swapFee,
+      adminFee,
+      (
+        await get("LPToken")
+      ).address,
     )
-    // TODO: Does not function correctly on new networks
-    let tokenDecimalArray = tokenDecimals
-    if ((await getChainId()) != CHAIN_ID.AURORA_MAINNET) {
-      tokenDecimalArray = await Promise.all(
-        tokenNames.map(async (name) => await read(name, "decimals")),
-      )
-    }
-
+  } else if (!poolContract && !isInitialized) {
     await deploy(poolName, {
       from: deployer,
       log: true,
@@ -948,6 +965,11 @@ export async function deployCrossChainSystemOnSideChain(
   ])
 }
 
+/**
+ * @notice Deploy all contracts on a certain chain for permissionless
+ * pool deployment functionalities.
+ * @param hre HardhatRuntimeEnvironment variable
+ */
 export async function deployPermissionlessPoolComponents(
   hre: HardhatRuntimeEnvironment,
 ) {
@@ -1012,7 +1034,7 @@ export async function deployPermissionlessPoolComponents(
     }
   }
 
-  // deploy an instance of metaswap deposit if not found (currently only for kava network)
+  // Deploy an instance of MetaSwapDeposit if not found
   if (metaswapDeposit == undefined) {
     console.log("Deploying MetaSwapDeposit")
     const metaSwapDepositDeployment = await deploy("MetaSwapDeposit", {

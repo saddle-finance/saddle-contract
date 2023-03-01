@@ -10,8 +10,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     (await getChainId()) === CHAIN_ID.AURORA_MAINNET &&
     network.name !== "hardhat"
   ) {
-    // try to run await hre.run("etherscan-verify")
-    // if it fails, log the error and continue
     try {
       await hre.run("etherscan-verify", {
         apiKey: process.env.ETHERSCAN_AURORA_API,

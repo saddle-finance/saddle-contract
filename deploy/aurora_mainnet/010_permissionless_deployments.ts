@@ -1,7 +1,6 @@
 import dotenv from "dotenv"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { CHAIN_ID } from "../../utils/network"
 import { deployPermissionlessPoolComponents } from "../deployUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -10,7 +9,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { get } = deployments
   const { deployer } = await getNamedAccounts()
 
-  // await setEtherBalance(deployer, hre.ethers.constants.WeiPerEther.mul(1000))
   await deployPermissionlessPoolComponents(hre)
 }
 export default func
@@ -23,5 +21,3 @@ func.dependencies = [
   "MetaSwapUtils",
   "LPToken",
 ]
-
-func.skip = async (env) => (await env.getChainId()) == CHAIN_ID.AURORA_MAINNET
