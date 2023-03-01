@@ -2,9 +2,13 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-4.4.0/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-4.4.0/token/ERC20/utils/SafeERC20.sol";
 
 // POC of a reward scheduler contract that can schedule N weeks worth of rewards
+// This contract is only a proof of concept and should not be used in production as is
 contract RewardScheduler {
+    using SafeERC20 for IERC20;
+
     address public rewardToken;
     uint256 public lastTimestamp;
     uint256 public numOfWeeksLeft;
@@ -19,6 +23,7 @@ contract RewardScheduler {
     );
 
     constructor(address _rewardForwader) {
+        require(_rewardForwader != address(0), "RewardScheduler: zero address");
         rewardForwarder = _rewardForwader;
     }
 
@@ -31,14 +36,23 @@ contract RewardScheduler {
             numOfWeeksLeft == 0,
             "RewardScheduler: reward already scheduled"
         );
+        require(
+            _rewardToken != address(0),
+            "RewardScheduler: zero address reward token"
+        );
+        uint256 _amountPerWeek = _amount / numberOfWeeks;
+        require(_amountPerWeek > 0, "RewardScheduler: amount too small");
+
         rewardToken = _rewardToken;
         lastTimestamp = block.timestamp;
         numOfWeeksLeft = numberOfWeeks;
-        uint256 _amountPerWeek = _amount / numberOfWeeks;
-        require(_amountPerWeek > 0, "RewardScheduler: amount too small");
         amountPerWeek = _amountPerWeek;
 
-        IERC20(_rewardToken).transferFrom(msg.sender, address(this), _amount);
+        IERC20(_rewardToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
 
         emit RewardScheduled(_rewardToken, _amountPerWeek, numberOfWeeks);
 
@@ -49,13 +63,13 @@ contract RewardScheduler {
         numOfWeeksLeft -= 1;
         lastTimestamp = block.timestamp;
 
-        IERC20(rewardToken).transfer(rewardForwarder, amountPerWeek);
+        IERC20(rewardToken).safeTransfer(rewardForwarder, amountPerWeek);
     }
 
     function transferReward() external {
         require(numOfWeeksLeft > 0, "RewardScheduler: no reward scheduled");
         require(
-            block.timestamp - lastTimestamp >= 604800,
+            block.timestamp - lastTimestamp >= 1 weeks,
             "RewardScheduler: not enough time has passed"
         );
 

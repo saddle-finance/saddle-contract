@@ -19,8 +19,7 @@
     "@openzeppelin/contracts-upgradeable-4.2.0": "npm:@openzeppelin/contracts-upgradeable@4.2.0",
     "@openzeppelin/contracts-upgradeable-4.7.3": "npm:@openzeppelin/contracts-upgradeable@4.7.3",
     "dotenv": "^10.0.0",
-    "hardhat-tracer": "^1.1.0-rc.8",
-    "patch-package": "^6.4.7",
+    "hardhat-tracer": "^1.2.1",
     "synthetix": "2.56.1"
   },
   "devDependencies": {
@@ -48,11 +47,11 @@
     "ethers": "^5.7.2",
     "ethlint": "^1.2.5",
     "hardhat": "^2.12.2",
-    "hardhat-deploy": "^0.11.20",
+    "hardhat-deploy": "^0.11.22",
     "hardhat-gas-reporter": "^1.0.9",
     "hardhat-spdx-license-identifier": "^2.0.3",
     "node-fetch": "^2.6.7",
-    "prettier": "^2.5.1",
+    "prettier": "^2.8.1",
     "prettier-plugin-solidity": "^1.0.0-beta.11",
     "shelljs": "^0.8.4",
     "solhint": "^3.3.6",
@@ -60,7 +59,7 @@
     "solidity-coverage": "^0.8.2",
     "solidity-docgen": "^0.5.13",
     "ts-generator": "^0.1.1",
-    "ts-node": "^10.0.0",
+    "ts-node": "^10.9.1",
     "typechain": "^8.1.1",
     "typescript": "^4.6.3"
   },
@@ -80,8 +79,7 @@
     "start": "hardhat node",
     "fork": "hardhat node --fork $npm_config_network",
     "prepare": "npm run build",
-    "addresses": "node scripts/print-addresses.js",
-    "postinstall": "patch-package"
+    "addresses": "node scripts/print-addresses.js"
   },
   "config": {
     "eslintPaths": "test/ deploy/"
