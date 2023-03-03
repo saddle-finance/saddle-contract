@@ -177,6 +177,17 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    base_testnet: {
+      url: "https://goerli.base.org",
+      chainId: parseInt(CHAIN_ID.BASE_TESTNET),
+      deploy: ["./deploy/base_testnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://goerli.basescan.org/",
+          apiKey: process.env.ETHERSCAN_BASE_API ?? "NO_KEY",
+        },
+      },
+    },
   },
   paths: {
     sources: "./contracts",
@@ -268,6 +279,7 @@ const config: HardhatUserConfig = {
       2221: 0, // use the same address on kava testnet
       2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
+      84531: 0, // use the same address on base testnet
     },
     multisig: {
       default: 0,
