@@ -4,10 +4,10 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
   const { deploy } = deployments
-  const { libraryDeployer } = await getNamedAccounts()
+  const { deployer } = await getNamedAccounts()
 
   await deploy("AmplificationUtils", {
-    from: libraryDeployer,
+    from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
   })

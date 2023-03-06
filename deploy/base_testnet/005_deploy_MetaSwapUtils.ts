@@ -4,10 +4,10 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
   const { deploy, get } = deployments
-  const { libraryDeployer } = await getNamedAccounts()
+  const { deployer } = await getNamedAccounts()
 
   await deploy("MetaSwapUtils", {
-    from: libraryDeployer,
+    from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
   })

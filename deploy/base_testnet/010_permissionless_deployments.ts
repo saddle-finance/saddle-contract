@@ -5,9 +5,6 @@ import { deployPermissionlessPoolComponents } from "../deployUtils"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   dotenv.config()
-  const { deployments, getNamedAccounts } = hre
-  const { get } = deployments
-  const { deployer } = await getNamedAccounts()
 
   await deployPermissionlessPoolComponents(hre)
 }

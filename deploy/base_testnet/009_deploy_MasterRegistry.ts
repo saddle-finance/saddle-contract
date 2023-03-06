@@ -1,7 +1,6 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { MasterRegistry } from "../../build/typechain"
-import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId, ethers } = hre
@@ -31,7 +30,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       ),
       await contract.populateTransaction.addRegistry(
         ethers.utils.formatBytes32String("FeeCollector"),
-        MULTISIG_ADDRESSES[await getChainId()],
+        deployer,
       ),
     ]
 
