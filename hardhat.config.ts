@@ -279,6 +279,7 @@ const config: HardhatUserConfig = {
       2221: 0, // use the same address on kava testnet
       2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
+      1313161554: 0, // use the same address on aurora mainnet
       84531: 0, // use the same address on base testnet
     },
     multisig: {
