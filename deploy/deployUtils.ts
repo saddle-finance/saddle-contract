@@ -17,7 +17,7 @@ import {
 } from "../test/testUtils"
 import { ANYCALL_ADDRESS, MULTISIG_ADDRESSES } from "../utils/accounts"
 import { PoolType } from "../utils/constants"
-import { isTestNetwork } from "../utils/network"
+import { CHAIN_ID, isTestNetwork } from "../utils/network"
 
 export interface PoolData {
   poolName: string // Name of the pool
@@ -374,16 +374,37 @@ export async function deploySwapFlashLoan(
     ? (await read(poolName, "swapStorage")).lpToken !== ZERO_ADDRESS
     : false
 
-  if (poolContract && isInitialized) {
-    log(`reusing ${poolName} at ${poolContract.address}`)
-  } else {
-    const TOKEN_ADDRESSES = await Promise.all(
-      tokenNames.map(async (name) => (await get(name)).address),
-    )
-    const tokenDecimals = await Promise.all(
+  const TOKEN_ADDRESSES = await Promise.all(
+    tokenNames.map(async (name) => (await get(name)).address),
+  )
+  let tokenDecimalArray = tokenDecimals
+  if ((await getChainId()) != CHAIN_ID.AURORA_MAINNET) {
+    tokenDecimalArray = await Promise.all(
       tokenNames.map(async (name) => await read(name, "decimals")),
     )
-
+  }
+  if (poolContract && isInitialized) {
+    log(`reusing ${poolName} at ${poolContract.address}`)
+  } else if (poolContract && !isInitialized) {
+    await execute(
+      poolName,
+      {
+        from: deployer,
+        log: true,
+      },
+      "initialize",
+      TOKEN_ADDRESSES,
+      tokenDecimalArray,
+      lptokenName,
+      lpTokenSymbol,
+      initialA,
+      swapFee,
+      adminFee,
+      (
+        await get("LPToken")
+      ).address,
+    )
+  } else if (!poolContract && !isInitialized) {
     await deploy(poolName, {
       from: deployer,
       log: true,
@@ -402,7 +423,7 @@ export async function deploySwapFlashLoan(
       },
       "initialize",
       TOKEN_ADDRESSES,
-      tokenDecimals,
+      tokenDecimalArray,
       lptokenName,
       lpTokenSymbol,
       initialA,
@@ -790,6 +811,9 @@ export async function stealFundsFromWhales(
 /**
  * @notice Deploy child chain contracts for cross chain functionalities.
  * Requires nonce 0 ~ 7 on cross chain deployer account to be empty.
+ * Note that the ownership of the contracts are set to deployer EOA.
+ * So after the deployment is done, the ownerships should be transferred to the
+ * appropriate multisig.
  * @param hre HardhatRuntimeEnvironment variable
  */
 export async function deployCrossChainSystemOnSideChain(
@@ -816,6 +840,14 @@ export async function deployCrossChainSystemOnSideChain(
   if (process.env.HARDHAT_DEPLOY_FORK) {
     setEtherBalance(crossChainDeployer, ethers.utils.parseEther("10000"))
   }
+
+  const startNonce = await ethers.provider.getTransactionCount(
+    crossChainDeployer,
+  )
+  expect(startNonce).to.eq(
+    0,
+    `Cross chain deployer nonce is not at 0. Is currently: ${startNonce}`,
+  )
 
   // 0: Deploy ChildGaugeFactory
   const cgf = await deploy("ChildGaugeFactory", {
@@ -933,6 +965,11 @@ export async function deployCrossChainSystemOnSideChain(
   ])
 }
 
+/**
+ * @notice Deploy all contracts on a certain chain for permissionless
+ * pool deployment functionalities.
+ * @param hre HardhatRuntimeEnvironment variable
+ */
 export async function deployPermissionlessPoolComponents(
   hre: HardhatRuntimeEnvironment,
 ) {
@@ -961,30 +998,43 @@ export async function deployPermissionlessPoolComponents(
   }
 
   // get multisig address for network, if there is none default to deployer
+  let rolesAssignedTo = "multisig"
   let multisig = MULTISIG_ADDRESSES[await getChainId()]
   if (multisig === undefined) {
     console.log("No multisig address found for network, defaulting to deployer")
     multisig = deployer
+    rolesAssignedTo = "deployer"
   }
 
+  // Check if deployer has the default admin role
+  const deployerHasRole = await masterRegistry.hasRole(
+    await masterRegistry.DEFAULT_ADMIN_ROLE(),
+    deployer,
+  )
   try {
     await masterRegistry.resolveNameToLatestAddress(feeCollectorName)
   } catch (error) {
-    console.log("No fee collector set, setting now")
-    // setting as the deployer for now as no multisig is available on this network
-    await execute(
-      "MasterRegistry",
-      {
-        from: deployer,
-        log: true,
-      },
-      "addRegistry",
-      feeCollectorName,
-      multisig,
-    )
+    console.log(`No fee collector set, attempting to set to ${rolesAssignedTo}`)
+
+    if (deployerHasRole) {
+      await execute(
+        "MasterRegistry",
+        {
+          from: deployer,
+          log: true,
+        },
+        "addRegistry",
+        feeCollectorName,
+        multisig,
+      )
+    } else {
+      console.log(
+        `Deployer does not have default admin role, ${rolesAssignedTo} was NOT set as fee collector`,
+      )
+    }
   }
 
-  // deploy an instance of metaswap deposit if not found (currently only for kava network)
+  // Deploy an instance of MetaSwapDeposit if not found
   if (metaswapDeposit == undefined) {
     console.log("Deploying MetaSwapDeposit")
     const metaSwapDepositDeployment = await deploy("MetaSwapDeposit", {
@@ -1052,51 +1102,30 @@ export async function deployPermissionlessPoolComponents(
         ],
       },
     )
-
-    // PermissionlessDeployer to the master registry
-    console.log("Adding PermissionlessDeployer to MasterRegistry")
-    await execute(
-      "MasterRegistry",
-      {
-        from: deployer,
-        log: true,
-      },
-      "addRegistry",
-      ethers.utils.formatBytes32String("PermissionlessDeployer"),
+    console.log(
+      "PermissionlessDeployer deployed at",
       PermissionlessDeployerDeployment.address,
     )
 
-    const poolRegistry: PoolRegistry = await ethers.getContract("PoolRegistry")
+    // PermissionlessDeployer to the master registry if the deployer can
 
-    // 1. Grant COMMUNITY_MANAGER_ROLE to PermissionlessDeployer
-    // 2. Grant COMMUNITY_MANAGER_ROLE to deployer account
-    // 3. Grant DEFAULT_ADMIN_ROLE to Multisig on this chain
-    const batchCall = [
-      await poolRegistry.populateTransaction.grantRole(
-        await poolRegistry.COMMUNITY_MANAGER_ROLE(),
+    if (deployerHasRole) {
+      console.log("Adding PermissionlessDeployer to MasterRegistry")
+      await execute(
+        "MasterRegistry",
+        {
+          from: deployer,
+          log: true,
+        },
+        "addRegistry",
+        ethers.utils.formatBytes32String("PermissionlessDeployer"),
         PermissionlessDeployerDeployment.address,
-      ),
-      await poolRegistry.populateTransaction.grantRole(
-        await poolRegistry.COMMUNITY_MANAGER_ROLE(),
-        deployer,
-      ),
-      await poolRegistry.populateTransaction.grantRole(
-        await poolRegistry.DEFAULT_ADMIN_ROLE(),
-        multisig,
-      ),
-    ]
-
-    const batchCallData = batchCall
-      .map((x) => x.data)
-      .filter((x): x is string => !!x)
-
-    await execute(
-      "PoolRegistry",
-      { from: deployer, log: true },
-      "batch",
-      batchCallData,
-      true,
-    )
+      )
+    } else {
+      console.log(
+        "PermissionlessDeployer not added to MasterRegistry, multisig tx required",
+      )
+    }
   }
   console.log("All permissionless contracts deployed :)")
 }
