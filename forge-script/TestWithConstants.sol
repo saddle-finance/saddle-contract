@@ -18,6 +18,10 @@ contract TestWithConstants is Test {
     mapping(string => uint256) public networkNameToChainId;
     mapping(uint256 => string) public chainIdToNetworkName;
 
+    // Accounts
+    address constant DEPLOYER = 0x5BDb37d0Ddea3A90F233c7B7F6b9394B6b2eef34;
+    address constant TEST_ACCOUNT = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+
     function setUp() public virtual {
         string memory root = vm.projectRoot();
         string memory path = string(
