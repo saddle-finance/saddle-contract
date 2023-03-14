@@ -433,14 +433,15 @@ export async function deploySwapFlashLoan(
         await get("LPToken")
       ).address,
     )
-
-    await execute(
-      poolName,
-      { from: deployer, log: true },
-      "transferOwnership",
-      MULTISIG_ADDRESSES[await getChainId()],
-    )
-
+    console.log("initialize finished")
+    if (MULTISIG_ADDRESSES[await getChainId()]) {
+      await execute(
+        poolName,
+        { from: deployer, log: true },
+        "transferOwnership",
+        MULTISIG_ADDRESSES[await getChainId()],
+      )
+    }
     const lpTokenAddress = (await read(poolName, "swapStorage")).lpToken
     log(`deployed ${poolLpTokenName} at ${lpTokenAddress}`)
 
