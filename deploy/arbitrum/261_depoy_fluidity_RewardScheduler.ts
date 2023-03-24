@@ -9,13 +9,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   const RewardScheduler = await deploy(
-    "RewardScheduler_RootGauge_10_CommunityfUSDC",
+    "RewardScheduler_ChildGauge_CommunityfUSDCLPToken",
     {
       from: deployer,
       contract: "RewardScheduler",
       log: true,
       skipIfAlreadyDeployed: true,
-      args: [fUSDC_Reward_Manager_Address, (await get("USDC")).address],
+      args: [fUSDC_Reward_Manager_Address, (await get("fUSDC")).address],
     },
   )
 

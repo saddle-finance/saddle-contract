@@ -6,12 +6,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get } = deployments
   const { deployer } = await getNamedAccounts()
 
-  await deploy("RewardForwarder_USDC_RootGauge_10_CommunityfUSDCPoolLPToken", {
+  await deploy("RewardForwarder_fUSDC_ChildGauge_CommunityfUSDCPoolLPToken", {
     from: deployer,
     contract: "RewardForwarder",
     log: true,
     skipIfAlreadyDeployed: true,
-    args: [(await get("RootGauge_10_CommunityfUSDCPoolLPToken")).address],
+    args: [(await get("ChildGauge_CommunityfUSDCPoolLPToken")).address],
   })
 }
 export default func
