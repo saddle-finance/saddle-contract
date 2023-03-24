@@ -16,10 +16,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     SaddleFRAXUSDTMetaPoolLPToken: "FRAXBP-USDT",
     SaddleFRAXUSDsMetaPoolLPToken: "FRAXBP-USDs",
     SaddleUSXFRAXBPMetaPoolLPToken: "USX-FRAXBP",
+    CommunityfUSDCPoolLPToken: "fUSDC-USDC",
   }
 
   // Deploy the child gauges using above mapping
   await deployChildGauges(hre, lpTokenNameToRegistryName, true)
 }
 export default func
-func.skip = async () => true
+// func.skip = async () => true
