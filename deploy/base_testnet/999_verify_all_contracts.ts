@@ -12,7 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   ) {
     try {
       await hre.run("etherscan-verify", {
-        apiKey: process.env.ETHERSCAN_AURORA_API,
+        // apiKey: process.env.ETHERSCAN_AURORA_API,
       })
     } catch (e) {
       log(e)
