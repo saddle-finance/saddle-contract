@@ -1,0 +1,62 @@
+diff -ruN .gitignore .gitignore
+--- .gitignore	1969-12-31 16:00:00.000000000 -0800
++++ .gitignore	2022-11-11 08:21:48.000000000 -0800
+@@ -0,0 +1,2 @@
++*
++!.gitignore
+diff -ruN SwapUtils.sol SwapUtils.sol
+--- SwapUtils.sol	2022-11-04 12:02:31.000000000 -0700
++++ SwapUtils.sol	2022-11-11 09:24:59.000000000 -0800
+@@ -295,6 +295,10 @@
+         }
+         revert("Approximation did not converge");
+     }
++    
++    function getDApprox(uint256 xp1, uint256 xp2) public pure returns(uint256) {
++        return xp1;
++    }
+ 
+     /**
+      * @notice Get D, the StableSwap invariant, based on a set of balances and a particular A.
+@@ -309,6 +313,7 @@
+         pure
+         returns (uint256)
+     {
++        return getDApprox(xp[0], xp[1]);
+         uint256 numTokens = xp.length;
+         uint256 s;
+         for (uint256 i = 0; i < numTokens; i++) {
+diff -ruN registries/PoolRegistry.sol registries/PoolRegistry.sol
+--- registries/PoolRegistry.sol	2022-11-04 12:02:31.000000000 -0700
++++ registries/PoolRegistry.sol	2022-11-11 08:21:48.000000000 -0800
+@@ -42,8 +42,8 @@
+     /// @inheritdoc IPoolRegistry
+     mapping(bytes32 => uint256) public override poolsIndexOfNamePlusOne;
+ 
+-    PoolData[] private pools;
+-    mapping(uint256 => address[]) private eligiblePairsMap;
++    PoolData[] public pools;                                // MUNGED private => public
++    mapping(uint256 => address[]) internal eligiblePairsMap; // MUNGED private => internal
+ 
+     /**
+      * @notice Add a new registry entry to the master list.
+@@ -185,7 +185,7 @@
+             : _getSwapStorage(inputData.poolAddress).lpToken;
+ 
+         // Check token addresses
+-        for (uint8 i = 0; i < 8; i++) {
++        for (uint8 i = 0; i < getConstantLength(); i++) {
+             try ISwap(inputData.poolAddress).getToken(i) returns (
+                 IERC20 token
+             ) {
+@@ -528,6 +528,10 @@
+         }
+     }
+ 
++    function getConstantLength() public view returns (uint256) {
++        return 8; 
++    }
++
+     /// @inheritdoc IPoolRegistry
+     function getUnderlyingTokenBalances(address poolAddress)
+         external
