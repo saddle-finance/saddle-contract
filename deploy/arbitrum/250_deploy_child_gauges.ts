@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     SaddleFRAXUSDTMetaPoolLPToken: "FRAXBP-USDT",
     SaddleFRAXUSDsMetaPoolLPToken: "FRAXBP-USDs",
     SaddleUSXFRAXBPMetaPoolLPToken: "USX-FRAXBP",
-    CommunityfUSDCPoolLPToken: "fUSDC-USDC",
+    CommunityfUSDCPoolLPToken: "fUSDC-USDC pool",
   }
 
   // Deploy the child gauges using above mapping
