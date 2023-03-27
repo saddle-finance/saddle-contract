@@ -1155,26 +1155,6 @@ export async function deployChildGauges(
     const lpTokenRegistryName = lpTokenNameToRegistryName[lpTokenName]
     const lpToken = await get(lpTokenName)
 
-    // Check if gauge already exists
-    const ChildGaugeFactory: ChildGaugeFactory = await ethers.getContract(
-      "ChildGaugeFactory",
-    )
-
-    const doesGaugeExist =
-      (await ChildGaugeFactory.get_gauge_from_lp_token(lpToken.address)) !=
-      ethers.constants.AddressZero
-        ? true
-        : false
-
-    if (doesGaugeExist) {
-      console.log(
-        `Gauge already exists for ${lpTokenName}, skipping deployment`,
-      )
-      continue
-    }
-    //TODO remove
-    console.log("deploying gauge for", lpTokenName)
-
     // Broadcast the transaction
     const tx = await execute(
       "ChildGaugeFactory",
