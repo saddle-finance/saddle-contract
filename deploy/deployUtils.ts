@@ -1,6 +1,6 @@
 import { expect } from "chai"
 import { BigNumber } from "ethers"
-import { ethers, getChainId } from "hardhat"
+import { getChainId } from "hardhat"
 import { Address } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import {
@@ -8,7 +8,6 @@ import {
   IPoolRegistry,
   MasterRegistry,
   PoolRegistry,
-  ChildGaugeFactory,
 } from "../build/typechain"
 import {
   convertGaugeNameToSalt,
