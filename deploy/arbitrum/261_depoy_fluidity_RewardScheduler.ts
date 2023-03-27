@@ -1,6 +1,5 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { fUSDC_Reward_Manager_Address } from "../../utils/accounts"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre
@@ -26,11 +25,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
 
   // Transfer ownership to fUSDC_Reward_Manager_Address
-  const rewardSchedulerOwnershipTX = await execute(
-    "RewardScheduler_ChildGauge_CommunityfUSDCLPToken",
-    { from: deployer, log: true },
-    "transferOwnership",
-    fUSDC_Reward_Manager_Address,
-  )
+  // Commenting out for forked deployments
+  // const rewardSchedulerOwnershipTX = await execute(
+  //   "RewardScheduler_ChildGauge_CommunityfUSDCLPToken",
+  //   { from: deployer, log: true },
+  //   "transferOwnership",
+  //   fUSDC_Reward_Manager_Address,
+  // )
 }
 export default func

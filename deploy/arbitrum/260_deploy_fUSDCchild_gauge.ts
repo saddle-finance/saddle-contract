@@ -15,5 +15,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   )
 }
 export default func
-// Should be commented out after deployment
-// func.skip = async () => true
+func.skip = async () => true
