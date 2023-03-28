@@ -183,7 +183,7 @@ const config: HardhatUserConfig = {
       deploy: ["./deploy/base_testnet/"],
       verify: {
         etherscan: {
-          apiUrl: "https://goerli.basescan.org/",
+          apiUrl: "https://api-goerli.basescan.org/api",
           apiKey: process.env.ETHERSCAN_API ?? "NO_KEY",
         },
       },
@@ -306,8 +306,8 @@ const config: HardhatUserConfig = {
         network: "base_testnet",
         chainId: 84531,
         urls: {
-          apiURL: "https://goerli.basescan.org/",
-          browserURL: "https://goerli.basescan.org/api",
+          apiURL: "https://api-goerli.basescan.org/api",
+          browserURL: "https://goerli.basescan.org/",
         },
       },
     ],
