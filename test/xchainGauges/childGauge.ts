@@ -13,6 +13,7 @@ import {
   SDL,
   VotingEscrow,
 } from "../../build/typechain"
+import { fUSDC_Reward_Manager_Address } from "../../utils/accounts"
 import { DAY, MAX_LOCK_TIME, WEEK } from "../../utils/time"
 import {
   BIG_NUMBER_1E18,
@@ -355,7 +356,8 @@ describe("ChildGauge", () => {
         )
       })
       it("Successfully claims rewards with an additional 0 rate reward token", async () => {
-        await childGauge.add_reward(dummyRewardToken2.address, users[1])
+        // testing if a non-ERC20 contract is set as a reward token
+        await childGauge.add_reward(fUSDC_Reward_Manager_Address, users[1])
 
         await childGauge
           .connect(signers[1])
