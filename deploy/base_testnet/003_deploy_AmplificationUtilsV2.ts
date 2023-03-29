@@ -3,14 +3,14 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre
-  const { deploy, get } = deployments
+  const { deploy } = deployments
   const { deployer } = await getNamedAccounts()
 
-  await deploy("SwapUtils", {
+  await deploy("AmplificationUtilsV2", {
     from: deployer,
     log: true,
     skipIfAlreadyDeployed: true,
   })
 }
 export default func
-func.tags = ["SwapUtils"]
+func.tags = ["AmplificationUtilsV2"]

@@ -1,4 +1,3 @@
-import { ethers } from "hardhat"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 
@@ -7,23 +6,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, execute, getOrNull, log } = deployments
   const { deployer } = await getNamedAccounts()
 
-  console.log(
-    "base_testnet block number: ",
-    await ethers.provider.getBlockNumber(),
-  )
-
-  const lpToken = await getOrNull("LPToken")
+  const lpToken = await getOrNull("LPTokenV2")
   if (lpToken) {
-    log(`reusing "LPToken" at ${lpToken.address}`)
+    log(`reusing "LPTokenV2" at ${lpToken.address}`)
   } else {
-    await deploy("LPToken", {
+    await deploy("LPTokenV2", {
       from: deployer,
       log: true,
       skipIfAlreadyDeployed: true,
     })
 
     await execute(
-      "LPToken",
+      "LPTokenV2",
       { from: deployer, log: true },
       "initialize",
       "Saddle LP Token (Target)",
@@ -32,4 +26,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
-func.tags = ["LPToken"]
+func.tags = ["LPTokenV2"]

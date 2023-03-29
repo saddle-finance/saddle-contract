@@ -13,8 +13,8 @@ func.tags = ["PermissionlessSwaps"]
 func.dependencies = [
   "MasterRegistry",
   "PoolRegistry",
-  "SwapUtils",
-  "AmplificationUtils",
-  "MetaSwapUtils",
-  "LPToken",
+  "SwapUtilsV2",
+  "AmplificationUtilsV2",
+  "MetaSwapUtilsV1",
+  "LPTokenV2",
 ]

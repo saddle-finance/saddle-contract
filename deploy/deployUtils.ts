@@ -986,9 +986,9 @@ export async function deployPermissionlessPoolComponents(
     deployer,
   )
   const masterRegistryAddress = masterRegistry.address
-  const swapUtilsAddress = (await get("SwapUtils")).address
-  const amplificationUtilsAddress = (await get("AmplificationUtils")).address
-  const metaswapDeposit = await getOrNull("MetaPoolDeposit")
+  const swapUtilsAddress = (await get("SwapUtilsV2")).address
+  const amplificationUtilsAddress = (await get("AmplificationUtilsV2")).address
+  const metaswapDeposit = await getOrNull("MetaPoolDepositV1")
   let metaswapDepositAddress = metaswapDeposit?.address
   // see if master registry has a fee collector set
   const feeCollectorName = ethers.utils.formatBytes32String("FeeCollector")
@@ -1038,7 +1038,7 @@ export async function deployPermissionlessPoolComponents(
   // Deploy an instance of MetaSwapDeposit if not found
   if (metaswapDeposit == undefined) {
     console.log("Deploying MetaSwapDeposit")
-    const metaSwapDepositDeployment = await deploy("MetaSwapDeposit", {
+    const metaSwapDepositDeployment = await deploy("MetaSwapDepositV1", {
       from: deployer,
       log: true,
       skipIfAlreadyDeployed: true,
@@ -1072,7 +1072,7 @@ export async function deployPermissionlessPoolComponents(
       args: [masterRegistryAddress],
       libraries: {
         SwapUtils: swapUtilsAddress,
-        MetaSwapUtils: (await get("MetaSwapUtils")).address,
+        MetaSwapUtils: (await get("MetaSwapUtilsV1")).address,
         AmplificationUtils: amplificationUtilsAddress,
       },
     })
@@ -1094,7 +1094,7 @@ export async function deployPermissionlessPoolComponents(
           multisig, // admin
           masterRegistryAddress, // masterRegistry
           (
-            await get("LPToken")
+            await get("LPTokenV2")
           ).address, // targetLPToken
           permissionlessSwapAddress, // targetSwap
           permissionlessMetaSwapAddress, // targetMetaSwap

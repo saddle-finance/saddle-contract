@@ -2,20 +2,15 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, getChainId } = hre
+  const { deployments, getNamedAccounts } = hre
   const { deploy, get } = deployments
   const { deployer } = await getNamedAccounts()
 
-  await deploy("SwapFlashLoan", {
+  await deploy("MetaSwapUtilsV1", {
     from: deployer,
     log: true,
-    libraries: {
-      SwapUtils: (await get("SwapUtils")).address,
-      AmplificationUtils: (await get("AmplificationUtils")).address,
-    },
     skipIfAlreadyDeployed: true,
   })
 }
 export default func
-func.tags = ["SwapFlashLoan"]
-func.dependencies = ["AmplificationUtils", "SwapUtils"]
+func.tags = ["MetaSwapUtilsV1"]
