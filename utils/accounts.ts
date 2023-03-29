@@ -48,3 +48,6 @@ export const PROD_CROSS_CHAIN_DEPLOYER_ADDRESS =
 
 // https://docs.multichain.org/developer-guide/anycall/anycall-v6/how-to-integrate-anycall-v6
 export const ANYCALL_ADDRESS = "0xC10Ef9F491C9B59f936957026020C321651ac078"
+
+export const fUSDC_Reward_Manager_Address =
+  "0x64285A547a12c462aaAE2faCB1198B03FF1107d3"
