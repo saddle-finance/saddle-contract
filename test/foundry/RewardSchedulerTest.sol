@@ -141,6 +141,7 @@ contract RewardSchedulerTest is TestWithConstants {
         // Check that the gauge has received the reward token
         assertEq(IERC20(rewardToken).balanceOf(rewardForwarder), 0);
         assertEq(IERC20(rewardToken).balanceOf(gauge), 2500 * 1e18);
+        uint256 expectedRate = (2500 * 1e18) / uint256(1 weeks);
 
         {
             // Retrieve latest reward_data from gauge
@@ -155,7 +156,7 @@ contract RewardSchedulerTest is TestWithConstants {
             // Last update was now
             assertEq(lastUpdate, block.timestamp);
             // The reward rate is 2500 * 1e18 / 604800 = 4546957671957671
-            assertEq(rate, (2500 * 1e18) / uint256(1 weeks));
+            assertEq(rate, expectedRate);
             // This batch of rewards will end 1 week later
             assertEq(periodFinish, block.timestamp + 1 weeks);
         }
@@ -194,7 +195,7 @@ contract RewardSchedulerTest is TestWithConstants {
             assertEq(lastUpdate, block.timestamp);
             // The reward rate should be the same as the previous week
             // But since the periodFinish is reached, no rewards are actually being distributed
-            assertEq(rate, (2500 * 1e18) / uint256(1 weeks));
+            assertEq(rate, expectedRate);
             // This batch of rewards already ended
             assertEq(periodFinish, block.timestamp);
         }
@@ -216,7 +217,7 @@ contract RewardSchedulerTest is TestWithConstants {
             assertEq(lastUpdate, block.timestamp);
             // The reward rate is 2500 * 1e18 / 604800 = 4546957671957671
             // Continues the same as the previous week
-            assertEq(rate, (2500 * 1e18) / uint256(1 weeks));
+            assertEq(rate, expectedRate);
             // This batch of rewards will end 1 week later
             assertEq(periodFinish, block.timestamp + 1 weeks);
         }
