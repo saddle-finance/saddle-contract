@@ -6,8 +6,10 @@ import "../../contracts/rewards/RewardScheduler.sol";
 import "../../contracts/xchainGauges/RewardForwarder.sol";
 
 interface IChildGaugeLike {
-    function add_reward(address _reward_token, address _reward_distributor)
-        external;
+    function add_reward(
+        address _reward_token,
+        address _reward_distributor
+    ) external;
 
     function manager() external view returns (address);
 
@@ -17,7 +19,9 @@ interface IChildGaugeLike {
         bool _claim_rewards
     ) external;
 
-    function reward_data(address _reward_token)
+    function reward_data(
+        address _reward_token
+    )
         external
         view
         returns (
@@ -120,6 +124,102 @@ contract RewardSchedulerTest is TestWithConstants {
             IERC20(rewardToken).balanceOf(TEST_ACCOUNT),
             24889781232008850000
         );
+    }
+
+    function test_scheduleRewardWeekly() public {
+        vm.startPrank(TEST_ACCOUNT);
+
+        // Make lp token deposits before external rewards are added
+        // for testing purposes
+        IERC20(lpToken).approve(gauge, type(uint256).max);
+        IChildGaugeLike(gauge).deposit(10000 * 1e18, TEST_ACCOUNT, false);
+
+        // Schedule a reward of 10000 reward tokens for 4 weeks, starting now
+        IERC20(rewardToken).approve(rewardScheduler, type(uint256).max);
+        RewardScheduler(rewardScheduler).scheduleReward(10000 * 1e18, 4, true);
+
+        // Check that the gauge has received the reward token
+        assertEq(IERC20(rewardToken).balanceOf(rewardForwarder), 0);
+        assertEq(IERC20(rewardToken).balanceOf(gauge), 2500 * 1e18);
+
+        {
+            // Retrieve latest reward_data from gauge
+            (
+                ,
+                uint256 periodFinish,
+                uint256 rate,
+                uint256 lastUpdate,
+
+            ) = IChildGaugeLike(gauge).reward_data(rewardToken);
+
+            // Last update was now
+            assertEq(lastUpdate, block.timestamp);
+            // The reward rate is 2500 * 1e18 / 604800 = 4546957671957671
+            assertEq(rate, (2500 * 1e18) / uint256(1 weeks));
+            // This batch of rewards will end 1 week later
+            assertEq(periodFinish, block.timestamp + 1 weeks);
+        }
+
+        // Skip a day
+        vm.warp(block.timestamp + 1 days);
+
+        // Try claiminig rewards from an existing staker who has not interacted with the gauge
+        // since the rewards were added
+        assertEq(IERC20(rewardToken).balanceOf(TEST_ACCOUNT), 0);
+        IChildGaugeLike(gauge).claim_rewards();
+
+        // Verify that the staker has received the rewards
+        assertEq(
+            IERC20(rewardToken).balanceOf(TEST_ACCOUNT),
+            24889781232008850000
+        );
+
+        // Skip 6 days, now we are 7 days after the start of the rewards
+        vm.warp(block.timestamp + 6 days);
+        IChildGaugeLike(gauge).claim_rewards();
+        assertEq(
+            IERC20(rewardToken).balanceOf(TEST_ACCOUNT),
+            174228468624061950000
+        );
+        // We expect the rewards to be over at this point since the scheduling is weekly based
+        {
+            (
+                ,
+                uint256 periodFinish,
+                uint256 rate,
+                uint256 lastUpdate,
+
+            ) = IChildGaugeLike(gauge).reward_data(rewardToken);
+            // Last update was now
+            assertEq(lastUpdate, block.timestamp);
+            // The reward rate should be the same as the previous week
+            // But since the periodFinish is reached, no rewards are actually being distributed
+            assertEq(rate, (2500 * 1e18) / uint256(1 weeks));
+            // This batch of rewards already ended
+            assertEq(periodFinish, block.timestamp);
+        }
+
+        // Transfer rewards to the gauge for the next week
+        RewardScheduler(rewardScheduler).transferReward(true);
+
+        // Retrieve latest reward_data from gauge
+        {
+            (
+                ,
+                uint256 periodFinish,
+                uint256 rate,
+                uint256 lastUpdate,
+
+            ) = IChildGaugeLike(gauge).reward_data(rewardToken);
+
+            // Last update was now
+            assertEq(lastUpdate, block.timestamp);
+            // The reward rate is 2500 * 1e18 / 604800 = 4546957671957671
+            // Continues the same as the previous week
+            assertEq(rate, (2500 * 1e18) / uint256(1 weeks));
+            // This batch of rewards will end 1 week later
+            assertEq(periodFinish, block.timestamp + 1 weeks);
+        }
     }
 
     function test_scheduleRewardRevertsWhenCalledByNonOwner() public {
