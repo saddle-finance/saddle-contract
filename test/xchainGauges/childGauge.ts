@@ -13,8 +13,6 @@ import {
   SDL,
   VotingEscrow,
 } from "../../build/typechain"
-import { MULTISIG_ADDRESSES } from "../../utils/accounts"
-import { CHAIN_ID } from "../../utils/network"
 import { DAY, MAX_LOCK_TIME, WEEK } from "../../utils/time"
 import {
   BIG_NUMBER_1E18,
@@ -358,10 +356,7 @@ describe("ChildGauge", () => {
       })
       it("Successfully claims rewards with an additional 0 rate reward token", async () => {
         // testing if a non-ERC20 contract is set as a reward token
-        await childGauge.add_reward(
-          MULTISIG_ADDRESSES[CHAIN_ID.MAINNET],
-          users[1],
-        )
+        await childGauge.add_reward(users[1], users[1])
 
         await childGauge
           .connect(signers[1])
