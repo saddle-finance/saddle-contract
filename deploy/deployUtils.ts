@@ -1131,6 +1131,172 @@ export async function deployPermissionlessPoolComponents(
 }
 
 /**
+ * @notice Deploy all contracts on a certain chain for permissionless
+ * pool deployment functionalities, with updated contract versions.
+ * @param hre HardhatRuntimeEnvironment variable
+ */
+export async function deployPermissionlessPoolComponentsV2(
+  hre: HardhatRuntimeEnvironment,
+) {
+  const { deployments, getNamedAccounts, getChainId, ethers } = hre
+  const { deploy, get, getOrNull, execute } = deployments
+  const { deployer } = await getNamedAccounts()
+
+  const permissionlessSwap = await getOrNull("PermissionlessSwap")
+  const permissionlessMetaSwap = await getOrNull("PermissionlessMetaSwap")
+  const permissionlessDeployer = await getOrNull("PermissionlessDeployer")
+  const masterRegistry: MasterRegistry = await ethers.getContract(
+    "MasterRegistry",
+    deployer,
+  )
+  const masterRegistryAddress = masterRegistry.address
+  const swapUtilsAddress = (await get("SwapUtilsV2")).address
+  const amplificationUtilsAddress = (await get("AmplificationUtilsV2")).address
+  const metaSwapUtilsAddress = (await get("MetaSwapUtilsV1")).address
+  const metaswapDeposit = await getOrNull("MetaPoolDepositV1")
+  let metaswapDepositAddress = metaswapDeposit?.address
+  // see if master registry has a fee collector set
+  const feeCollectorName = ethers.utils.formatBytes32String("FeeCollector")
+
+  // skip following txs if permissionless deployer is deployed
+  if (permissionlessDeployer) {
+    return
+  }
+
+  // get multisig address for network, if there is none default to deployer
+  let rolesAssignedTo = "multisig"
+  let multisig = MULTISIG_ADDRESSES[await getChainId()]
+  if (multisig === undefined) {
+    console.log("No multisig address found for network, defaulting to deployer")
+    multisig = deployer
+    rolesAssignedTo = "deployer"
+  }
+
+  // Check if deployer has the default admin role
+  const deployerHasRole = await masterRegistry.hasRole(
+    await masterRegistry.DEFAULT_ADMIN_ROLE(),
+    deployer,
+  )
+  try {
+    await masterRegistry.resolveNameToLatestAddress(feeCollectorName)
+  } catch (error) {
+    console.log(`No fee collector set, attempting to set to ${rolesAssignedTo}`)
+
+    if (deployerHasRole) {
+      await execute(
+        "MasterRegistry",
+        {
+          from: deployer,
+          log: true,
+        },
+        "addRegistry",
+        feeCollectorName,
+        multisig,
+      )
+    } else {
+      console.log(
+        `Deployer does not have default admin role, ${rolesAssignedTo} was NOT set as fee collector`,
+      )
+    }
+  }
+
+  // Deploy an instance of MetaSwapDeposit if not found
+  if (metaswapDeposit == undefined) {
+    console.log("Deploying MetaSwapDeposit")
+    const metaSwapDepositDeployment = await deploy("MetaSwapDepositV1", {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+    })
+    metaswapDepositAddress = metaSwapDepositDeployment.address
+  }
+
+  // deploy PermissionlessSwap if needed
+  if (permissionlessSwap == null) {
+    console.log("PermissionlessSwap not found, deploying")
+    await deploy("PermissionlessSwap", {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+      args: [masterRegistryAddress],
+      libraries: {
+        SwapUtils: swapUtilsAddress,
+        AmplificationUtils: amplificationUtilsAddress,
+      },
+    })
+  }
+  const permissionlessSwapAddress = (await get("PermissionlessSwap")).address
+
+  // deploy PermissionlessMetaSwap if needed
+  if (permissionlessMetaSwap == null) {
+    console.log("PermissionlessMetaSwap not found, deploying")
+    await deploy("PermissionlessMetaSwap", {
+      from: deployer,
+      log: true,
+      skipIfAlreadyDeployed: true,
+      args: [masterRegistryAddress],
+      libraries: {
+        SwapUtils: swapUtilsAddress,
+        MetaSwapUtils: metaSwapUtilsAddress,
+        AmplificationUtils: amplificationUtilsAddress,
+      },
+    })
+  }
+  const permissionlessMetaSwapAddress = (await get("PermissionlessMetaSwap"))
+    .address
+
+  // deploy PermissionlessDeployer
+  if (permissionlessDeployer == null) {
+    console.log("PermissionlessDeployer not found, deploying")
+
+    const PermissionlessDeployerDeployment = await deploy(
+      "PermissionlessDeployer",
+      {
+        from: deployer,
+        log: true,
+        skipIfAlreadyDeployed: true,
+        args: [
+          multisig, // admin
+          masterRegistryAddress, // masterRegistry
+          (
+            await get("LPToken")
+          ).address, // targetLPToken
+          permissionlessSwapAddress, // targetSwap
+          permissionlessMetaSwapAddress, // targetMetaSwap
+          // Below needs to be a non-clone instance of the MetaswapDeposit Contract
+          metaswapDepositAddress, // targetMetaSwapDeposit
+        ],
+      },
+    )
+    console.log(
+      "PermissionlessDeployer deployed at",
+      PermissionlessDeployerDeployment.address,
+    )
+
+    // PermissionlessDeployer to the master registry if the deployer can
+
+    if (deployerHasRole) {
+      console.log("Adding PermissionlessDeployer to MasterRegistry")
+      await execute(
+        "MasterRegistry",
+        {
+          from: deployer,
+          log: true,
+        },
+        "addRegistry",
+        ethers.utils.formatBytes32String("PermissionlessDeployer"),
+        PermissionlessDeployerDeployment.address,
+      )
+    } else {
+      console.log(
+        "PermissionlessDeployer not added to MasterRegistry, multisig tx required",
+      )
+    }
+  }
+  console.log("All permissionless contracts deployed :)")
+}
+
+/**
  * @notice Deploy child gauges for given record of lp token name to registry name
  * @param {HardhatRuntimeEnvironment} hre HardhatRuntimeEnvironment
  * @param {Record<string, string>} lpTokenNameToRegistryName Record of lp token name to registry name
