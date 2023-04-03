@@ -1259,7 +1259,7 @@ export async function deployPermissionlessPoolComponentsV2(
           multisig, // admin
           masterRegistryAddress, // masterRegistry
           (
-            await get("LPToken")
+            await get("LPTokenV2")
           ).address, // targetLPToken
           permissionlessSwapAddress, // targetSwap
           permissionlessMetaSwapAddress, // targetMetaSwap
