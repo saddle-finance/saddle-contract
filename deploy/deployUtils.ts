@@ -1142,8 +1142,8 @@ export async function deployPermissionlessPoolComponentsV2(
   const { deploy, get, getOrNull, execute } = deployments
   const { deployer } = await getNamedAccounts()
 
-  const permissionlessSwap = await getOrNull("PermissionlessSwap")
-  const permissionlessMetaSwap = await getOrNull("PermissionlessMetaSwap")
+  const permissionlessSwap = await getOrNull("PermissionlessSwapV1")
+  const permissionlessMetaSwap = await getOrNull("PermissionlessMetaSwapV1")
   const permissionlessDeployer = await getOrNull("PermissionlessDeployer")
   const masterRegistry: MasterRegistry = await ethers.getContract(
     "MasterRegistry",
@@ -1214,7 +1214,8 @@ export async function deployPermissionlessPoolComponentsV2(
   // deploy PermissionlessSwap if needed
   if (permissionlessSwap == null) {
     console.log("PermissionlessSwap not found, deploying")
-    await deploy("PermissionlessSwap", {
+    await deploy("PermissionlessSwapV1", {
+      contract: "PermissionlessSwap",
       from: deployer,
       log: true,
       skipIfAlreadyDeployed: true,
@@ -1225,12 +1226,13 @@ export async function deployPermissionlessPoolComponentsV2(
       },
     })
   }
-  const permissionlessSwapAddress = (await get("PermissionlessSwap")).address
+  const permissionlessSwapAddress = (await get("PermissionlessSwapV1")).address
 
   // deploy PermissionlessMetaSwap if needed
   if (permissionlessMetaSwap == null) {
     console.log("PermissionlessMetaSwap not found, deploying")
-    await deploy("PermissionlessMetaSwap", {
+    await deploy("PermissionlessMetaSwapV1", {
+      contract: "PermissionlessMetaSwap",
       from: deployer,
       log: true,
       skipIfAlreadyDeployed: true,
@@ -1242,7 +1244,7 @@ export async function deployPermissionlessPoolComponentsV2(
       },
     })
   }
-  const permissionlessMetaSwapAddress = (await get("PermissionlessMetaSwap"))
+  const permissionlessMetaSwapAddress = (await get("PermissionlessMetaSwapV1"))
     .address
 
   // deploy PermissionlessDeployer
