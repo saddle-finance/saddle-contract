@@ -183,7 +183,7 @@ const config: HardhatUserConfig = {
       deploy: ["./deploy/base_testnet/"],
       verify: {
         etherscan: {
-          apiUrl: "https://api-goerli.basescan.org/api",
+          apiUrl: "https://api-goerli.basescan.org",
           apiKey: process.env.ETHERSCAN_API ?? "NO_KEY",
         },
       },
@@ -295,6 +295,22 @@ const config: HardhatUserConfig = {
   spdxLicenseIdentifier: {
     overwrite: false,
     runOnCompile: true,
+  },
+
+  etherscan: {
+    apiKey: {
+      base_testnet: process.env.ETHERSCAN_API ?? "NO_KEY",
+    },
+    customChains: [
+      {
+        network: "base_testnet",
+        chainId: 84531,
+        urls: {
+          apiURL: "https://api-goerli.basescan.org/api",
+          browserURL: "https://goerli.basescan.org/",
+        },
+      },
+    ],
   },
 }
 
