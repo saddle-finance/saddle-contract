@@ -6,10 +6,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, save } = deployments
   const { deployer } = await getNamedAccounts()
 
-  const dummyToken1 = await deploy("DummyERC20", {
+  const dummyToken1 = await deploy("Dummy1", {
+    contract: "DummyERC20",
     from: deployer,
     log: true,
-    skipIfAlreadyDeployed: false,
+    skipIfAlreadyDeployed: true,
     args: ["FreeMintableDummyERC20_1", "Dummy1"],
   })
 
@@ -19,10 +20,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     address: dummyToken1.address,
   })
 
-  const dummyToken2 = await deploy("DummyERC20", {
+  const dummyToken2 = await deploy("Dummy2", {
+    contract: "DummyERC20",
     from: deployer,
     log: true,
-    skipIfAlreadyDeployed: false,
+    skipIfAlreadyDeployed: true,
     args: ["FreeMintableDummyERC20_2", "Dummy2"],
   })
   // save token deployment

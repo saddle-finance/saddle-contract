@@ -32,9 +32,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const TOKEN_ADDRESSES = await Promise.all(
       TOKEN_NAMES.map(async (name) => (await get(name)).address),
     )
-    const tokenDecimals = await Promise.all(
-      TOKEN_NAMES.map(async (name) => await read(name, "decimals")),
-    )
 
     await deploy(POOL_NAME, {
       from: deployer,
@@ -54,7 +51,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       },
       "initialize",
       TOKEN_ADDRESSES,
-      tokenDecimals,
+      [18, 18],
       LP_TOKEN_NAME,
       LP_TOKEN_SYMBOL,
       INITIAL_A,
