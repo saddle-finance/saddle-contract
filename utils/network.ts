@@ -19,6 +19,7 @@ export const CHAIN_ID: Record<string, string> = {
   KAVA_TESTNET: "2221",
   KAVA_MAINNET: "2222",
   AURORA_MAINNET: "1313161554",
+  BASE_TESTNET: "84531",
 }
 
 // Reverse lookup of chainId to chain name
@@ -52,7 +53,8 @@ export function isTestNetwork(networkId: string): boolean {
     networkId === CHAIN_ID.OPTIMISM_TESTNET ||
     networkId === CHAIN_ID.FANTOM_TESTNET ||
     networkId === CHAIN_ID.EVMOS_TESTNET ||
-    networkId === CHAIN_ID.KAVA_TESTNET
+    networkId === CHAIN_ID.KAVA_TESTNET ||
+    networkId == CHAIN_ID.BASE_TESTNET
   )
 }
 
