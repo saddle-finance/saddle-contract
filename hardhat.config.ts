@@ -177,6 +177,17 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    base_testnet: {
+      url: "https://goerli.base.org",
+      chainId: parseInt(CHAIN_ID.BASE_TESTNET),
+      deploy: ["./deploy/base_testnet/"],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api-goerli.basescan.org",
+          apiKey: process.env.ETHERSCAN_API ?? "NO_KEY",
+        },
+      },
+    },
   },
   paths: {
     sources: "./contracts",
@@ -269,6 +280,7 @@ const config: HardhatUserConfig = {
       2222: 0, // use the same address on kava testnet
       3: 0, // use the same address on ropsten
       1313161554: 0, // use the same address on aurora mainnet
+      84531: 0, // use the same address on base testnet
     },
     multisig: {
       default: 0,
@@ -283,6 +295,22 @@ const config: HardhatUserConfig = {
   spdxLicenseIdentifier: {
     overwrite: false,
     runOnCompile: true,
+  },
+
+  etherscan: {
+    apiKey: {
+      base_testnet: process.env.ETHERSCAN_API ?? "NO_KEY",
+    },
+    customChains: [
+      {
+        network: "base_testnet",
+        chainId: 84531,
+        urls: {
+          apiURL: "https://api-goerli.basescan.org/api",
+          browserURL: "https://goerli.basescan.org/",
+        },
+      },
+    ],
   },
 }
 
