@@ -28,7 +28,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const targetChainId = CHAIN_ID.ARBITRUM_MAINNET
 
   const lpTokenNameToRegistryName: Record<string, string> = {
-    CommunityfUSDCPoolLPToken: "fUSDC-USDC pool V2",
+    CommunityfUSDCPoolLPTokenV2: "fUSDC-USDC pool V2",
   }
 
   // For each LP token, call deploy_child_gauge
