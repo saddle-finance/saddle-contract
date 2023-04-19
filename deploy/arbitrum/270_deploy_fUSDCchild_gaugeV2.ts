@@ -1,7 +1,6 @@
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { convertGaugeNameToSalt } from "../../test/testUtils"
-import { deployChildGauges } from "../deployUtils"
 
 /**
  * @notice Deploy the child gauges on Arbitrum
