@@ -27,6 +27,8 @@ interface IRootGaugeLike {
     function set_killed(bool) external;
 
     function inflation_params() external view returns (InflationParams memory);
+
+    function user_checkpoint(address) external returns (bool);
 }
 
 interface IRootGaugeFactoryLike {
@@ -121,22 +123,18 @@ contract GaugeControllerTest is TestWithConstants {
             42161,
             8
         );
-        console2.log("rootGaugefUSDCV2 deployed at: ", rootGaugefUSDCV2);
 
         // Pretend to be the gauge controller owner and add the new gauge
         vm.prank(IGaugeControllerLike(gaugeController).admin());
         IGaugeControllerLike(gaugeController).add_gauge(rootGaugefUSDCV2, 0, 0);
-
-        // Prank as a user and vote for the new gauge
-        vm.startPrank(gaugeVoter);
+        IRootGaugeLike(rootGaugefUSDCV2).user_checkpoint(gaugeVoter);
         uint256 weight = IGaugeControllerLike(gaugeController)
             .gauge_relative_weight(rootGaugefUSDCV2);
         uint256 votedUserSlope = IGaugeControllerLike(gaugeController)
             .vote_user_slopes(gaugeVoter, rootGaugefUSDCV2)
             .slope;
-        uint256 inflationRateBefore = IRootGaugeLike(rootGaugefUSDCV2)
-            .inflation_params()
-            .rate;
+        // Prank as a user and vote for the new gauge
+        vm.startPrank(gaugeVoter);
         // remove old votes for user
         IGaugeControllerLike(gaugeController).vote_for_gauge_weights(
             fraxGauge,
@@ -149,21 +147,16 @@ contract GaugeControllerTest is TestWithConstants {
         );
         vm.stopPrank();
         vm.warp(block.timestamp + 604800);
-        IGaugeControllerLike(gaugeController).checkpoint();
+        IRootGaugeLike(rootGaugefUSDCV2).user_checkpoint(gaugeVoter);
         uint256 weightAfter = IGaugeControllerLike(gaugeController)
             .gauge_relative_weight(rootGaugefUSDCV2);
         uint256 votedUserSlopeAfter = IGaugeControllerLike(gaugeController)
             .vote_user_slopes(gaugeVoter, rootGaugefUSDCV2)
             .slope;
-        uint256 inflationRateAfter = IRootGaugeLike(rootGaugefUSDCV2)
-            .inflation_params()
-            .rate;
         console2.log("votedUserSlope: ", votedUserSlope);
         console2.log("votedUserSlopeAfter: ", votedUserSlopeAfter);
         console2.log("weight: ", weight);
         console2.log("weightAfter: ", weightAfter);
-        console2.log("inflationRateBefore: ", inflationRateBefore);
-        console2.log("inflationRateAfter: ", inflationRateAfter);
         assert(weightAfter > weight);
         assert(
             votedUserSlopeAfter > votedUserSlope
@@ -180,8 +173,9 @@ contract GaugeControllerTest is TestWithConstants {
         // Pretend to be the RootGaugeFactory admin and kill the gauge
         vm.prank(IRootGaugeFactoryLike(rootGaugeFactory).owner());
         IRootGaugeLike(fraxGauge).set_killed(true);
+        IRootGaugeLike(fraxGauge).user_checkpoint(gaugeVoter);
         vm.warp(block.timestamp + 604800);
-        IGaugeControllerLike(gaugeController).checkpoint();
+        IRootGaugeLike(fraxGauge).user_checkpoint(gaugeVoter);
         uint256 weightAfter = IGaugeControllerLike(gaugeController)
             .gauge_relative_weight(fraxGauge);
         uint256 inflationRateAfter = IRootGaugeLike(fraxGauge)
@@ -202,7 +196,6 @@ contract GaugeControllerTest is TestWithConstants {
         // Pretend to be the gauge controller owner and add the new gauge
         vm.prank(IGaugeControllerLike(gaugeController).admin());
         IGaugeControllerLike(gaugeController).add_gauge(rootGaugefUSDCV2, 0, 0);
-
         // Prank as gauge user and vote for the new gauge
         vm.startPrank(gaugeVoter);
         // remove old votes for user
@@ -216,5 +209,60 @@ contract GaugeControllerTest is TestWithConstants {
             10000
         );
         vm.stopPrank();
+    }
+
+        function test_VoteForKilled() public {
+        // Pretend to be the RootGaugeFactory admin and kill the gauge
+        vm.prank(IRootGaugeFactoryLike(rootGaugeFactory).owner());
+        IRootGaugeLike(rootGaugefUSDC).set_killed(true);
+        uint256 weightAfterKill = IGaugeControllerLike(gaugeController)
+            .gauge_relative_weight(rootGaugefUSDC);
+        uint256 votedUserSlopeAfterKill = IGaugeControllerLike(gaugeController)
+            .vote_user_slopes(gaugeVoter, rootGaugefUSDC)
+            .slope;
+        uint256 inflationRateAfterKill = IRootGaugeLike(rootGaugefUSDC)
+            .inflation_params()
+            .rate;
+        // Prank as gauge user and vote for the killed gauge
+        vm.startPrank(gaugeVoter);
+        // remove old votes for user
+        IGaugeControllerLike(gaugeController).vote_for_gauge_weights(
+            fraxGauge,
+            0
+        );
+        // vote for new gauge
+        IGaugeControllerLike(gaugeController).vote_for_gauge_weights(
+            rootGaugefUSDC,
+            10000
+        );
+        vm.stopPrank();
+        IRootGaugeLike(rootGaugefUSDC).user_checkpoint(gaugeVoter);
+        uint256 weightAfterVote = IGaugeControllerLike(gaugeController)
+            .gauge_relative_weight(rootGaugefUSDC);
+        uint256 votedUserSlopeAfterVote = IGaugeControllerLike(gaugeController)
+            .vote_user_slopes(gaugeVoter, rootGaugefUSDC)
+            .slope;
+        uint256 inflationRateAfterVote = IRootGaugeLike(rootGaugefUSDC)
+            .inflation_params()
+            .rate;
+        vm.warp(block.timestamp + 604800);
+        IRootGaugeLike(rootGaugefUSDC).user_checkpoint(gaugeVoter);
+        uint256 weightAfterWeek = IGaugeControllerLike(gaugeController)
+            .gauge_relative_weight(rootGaugefUSDC);
+        uint256 votedUserSlopeAfterWeek = IGaugeControllerLike(gaugeController)
+            .vote_user_slopes(gaugeVoter, rootGaugefUSDC)
+            .slope;
+        uint256 inflationRateAfterWeek = IRootGaugeLike(rootGaugefUSDC)
+            .inflation_params()
+            .rate;
+        console2.log("weightAfterKill: ", weightAfterKill);
+        console2.log("weightAfterVote: ", weightAfterVote);
+        console2.log("weightAfterWeek: ", weightAfterWeek);
+        console2.log("votedUserSlopeAfterKill: ", votedUserSlopeAfterKill);
+        console2.log("votedUserSlopeAfterVote: ", votedUserSlopeAfterVote);
+        console2.log("votedUserSlopeAfterWeek: ", votedUserSlopeAfterWeek);
+        console2.log("inflationRateAfterKill: ", inflationRateAfterKill);
+        console2.log("inflationRateAfterVote: ", inflationRateAfterVote);
+        console2.log("inflationRateAfterWeek: ", inflationRateAfterWeek);
     }
 }
