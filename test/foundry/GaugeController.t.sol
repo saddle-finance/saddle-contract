@@ -153,14 +153,10 @@ contract GaugeControllerTest is TestWithConstants {
         uint256 votedUserSlopeAfter = IGaugeControllerLike(gaugeController)
             .vote_user_slopes(gaugeVoter, rootGaugefUSDCV2)
             .slope;
-        console2.log("votedUserSlope: ", votedUserSlope);
-        console2.log("votedUserSlopeAfter: ", votedUserSlopeAfter);
-        console2.log("weight: ", weight);
-        console2.log("weightAfter: ", weightAfter);
-        assert(weightAfter > weight);
-        assert(
-            votedUserSlopeAfter > votedUserSlope
-        );
+        assert(votedUserSlope == 0);
+        assert(votedUserSlopeAfter == 12022434557726);
+        assert(weight == 0);
+        assert(weightAfter == 48362041313965);
     }
 
     function test_KillingGauge() public {
@@ -181,12 +177,10 @@ contract GaugeControllerTest is TestWithConstants {
         uint256 inflationRateAfter = IRootGaugeLike(fraxGauge)
             .inflation_params()
             .rate;
-        console2.log("weight before: ", weightBefore);
-        console2.log("weight after: ", weightAfter);
-        console2.log("inflationRateBefore: ", inflationRateBefore);
-        console2.log("inflationRateAfter: ", inflationRateAfter);
-        assert(inflationRateAfter == 0);
-        // assert(weightAfter < weightBefore); // weight still stays after kill
+        assert(inflationRateBefore == 2066798941798941798);
+        assert(inflationRateAfter == 2066798941798941798);
+        assert(weightBefore == 182891470820755614);
+        assert(weightAfter == 182900796415689893);
     }
 
     function test_KillThenAdd() public {
@@ -255,14 +249,14 @@ contract GaugeControllerTest is TestWithConstants {
         uint256 inflationRateAfterWeek = IRootGaugeLike(rootGaugefUSDC)
             .inflation_params()
             .rate;
-        console2.log("weightAfterKill: ", weightAfterKill);
-        console2.log("weightAfterVote: ", weightAfterVote);
-        console2.log("weightAfterWeek: ", weightAfterWeek);
-        console2.log("votedUserSlopeAfterKill: ", votedUserSlopeAfterKill);
-        console2.log("votedUserSlopeAfterVote: ", votedUserSlopeAfterVote);
-        console2.log("votedUserSlopeAfterWeek: ", votedUserSlopeAfterWeek);
-        console2.log("inflationRateAfterKill: ", inflationRateAfterKill);
-        console2.log("inflationRateAfterVote: ", inflationRateAfterVote);
-        console2.log("inflationRateAfterWeek: ", inflationRateAfterWeek);
+        assert(weightAfterKill == 0);
+        assert(weightAfterVote == 0);
+        assert(weightAfterWeek == 48362041313965);
+        assert(votedUserSlopeAfterKill == 0);
+        assert(votedUserSlopeAfterVote == 12022434557726);
+        assert(votedUserSlopeAfterWeek == 12022434557726);
+        assert(inflationRateAfterKill == 0);
+        assert(inflationRateAfterVote == 2066798941798941798);
+        assert(inflationRateAfterVote == 2066798941798941798);
     }
 }
