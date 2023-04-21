@@ -47,6 +47,7 @@ describe("ChildGauge", () => {
   let childOracle: ChildOracle
   let dummyToken: GenericERC20
   let dummyRewardToken: GenericERC20
+  let dummyRewardToken2: GenericERC20
   let childGauge: ChildGauge
 
   const GAUGE_NAME = "Dummy Token X-chain Gauge"
@@ -121,6 +122,12 @@ describe("ChildGauge", () => {
           f.deploy("Dummy Reward Token", "DUMMYR", 18),
         )) as GenericERC20
       await dummyRewardToken.mint(users[0], BIG_NUMBER_1E18.mul(100_000))
+
+      dummyRewardToken2 = (await ethers
+        .getContractFactory("GenericERC20")
+        .then((f) =>
+          f.deploy("Dummy Reward Token", "DUMMYR", 18),
+        )) as GenericERC20
 
       // **** Deploy a child gauge from the child gauge factory ****
       // Impersonate AnyCallTranslator calling ChildGaugeFactory
@@ -332,6 +339,25 @@ describe("ChildGauge", () => {
 
     describe("claim_rewards", () => {
       it("Successfully claims rewards", async () => {
+        await childGauge
+          .connect(signers[1])
+          ["deposit(uint256)"](BIG_NUMBER_1E18.mul(100))
+        await increaseTimestamp(DAY)
+
+        // 100 tokens distributed over 1 week, 1 day passed
+        // 100 * 1e18 / 7
+        await expect(
+          childGauge.connect(signers[1])["claim_rewards()"](),
+        ).to.changeTokenBalance(
+          dummyRewardToken,
+          users[1],
+          "14285879629629599900",
+        )
+      })
+      it("Successfully claims rewards with an additional 0 rate reward token", async () => {
+        // testing if a non-ERC20 contract is set as a reward token
+        await childGauge.add_reward(users[1], users[1])
+
         await childGauge
           .connect(signers[1])
           ["deposit(uint256)"](BIG_NUMBER_1E18.mul(100))
