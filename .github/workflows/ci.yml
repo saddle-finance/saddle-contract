@@ -20,8 +20,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: ".nvmrc"
-      - name: Yarn install with node_modules linker
-        uses: ./.github/actions/yarn-nm-install
+          cache: "yarn"
+      - run: yarn install --immutable
       - run: yarn lint
 
   test:
@@ -31,8 +31,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: ".nvmrc"
-      - name: Yarn install with node_modules linker
-        uses: ./.github/actions/yarn-nm-install
+          cache: "yarn"
+      - run: yarn install --immutable
       - run: yarn test
 
   # Only run coverage when pushing to master or pull requesting to master
@@ -44,8 +44,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: ".nvmrc"
-      - name: Yarn install with node_modules linker
-        uses: ./.github/actions/yarn-nm-install
+          cache: "yarn"
+      - run: yarn install --immutable
       - env:
           NODE_OPTIONS: "--max_old_space_size=4096"
         run: npm run coverage
