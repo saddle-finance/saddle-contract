@@ -8,6 +8,7 @@
   "directories": {
     "test": "test"
   },
+  "packageManager": "yarn@3.5.0",
   "dependencies": {
     "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f2",
     "@boringcrypto/boring-solidity-e06e943": "boringcrypto/BoringSolidity#e06e943",
@@ -53,6 +54,7 @@
     "husky": "^8.0.3",
     "lint-staged": "^13.2.1",
     "node-fetch": "^2.6.7",
+    "pinst": "^3.0.0",
     "prettier": "^2.8.1",
     "prettier-plugin-solidity": "^1.0.0-beta.11",
     "shelljs": "^0.8.4",
@@ -80,11 +82,13 @@
     "deploy": "hardhat deploy",
     "start": "hardhat node",
     "fork": "hardhat node --fork $npm_config_network",
-    "prepare": "npm run build && husky install",
-    "addresses": "node scripts/print-addresses.js"
+    "addresses": "node scripts/print-addresses.js",
+    "postinstall": "husky install",
+    "prepack": "pinst --disable",
+    "postpack": "pinst --enable"
   },
   "lint-staged": {
-    "*.{ts,json}": [
+    "*.{ts,json,yml}": [
       "eslint --fix",
       "prettier --write"
     ],
