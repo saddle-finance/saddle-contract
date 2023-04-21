@@ -32,14 +32,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@boringcrypto/boring-solidity-e06e943@boringcrypto/BoringSolidity#e06e943":
+"@boringcrypto/boring-solidity-e06e943@boringcrypto/BoringSolidity#e06e943e7e8a168ed0395ef663a17fd71a6949a2":
   version: 1.0.4
   resolution: "@boringcrypto/boring-solidity-e06e943@https://github.com/boringcrypto/BoringSolidity.git#commit=e06e943e7e8a168ed0395ef663a17fd71a6949a2"
   checksum: f8e1814159f6db2091f1ec923f504eb3bf394e8a003552336f6831ee5d1ec544437b2677577532470f1ee34495dc53ed4440f6ab2a07e84653ede272812d518a
   languageName: node
   linkType: hard
 
-"@boringcrypto/boring-solidity@boringcrypto/BoringSolidity#f05de5f2":
+"@boringcrypto/boring-solidity@boringcrypto/BoringSolidity#f05de5f250056730c3fd3e5a5d1e572c2d113023":
   version: 1.2.3
   resolution: "@boringcrypto/boring-solidity@https://github.com/boringcrypto/BoringSolidity.git#commit=f05de5f250056730c3fd3e5a5d1e572c2d113023"
   checksum: 8c2064101b4c11fae30742d321c52e0ba6f42f8769b8631e2fd69545bc2aed839dcb0569a2a7320a7086b025554edbea4bc652a9a29bc7cd59158ca25909d3a5
@@ -2043,9 +2043,11 @@ __metadata:
   linkType: hard
 
 "antlr4ts@npm:^0.5.0-alpha.4":
-  version: 0.5.0-alpha.4
-  resolution: "antlr4ts@npm:0.5.0-alpha.4"
-  checksum: 37948499d59477f5b5a8ea71dfb8b5330e71d5a7cee60f57351dd744219b8619fa6aac1a5b6ec1a9991846e8ddc9ca47680eb166c59b44333369b3115e7aa358
+  version: 0.5.0-dev
+  resolution: "antlr4ts@npm:0.5.0-dev"
+  dependencies:
+    source-map-support: ^0.5.16
+  checksum: 640dae2229124372b0329315e9614ae983bb80b1af237d8c0b3e90a2d85fb534e851c51d65d1897c92b36d27851d041ad8d95aab44af19cf7355b3ad11a3ddbf
   languageName: node
   linkType: hard
 
@@ -6110,7 +6112,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-core-module@npm:^2.11.0":
+"is-core-module@npm:^2.12.0":
   version: 2.12.0
   resolution: "is-core-module@npm:2.12.0"
   dependencies:
@@ -8893,15 +8895,15 @@ __metadata:
   linkType: hard
 
 "resolve@npm:^1.1.6, resolve@npm:^1.8.1":
-  version: 1.22.2
-  resolution: "resolve@npm:1.22.2"
+  version: 1.22.3
+  resolution: "resolve@npm:1.22.3"
   dependencies:
-    is-core-module: ^2.11.0
+    is-core-module: ^2.12.0
     path-parse: ^1.0.7
     supports-preserve-symlinks-flag: ^1.0.0
   bin:
     resolve: bin/resolve
-  checksum: 7e5df75796ebd429445d102d5824482ee7e567f0070b2b45897b29bb4f613dcbc262e0257b8aeedb3089330ccaea0d6a0464df1a77b2992cf331dcda0f4cb549
+  checksum: fb834b81348428cb545ff1b828a72ea28feb5a97c026a1cf40aa1008352c72811ff4d4e71f2035273dc536dcfcae20c13604ba6283c612d70fa0b6e44519c374
   languageName: node
   linkType: hard
 
@@ -8922,15 +8924,15 @@ __metadata:
   linkType: hard
 
 "resolve@patch:resolve@^1.1.6#~builtin<compat/resolve>, resolve@patch:resolve@^1.8.1#~builtin<compat/resolve>":
-  version: 1.22.2
-  resolution: "resolve@patch:resolve@npm%3A1.22.2#~builtin<compat/resolve>::version=1.22.2&hash=c3c19d"
+  version: 1.22.3
+  resolution: "resolve@patch:resolve@npm%3A1.22.3#~builtin<compat/resolve>::version=1.22.3&hash=c3c19d"
   dependencies:
-    is-core-module: ^2.11.0
+    is-core-module: ^2.12.0
     path-parse: ^1.0.7
     supports-preserve-symlinks-flag: ^1.0.0
   bin:
     resolve: bin/resolve
-  checksum: 66cc788f13b8398de18eb4abb3aed90435c84bb8935953feafcf7231ba4cd191b2c10b4a87b1e9681afc34fb138c705f91f7330ff90bfa36f457e5584076a2b8
+  checksum: ad59734723b596d0891321c951592ed9015a77ce84907f89c9d9307dd0c06e11a67906a3e628c4cae143d3e44898603478af0ddeb2bba3f229a9373efe342665
   languageName: node
   linkType: hard
 
@@ -9079,8 +9081,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "saddle-contract@workspace:."
   dependencies:
-    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f2"
-    "@boringcrypto/boring-solidity-e06e943": "boringcrypto/BoringSolidity#e06e943"
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f250056730c3fd3e5a5d1e572c2d113023"
+    "@boringcrypto/boring-solidity-e06e943": "boringcrypto/BoringSolidity#e06e943e7e8a168ed0395ef663a17fd71a6949a2"
     "@ethersproject/abi": ^5.7.0
     "@ethersproject/providers": ^5.7.2
     "@nomicfoundation/hardhat-chai-matchers": ^1.0.4
@@ -9720,7 +9722,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"source-map-support@npm:^0.5.13":
+"source-map-support@npm:^0.5.13, source-map-support@npm:^0.5.16":
   version: 0.5.21
   resolution: "source-map-support@npm:0.5.21"
   dependencies:
@@ -10800,9 +10802,9 @@ __metadata:
   linkType: hard
 
 "vscode-languageserver-textdocument@npm:^1.0.3":
-  version: 1.0.8
-  resolution: "vscode-languageserver-textdocument@npm:1.0.8"
-  checksum: d6b685456ceca2736793d7fc1924d78a8483997c96c6ec4900d90e64115730da6c0c03e3fbc2c5d031a4592f2acd9cca2ca58a651b696c4f40b8690a48538c06
+  version: 1.0.10
+  resolution: "vscode-languageserver-textdocument@npm:1.0.10"
+  checksum: 605ff0662535088567a145b48d28f0c41844d28269fa0b3fca3a1e179dd14baf7181150b274bf3840ef2a043ed8474a9227aaf169a6fae574516349a1b371a18
   languageName: node
   linkType: hard
 
@@ -11302,10 +11304,10 @@ __metadata:
   linkType: hard
 
 "zksync-web3@npm:^0.14.3":
-  version: 0.14.3
-  resolution: "zksync-web3@npm:0.14.3"
+  version: 0.14.4
+  resolution: "zksync-web3@npm:0.14.4"
   peerDependencies:
     ethers: ^5.7.0
-  checksum: e89760c13e01ec43433e1e38a473138948c6a8d3a825c0f0aa6328eb7d28c63037a5ee4c922c1fd7d9580d2bf2cbbf2c7911f5e4d872f856dc591850a7e6f260
+  checksum: f702a3437f48a8d42c4bb35b8dd13671a168aadfc4e23ce723d62959220ccb6bf9c529c60331fe5b91afaa622147c6a37490551474fe3e35c06ac476524b5160
   languageName: node
   linkType: hard

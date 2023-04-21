@@ -10,8 +10,8 @@
   },
   "packageManager": "yarn@3.5.0",
   "dependencies": {
-    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f2",
-    "@boringcrypto/boring-solidity-e06e943": "boringcrypto/BoringSolidity#e06e943",
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f250056730c3fd3e5a5d1e572c2d113023",
+    "@boringcrypto/boring-solidity-e06e943": "boringcrypto/BoringSolidity#e06e943e7e8a168ed0395ef663a17fd71a6949a2",
     "@openzeppelin/contracts": "3.4.1",
     "@openzeppelin/contracts-4.2.0": "npm:@openzeppelin/contracts@4.2.0",
     "@openzeppelin/contracts-4.4.0": "npm:@openzeppelin/contracts@4.4.0",
