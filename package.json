@@ -86,13 +86,11 @@
   "lint-staged": {
     "*.{ts,json}": [
       "eslint --fix",
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ],
     "*.sol": [
       "prettier --write",
-      "solhint --fix",
-      "git add"
+      "solhint --fix"
     ]
   },
   "config": {
