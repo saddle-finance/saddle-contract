@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
   pull_request:
-    branches: [ master ]
 
 jobs:
   lint:
@@ -13,21 +13,15 @@ jobs:
       ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
       MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '16'
-    # fix for forcing git to use https when pulling deps
-    - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
-    - run: npm ci --legacy-peer-deps
-    - run: npm run build --if-present
-    - run: npm run lint
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-verion-file: ".nvmrc"
+          cache: npm
+      # fix for forcing git to use https when pulling deps
+      - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
+      - run: npm ci --legacy-peer-deps # runs prepare script which runs build
+      - run: npm run lint
 
   test:
     runs-on: ubuntu-latest
@@ -35,48 +29,38 @@ jobs:
       ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
       MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '16'
-    # fix for forcing git to use https when pulling deps
-    - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
-    - run: npm ci --legacy-peer-deps
-    - run: npm run build --if-present
-    - run: npm test
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-verion-file: ".nvmrc"
+          cache: npm
+      # fix for forcing git to use https when pulling deps
+      - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
+      - run: npm ci --legacy-peer-deps
+      - run: npm test
 
   coverage:
+    # Only run coverage if the PR is targeting master or if it's a push to master
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event.pull_request.base.ref == 'master'
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
       MNEMONIC_TEST_ACCOUNT: ${{ secrets.MNEMONIC_TEST_ACCOUNT }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '16'
-    # fix for forcing git to use https when pulling deps
-    - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
-    - run: npm ci --legacy-peer-deps
-    - run: npm run build --if-present
-    - env:
-        NODE_OPTIONS: "--max_old_space_size=4096"
-      run: npm run coverage
-    - uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-verion-file: ".nvmrc"
+          cache: npm
+      # fix for forcing git to use https when pulling deps
+      - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
+      - run: npm ci --legacy-peer-deps
+      - env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+        run: npm run coverage
+      - uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # slither:
   #   runs-on: ubuntu-latest
