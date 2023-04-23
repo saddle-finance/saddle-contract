@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-verion-file: ".nvmrc"
+          node-version-file: ".nvmrc"
           cache: npm
       # fix for forcing git to use https when pulling deps
       - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-verion-file: ".nvmrc"
+          node-version-file: ".nvmrc"
           cache: npm
       # fix for forcing git to use https when pulling deps
       - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-verion-file: ".nvmrc"
+          node-version-file: ".nvmrc"
           cache: npm
       # fix for forcing git to use https when pulling deps
       - run: 'git config --global --replace-all url."https://github.com/".insteadOf ssh://git@github.com/'
