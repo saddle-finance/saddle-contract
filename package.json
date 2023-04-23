@@ -50,6 +50,8 @@
     "hardhat-deploy": "^0.11.22",
     "hardhat-gas-reporter": "^1.0.9",
     "hardhat-spdx-license-identifier": "^2.0.3",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.1",
     "node-fetch": "^2.6.7",
     "prettier": "^2.8.1",
     "prettier-plugin-solidity": "^1.0.0-beta.11",
@@ -62,6 +64,16 @@
     "ts-node": "^10.9.1",
     "typechain": "^8.1.1",
     "typescript": "^4.6.3"
+  },
+  "lint-staged": {
+    "*.{ts,json,yml}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.sol": [
+      "prettier --write",
+      "solhint --fix"
+    ]
   },
   "scripts": {
     "lint": "npm run lint:ts && npm run lint:sol && npm run lint:json",
@@ -78,7 +90,7 @@
     "deploy": "hardhat deploy",
     "start": "hardhat node",
     "fork": "hardhat node --fork $npm_config_network",
-    "prepare": "npm run build",
+    "prepare": "npm run build; husky install",
     "addresses": "node scripts/print-addresses.js"
   },
   "config": {
