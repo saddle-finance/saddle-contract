@@ -11,7 +11,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { get, execute, deploy, log, save, read, rawTx } = deployments
   const { deployer, crossChainDeployer } = await getNamedAccounts()
 
-  expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(11)
+  expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(
+    11,
+  )
 
   // Re-deploy ChildGauge to sync with mainnet RootGaugeV2 address
   const cg = await deploy("ChildGaugeUpdated", {
@@ -25,6 +27,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     skipIfAlreadyDeployed: false,
   })
   expect(await read("ChildGauge", "factory")).not.eq(ZERO_ADDRESS)
+
+  // Update implementation address
+  await execute(
+    "ChildGaugeFactory",
+    { log: true, from: deployer },
+    "set_implementation",
+    cg.address,
+  )
 }
 export default func
 // func.skip = async () => true
