@@ -120,9 +120,9 @@ def user_checkpoint(_user: address) -> bool:
         # checkpoint the gauge filling in any missing weight data
         GaugeController(GAUGE_CONTROLLER).checkpoint_gauge(self)
 
-        rate: uint256 = Minter(MINTER).rate()
-        if self.is_killed == True:
-            rate = 0
+        rate:uint256 = 0
+        if self.is_killed == False:   
+            rate = Minter(MINTER).rate()
         self.inflation_params.rate = rate
         params: InflationParams = self.inflation_params
         emissions: uint256 = 0
@@ -139,11 +139,13 @@ def user_checkpoint(_user: address) -> bool:
                 # calculate with old rate
                 emissions += weight * params.rate * (params.finish_time - period_time) / 10 ** 18
                 # update rate
-                params.rate = Minter(MINTER).committed_rate()
-                if (params.rate == MAX_UINT256):
-                    params.rate = rate
                 if self.is_killed == True:
                     params.rate = 0
+                else:
+                    params.rate = Minter(MINTER).committed_rate()
+                
+                if (params.rate == MAX_UINT256):
+                    params.rate = rate
                 # calculate with new rate
                 emissions += weight * params.rate * (period_time + WEEK - params.finish_time) / 10 ** 18
                 # update finish time
