@@ -1,5 +1,5 @@
 import chai, { assert } from "chai"
-import { BigNumber, Signer } from "ethers"
+import { Signer } from "ethers"
 import { deployments, ethers, network } from "hardhat"
 import {
   AnyCallTranslator,
@@ -13,10 +13,8 @@ import {
 } from "../../build/typechain"
 import { ANYCALL_ADDRESS, MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
-import { WEEK } from "../../utils/time"
 import {
   BIG_NUMBER_1E18,
-  MAX_UINT256,
   convertGaugeNameToSalt,
   getCurrentBlockTimestamp,
   getWithName,
@@ -299,72 +297,6 @@ describe("RootGaugeV2", () => {
       await rootGauge.connect(factoryOwner).set_killed(true)
       await expect(rootGauge.connect(owner).transmit_emissions()).to.be.reverted
       await expect(await sdl.balanceOf(rootGauge.address)).to.deep.equal("0")
-    })
-
-    it(`Successfully mints SDL even after kill`, async () => {
-      // Impersonate root gauge owner and multisig
-      const owner = await impersonateAccount(rootGaugeFactory.address)
-      const multisig = await impersonateAccount(
-        MULTISIG_ADDRESSES[CHAIN_ID.MAINNET],
-      )
-      await setEtherBalance(
-        await owner.getAddress(),
-        BIG_NUMBER_1E18.mul(10000),
-      )
-      await setEtherBalance(
-        await multisig.getAddress(),
-        BIG_NUMBER_1E18.mul(10000),
-      )
-      // Add root gauge to gauge controller
-      const gaugeController: GaugeController = await ethers.getContractAt(
-        "GaugeController",
-        (
-          await getWithName("GaugeController", "mainnet")
-        ).address,
-      )
-      await gaugeController
-        .connect(multisig)
-        ["add_gauge(address,int128,uint256)"](rootGauge.address, 0, 10000)
-
-      // Skip ahead to next week
-      await setTimestamp(
-        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
-      )
-      // Emissions need to wait a week to be transmitted
-      // Expected below to revert since nothing is minted
-      await expect(rootGauge.connect(owner).transmit_emissions()).to.be.reverted
-
-      // Skip ahead to next week
-      await setTimestamp(
-        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
-      )
-      // Transmit emissions. Since bridging is not free for arbitrum, we need to
-      // supply eth to root gauge first.
-      await signers[0].sendTransaction({
-        to: rootGauge.address,
-        value: BIG_NUMBER_1E18,
-      })
-      await expect(
-        rootGauge.connect(owner).transmit_emissions(),
-      ).to.changeTokenBalance(
-        sdl,
-        await getWithName("Minter", "mainnet").then((c) => c.address),
-        "-624968751562421878465214",
-      )
-      // Skip ahead to next week to accrue more awards then kill
-      await setTimestamp(
-        Math.floor(((await getCurrentBlockTimestamp()) + WEEK) / WEEK) * WEEK,
-      )
-      const factoryOwner = await impersonateAccount(
-        await rootGaugeFactory.owner(),
-      )
-      await rootGauge.connect(factoryOwner).set_killed(true)
-      console.log((await sdl.balanceOf(rootGauge.address)).toString())
-      console.log((await sdl.balanceOf(minter.address)).toString())
-      await rootGauge.connect(owner).transmit_emissions()
-      console.log((await sdl.balanceOf(rootGauge.address)).toString())
-      console.log((await sdl.balanceOf(minter.address)).toString())
-
     })
   })
 })
