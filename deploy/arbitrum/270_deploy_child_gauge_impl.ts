@@ -4,25 +4,27 @@ import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { ZERO_ADDRESS, impersonateAccount } from "../../test/testUtils"
 
 /*
- * Deploy the RootGaugeV2 contract
+ * Deploy the ChildGauge contract on nonce 7 from cross chain deployer account
  */
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers } = hre
-  const { get, deploy, read, execute } = deployments
+  const { get, execute, deploy, log, save, read, rawTx } = deployments
   const { deployer, crossChainDeployer } = await getNamedAccounts()
-  
+
   expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(11)
-  const rootGaugeV2 = await deploy("RootGaugeV2", {
+
+  // Re-deploy ChildGauge to sync with mainnet RootGaugeV2 address
+  const cg = await deploy("ChildGaugeUpdated", {
+    contract: "ChildGauge",
     log: true,
     from: crossChainDeployer,
-    skipIfAlreadyDeployed: true,
     args: [
       (await get("SDL")).address,
-      (await get("GaugeController")).address,
-      (await get("Minter")).address,
+      (await get("ChildGaugeFactory")).address,
     ],
+    skipIfAlreadyDeployed: false,
   })
-  expect(await read("RootGaugeV2", "factory")).not.eq(ZERO_ADDRESS)
+  expect(await read("ChildGauge", "factory")).not.eq(ZERO_ADDRESS)
 }
 export default func
 // func.skip = async () => true

@@ -963,6 +963,38 @@ export async function deployCrossChainSystemOnSideChain(
   await execute("AnyCallTranslator", executeOptions, "addKnownCallers", [
     cgf.address,
   ])
+
+  // 8-11 Need to be skipped
+  const skippedNonce = await ethers.provider.getTransactionCount(
+    crossChainDeployer,
+  )
+  // If the current nonce is at 8, send an empty tx to bump it untill it reaches 11
+  if (skippedNonce == 8) {
+    for (let i = 0; i < 4; i++) {
+      const tx = await rawTx({
+        ...xChainFactoryDeployOptions,
+        to: crossChainDeployer,
+        value: "0",
+      })
+      log(
+        `Spending nonce ${skippedNonce + i} from cross chain deployer: ${tx.transactionHash}: performed with ${tx.gasUsed} gas`,
+      )
+    }
+  }
+  expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(11)
+
+  // Deploy updated implementation for RootGaugeV2
+  const rootGaugeV2 = await deploy("RootGaugeV2", {
+    log: true,
+    from: crossChainDeployer,
+    skipIfAlreadyDeployed: true,
+    args: [
+      (await get("SDL")).address,
+      (await get("GaugeController")).address,
+      (await get("Minter")).address,
+    ],
+  })
+
 }
 
 /**
