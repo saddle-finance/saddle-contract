@@ -1,7 +1,7 @@
 import { expect } from "chai"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
-import { ZERO_ADDRESS, impersonateAccount } from "../../test/testUtils"
+import { ZERO_ADDRESS } from "../../test/testUtils"
 
 /*
  * Deploy the ChildGauge contract on nonce 7 from cross chain deployer account

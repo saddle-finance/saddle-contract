@@ -977,11 +977,15 @@ export async function deployCrossChainSystemOnSideChain(
         value: "0",
       })
       log(
-        `Spending nonce ${skippedNonce + i} from cross chain deployer: ${tx.transactionHash}: performed with ${tx.gasUsed} gas`,
+        `Spending nonce ${skippedNonce + i} from cross chain deployer: ${
+          tx.transactionHash
+        }: performed with ${tx.gasUsed} gas`,
       )
     }
   }
-  expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(11)
+  expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(
+    11,
+  )
 
   // Deploy updated implementation for RootGaugeV2
   const rootGaugeV2 = await deploy("RootGaugeV2", {
@@ -994,7 +998,6 @@ export async function deployCrossChainSystemOnSideChain(
       (await get("Minter")).address,
     ],
   })
-
 }
 
 /**
