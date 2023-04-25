@@ -907,29 +907,37 @@ export async function deployCrossChainSystemOnSideChain(
     args: [anyCallTranslatorProxy.address],
   })
 
-  // 6: Place holder
+  // 6-10 Need to be skipped
   const currentNonce = await ethers.provider.getTransactionCount(
     crossChainDeployer,
   )
-  // If the current nonce is at 6, send an empty tx to bump it to 7
+  // If the current nonce is at 8, send an empty tx to bump it untill it reaches 11
   if (currentNonce == 6) {
-    const tx = await rawTx({
-      ...xChainFactoryDeployOptions,
-      to: crossChainDeployer,
-      value: "0",
-    })
-    log(
-      `Spending nonce 6 from cross chain deployer: ${tx.transactionHash}: performed with ${tx.gasUsed} gas`,
-    )
+    for (let i = 0; i < 6; i++) {
+      const tx = await rawTx({
+        ...xChainFactoryDeployOptions,
+        to: crossChainDeployer,
+        value: "0",
+      })
+      log(
+        `Spending nonce ${currentNonce + i} from cross chain deployer: ${
+          tx.transactionHash
+        }: performed with ${tx.gasUsed} gas`,
+      )
+    }
   }
-  expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(7)
+  expect(await ethers.provider.getTransactionCount(crossChainDeployer)).to.eq(
+    11,
+  )
 
-  // 7: Deploy ChildGauge
-  const cg = await deploy("ChildGauge", {
+  // Deploy updated implementation for ChildGaugeV2
+
+  const cg = await deploy("ChildGaugeV2", {
+    contract: "ChildGauge",
     ...xChainFactoryDeployOptions,
     args: [(await get("SDL")).address, cgf.address],
   })
-  expect(await read("ChildGauge", "factory")).not.eq(ZERO_ADDRESS)
+  expect(await read("ChildGaugeV2", "factory")).not.eq(ZERO_ADDRESS)
 
   // Set up storage variables in child gauge factory from deployer account
   await execute(

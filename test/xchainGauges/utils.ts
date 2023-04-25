@@ -92,6 +92,52 @@ export async function setupRootGaugeFactory(
   return rootGaugeFactory
 }
 
+export async function setupRootGaugeFactoryV2(
+  anyCallTranslatorAddress: string,
+  ownerAddress: string,
+  deployMockBridger = true,
+  sdlAddress?: string,
+  gaugeControllerAddress?: string,
+  minterAddress?: string,
+): Promise<RootGaugeFactory> {
+  sdlAddress = sdlAddress
+    ? sdlAddress
+    : (await ethers.getContract("SDL")).address
+  gaugeControllerAddress = gaugeControllerAddress
+    ? gaugeControllerAddress
+    : (await ethers.getContract("GaugeController")).address
+  minterAddress = minterAddress
+    ? minterAddress
+    : (await ethers.getContract("Minter")).address
+
+  const rootGaugeFactoryFactory = await ethers.getContractFactory(
+    "RootGaugeFactory",
+  )
+  const rootGaugeFactory = (await rootGaugeFactoryFactory.deploy(
+    anyCallTranslatorAddress,
+    ownerAddress,
+  )) as RootGaugeFactory
+
+  if (deployMockBridger) {
+    const mockBridgerFactory = await ethers.getContractFactory("MockBridger")
+    const mockBridger = await mockBridgerFactory.deploy()
+    // Set Bridger to mock bridger
+    await rootGaugeFactory.set_bridger(TEST_SIDE_CHAIN_ID, mockBridger.address)
+  }
+  // Root Gauge Implementation
+  const gaugeImplementationFactory = await ethers.getContractFactory(
+    "RootGaugeV2",
+  )
+  const rootGauge = await gaugeImplementationFactory.deploy(
+    sdlAddress,
+    gaugeControllerAddress,
+    minterAddress,
+  )
+  await rootGaugeFactory.set_implementation(rootGauge.address)
+
+  return rootGaugeFactory
+}
+
 export async function setupAnyCallTranslatorForkedMainnet(
   ownerAddress: string,
   anyCallAddress: string,
