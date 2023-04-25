@@ -147,3 +147,4 @@ function formatReceiveCalldata(
 }
 
 export default func
+func.skip = async () => true
