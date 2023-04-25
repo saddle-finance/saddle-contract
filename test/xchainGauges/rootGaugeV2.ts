@@ -1,17 +1,13 @@
 import chai, { assert } from "chai"
-import { Signer } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import { deployments, ethers, network } from "hardhat"
 import {
-  AnyCallTranslator,
-  ArbitrumBridger,
   GaugeController,
   RootGaugeV2,
   RootGaugeFactory,
   SDL,
-  VotingEscrow,
-  Minter,
 } from "../../build/typechain"
-import { ANYCALL_ADDRESS, MULTISIG_ADDRESSES } from "../../utils/accounts"
+import { MULTISIG_ADDRESSES } from "../../utils/accounts"
 import { ALCHEMY_BASE_URL, CHAIN_ID } from "../../utils/network"
 import {
   BIG_NUMBER_1E18,
@@ -22,24 +18,18 @@ import {
   setEtherBalance,
   setTimestamp,
 } from "../testUtils"
-import { setupAnyCallTranslator, setupRootGaugeFactoryV2 } from "./utils"
 
 const { expect } = chai
 
 describe("RootGaugeV2", () => {
   let signers: Array<Signer>
   let users: string[]
-  let arbitrumBridger: ArbitrumBridger
-  let vesdl: VotingEscrow
+  let arbitrumBridger: string
   let sdl: SDL
   let rootGaugeFactory: RootGaugeFactory
-  let anyCallTranslator: AnyCallTranslator
   let rootGauge: RootGaugeV2
-  let gaugeController: GaugeController
-  let minter: Minter
+  let msSigner: Signer
 
-  const GAS_LIMIT = 1000000
-  const GAS_PRICE = 990000000
   const TEST_GAUGE_NAME = "testGauge"
   const DAY = 86400
   const WEEK = DAY * 7
@@ -54,7 +44,7 @@ describe("RootGaugeV2", () => {
               jsonRpcUrl:
                 ALCHEMY_BASE_URL[CHAIN_ID.MAINNET] +
                 process.env.ALCHEMY_API_KEY,
-              blockNumber: 15542718,
+              blockNumber: 17119246,
             },
           },
         ],
@@ -66,49 +56,50 @@ describe("RootGaugeV2", () => {
       )
 
       // Get mainnet addresses
-
       const sdlAddress = (await getWithName("SDL", "mainnet")).address
-      const veSDLAddress = (await getWithName("VotingEscrow", "mainnet"))
-        .address
+      sdl = await ethers.getContractAt("SDL", sdlAddress)
       const gaugeControllerAddress = (
         await getWithName("GaugeController", "mainnet")
       ).address
-      gaugeController = await ethers.getContractAt(
-        "GaugeController",
-        gaugeControllerAddress,
-      )
-
       const minterAddress = (await getWithName("Minter", "mainnet")).address
-      sdl = await ethers.getContractAt("SDL", sdlAddress)
-      vesdl = await ethers.getContractAt("VotingEscrow", veSDLAddress)
-      minter = await ethers.getContractAt("Minter", minterAddress)
-
-      const contracts = await setupAnyCallTranslator(users[0], ANYCALL_ADDRESS)
-      anyCallTranslator = contracts.anyCallTranslator
 
       // **** Setup rootGauge Factory ****
-      rootGaugeFactory = await setupRootGaugeFactoryV2(
-        anyCallTranslator.address,
-        users[0],
-        false,
+      rootGaugeFactory = await ethers.getContractAt(
+        "RootGaugeFactory",
+        (
+          await getWithName("RootGaugeFactory", "mainnet")
+        ).address,
+      )
+      arbitrumBridger = await rootGaugeFactory.get_bridger(
+        CHAIN_ID.ARBITRUM_MAINNET,
+      )
+
+      // Deploy RootGaugeV2 implementation
+      // Root Gauge Implementation
+      const gaugeImplementationFactory = await ethers.getContractFactory(
+        "RootGaugeV2",
+      )
+      const rootGaugeV2 = await gaugeImplementationFactory.deploy(
         sdlAddress,
         gaugeControllerAddress,
         minterAddress,
       )
-      await anyCallTranslator.addKnownCallers([rootGaugeFactory.address])
 
-      // Deploy and set ArbitrumBridger for forked mainnet testing
-      const bridgerFactory = await ethers.getContractFactory("ArbitrumBridger")
-      arbitrumBridger = (await bridgerFactory.deploy(
-        GAS_LIMIT,
-        GAS_PRICE,
-        sdl.address,
-      )) as ArbitrumBridger
-      await rootGaugeFactory.set_bridger(
-        CHAIN_ID.ARBITRUM_MAINNET,
-        arbitrumBridger.address,
+      // set new V2 implementation
+      msSigner = await impersonateAccount(MULTISIG_ADDRESSES[CHAIN_ID.MAINNET])
+      // Give multisig eth
+      await setEtherBalance(
+        await msSigner.getAddress(),
+        ethers.utils.parseEther("10000"),
       )
+      await rootGaugeFactory
+        .connect(msSigner)
+        .set_implementation(rootGaugeV2.address)
 
+      // Deploy test gauge
+      const rootGaugeFactoryGaugeIndex = await rootGaugeFactory.get_gauge_count(
+        CHAIN_ID.ARBITRUM_MAINNET,
+      )
       await rootGaugeFactory.deploy_gauge(
         CHAIN_ID.ARBITRUM_MAINNET,
         convertGaugeNameToSalt(TEST_GAUGE_NAME),
@@ -117,7 +108,10 @@ describe("RootGaugeV2", () => {
 
       rootGauge = await ethers.getContractAt(
         "RootGaugeV2",
-        await rootGaugeFactory.get_gauge(CHAIN_ID.ARBITRUM_MAINNET, 0),
+        await rootGaugeFactory.get_gauge(
+          CHAIN_ID.ARBITRUM_MAINNET,
+          rootGaugeFactoryGaugeIndex,
+        ),
       )
     },
   )
@@ -137,7 +131,7 @@ describe("RootGaugeV2", () => {
     it(`Can't initialize twice`, async () => {
       await expect(
         rootGauge.initialize(
-          arbitrumBridger.address,
+          arbitrumBridger,
           CHAIN_ID.ARBITRUM_MAINNET,
           TEST_GAUGE_NAME,
         ),
@@ -145,7 +139,7 @@ describe("RootGaugeV2", () => {
     })
 
     it(`Successfully sets storage variables`, async () => {
-      expect(await rootGauge.bridger()).to.equal(arbitrumBridger.address)
+      expect(await rootGauge.bridger()).to.equal(arbitrumBridger)
       expect(await rootGauge.chain_id()).to.equal(CHAIN_ID.ARBITRUM_MAINNET)
       expect(await rootGauge.name()).to.equal(
         "Saddle " + TEST_GAUGE_NAME + " Root Gauge",
@@ -153,12 +147,12 @@ describe("RootGaugeV2", () => {
       expect(await rootGauge.factory()).to.equal(rootGaugeFactory.address)
       const inflationParams = await rootGauge.inflation_params()
       expect(inflationParams.rate).to.equal("2066798941798941798")
-      expect(inflationParams.finish_time).to.equal("1664226306")
-      expect(await rootGauge.last_period()).to.equal("2750")
+      expect(inflationParams.finish_time).to.equal("1683579906")
+      expect(await rootGauge.last_period()).to.equal("2781")
     })
 
     it(`Successfully sets storage variables after kill`, async () => {
-      expect(await rootGauge.bridger()).to.equal(arbitrumBridger.address)
+      expect(await rootGauge.bridger()).to.equal(arbitrumBridger)
       expect(await rootGauge.chain_id()).to.equal(CHAIN_ID.ARBITRUM_MAINNET)
       expect(await rootGauge.name()).to.equal(
         "Saddle " + TEST_GAUGE_NAME + " Root Gauge",
@@ -166,8 +160,8 @@ describe("RootGaugeV2", () => {
       expect(await rootGauge.factory()).to.equal(rootGaugeFactory.address)
       const inflationParams = await rootGauge.inflation_params()
       expect(inflationParams.rate).to.equal("2066798941798941798")
-      expect(inflationParams.finish_time).to.equal("1664226306")
-      expect(await rootGauge.last_period()).to.equal("2750")
+      expect(inflationParams.finish_time).to.equal("1683579906")
+      expect(await rootGauge.last_period()).to.equal("2781")
       const owner = await impersonateAccount(await rootGaugeFactory.owner())
       await rootGauge.connect(owner).set_killed(true)
       assert(await rootGauge.is_killed())
@@ -217,9 +211,14 @@ describe("RootGaugeV2", () => {
           await getWithName("GaugeController", "mainnet")
         ).address,
       )
+
       await gaugeController
         .connect(multisig)
-        ["add_gauge(address,int128,uint256)"](rootGauge.address, 0, 10000)
+        ["add_gauge(address,int128,uint256)"](
+          rootGauge.address,
+          0,
+          BigNumber.from("1000000000000000000000000"),
+        )
 
       // Skip ahead to next week
       await setTimestamp(
@@ -244,7 +243,7 @@ describe("RootGaugeV2", () => {
       ).to.changeTokenBalance(
         sdl,
         await getWithName("Minter", "mainnet").then((c) => c.address),
-        "-624968751562421878465214",
+        "-45569891281176801229234",
       )
     })
 

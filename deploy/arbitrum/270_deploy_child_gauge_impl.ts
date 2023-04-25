@@ -15,8 +15,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     11,
   )
 
-  // Re-deploy ChildGauge to sync with mainnet RootGaugeV2 address
-  const cg = await deploy("ChildGaugeUpdated", {
+  // Deploy ChildGauge to sync with mainnet RootGaugeV2 address
+  const cg = await deploy("ChildGaugeV2", {
     contract: "ChildGauge",
     log: true,
     from: crossChainDeployer,
