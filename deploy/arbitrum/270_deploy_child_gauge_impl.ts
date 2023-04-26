@@ -24,7 +24,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (await get("SDL")).address,
       (await get("ChildGaugeFactory")).address,
     ],
-    skipIfAlreadyDeployed: false,
+    skipIfAlreadyDeployed: true,
   })
   expect(await read("ChildGauge", "factory")).not.eq(ZERO_ADDRESS)
 
@@ -37,4 +37,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // )
 }
 export default func
-// func.skip = async () => true
+func.skip = async () => true
