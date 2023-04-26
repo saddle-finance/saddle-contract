@@ -37,7 +37,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await get("fUSDC")
       ).address,
       (
-        await get("RewardForwarder_fUSDC_ChildGauge_CommunityfUSDCPoolLPTokenV3")
+        await get(
+          "RewardForwarder_fUSDC_ChildGauge_CommunityfUSDCPoolLPTokenV3",
+        )
       ).address,
     )
   }
