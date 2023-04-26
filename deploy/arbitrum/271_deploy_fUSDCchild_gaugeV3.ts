@@ -17,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // If deployment is not found for the child gauge, deploy it
   if (
-    !(await deployments.getOrNull("ChildGauge_CommunityfUSDCPoolLPTokenV2"))
+    !(await deployments.getOrNull("ChildGauge_CommunityfUSDCPoolLPTokenV3"))
   ) {
     
     const executeOptions = {
@@ -26,6 +26,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     // Broadcast the transaction
+    console.log(convertGaugeNameToSalt("fUSDC-USDC poolV3"))
     const tx = await execute(
       "ChildGaugeFactory",
       {log: true, from: deployer},
@@ -33,9 +34,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       (
         await get("CommunityfUSDCPoolLPToken")
       ).address,
-      convertGaugeNameToSalt("fUSDC-USDC poolV2"),
-      // "0x1f8f6a8a01c5b62778eeab7f342d60fcf69ff477bd14114f0c8cfcb8589a5bf6",
-      "fUSDC-USDC poolV2",
+      convertGaugeNameToSalt("fUSDC-USDC poolV3"),
+      "fUSDC-USDC poolV3",
     )
 
     // Find the deployed gauge address from the event logs
@@ -44,7 +44,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )?.args?._gauge
 
     // Save the info to the deployment json folder
-    await save(`ChildGauge_CommunityfUSDCPoolLPTokenV2`, {
+    await save(`ChildGauge_CommunityfUSDCPoolLPTokenV3`, {
       abi: (await get("ChildGauge")).abi,
       address: gaugeAddress,
     })

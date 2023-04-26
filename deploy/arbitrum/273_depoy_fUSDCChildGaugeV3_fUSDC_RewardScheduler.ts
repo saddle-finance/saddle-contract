@@ -10,7 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   const RewardScheduler = await deploy(
-    "RewardScheduler_ChildGauge_CommunityfUSDCLPToken_fUSDCV2",
+    "RewardScheduler_ChildGauge_CommunityfUSDCLPToken_fUSDCV3",
     {
       from: deployer,
       contract: "RewardScheduler",
@@ -19,7 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       args: [
         (
           await get(
-            "RewardForwarder_fUSDC_ChildGauge_CommunityfUSDCPoolLPToken",
+            "RewardForwarder_fUSDC_ChildGauge_CommunityfUSDCPoolLPTokenV3",
           )
         ).address,
         (await get("fUSDC")).address,
@@ -30,14 +30,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Transfer ownership to the ops multisig
   const RewardScheduler_ChildGauge_CommunityfUSDCLPToken: RewardScheduler =
     await ethers.getContract(
-      "RewardScheduler_ChildGauge_CommunityfUSDCLPToken_fUSDCV2",
+      "RewardScheduler_ChildGauge_CommunityfUSDCLPToken_fUSDCV3",
     )
   if (
     (await RewardScheduler_ChildGauge_CommunityfUSDCLPToken.owner()) !=
     OPS_MULTISIG_ADDRESSES[await getChainId()]
   ) {
     const rewardSchedulerOwnershipTX = await execute(
-      "RewardScheduler_ChildGauge_CommunityfUSDCLPToken_fUSDCV2",
+      "RewardScheduler_ChildGauge_CommunityfUSDCLPToken_fUSDCV3",
       { from: deployer, log: true },
       "transferOwnership",
       OPS_MULTISIG_ADDRESSES[await getChainId()],
@@ -45,3 +45,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 }
 export default func
+// func.skip = async () => true
