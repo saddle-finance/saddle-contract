@@ -38,6 +38,7 @@
     "@types/node-fetch": "^2.6.2",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.13.0",
+    "@yfi/sdk": "^2.1.0",
     "chai": "^4.3.7",
     "eslint": "^8.6.0",
     "eslint-config-prettier": "^8.3.0",
