@@ -59,7 +59,8 @@ contract MinterCommitEmissionTest is TestWithConstants {
         vm.label(address(minter), "Minter");
     }
 
-    // Test that pendingSaddle reverts when the pool is not updated
+    // Test lowering the emission rate applies the new rate after the next mining epoch
+    // and the new rate is applied to the gauges of both types
     function test_commitEmission() public {
         vm.startPrank(minterAdmin);
         // Assert that the current rate is 30M / 24 weeks
