@@ -19,20 +19,20 @@
     "@openzeppelin/contracts-upgradeable-4.2.0": "npm:@openzeppelin/contracts-upgradeable@4.2.0",
     "@openzeppelin/contracts-upgradeable-4.7.3": "npm:@openzeppelin/contracts-upgradeable@4.7.3",
     "dotenv": "^10.0.0",
-    "hardhat-tracer": "^1.2.1",
+    "hardhat-tracer": "^2.2.2",
     "synthetix": "2.56.1"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.4",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.6",
-    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
-    "@nomiclabs/hardhat-etherscan": "^3.1.2",
-    "@nomiclabs/hardhat-vyper": "^3.0.1",
-    "@typechain/ethers-v5": "^10.1.1",
-    "@typechain/hardhat": "^6.1.4",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@nomiclabs/hardhat-vyper": "^3.0.3",
+    "@typechain/ethers-v5": "^10.2.0",
+    "@typechain/hardhat": "^6.1.5",
     "@types/chai": "^4.3.4",
     "@types/mocha": "^9.1.0",
     "@types/node-fetch": "^2.6.2",
@@ -46,10 +46,12 @@
     "eslint-plugin-unused-imports": "^2.0.0",
     "ethers": "^5.7.2",
     "ethlint": "^1.2.5",
-    "hardhat": "^2.12.2",
-    "hardhat-deploy": "^0.11.22",
+    "hardhat": "^2.14.0",
+    "hardhat-deploy": "^0.11.26",
     "hardhat-gas-reporter": "^1.0.9",
-    "hardhat-spdx-license-identifier": "^2.0.3",
+    "hardhat-spdx-license-identifier": "^2.1.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.1",
     "node-fetch": "^2.6.7",
     "prettier": "^2.8.1",
     "prettier-plugin-solidity": "^1.0.0-beta.11",
@@ -62,6 +64,16 @@
     "ts-node": "^10.9.1",
     "typechain": "^8.1.1",
     "typescript": "^4.6.3"
+  },
+  "lint-staged": {
+    "*.{ts,json,yml}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.sol": [
+      "prettier --write",
+      "solhint --fix"
+    ]
   },
   "scripts": {
     "lint": "npm run lint:ts && npm run lint:sol && npm run lint:json",
@@ -78,7 +90,7 @@
     "deploy": "hardhat deploy",
     "start": "hardhat node",
     "fork": "hardhat node --fork $npm_config_network",
-    "prepare": "npm run build",
+    "prepare": "npm run build && husky install",
     "addresses": "node scripts/print-addresses.js"
   },
   "config": {
